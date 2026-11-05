@@ -283,18 +283,30 @@ public class AsyncRawLimitBucketsClient {
         return future;
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public CompletableFuture<CossHttpResponse<RiskLimitBucket>> get(String id) {
         return get(id, GetLimitBucketsRequest.builder().build());
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public CompletableFuture<CossHttpResponse<RiskLimitBucket>> get(String id, RequestOptions requestOptions) {
         return get(id, GetLimitBucketsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public CompletableFuture<CossHttpResponse<RiskLimitBucket>> get(String id, GetLimitBucketsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public CompletableFuture<CossHttpResponse<RiskLimitBucket>> get(
             String id, GetLimitBucketsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

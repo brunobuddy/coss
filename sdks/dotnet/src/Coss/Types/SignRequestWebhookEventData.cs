@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The request. Never documents or field values.
+/// </summary>
 [Serializable]
 public record SignRequestWebhookEventData : IJsonOnDeserialized
 {
@@ -11,6 +14,9 @@ public record SignRequestWebhookEventData : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The signature request's id.
+    /// </summary>
     [JsonPropertyName("sign_request_id")]
     public required string SignRequestId { get; set; }
 
@@ -20,9 +26,15 @@ public record SignRequestWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required SignRequestWebhookEventDataStatus Status { get; set; }
 
+    /// <summary>
+    /// The request's title.
+    /// </summary>
     [JsonPropertyName("title")]
     public required string Title { get; set; }
 
+    /// <summary>
+    /// Your own key-value pairs.
+    /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
 
@@ -40,9 +52,15 @@ public record SignRequestWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("reason")]
     public string? Reason { get; set; }
 
+    /// <summary>
+    /// Whether it belongs to a sandbox environment.
+    /// </summary>
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
+    /// <summary>
+    /// When it happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 

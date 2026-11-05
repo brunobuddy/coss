@@ -91,6 +91,7 @@ class EndpointsClient:
         url : str
 
         description : typing.Optional[str]
+            Your note about it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -105,6 +106,7 @@ class EndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -242,8 +244,10 @@ class EndpointsClient:
             The endpoint's id.
 
         url : typing.Optional[str]
+            Where deliveries are sent.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -255,6 +259,7 @@ class EndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -501,6 +506,7 @@ class EndpointsClient:
             The endpoint's id.
 
         event_type : str
+            The event type to send as.
 
         payload : typing.Optional[typing.Dict[str, typing.Any]]
             Defaults to the event type's first example.
@@ -670,6 +676,7 @@ class AsyncEndpointsClient:
         url : str
 
         description : typing.Optional[str]
+            Your note about it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -684,6 +691,7 @@ class AsyncEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -845,8 +853,10 @@ class AsyncEndpointsClient:
             The endpoint's id.
 
         url : typing.Optional[str]
+            Where deliveries are sent.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -858,6 +868,7 @@ class AsyncEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1145,6 +1156,7 @@ class AsyncEndpointsClient:
             The endpoint's id.
 
         event_type : str
+            The event type to send as.
 
         payload : typing.Optional[typing.Dict[str, typing.Any]]
             Defaults to the event type's first example.

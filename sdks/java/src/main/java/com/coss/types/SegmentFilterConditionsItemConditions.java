@@ -37,11 +37,17 @@ public final class SegmentFilterConditionsItemConditions {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return <code>all</code>: every condition must hold; <code>any</code>: one is enough.
+     */
     @JsonProperty("match")
     public SegmentFilterConditionsItemConditionsMatch getMatch() {
         return match;
     }
 
+    /**
+     * @return The group's conditions.
+     */
     @JsonProperty("conditions")
     public List<SegmentFilterConditionsItemConditionsConditionsItem> getConditions() {
         return conditions;
@@ -78,6 +84,9 @@ public final class SegmentFilterConditionsItemConditions {
     }
 
     public interface MatchStage {
+        /**
+         * <p><code>all</code>: every condition must hold; <code>any</code>: one is enough.</p>
+         */
         _FinalStage match(@NotNull SegmentFilterConditionsItemConditionsMatch match);
 
         Builder from(SegmentFilterConditionsItemConditions other);
@@ -90,6 +99,9 @@ public final class SegmentFilterConditionsItemConditions {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The group's conditions.</p>
+         */
         _FinalStage conditions(List<SegmentFilterConditionsItemConditionsConditionsItem> conditions);
 
         _FinalStage addConditions(SegmentFilterConditionsItemConditionsConditionsItem conditions);
@@ -115,6 +127,10 @@ public final class SegmentFilterConditionsItemConditions {
             return this;
         }
 
+        /**
+         * <p><code>all</code>: every condition must hold; <code>any</code>: one is enough.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("match")
         public _FinalStage match(@NotNull SegmentFilterConditionsItemConditionsMatch match) {
@@ -122,6 +138,10 @@ public final class SegmentFilterConditionsItemConditions {
             return this;
         }
 
+        /**
+         * <p>The group's conditions.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllConditions(List<SegmentFilterConditionsItemConditionsConditionsItem> conditions) {
             if (conditions != null) {
@@ -130,12 +150,19 @@ public final class SegmentFilterConditionsItemConditions {
             return this;
         }
 
+        /**
+         * <p>The group's conditions.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addConditions(SegmentFilterConditionsItemConditionsConditionsItem conditions) {
             this.conditions.add(conditions);
             return this;
         }
 
+        /**
+         * <p>The group's conditions.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "conditions", nulls = Nulls.SKIP)
         public _FinalStage conditions(List<SegmentFilterConditionsItemConditionsConditionsItem> conditions) {

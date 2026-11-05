@@ -11,31 +11,31 @@ use Coss\Core\Json\JsonProperty;
 class BillingLimits extends JsonSerializableType
 {
     /**
-     * @var ?int $domains
+     * @var ?int $domains Sending domains. `null`: unlimited.
      */
     #[JsonProperty('domains')]
     public ?int $domains;
 
     /**
-     * @var ?int $members
+     * @var ?int $members Members of the organization. `null`: unlimited.
      */
     #[JsonProperty('members')]
     public ?int $members;
 
     /**
-     * @var ?int $webhookEndpointsPerEnvironment
+     * @var ?int $webhookEndpointsPerEnvironment Webhook endpoints per environment. `null`: unlimited.
      */
     #[JsonProperty('webhook_endpoints_per_environment')]
     public ?int $webhookEndpointsPerEnvironment;
 
     /**
-     * @var ?int $contactsPerEnvironment
+     * @var ?int $contactsPerEnvironment Contacts per environment. `null`: unlimited.
      */
     #[JsonProperty('contacts_per_environment')]
     public ?int $contactsPerEnvironment;
 
     /**
-     * @var ?int $inboxes
+     * @var ?int $inboxes Inboxes. `null`: unlimited.
      */
     #[JsonProperty('inboxes')]
     public ?int $inboxes;

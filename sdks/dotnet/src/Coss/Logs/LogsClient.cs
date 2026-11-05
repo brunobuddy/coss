@@ -394,6 +394,9 @@ public partial class LogsClient : ILogsClient
         return new WithRawResponseTask<LogList>(ListAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// One line of the API key's environment log.
+    /// </summary>
     /// <example><code>
     /// await client.Logs.GetAsync(new GetLogsRequest { Id = "log_01k7c8m4q2f3e9v6t5r1n0p8yz" });
     /// </code></example>

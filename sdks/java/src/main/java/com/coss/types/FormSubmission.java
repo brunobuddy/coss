@@ -117,6 +117,9 @@ public final class FormSubmission {
         return id;
     }
 
+    /**
+     * @return The id of the form it was posted to.
+     */
     @JsonProperty("form_id")
     public String getFormId() {
         return formId;
@@ -138,6 +141,9 @@ public final class FormSubmission {
         return data;
     }
 
+    /**
+     * @return The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("submitter_email")
     public OptionalNullable<String> getSubmitterEmail() {
@@ -147,11 +153,17 @@ public final class FormSubmission {
         return submitterEmail;
     }
 
+    /**
+     * @return Uploaded files. Download them with the API.
+     */
     @JsonProperty("files")
     public List<FormSubmissionFile> getFiles() {
         return files;
     }
 
+    /**
+     * @return Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spam_reason")
     public OptionalNullable<FormSubmissionSpamReason> getSpamReason() {
@@ -173,6 +185,9 @@ public final class FormSubmission {
         return risk;
     }
 
+    /**
+     * @return The address it was posted from. <code>null</code>: unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip")
     public OptionalNullable<String> getIp() {
@@ -182,6 +197,9 @@ public final class FormSubmission {
         return ip;
     }
 
+    /**
+     * @return The browser's <code>User-Agent</code>. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -191,6 +209,9 @@ public final class FormSubmission {
         return userAgent;
     }
 
+    /**
+     * @return The site it was posted from. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("origin")
     public OptionalNullable<String> getOrigin() {
@@ -200,6 +221,9 @@ public final class FormSubmission {
         return origin;
     }
 
+    /**
+     * @return The page it was posted from. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("referrer")
     public OptionalNullable<String> getReferrer() {
@@ -209,6 +233,9 @@ public final class FormSubmission {
         return referrer;
     }
 
+    /**
+     * @return When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmed_at")
     public OptionalNullable<OffsetDateTime> getConfirmedAt() {
@@ -218,6 +245,9 @@ public final class FormSubmission {
         return confirmedAt;
     }
 
+    /**
+     * @return When it became <code>accepted</code>. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("accepted_at")
     public OptionalNullable<OffsetDateTime> getAcceptedAt() {
@@ -227,6 +257,9 @@ public final class FormSubmission {
         return acceptedAt;
     }
 
+    /**
+     * @return When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("released_at")
     public OptionalNullable<OffsetDateTime> getReleasedAt() {
@@ -236,6 +269,9 @@ public final class FormSubmission {
         return releasedAt;
     }
 
+    /**
+     * @return Whether it belongs to a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
@@ -381,6 +417,9 @@ public final class FormSubmission {
     }
 
     public interface FormIdStage {
+        /**
+         * <p>The id of the form it was posted to.</p>
+         */
         StatusStage formId(@NotNull String formId);
     }
 
@@ -392,6 +431,9 @@ public final class FormSubmission {
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         */
         CreatedAtStage sandbox(boolean sandbox);
     }
 
@@ -415,6 +457,9 @@ public final class FormSubmission {
 
         _FinalStage data(String key, FormSubmissionDataValue value);
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         */
         _FinalStage submitterEmail(OptionalNullable<String> submitterEmail);
 
         _FinalStage submitterEmail(String submitterEmail);
@@ -423,12 +468,18 @@ public final class FormSubmission {
 
         _FinalStage submitterEmail(Nullable<String> submitterEmail);
 
+        /**
+         * <p>Uploaded files. Download them with the API.</p>
+         */
         _FinalStage files(List<FormSubmissionFile> files);
 
         _FinalStage addFiles(FormSubmissionFile files);
 
         _FinalStage addAllFiles(List<FormSubmissionFile> files);
 
+        /**
+         * <p>Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.</p>
+         */
         _FinalStage spamReason(OptionalNullable<FormSubmissionSpamReason> spamReason);
 
         _FinalStage spamReason(FormSubmissionSpamReason spamReason);
@@ -448,6 +499,9 @@ public final class FormSubmission {
 
         _FinalStage risk(Nullable<FormSubmissionRisk> risk);
 
+        /**
+         * <p>The address it was posted from. <code>null</code>: unknown.</p>
+         */
         _FinalStage ip(OptionalNullable<String> ip);
 
         _FinalStage ip(String ip);
@@ -456,6 +510,9 @@ public final class FormSubmission {
 
         _FinalStage ip(Nullable<String> ip);
 
+        /**
+         * <p>The browser's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         _FinalStage userAgent(OptionalNullable<String> userAgent);
 
         _FinalStage userAgent(String userAgent);
@@ -464,6 +521,9 @@ public final class FormSubmission {
 
         _FinalStage userAgent(Nullable<String> userAgent);
 
+        /**
+         * <p>The site it was posted from. <code>null</code>: not sent.</p>
+         */
         _FinalStage origin(OptionalNullable<String> origin);
 
         _FinalStage origin(String origin);
@@ -472,6 +532,9 @@ public final class FormSubmission {
 
         _FinalStage origin(Nullable<String> origin);
 
+        /**
+         * <p>The page it was posted from. <code>null</code>: not sent.</p>
+         */
         _FinalStage referrer(OptionalNullable<String> referrer);
 
         _FinalStage referrer(String referrer);
@@ -480,6 +543,9 @@ public final class FormSubmission {
 
         _FinalStage referrer(Nullable<String> referrer);
 
+        /**
+         * <p>When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.</p>
+         */
         _FinalStage confirmedAt(OptionalNullable<OffsetDateTime> confirmedAt);
 
         _FinalStage confirmedAt(OffsetDateTime confirmedAt);
@@ -488,6 +554,9 @@ public final class FormSubmission {
 
         _FinalStage confirmedAt(Nullable<OffsetDateTime> confirmedAt);
 
+        /**
+         * <p>When it became <code>accepted</code>. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage acceptedAt(OptionalNullable<OffsetDateTime> acceptedAt);
 
         _FinalStage acceptedAt(OffsetDateTime acceptedAt);
@@ -496,6 +565,9 @@ public final class FormSubmission {
 
         _FinalStage acceptedAt(Nullable<OffsetDateTime> acceptedAt);
 
+        /**
+         * <p>When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.</p>
+         */
         _FinalStage releasedAt(OptionalNullable<OffsetDateTime> releasedAt);
 
         _FinalStage releasedAt(OffsetDateTime releasedAt);
@@ -586,6 +658,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The id of the form it was posted to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("form_id")
         public StatusStage formId(@NotNull String formId) {
@@ -604,6 +680,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public CreatedAtStage sandbox(boolean sandbox) {
@@ -618,6 +698,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage releasedAt(Nullable<OffsetDateTime> releasedAt) {
             if (releasedAt.isNull()) {
@@ -630,6 +714,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage releasedAt(Optional<OffsetDateTime> releasedAt) {
             if (releasedAt.isPresent()) {
@@ -640,12 +728,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage releasedAt(OffsetDateTime releasedAt) {
             this.releasedAt = OptionalNullable.of(releasedAt);
             return this;
         }
 
+        /**
+         * <p>When it was released from <code>held</code> or <code>spam</code>. <code>null</code>: it wasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "released_at", nulls = Nulls.SKIP)
         public _FinalStage releasedAt(OptionalNullable<OffsetDateTime> releasedAt) {
@@ -653,6 +748,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it became <code>accepted</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage acceptedAt(Nullable<OffsetDateTime> acceptedAt) {
             if (acceptedAt.isNull()) {
@@ -665,6 +764,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it became <code>accepted</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage acceptedAt(Optional<OffsetDateTime> acceptedAt) {
             if (acceptedAt.isPresent()) {
@@ -675,12 +778,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When it became <code>accepted</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage acceptedAt(OffsetDateTime acceptedAt) {
             this.acceptedAt = OptionalNullable.of(acceptedAt);
             return this;
         }
 
+        /**
+         * <p>When it became <code>accepted</code>. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "accepted_at", nulls = Nulls.SKIP)
         public _FinalStage acceptedAt(OptionalNullable<OffsetDateTime> acceptedAt) {
@@ -688,6 +798,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmedAt(Nullable<OffsetDateTime> confirmedAt) {
             if (confirmedAt.isNull()) {
@@ -700,6 +814,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmedAt(Optional<OffsetDateTime> confirmedAt) {
             if (confirmedAt.isPresent()) {
@@ -710,12 +828,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmedAt(OffsetDateTime confirmedAt) {
             this.confirmedAt = OptionalNullable.of(confirmedAt);
             return this;
         }
 
+        /**
+         * <p>When the submitter clicked the emailed link. <code>null</code>: they haven't, or the form doesn't verify.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "confirmed_at", nulls = Nulls.SKIP)
         public _FinalStage confirmedAt(OptionalNullable<OffsetDateTime> confirmedAt) {
@@ -723,6 +848,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The page it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage referrer(Nullable<String> referrer) {
             if (referrer.isNull()) {
@@ -735,6 +864,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The page it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage referrer(Optional<String> referrer) {
             if (referrer.isPresent()) {
@@ -745,12 +878,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The page it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage referrer(String referrer) {
             this.referrer = OptionalNullable.of(referrer);
             return this;
         }
 
+        /**
+         * <p>The page it was posted from. <code>null</code>: not sent.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "referrer", nulls = Nulls.SKIP)
         public _FinalStage referrer(OptionalNullable<String> referrer) {
@@ -758,6 +898,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The site it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage origin(Nullable<String> origin) {
             if (origin.isNull()) {
@@ -770,6 +914,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The site it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage origin(Optional<String> origin) {
             if (origin.isPresent()) {
@@ -780,12 +928,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The site it was posted from. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage origin(String origin) {
             this.origin = OptionalNullable.of(origin);
             return this;
         }
 
+        /**
+         * <p>The site it was posted from. <code>null</code>: not sent.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "origin", nulls = Nulls.SKIP)
         public _FinalStage origin(OptionalNullable<String> origin) {
@@ -793,6 +948,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The browser's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Nullable<String> userAgent) {
             if (userAgent.isNull()) {
@@ -805,6 +964,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The browser's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Optional<String> userAgent) {
             if (userAgent.isPresent()) {
@@ -815,12 +978,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The browser's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(String userAgent) {
             this.userAgent = OptionalNullable.of(userAgent);
             return this;
         }
 
+        /**
+         * <p>The browser's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public _FinalStage userAgent(OptionalNullable<String> userAgent) {
@@ -828,6 +998,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The address it was posted from. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ip(Nullable<String> ip) {
             if (ip.isNull()) {
@@ -840,6 +1014,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The address it was posted from. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ip(Optional<String> ip) {
             if (ip.isPresent()) {
@@ -850,12 +1028,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The address it was posted from. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ip(String ip) {
             this.ip = OptionalNullable.of(ip);
             return this;
         }
 
+        /**
+         * <p>The address it was posted from. <code>null</code>: unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "ip", nulls = Nulls.SKIP)
         public _FinalStage ip(OptionalNullable<String> ip) {
@@ -913,6 +1098,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(Nullable<FormSubmissionSpamReason> spamReason) {
             if (spamReason.isNull()) {
@@ -925,6 +1114,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(Optional<FormSubmissionSpamReason> spamReason) {
             if (spamReason.isPresent()) {
@@ -935,12 +1128,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(FormSubmissionSpamReason spamReason) {
             this.spamReason = OptionalNullable.of(spamReason);
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>honeypot</code>: the honeypot field was filled. <code>risk_block</code>: Risk blocked it. <code>risk_review</code>: Risk asked for a review. <code>content</code>: its text passed <code>content_threshold</code>. <code>null</code>: not flagged.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "spam_reason", nulls = Nulls.SKIP)
         public _FinalStage spamReason(OptionalNullable<FormSubmissionSpamReason> spamReason) {
@@ -948,6 +1148,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Uploaded files. Download them with the API.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllFiles(List<FormSubmissionFile> files) {
             if (files != null) {
@@ -956,12 +1160,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>Uploaded files. Download them with the API.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addFiles(FormSubmissionFile files) {
             this.files.add(files);
             return this;
         }
 
+        /**
+         * <p>Uploaded files. Download them with the API.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "files", nulls = Nulls.SKIP)
         public _FinalStage files(List<FormSubmissionFile> files) {
@@ -972,6 +1183,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(Nullable<String> submitterEmail) {
             if (submitterEmail.isNull()) {
@@ -984,6 +1199,10 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(Optional<String> submitterEmail) {
             if (submitterEmail.isPresent()) {
@@ -994,12 +1213,19 @@ public final class FormSubmission {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(String submitterEmail) {
             this.submitterEmail = OptionalNullable.of(submitterEmail);
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "submitter_email", nulls = Nulls.SKIP)
         public _FinalStage submitterEmail(OptionalNullable<String> submitterEmail) {

@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class SendSmsRequestTagsItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The tag's name, unique on the message.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $value
+     * @var string $value The tag's value.
      */
     #[JsonProperty('value')]
     public string $value;

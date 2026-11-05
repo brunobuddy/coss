@@ -134,6 +134,8 @@ class InboxesClient:
 
     def get(self, inbox_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Inbox:
         """
+        One inbox of the API key's environment.
+
         Parameters
         ----------
         inbox_id : str
@@ -385,6 +387,8 @@ class AsyncInboxesClient:
 
     async def get(self, inbox_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Inbox:
         """
+        One inbox of the API key's environment.
+
         Parameters
         ----------
         inbox_id : str

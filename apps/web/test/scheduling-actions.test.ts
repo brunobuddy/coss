@@ -60,6 +60,7 @@ const CURRENT: EventTypeObjectOutput = {
   limits: [],
   capacity: null,
   requires_approval: false,
+  reassignment_enabled: true,
   approval_ttl_minutes: 1440,
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 0,
@@ -71,6 +72,8 @@ const CURRENT: EventTypeObjectOutput = {
   questions: [],
   locations: [],
   host_filter: null,
+  notifications: null,
+  reminders: null,
   hosts: [],
   metadata: {},
   created_at: "2027-01-01T10:00:00.000Z",
@@ -92,6 +95,9 @@ const updateHost = mock(async (_env: unknown, _id: string, changes: object) => (
   ...changes,
 }));
 const deleteHost = mock(async () => ({ id: "host_1" }));
+const createHolidayCalendar = mock(async (_env: unknown, _input: unknown, _deps: unknown) => ({
+  id: "holcal_1",
+}));
 const schedulingModule = await import("@coss/scheduling");
 mock.module("@coss/scheduling", () => ({
   ...schedulingModule,
@@ -112,9 +118,11 @@ mock.module("@coss/scheduling", () => ({
   }),
   updateHost,
   deleteHost,
+  createHolidayCalendar,
 }));
 
 const {
+  createHolidayCalendarAction,
   deleteHostAction,
   openBookerAction,
   openBookingManagerAction,
@@ -227,6 +235,16 @@ describe("saving an event type", () => {
   test("archiving needs update and goes through the same function", async () => {
     await setEventTypeStatusAction(null, form({ eventTypeId: "evtype_1", status: "archived" }));
     expect(updateEventType.mock.calls[0]?.[2]).toEqual({ status: "archived" });
+  });
+});
+
+describe("a holiday calendar", () => {
+  test("a feed gets what it takes to encrypt its address", async () => {
+    const data = form({ name: "Company", icsUrl: "https://example.com/holidays.ics" });
+    data.append("hostId", "host_1");
+    const result = await createHolidayCalendarAction(null, data);
+    expect(result?.ok).toBe(true);
+    expect(createHolidayCalendar.mock.calls[0]?.[2]).toMatchObject({ calendars: {} });
   });
 });
 

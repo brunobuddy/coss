@@ -27,13 +27,13 @@ class SignSettings extends JsonSerializableType
     public ?string $displayName;
 
     /**
-     * @var ?string $accentColor
+     * @var ?string $accentColor The signing page's accent color, as `#RRGGBB`. `null`: the default.
      */
     #[JsonProperty('accent_color')]
     public ?string $accentColor;
 
     /**
-     * @var value-of<SignSettingsTheme> $theme
+     * @var value-of<SignSettingsTheme> $theme The signing page's theme. `system` follows the signer's device.
      */
     #[JsonProperty('theme')]
     public string $theme;

@@ -50,6 +50,8 @@ console.log(data?.available, data?.reason); // false "host_busy"
 | `not_on_grid` | It isn't one of the event type's start times. |
 | `too_soon` | It's inside the minimum notice. |
 | `outside_booking_window` | It's outside how far ahead people can book. |
+| `out_of_office` | The host is [away](/docs/scheduling/out-of-office). Why isn't said. |
+| `outside_coverage` | They're only covering for someone at other times. |
 | `calendar_unverified` | The host's calendar can't be read right now. `calendar_reason` says why. |
 | `outside_availability` | It's outside the host's working hours. |
 | `host_busy` | Something on the host's calendar overlaps it, with buffers. |
@@ -191,5 +193,14 @@ appears in the history, webhooks, logs or emails. It's erased with the attendee'
 ## Webhooks
 
 Bookings send `scheduling.booking.confirmed`, `.pending_approval`, `.rescheduled`, `.cancelled`,
-`.declined`, `.no_show`, `.external_conflict`, `.calendar_write_failed` and `.location_ready`. They carry
-ids, times and statuses only. Retrieve the booking for anything about the person.
+`.declined`, `.no_show`, `.external_conflict`, `.calendar_write_failed`, `.location_ready`, `.started`,
+`.ended` and `.reminder`. They carry ids, times and statuses only. Retrieve the booking for anything about the
+person. `.started` and `.ended` fire at the booking's own times, and `.reminder` at
+[any time you choose](/docs/scheduling/reminders#webhooks-at-any-moment).
+
+## No-shows
+
+Once a booking has started, `coss.scheduling.bookings.markNoShow(id)` records that the attendee didn't come. It
+sends `scheduling.booking.no_show`, stops follow-ups and sends any
+[reminder timed from it](/docs/scheduling/reminders#after-a-no-show-or-a-cancellation). It can't be undone, and
+marking it again changes nothing.

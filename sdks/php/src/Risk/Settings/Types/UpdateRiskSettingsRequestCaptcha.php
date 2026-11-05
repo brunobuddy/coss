@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class UpdateRiskSettingsRequestCaptcha extends JsonSerializableType
 {
     /**
-     * @var value-of<UpdateRiskSettingsRequestCaptchaProvider> $provider
+     * @var value-of<UpdateRiskSettingsRequestCaptchaProvider> $provider The captcha provider.
      */
     #[JsonProperty('provider')]
     public string $provider;

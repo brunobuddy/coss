@@ -50,6 +50,9 @@ public final class SuppressionCheck {
         return object;
     }
 
+    /**
+     * @return The address checked.
+     */
     @JsonProperty("address")
     public String getAddress() {
         return address;
@@ -110,6 +113,9 @@ public final class SuppressionCheck {
     }
 
     public interface AddressStage {
+        /**
+         * <p>The address checked.</p>
+         */
         SuppressedStage address(@NotNull String address);
     }
 
@@ -168,6 +174,10 @@ public final class SuppressionCheck {
             return this;
         }
 
+        /**
+         * <p>The address checked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("address")
         public SuppressedStage address(@NotNull String address) {

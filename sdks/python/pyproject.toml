@@ -4,7 +4,7 @@ dynamic = ["version"]
 
 [tool.poetry]
 name = "cosscom"
-version = "0.2.0"
+version = "0.3.0"
 description = "The coss.com SDK for Python"
 readme = "README.md"
 authors = ["coss.com"]

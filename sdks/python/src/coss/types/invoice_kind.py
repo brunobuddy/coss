@@ -2,4 +2,4 @@
 
 import typing
 
-InvoiceKind = typing.Union[typing.Literal["period", "plan_change", "one_off", "final"], typing.Any]
+InvoiceKind = typing.Union[typing.Literal["period", "plan_change", "one_off", "final", "threshold"], typing.Any]

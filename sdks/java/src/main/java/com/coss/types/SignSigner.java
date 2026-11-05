@@ -104,11 +104,17 @@ public final class SignSigner {
         return email;
     }
 
+    /**
+     * @return Where they come in <code>signing_order: sequential</code>. Lower signs first.
+     */
     @JsonProperty("order")
     public long getOrder() {
         return order;
     }
 
+    /**
+     * @return <code>email</code>: coss.com emails them a link. <code>embedded</code>: your app shows the signing page.
+     */
     @JsonProperty("delivery")
     public SignSignerDelivery getDelivery() {
         return delivery;
@@ -122,11 +128,17 @@ public final class SignSigner {
         return authentication;
     }
 
+    /**
+     * @return <code>pending</code>: not contacted yet. <code>notified</code>: emailed their link. <code>viewed</code>: opened the signing page. <code>signed</code>: done. <code>declined</code>: refused, which declines the whole request.
+     */
     @JsonProperty("status")
     public SignSignerStatus getStatus() {
         return status;
     }
 
+    /**
+     * @return Your own id for the signer. <code>null</code>: none given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("client_ref")
     public OptionalNullable<String> getClientRef() {
@@ -136,6 +148,9 @@ public final class SignSigner {
         return clientRef;
     }
 
+    /**
+     * @return When they first opened the signing page. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("viewed_at")
     public OptionalNullable<OffsetDateTime> getViewedAt() {
@@ -145,6 +160,9 @@ public final class SignSigner {
         return viewedAt;
     }
 
+    /**
+     * @return When they signed. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("signed_at")
     public OptionalNullable<OffsetDateTime> getSignedAt() {
@@ -154,6 +172,9 @@ public final class SignSigner {
         return signedAt;
     }
 
+    /**
+     * @return When they declined. <code>null</code>: they haven't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("declined_at")
     public OptionalNullable<OffsetDateTime> getDeclinedAt() {
@@ -163,6 +184,9 @@ public final class SignSigner {
         return declinedAt;
     }
 
+    /**
+     * @return The reason they gave. <code>null</code>: none given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("decline_reason")
     public OptionalNullable<String> getDeclineReason() {
@@ -275,10 +299,16 @@ public final class SignSigner {
     }
 
     public interface OrderStage {
+        /**
+         * <p>Where they come in <code>signing_order: sequential</code>. Lower signs first.</p>
+         */
         DeliveryStage order(long order);
     }
 
     public interface DeliveryStage {
+        /**
+         * <p><code>email</code>: coss.com emails them a link. <code>embedded</code>: your app shows the signing page.</p>
+         */
         AuthenticationStage delivery(@NotNull SignSignerDelivery delivery);
     }
 
@@ -290,6 +320,9 @@ public final class SignSigner {
     }
 
     public interface StatusStage {
+        /**
+         * <p><code>pending</code>: not contacted yet. <code>notified</code>: emailed their link. <code>viewed</code>: opened the signing page. <code>signed</code>: done. <code>declined</code>: refused, which declines the whole request.</p>
+         */
         _FinalStage status(@NotNull SignSignerStatus status);
     }
 
@@ -300,6 +333,9 @@ public final class SignSigner {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         */
         _FinalStage clientRef(OptionalNullable<String> clientRef);
 
         _FinalStage clientRef(String clientRef);
@@ -308,6 +344,9 @@ public final class SignSigner {
 
         _FinalStage clientRef(Nullable<String> clientRef);
 
+        /**
+         * <p>When they first opened the signing page. <code>null</code>: not yet.</p>
+         */
         _FinalStage viewedAt(OptionalNullable<OffsetDateTime> viewedAt);
 
         _FinalStage viewedAt(OffsetDateTime viewedAt);
@@ -316,6 +355,9 @@ public final class SignSigner {
 
         _FinalStage viewedAt(Nullable<OffsetDateTime> viewedAt);
 
+        /**
+         * <p>When they signed. <code>null</code>: not yet.</p>
+         */
         _FinalStage signedAt(OptionalNullable<OffsetDateTime> signedAt);
 
         _FinalStage signedAt(OffsetDateTime signedAt);
@@ -324,6 +366,9 @@ public final class SignSigner {
 
         _FinalStage signedAt(Nullable<OffsetDateTime> signedAt);
 
+        /**
+         * <p>When they declined. <code>null</code>: they haven't.</p>
+         */
         _FinalStage declinedAt(OptionalNullable<OffsetDateTime> declinedAt);
 
         _FinalStage declinedAt(OffsetDateTime declinedAt);
@@ -332,6 +377,9 @@ public final class SignSigner {
 
         _FinalStage declinedAt(Nullable<OffsetDateTime> declinedAt);
 
+        /**
+         * <p>The reason they gave. <code>null</code>: none given.</p>
+         */
         _FinalStage declineReason(OptionalNullable<String> declineReason);
 
         _FinalStage declineReason(String declineReason);
@@ -429,6 +477,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>Where they come in <code>signing_order: sequential</code>. Lower signs first.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("order")
         public DeliveryStage order(long order) {
@@ -436,6 +488,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p><code>email</code>: coss.com emails them a link. <code>embedded</code>: your app shows the signing page.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("delivery")
         public AuthenticationStage delivery(@NotNull SignSignerDelivery delivery) {
@@ -454,6 +510,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p><code>pending</code>: not contacted yet. <code>notified</code>: emailed their link. <code>viewed</code>: opened the signing page. <code>signed</code>: done. <code>declined</code>: refused, which declines the whole request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public _FinalStage status(@NotNull SignSignerStatus status) {
@@ -461,6 +521,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>The reason they gave. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declineReason(Nullable<String> declineReason) {
             if (declineReason.isNull()) {
@@ -473,6 +537,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>The reason they gave. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declineReason(Optional<String> declineReason) {
             if (declineReason.isPresent()) {
@@ -483,12 +551,19 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>The reason they gave. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declineReason(String declineReason) {
             this.declineReason = OptionalNullable.of(declineReason);
             return this;
         }
 
+        /**
+         * <p>The reason they gave. <code>null</code>: none given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "decline_reason", nulls = Nulls.SKIP)
         public _FinalStage declineReason(OptionalNullable<String> declineReason) {
@@ -496,6 +571,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they declined. <code>null</code>: they haven't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declinedAt(Nullable<OffsetDateTime> declinedAt) {
             if (declinedAt.isNull()) {
@@ -508,6 +587,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they declined. <code>null</code>: they haven't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declinedAt(Optional<OffsetDateTime> declinedAt) {
             if (declinedAt.isPresent()) {
@@ -518,12 +601,19 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they declined. <code>null</code>: they haven't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage declinedAt(OffsetDateTime declinedAt) {
             this.declinedAt = OptionalNullable.of(declinedAt);
             return this;
         }
 
+        /**
+         * <p>When they declined. <code>null</code>: they haven't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "declined_at", nulls = Nulls.SKIP)
         public _FinalStage declinedAt(OptionalNullable<OffsetDateTime> declinedAt) {
@@ -531,6 +621,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they signed. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signedAt(Nullable<OffsetDateTime> signedAt) {
             if (signedAt.isNull()) {
@@ -543,6 +637,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they signed. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signedAt(Optional<OffsetDateTime> signedAt) {
             if (signedAt.isPresent()) {
@@ -553,12 +651,19 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they signed. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signedAt(OffsetDateTime signedAt) {
             this.signedAt = OptionalNullable.of(signedAt);
             return this;
         }
 
+        /**
+         * <p>When they signed. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "signed_at", nulls = Nulls.SKIP)
         public _FinalStage signedAt(OptionalNullable<OffsetDateTime> signedAt) {
@@ -566,6 +671,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they first opened the signing page. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage viewedAt(Nullable<OffsetDateTime> viewedAt) {
             if (viewedAt.isNull()) {
@@ -578,6 +687,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they first opened the signing page. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage viewedAt(Optional<OffsetDateTime> viewedAt) {
             if (viewedAt.isPresent()) {
@@ -588,12 +701,19 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>When they first opened the signing page. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage viewedAt(OffsetDateTime viewedAt) {
             this.viewedAt = OptionalNullable.of(viewedAt);
             return this;
         }
 
+        /**
+         * <p>When they first opened the signing page. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "viewed_at", nulls = Nulls.SKIP)
         public _FinalStage viewedAt(OptionalNullable<OffsetDateTime> viewedAt) {
@@ -601,6 +721,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(Nullable<String> clientRef) {
             if (clientRef.isNull()) {
@@ -613,6 +737,10 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(Optional<String> clientRef) {
             if (clientRef.isPresent()) {
@@ -623,12 +751,19 @@ public final class SignSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(String clientRef) {
             this.clientRef = OptionalNullable.of(clientRef);
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "client_ref", nulls = Nulls.SKIP)
         public _FinalStage clientRef(OptionalNullable<String> clientRef) {

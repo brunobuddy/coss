@@ -13,9 +13,15 @@ public record CreateSignRequestRequestSignersItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Shown on the signing page and on the certificate.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// Where a `delivery: email` signer gets their link. Unique within a request.
+    /// </summary>
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 

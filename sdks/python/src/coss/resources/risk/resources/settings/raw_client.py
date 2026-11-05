@@ -156,10 +156,13 @@ class RawSettingsClient:
         Parameters
         ----------
         review_threshold : typing.Optional[float]
+            Scores at or above it are `review`.
 
         block_threshold : typing.Optional[float]
+            Scores at or above it are `block`.
 
         disabled_reasons : typing.Optional[typing.Sequence[UpdateRiskSettingsRequestDisabledReasonsItem]]
+            Reasons that never fire in this environment. Replaces the list.
 
         captcha : typing.Optional[UpdateRiskSettingsRequestCaptcha]
             `null` turns captcha verification off and deletes the secret.
@@ -445,10 +448,13 @@ class AsyncRawSettingsClient:
         Parameters
         ----------
         review_threshold : typing.Optional[float]
+            Scores at or above it are `review`.
 
         block_threshold : typing.Optional[float]
+            Scores at or above it are `block`.
 
         disabled_reasons : typing.Optional[typing.Sequence[UpdateRiskSettingsRequestDisabledReasonsItem]]
+            Reasons that never fire in this environment. Replaces the list.
 
         captcha : typing.Optional[UpdateRiskSettingsRequestCaptcha]
             `null` turns captcha verification off and deletes the secret.

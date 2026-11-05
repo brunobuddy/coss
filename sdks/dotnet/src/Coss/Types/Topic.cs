@@ -23,19 +23,34 @@ public record Topic : IJsonOnDeserialized
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center under its name. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
+    /// <summary>
+    /// `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
+    /// </summary>
     [JsonPropertyName("default_subscription")]
     public required TopicDefaultSubscription DefaultSubscription { get; set; }
 
+    /// <summary>
+    /// `private` topics never show in the preference center.
+    /// </summary>
     [JsonPropertyName("visibility")]
     public required TopicVisibility Visibility { get; set; }
 
+    /// <summary>
+    /// Order in the preference center (ascending).
+    /// </summary>
     [JsonPropertyName("position")]
     public required long Position { get; set; }
 

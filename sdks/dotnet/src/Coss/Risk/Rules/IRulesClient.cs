@@ -21,12 +21,18 @@ public partial interface IRulesClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One rule of the API key's environment.
+    /// </summary>
     WithRawResponseTask<RiskRule> GetAsync(
         GetRulesRequest request,
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Deletes a rule. Later assessments no longer apply it.
+    /// </summary>
     WithRawResponseTask<DeletedRiskRule> DeleteAsync(
         DeleteRulesRequest request,
         RequestOptions? options = null,

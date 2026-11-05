@@ -74,6 +74,9 @@ public final class EmailLink {
         return id;
     }
 
+    /**
+     * @return The email's id.
+     */
     @JsonProperty("email_id")
     public String getEmailId() {
         return emailId;
@@ -87,16 +90,25 @@ public final class EmailLink {
         return position;
     }
 
+    /**
+     * @return The original link.
+     */
     @JsonProperty("url")
     public String getUrl() {
         return url;
     }
 
+    /**
+     * @return Times it was clicked. Link scanners inflate it.
+     */
     @JsonProperty("click_count")
     public long getClickCount() {
         return clickCount;
     }
 
+    /**
+     * @return When it was first clicked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_clicked_at")
     public OptionalNullable<OffsetDateTime> getFirstClickedAt() {
@@ -106,6 +118,9 @@ public final class EmailLink {
         return firstClickedAt;
     }
 
+    /**
+     * @return When it was last clicked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_clicked_at")
     public OptionalNullable<OffsetDateTime> getLastClickedAt() {
@@ -182,6 +197,9 @@ public final class EmailLink {
     }
 
     public interface EmailIdStage {
+        /**
+         * <p>The email's id.</p>
+         */
         PositionStage emailId(@NotNull String emailId);
     }
 
@@ -193,10 +211,16 @@ public final class EmailLink {
     }
 
     public interface UrlStage {
+        /**
+         * <p>The original link.</p>
+         */
         ClickCountStage url(@NotNull String url);
     }
 
     public interface ClickCountStage {
+        /**
+         * <p>Times it was clicked. Link scanners inflate it.</p>
+         */
         _FinalStage clickCount(long clickCount);
     }
 
@@ -207,6 +231,9 @@ public final class EmailLink {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When it was first clicked. <code>null</code>: not yet.</p>
+         */
         _FinalStage firstClickedAt(OptionalNullable<OffsetDateTime> firstClickedAt);
 
         _FinalStage firstClickedAt(OffsetDateTime firstClickedAt);
@@ -215,6 +242,9 @@ public final class EmailLink {
 
         _FinalStage firstClickedAt(Nullable<OffsetDateTime> firstClickedAt);
 
+        /**
+         * <p>When it was last clicked. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastClickedAt(OptionalNullable<OffsetDateTime> lastClickedAt);
 
         _FinalStage lastClickedAt(OffsetDateTime lastClickedAt);
@@ -275,6 +305,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>The email's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email_id")
         public PositionStage emailId(@NotNull String emailId) {
@@ -293,6 +327,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>The original link.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("url")
         public ClickCountStage url(@NotNull String url) {
@@ -300,6 +338,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>Times it was clicked. Link scanners inflate it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("click_count")
         public _FinalStage clickCount(long clickCount) {
@@ -307,6 +349,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(Nullable<OffsetDateTime> lastClickedAt) {
             if (lastClickedAt.isNull()) {
@@ -319,6 +365,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(Optional<OffsetDateTime> lastClickedAt) {
             if (lastClickedAt.isPresent()) {
@@ -329,12 +379,19 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(OffsetDateTime lastClickedAt) {
             this.lastClickedAt = OptionalNullable.of(lastClickedAt);
             return this;
         }
 
+        /**
+         * <p>When it was last clicked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_clicked_at", nulls = Nulls.SKIP)
         public _FinalStage lastClickedAt(OptionalNullable<OffsetDateTime> lastClickedAt) {
@@ -342,6 +399,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(Nullable<OffsetDateTime> firstClickedAt) {
             if (firstClickedAt.isNull()) {
@@ -354,6 +415,10 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(Optional<OffsetDateTime> firstClickedAt) {
             if (firstClickedAt.isPresent()) {
@@ -364,12 +429,19 @@ public final class EmailLink {
             return this;
         }
 
+        /**
+         * <p>When it was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(OffsetDateTime firstClickedAt) {
             this.firstClickedAt = OptionalNullable.of(firstClickedAt);
             return this;
         }
 
+        /**
+         * <p>When it was first clicked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_clicked_at", nulls = Nulls.SKIP)
         public _FinalStage firstClickedAt(OptionalNullable<OffsetDateTime> firstClickedAt) {

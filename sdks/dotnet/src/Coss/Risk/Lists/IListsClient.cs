@@ -22,12 +22,18 @@ public partial interface IListsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One allow or block list entry of the API key's environment.
+    /// </summary>
     WithRawResponseTask<RiskListEntry> GetAsync(
         GetListsRequest request,
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Removes an entry from its list. Later assessments no longer see it.
+    /// </summary>
     WithRawResponseTask<DeletedRiskListEntry> RemoveAsync(
         RemoveListsRequest request,
         RequestOptions? options = null,

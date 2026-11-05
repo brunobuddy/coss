@@ -40,6 +40,9 @@ public record RiskDeviceSignals : IJsonOnDeserialized
     [JsonPropertyName("language")]
     public string? Language { get; set; }
 
+    /// <summary>
+    /// The browser's reported platform. `null` when it reported none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("platform")]
     public string? Platform { get; set; }
@@ -51,6 +54,9 @@ public record RiskDeviceSignals : IJsonOnDeserialized
     [JsonPropertyName("screen")]
     public string? Screen { get; set; }
 
+    /// <summary>
+    /// Whether the device has a touch screen. `null` when it didn't say.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("touch")]
     public bool? Touch { get; set; }

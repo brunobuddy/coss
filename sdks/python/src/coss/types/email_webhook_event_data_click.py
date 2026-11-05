@@ -21,7 +21,10 @@ class EmailWebhookEventDataClick(UniversalBaseModel):
     Index of the link among the email's tracked links.
     """
 
-    user_agent: typing.Optional[str] = None
+    user_agent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The client's `User-Agent`. `null`: not sent.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

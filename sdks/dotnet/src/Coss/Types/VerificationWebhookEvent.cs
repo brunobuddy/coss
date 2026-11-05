@@ -17,6 +17,9 @@ public record VerificationWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required VerificationWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What happened to the verification.
+    /// </summary>
     [JsonPropertyName("type")]
     public required VerificationWebhookEventType Type { get; set; }
 
@@ -26,9 +29,15 @@ public record VerificationWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The verification. Never its code.
+    /// </summary>
     [JsonPropertyName("data")]
     public required VerificationWebhookEventData Data { get; set; }
 

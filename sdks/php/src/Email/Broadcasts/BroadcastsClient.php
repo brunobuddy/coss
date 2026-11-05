@@ -198,6 +198,8 @@ class BroadcastsClient
     }
 
     /**
+     * One broadcast of the API key's environment, with its status and stats.
+     *
      * Example:
      * ```php
      * $client->email->broadcasts->get(

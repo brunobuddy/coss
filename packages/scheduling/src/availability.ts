@@ -7,7 +7,12 @@ import { and, eq, gte, inArray, isNull, lt, lte, ne, or, sql } from "drizzle-orm
 import { notZoomMeeting } from "./calendar/zoom.ts";
 import { buildAvailability, overrideDateRange } from "./engine/availability.ts";
 import { type CalendarFreshness, calendarVerdict } from "./engine/calendar-verdict.ts";
-import { type Interval, normalizeIntervals, subtractIntervals } from "./engine/intervals.ts";
+import {
+  type Interval,
+  normalizeIntervals,
+  overlapsAny,
+  subtractIntervals,
+} from "./engine/intervals.ts";
 import {
   type HostInputs,
   isBookable,
@@ -35,6 +40,8 @@ const {
   schedulingClaim,
   schedulingGroupSession,
   schedulingHost,
+  schedulingOutOfOffice,
+  schedulingOutOfOfficeDelegate,
   schedulingSchedule,
   schedulingScheduleOverride,
   schedulingSettings,
@@ -68,7 +75,11 @@ export function slotRuleOf(
   };
 }
 
-export type LoadedHost = HostInputs & { calendarReason: string | null };
+export type LoadedHost = HostInputs & {
+  calendarReason: string | null;
+  /** The same verdict for a shorter look ahead, for reads that cover several meetings at once. */
+  calendarVerifiedUntil: (untilMs: number) => boolean;
+};
 
 const HOSTS_PER_TURN = 25;
 
@@ -94,7 +105,12 @@ export async function loadHostInputs(
   executor: Executor,
   input: {
     scope: Scope;
-    hosts: readonly { id: string; timeZone: string; scheduleId: string | null }[];
+    hosts: readonly {
+      id: string;
+      timeZone: string;
+      scheduleId: string | null;
+      onlyWithin?: readonly Interval[] | undefined;
+    }[];
     eventTypeId: string;
     fromMs: number;
     toMs: number;
@@ -229,6 +245,23 @@ export async function loadHostInputs(
         sql`${schedulingCalendarEvent.desiredStart} < ${toDate.toISOString()}::timestamptz + interval '1 day'`,
       ),
     );
+  const away = await executor
+    .select({
+      hostId: schedulingOutOfOffice.hostId,
+      startAt: schedulingOutOfOffice.startAt,
+      endAt: schedulingOutOfOffice.endAt,
+    })
+    .from(schedulingOutOfOffice)
+    .where(
+      and(
+        eq(schedulingOutOfOffice.organizationId, scope.organizationId),
+        inArray(schedulingOutOfOffice.hostId, hostIds),
+        isNull(schedulingOutOfOffice.deletedAt),
+        // A slot's end can fall past the window's, as with availability below.
+        sql`${schedulingOutOfOffice.endAt} > ${fromDate.toISOString()}::timestamptz - interval '1 day'`,
+        sql`${schedulingOutOfOffice.startAt} < ${toDate.toISOString()}::timestamptz + interval '2 days'`,
+      ),
+    );
   const calendars = await executor
     .select({
       hostId: schedulingCalendar.hostId,
@@ -262,6 +295,7 @@ export async function loadHostInputs(
   const busyByHost = groupedBy(busy, (row) => row.hostId);
   const sessionsByHost = groupedBy(sessions, (row) => row.hostId);
   const calendarsByHost = groupedBy(calendars, (row) => row.hostId);
+  const awayByHost = groupedBy(away, (row) => row.hostId);
 
   for (const [index, host] of hosts.entries()) {
     await takeTurn(index);
@@ -319,26 +353,30 @@ export async function loadHostInputs(
         startMs: claim.occupiedStart.getTime(),
         endMs: claim.occupiedEnd.getTime(),
       }));
-    const verdict = calendarVerdict(
-      (calendarsByHost.get(host.id) ?? [])
-        // Nobody hosts a simulated calendar, and nothing syncs it: its busy times are what's set.
-        .filter((calendar) => calendar.provider !== "simulated")
-        .map(
-          (calendar): CalendarFreshness => ({
-            connectionHealthy: calendar.status === "active",
-            verifiedAtMs: calendar.verifiedAt?.getTime() ?? null,
-            coveredUntilMs: calendar.coveredUntil?.getTime() ?? null,
-            hasChannel: calendar.channelId !== null,
-          }),
-        ),
-      nowMs,
-      toMs,
-    );
+    const freshness = (calendarsByHost.get(host.id) ?? [])
+      // Nobody hosts a simulated calendar, and nothing syncs it: its busy times are what's set.
+      .filter((calendar) => calendar.provider !== "simulated")
+      .map(
+        (calendar): CalendarFreshness => ({
+          connectionHealthy: calendar.status === "active",
+          verifiedAtMs: calendar.verifiedAt?.getTime() ?? null,
+          coveredUntilMs: calendar.coveredUntil?.getTime() ?? null,
+          hasChannel: calendar.channelId !== null,
+        }),
+      );
+    const verdict = calendarVerdict(freshness, nowMs, toMs);
     result.set(host.id, {
       timeZone: host.timeZone,
       availability,
       externalBusy,
       claims: normalizeIntervals(blocking),
+      onlyWithin: host.onlyWithin,
+      away: normalizeIntervals(
+        (awayByHost.get(host.id) ?? []).map((entry) => ({
+          startMs: entry.startAt.getTime(),
+          endMs: entry.endAt.getTime(),
+        })),
+      ),
       sessions: hostSessions.flatMap((session) => {
         const claim = sessionClaims.get(session.id);
         return claim
@@ -358,6 +396,9 @@ export async function loadHostInputs(
       limitUsage,
       calendarVerified: verdict.verified || input.calendarFailureMode === "last_known",
       calendarReason: verdict.verified ? null : verdict.reason,
+      calendarVerifiedUntil: (untilMs) =>
+        calendarVerdict(freshness, nowMs, untilMs).verified ||
+        input.calendarFailureMode === "last_known",
     });
   }
   return result;
@@ -380,10 +421,124 @@ export async function calendarFailureModeOf(
   return row?.mode ?? "hide";
 }
 
+/** Why someone who isn't otherwise a candidate is one: they're standing in for someone. */
+export type Coverage = {
+  windows: Interval[];
+  /** Whose time away it is: only theirs says anything about this booking. */
+  principals: readonly string[];
+  position: number;
+  principalRatio: number;
+};
+
 export type Candidates = {
   required: { host: HostRow; membership: EventTypeHostRow | null }[];
-  members: { host: HostRow; membership: EventTypeHostRow | null }[];
+  members: {
+    host: HostRow;
+    membership: EventTypeHostRow | null;
+    coverage?: Coverage | undefined;
+  }[];
 };
+
+/** What `loadHostInputs` needs to know about a candidate. */
+export function hostInputOf(entry: {
+  host: Pick<HostRow, "id" | "timeZone">;
+  membership: EventTypeHostRow | null;
+  coverage?: Coverage | undefined;
+}) {
+  return {
+    id: entry.host.id,
+    timeZone: entry.host.timeZone,
+    scheduleId: entry.membership?.scheduleId ?? null,
+    onlyWithin: entry.coverage?.windows,
+  };
+}
+
+/**
+ * Delegates of whoever's a candidate, for the time those people are away. A booking's routing still
+ * holds: a delegate has to match the pool's filter and what's narrowed it, and one taken out by name
+ * stays out. It isn't transitive, and needs no checks for loops: a delegate who's away themselves
+ * simply has no slots. Time decides nothing here: `onlyWithin` does that, in `isBookable`.
+ */
+async function coverageOf(
+  executor: Executor,
+  scope: Scope,
+  eventType: EventTypeRow,
+  principals: readonly { host: HostRow; membership: EventTypeHostRow | null }[],
+  context: {
+    taken: ReadonlySet<string>;
+    removed: ReadonlySet<string>;
+    only: ReadonlySet<string>;
+    byHost: ReadonlyMap<string, EventTypeHostRow>;
+    attributes: Record<string, string | string[]> | undefined;
+  },
+): Promise<Candidates["members"]> {
+  if (principals.length === 0) return [];
+  const rows = await executor
+    .select({
+      principal: schedulingOutOfOffice.hostId,
+      delegate: schedulingOutOfOfficeDelegate.hostId,
+      position: schedulingOutOfOfficeDelegate.position,
+      startAt: schedulingOutOfOffice.startAt,
+      endAt: schedulingOutOfOffice.endAt,
+    })
+    .from(schedulingOutOfOffice)
+    .innerJoin(
+      schedulingOutOfOfficeDelegate,
+      eq(schedulingOutOfOfficeDelegate.outOfOfficeId, schedulingOutOfOffice.id),
+    )
+    .where(
+      and(
+        eq(schedulingOutOfOffice.organizationId, scope.organizationId),
+        inArray(
+          schedulingOutOfOffice.hostId,
+          principals.map((entry) => entry.host.id),
+        ),
+        isNull(schedulingOutOfOffice.deletedAt),
+        sql`${schedulingOutOfOffice.endAt} > clock_timestamp()`,
+      ),
+    );
+  if (rows.length === 0) return [];
+  const ratioOf = new Map(
+    principals.map((entry) => [
+      entry.host.id,
+      entry.membership && entry.membership.weight > 0
+        ? entry.membership.fairUnits / entry.membership.weight
+        : 0,
+    ]),
+  );
+  const hosts = await hostsByIds(executor, scope, [...new Set(rows.map((row) => row.delegate))]);
+  const out: Candidates["members"] = [];
+  for (const host of hosts) {
+    if (host.status !== "active") continue;
+    if (context.taken.has(host.id) || context.removed.has(host.id)) continue;
+    if (eventType.kind === "pool" && eventType.hostFilter) {
+      if (!attributesMatch(host.attributes, eventType.hostFilter)) continue;
+    }
+    if (!attributesMatch(host.attributes, context.attributes)) continue;
+    const covering = rows.filter(
+      (row) =>
+        row.delegate === host.id &&
+        (context.only.size === 0 || context.only.has(row.principal) || context.only.has(host.id)),
+    );
+    if (covering.length === 0) continue;
+    out.push({
+      host,
+      membership: context.byHost.get(host.id) ?? null,
+      coverage: {
+        windows: normalizeIntervals(
+          covering.map((row) => ({ startMs: row.startAt.getTime(), endMs: row.endAt.getTime() })),
+        ),
+        principals: [...new Set(covering.map((row) => row.principal))],
+        position: Math.min(...covering.map((row) => row.position)),
+        principalRatio: Math.max(...covering.map((row) => ratioOf.get(row.principal) ?? 0)),
+      },
+    });
+  }
+  return out.sort(
+    (a, b) =>
+      (a.coverage?.position ?? 0) - (b.coverage?.position ?? 0) || (a.host.id < b.host.id ? -1 : 1),
+  );
+}
 
 /**
  * Who could take a booking of this event type: its active assigned hosts, filter matches for a
@@ -432,6 +587,9 @@ export async function candidatesOf(
   }
   const required: Candidates["required"] = [];
   const members: Candidates["members"] = [];
+  // Anyone a booking could have gone to, had it not been pinned to someone else: a host who's only
+  // being asked for as a delegate is standing in for one of these.
+  const principals: Candidates["members"] = [];
   let hasMembers = false;
   for (const host of hosts.values()) {
     const membership = byHost.get(host.id) ?? null;
@@ -441,10 +599,21 @@ export async function candidatesOf(
       required.push({ host, membership });
       continue;
     }
-    if (only.size > 0 && !only.has(host.id)) continue;
     if (!attributesMatch(host.attributes, narrow.attributes)) continue;
+    principals.push({ host, membership });
+    if (only.size > 0 && !only.has(host.id)) continue;
     members.push({ host, membership });
   }
+  // Delegates come after everyone else, in the order they were named.
+  members.push(
+    ...(await coverageOf(executor, scope, eventType, principals, {
+      taken: new Set([...members, ...required].map((entry) => entry.host.id)),
+      removed,
+      only,
+      byHost,
+      attributes: narrow.attributes,
+    })),
+  );
   // A pool's required hosts come with a member: they're never booked alone in place of one.
   if (hasMembers && members.length === 0) return { required: [], members };
   return { required, members };
@@ -511,8 +680,19 @@ export function combineSlots(
   return result.sort((a, b) => a.startMs - b.startMs);
 }
 
-function scheduleOf(entry: { membership: EventTypeHostRow | null }): string | null {
-  return entry.membership?.scheduleId ?? null;
+/** A host's still away, and cover's only for then, however many people have already joined. */
+function joinVerdict(
+  host: Pick<HostInputs, "away" | "onlyWithin">,
+  startMs: number,
+  endMs: number,
+): ReturnType<typeof isBookable> {
+  if (host.away && overlapsAny(host.away, startMs, endMs)) {
+    return { ok: false, reason: "out_of_office" };
+  }
+  if (host.onlyWithin && !overlapsAny(host.onlyWithin, startMs, endMs)) {
+    return { ok: false, reason: "outside_coverage" };
+  }
+  return { ok: true };
 }
 
 function durationOf(eventType: EventTypeRow, requested: number | undefined): number {
@@ -549,14 +729,20 @@ export async function listEventTypeSlots(
     hostRefs: input.hostRefs,
     attributes: input.attributes,
   });
+  return slotsAmong(scope, eventType, candidates, input, duration);
+}
+
+async function slotsAmong(
+  scope: Scope,
+  eventType: EventTypeRow,
+  candidates: Candidates,
+  input: { fromMs: number; toMs: number; nowMs: number },
+  duration: number,
+): Promise<SlotResult[]> {
   const all = [...candidates.required, ...candidates.members];
   const loaded = await loadHostInputs(db, {
     scope,
-    hosts: all.map((entry) => ({
-      id: entry.host.id,
-      timeZone: entry.host.timeZone,
-      scheduleId: scheduleOf(entry),
-    })),
+    hosts: all.map(hostInputOf),
     eventTypeId: eventType.id,
     fromMs: input.fromMs,
     toMs: input.toMs,
@@ -664,11 +850,7 @@ export async function explainSlot(
   }
   const loaded = await loadHostInputs(db, {
     scope,
-    hosts: entries.map((entry) => ({
-      id: entry.host.id,
-      timeZone: entry.host.timeZone,
-      scheduleId: scheduleOf(entry),
-    })),
+    hosts: entries.map(hostInputOf),
     eventTypeId: eventType.id,
     fromMs: startMs,
     toMs: endMs,
@@ -687,7 +869,7 @@ export async function explainSlot(
       : session && session.seatsLeft <= 0
         ? { ok: false, reason: "session_full" }
         : session?.seatsTaken
-          ? { ok: true }
+          ? joinVerdict(host, startMs, endMs)
           : isBookable(startMs, { nowMs, rule, host });
     const reason = verdict.ok ? null : verdict.reason;
     return {
@@ -743,11 +925,7 @@ export async function searchAvailability(
   const cutShort = entries.length < candidates.members.length;
   const loaded = await loadHostInputs(db, {
     scope,
-    hosts: entries.map((entry) => ({
-      id: entry.host.id,
-      timeZone: entry.host.timeZone,
-      scheduleId: scheduleOf(entry),
-    })),
+    hosts: entries.map(hostInputOf),
     eventTypeId: eventType.id,
     fromMs: input.fromMs,
     toMs: input.toMs,

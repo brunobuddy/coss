@@ -17,6 +17,9 @@ public record BroadcastWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required BroadcastWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What happened to the broadcast.
+    /// </summary>
     [JsonPropertyName("type")]
     public required BroadcastWebhookEventType Type { get; set; }
 
@@ -26,9 +29,15 @@ public record BroadcastWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The broadcast and how it fared.
+    /// </summary>
     [JsonPropertyName("data")]
     public required BroadcastWebhookEventData Data { get; set; }
 

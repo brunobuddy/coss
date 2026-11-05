@@ -37,6 +37,9 @@ public final class HookEndpointSecret {
         return object;
     }
 
+    /**
+     * @return The endpoint's <code>whsec_…</code> signing secret (Standard Webhooks).
+     */
     @JsonProperty("secret")
     public String getSecret() {
         return secret;
@@ -78,6 +81,9 @@ public final class HookEndpointSecret {
     }
 
     public interface SecretStage {
+        /**
+         * <p>The endpoint's <code>whsec_…</code> signing secret (Standard Webhooks).</p>
+         */
         _FinalStage secret(@NotNull String secret);
     }
 
@@ -114,6 +120,10 @@ public final class HookEndpointSecret {
             return this;
         }
 
+        /**
+         * <p>The endpoint's <code>whsec_…</code> signing secret (Standard Webhooks).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("secret")
         public _FinalStage secret(@NotNull String secret) {

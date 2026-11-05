@@ -13,9 +13,23 @@ from .subaccount_stats_object import SubaccountStatsObject
 
 class SubaccountStats(UniversalBaseModel):
     object: SubaccountStatsObject
-    subaccount_id: str
-    from_: typing_extensions.Annotated[dt.date, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: dt.date
+    subaccount_id: str = pydantic.Field()
+    """
+    The sub-account's id.
+    """
+
+    from_: typing_extensions.Annotated[
+        dt.date, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="The first date included.")
+    ]
+    """
+    The first date included.
+    """
+
+    to: dt.date = pydantic.Field()
+    """
+    The last date included.
+    """
+
     data: typing.List[SubaccountStatsDay] = pydantic.Field()
     """
     One entry per day with sends, oldest first; recipients count by their current status.

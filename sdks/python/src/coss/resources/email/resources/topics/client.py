@@ -88,13 +88,16 @@ class TopicsClient:
         Parameters
         ----------
         key : str
+            The `category` of the emails about this topic. Can't change.
 
         name : str
+            Shown in the preference center.
 
         default_subscription : CreateTopicRequestDefaultSubscription
             `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 
         description : typing.Optional[str]
+            Shown in the preference center under its name. `null`: none.
 
         visibility : typing.Optional[CreateTopicRequestVisibility]
             `private` topics never show in the preference center (default `public`).
@@ -137,6 +140,8 @@ class TopicsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Topic:
         """
+        One topic of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -217,8 +222,10 @@ class TopicsClient:
             The topic's id.
 
         name : typing.Optional[str]
+            Shown in the preference center.
 
         description : typing.Optional[str]
+            Shown in the preference center under its name. `null`: none.
 
         default_subscription : typing.Optional[UpdateTopicRequestDefaultSubscription]
             `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
@@ -341,13 +348,16 @@ class AsyncTopicsClient:
         Parameters
         ----------
         key : str
+            The `category` of the emails about this topic. Can't change.
 
         name : str
+            Shown in the preference center.
 
         default_subscription : CreateTopicRequestDefaultSubscription
             `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
 
         description : typing.Optional[str]
+            Shown in the preference center under its name. `null`: none.
 
         visibility : typing.Optional[CreateTopicRequestVisibility]
             `private` topics never show in the preference center (default `public`).
@@ -398,6 +408,8 @@ class AsyncTopicsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Topic:
         """
+        One topic of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -494,8 +506,10 @@ class AsyncTopicsClient:
             The topic's id.
 
         name : typing.Optional[str]
+            Shown in the preference center.
 
         description : typing.Optional[str]
+            Shown in the preference center under its name. `null`: none.
 
         default_subscription : typing.Optional[UpdateTopicRequestDefaultSubscription]
             `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.

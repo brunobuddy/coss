@@ -2303,6 +2303,9 @@ public partial class ContactsClient : IContactsClient
         );
     }
 
+    /// <summary>
+    /// One contact of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Contacts.GetAsync(
     ///     new GetContactsRequest { Id = "contact_01k7c8m4q2f3e9v6t5r1n0p8yz" }

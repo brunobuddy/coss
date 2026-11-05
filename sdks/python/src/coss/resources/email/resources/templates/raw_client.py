@@ -195,6 +195,7 @@ class RawTemplatesClient:
             A name to send the template by instead of its id, e.g. `welcome`: the same alias can be used in every environment.
 
         description : typing.Optional[str]
+            Your note about it, shown in the dashboard.
 
         default_locale : typing.Optional[str]
             The locale sends fall back to when they ask for none, or for one without content. Defaults to the first entry of `contents` (or "en").
@@ -616,11 +617,13 @@ class RawTemplatesClient:
             The template's id or alias.
 
         name : typing.Optional[str]
+            Shown in the dashboard.
 
         alias : typing.Optional[str]
             `null` removes the alias.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1589,6 +1592,7 @@ class AsyncRawTemplatesClient:
             A name to send the template by instead of its id, e.g. `welcome`: the same alias can be used in every environment.
 
         description : typing.Optional[str]
+            Your note about it, shown in the dashboard.
 
         default_locale : typing.Optional[str]
             The locale sends fall back to when they ask for none, or for one without content. Defaults to the first entry of `contents` (or "en").
@@ -2012,11 +2016,13 @@ class AsyncRawTemplatesClient:
             The template's id or alias.
 
         name : typing.Optional[str]
+            Shown in the dashboard.
 
         alias : typing.Optional[str]
             `null` removes the alias.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The payment method on file. `null`: none.
     class BillingPaymentMethod < Internal::Types::Model
       field :type, -> { String }, optional: false, nullable: false
 

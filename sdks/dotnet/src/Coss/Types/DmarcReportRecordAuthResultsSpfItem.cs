@@ -11,13 +11,22 @@ public record DmarcReportRecordAuthResultsSpfItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The checked domain.
+    /// </summary>
     [JsonPropertyName("domain")]
     public required string Domain { get; set; }
 
+    /// <summary>
+    /// What it was checked against.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("scope")]
     public string? Scope { get; set; }
 
+    /// <summary>
+    /// The result.
+    /// </summary>
     [JsonPropertyName("result")]
     public required string Result { get; set; }
 

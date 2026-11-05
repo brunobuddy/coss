@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class ReceivedEmailHeadersItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The header's name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $value
+     * @var string $value The header's value.
      */
     #[JsonProperty('value')]
     public string $value;

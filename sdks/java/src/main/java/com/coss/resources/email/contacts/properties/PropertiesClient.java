@@ -58,18 +58,30 @@ public class PropertiesClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public ContactProperty get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public ContactProperty get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public ContactProperty get(String id, GetPropertiesRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     */
     public ContactProperty get(String id, GetPropertiesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
@@ -102,10 +114,16 @@ public class PropertiesClient {
         return this.rawClient.remove(id, request, requestOptions).body();
     }
 
+    /**
+     * Changes the value used when a contact has none for this property. Its key and type can't change.
+     */
     public ContactProperty update(String id, UpdateContactPropertyRequest request) {
         return this.rawClient.update(id, request).body();
     }
 
+    /**
+     * Changes the value used when a contact has none for this property. Its key and type can't change.
+     */
     public ContactProperty update(String id, UpdateContactPropertyRequest request, RequestOptions requestOptions) {
         return this.rawClient.update(id, request, requestOptions).body();
     }

@@ -7,6 +7,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EnvironmentProject(UniversalBaseModel):
+    """
+    The project it belongs to.
+    """
+
     id: str = pydantic.Field()
     """
     The project's id.

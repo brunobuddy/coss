@@ -17,6 +17,9 @@ public record LogDrainAttempt : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// When the attempt ran.
+    /// </summary>
     [JsonPropertyName("attempted_at")]
     public required DateTime AttemptedAt { get; set; }
 
@@ -27,6 +30,9 @@ public record LogDrainAttempt : IJsonOnDeserialized
     [JsonPropertyName("status_code")]
     public long? StatusCode { get; set; }
 
+    /// <summary>
+    /// How long it took, in milliseconds.
+    /// </summary>
     [JsonPropertyName("duration_ms")]
     public required long DurationMs { get; set; }
 

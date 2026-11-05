@@ -58,6 +58,8 @@ module Coss
           end
         end
 
+        # One submission of the form, with its data, files and Risk's assessment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

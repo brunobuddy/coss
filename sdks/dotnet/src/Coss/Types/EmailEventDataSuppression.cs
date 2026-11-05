@@ -14,9 +14,15 @@ public record EmailEventDataSuppression : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The suppression's id.
+    /// </summary>
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// What it covers: every email, every marketing email, or one category.
+    /// </summary>
     [JsonPropertyName("scope")]
     public required string Scope { get; set; }
 

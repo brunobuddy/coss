@@ -171,6 +171,8 @@ class PropertiesClient
     }
 
     /**
+     * One contact property of the API key's environment: its key, type and fallback.
+     *
      * Example:
      * ```php
      * $client->email->contacts->properties->get(
@@ -279,6 +281,8 @@ class PropertiesClient
     }
 
     /**
+     * Changes the value used when a contact has none for this property. Its key and type can't change.
+     *
      * Example:
      * ```php
      * $client->email->contacts->properties->update(

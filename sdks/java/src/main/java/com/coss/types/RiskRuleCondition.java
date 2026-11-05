@@ -38,16 +38,25 @@ public final class RiskRuleCondition {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The signal to test, such as <code>email.disposable</code> or <code>ip.country</code>.
+     */
     @JsonProperty("field")
     public RiskRuleConditionField getField() {
         return field;
     }
 
+    /**
+     * @return How to compare. Booleans use <code>is</code>, numbers <code>eq</code> to <code>lte</code>, and strings <code>eq</code>, <code>neq</code>, <code>in</code> and <code>not_in</code>.
+     */
     @JsonProperty("operator")
     public RiskRuleConditionOperator getOperator() {
         return operator;
     }
 
+    /**
+     * @return What to compare it with: its type follows the field, and <code>in</code> and <code>not_in</code> take a list of strings.
+     */
     @JsonProperty("value")
     public RiskRuleConditionValue getValue() {
         return value;
@@ -83,16 +92,25 @@ public final class RiskRuleCondition {
     }
 
     public interface FieldStage {
+        /**
+         * <p>The signal to test, such as <code>email.disposable</code> or <code>ip.country</code>.</p>
+         */
         OperatorStage field(@NotNull RiskRuleConditionField field);
 
         Builder from(RiskRuleCondition other);
     }
 
     public interface OperatorStage {
+        /**
+         * <p>How to compare. Booleans use <code>is</code>, numbers <code>eq</code> to <code>lte</code>, and strings <code>eq</code>, <code>neq</code>, <code>in</code> and <code>not_in</code>.</p>
+         */
         ValueStage operator(@NotNull RiskRuleConditionOperator operator);
     }
 
     public interface ValueStage {
+        /**
+         * <p>What to compare it with: its type follows the field, and <code>in</code> and <code>not_in</code> take a list of strings.</p>
+         */
         _FinalStage value(@NotNull RiskRuleConditionValue value);
     }
 
@@ -125,6 +143,10 @@ public final class RiskRuleCondition {
             return this;
         }
 
+        /**
+         * <p>The signal to test, such as <code>email.disposable</code> or <code>ip.country</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("field")
         public OperatorStage field(@NotNull RiskRuleConditionField field) {
@@ -132,6 +154,10 @@ public final class RiskRuleCondition {
             return this;
         }
 
+        /**
+         * <p>How to compare. Booleans use <code>is</code>, numbers <code>eq</code> to <code>lte</code>, and strings <code>eq</code>, <code>neq</code>, <code>in</code> and <code>not_in</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("operator")
         public ValueStage operator(@NotNull RiskRuleConditionOperator operator) {
@@ -139,6 +165,10 @@ public final class RiskRuleCondition {
             return this;
         }
 
+        /**
+         * <p>What to compare it with: its type follows the field, and <code>in</code> and <code>not_in</code> take a list of strings.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("value")
         public _FinalStage value(@NotNull RiskRuleConditionValue value) {

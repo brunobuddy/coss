@@ -7,6 +7,10 @@ from ....core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class UpdateFormRequestSubmitter(UniversalBaseModel):
+    """
+    Who the submitter is, and whether they must confirm by email. Only the fields given change.
+    """
+
     email_field: typing.Optional[str] = pydantic.Field(default=None)
     """
     The field holding the submitter's email address (Risk checks it, notifications reply to it, contacts are made from it). Default `email`.

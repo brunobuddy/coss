@@ -11,9 +11,15 @@ public record DmarcReportRecordReasonsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The kind of override.
+    /// </summary>
     [JsonPropertyName("type")]
     public required string Type { get; set; }
 
+    /// <summary>
+    /// The receiver's comment.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("comment")]
     public string? Comment { get; set; }

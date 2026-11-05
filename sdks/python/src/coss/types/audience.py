@@ -11,7 +11,11 @@ from .audience_object import AudienceObject
 class Audience(UniversalBaseModel):
     object: AudienceObject
     id: str
-    name: str
+    name: str = pydantic.Field()
+    """
+    Your name for the list, unique in the environment.
+    """
+
     contact_count: int = pydantic.Field()
     """
     Members, whatever their status.

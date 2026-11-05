@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// What period it covers.
+/// </summary>
 [Serializable]
 public record InvoiceLinePeriod : IJsonOnDeserialized
 {
@@ -11,9 +14,15 @@ public record InvoiceLinePeriod : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// When the period starts (inclusive).
+    /// </summary>
     [JsonPropertyName("start")]
     public required DateTime Start { get; set; }
 
+    /// <summary>
+    /// When the period ends (exclusive).
+    /// </summary>
     [JsonPropertyName("end")]
     public required DateTime End { get; set; }
 

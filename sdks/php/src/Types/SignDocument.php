@@ -23,7 +23,7 @@ class SignDocument extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $filename
+     * @var string $filename The file's name, as uploaded.
      */
     #[JsonProperty('filename')]
     public string $filename;
@@ -41,7 +41,7 @@ class SignDocument extends JsonSerializableType
     public string $sha256;
 
     /**
-     * @var int $pageCount
+     * @var int $pageCount How many pages it has.
      */
     #[JsonProperty('page_count')]
     public int $pageCount;
@@ -59,7 +59,7 @@ class SignDocument extends JsonSerializableType
     public array $anchors;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;

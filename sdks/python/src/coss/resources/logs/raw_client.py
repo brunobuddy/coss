@@ -223,6 +223,8 @@ class RawLogsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Log]:
         """
+        One line of the API key's environment log.
+
         Parameters
         ----------
         id : str
@@ -535,6 +537,8 @@ class AsyncRawLogsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AsyncHttpResponse[Log]:
         """
+        One line of the API key's environment log.
+
         Parameters
         ----------
         id : str

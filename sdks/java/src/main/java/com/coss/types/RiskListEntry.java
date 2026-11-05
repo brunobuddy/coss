@@ -92,6 +92,9 @@ public final class RiskListEntry {
         return value;
     }
 
+    /**
+     * @return Your note about it. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("note")
     public OptionalNullable<String> getNote() {
@@ -101,6 +104,9 @@ public final class RiskListEntry {
         return note;
     }
 
+    /**
+     * @return When it stops matching. <code>null</code>: never.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("expires_at")
     public OptionalNullable<OffsetDateTime> getExpiresAt() {
@@ -200,6 +206,9 @@ public final class RiskListEntry {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         _FinalStage note(OptionalNullable<String> note);
 
         _FinalStage note(String note);
@@ -208,6 +217,9 @@ public final class RiskListEntry {
 
         _FinalStage note(Nullable<String> note);
 
+        /**
+         * <p>When it stops matching. <code>null</code>: never.</p>
+         */
         _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt);
 
         _FinalStage expiresAt(OffsetDateTime expiresAt);
@@ -300,6 +312,10 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>When it stops matching. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Nullable<OffsetDateTime> expiresAt) {
             if (expiresAt.isNull()) {
@@ -312,6 +328,10 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>When it stops matching. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(Optional<OffsetDateTime> expiresAt) {
             if (expiresAt.isPresent()) {
@@ -322,12 +342,19 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>When it stops matching. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage expiresAt(OffsetDateTime expiresAt) {
             this.expiresAt = OptionalNullable.of(expiresAt);
             return this;
         }
 
+        /**
+         * <p>When it stops matching. <code>null</code>: never.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "expires_at", nulls = Nulls.SKIP)
         public _FinalStage expiresAt(OptionalNullable<OffsetDateTime> expiresAt) {
@@ -335,6 +362,10 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage note(Nullable<String> note) {
             if (note.isNull()) {
@@ -347,6 +378,10 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage note(Optional<String> note) {
             if (note.isPresent()) {
@@ -357,12 +392,19 @@ public final class RiskListEntry {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage note(String note) {
             this.note = OptionalNullable.of(note);
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "note", nulls = Nulls.SKIP)
         public _FinalStage note(OptionalNullable<String> note) {

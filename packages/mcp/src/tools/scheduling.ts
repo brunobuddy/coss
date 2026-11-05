@@ -1,9 +1,11 @@
 import type {
   CreateSchedulingBookingParams,
   CreateSchedulingEventTypeParams,
+  CreateSchedulingOutOfOfficeParams,
   SchedulingBooking,
   SchedulingEventType,
   SchedulingHost,
+  SchedulingReminderInput,
   UpdateSchedulingEventTypeParams,
   UpsertSchedulingScheduleParams,
 } from "coss";
@@ -368,7 +370,8 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       description:
         "With an id it updates that event type; without one it creates one (title and " +
         "duration_minutes needed). `settings` takes the rest (buffers, notice, limits, " +
-        "questions, locations): read_docs on /docs/scheduling has them.",
+        "questions, locations): read_docs on /docs/scheduling has them. Reminders are " +
+        "save_scheduling_reminders, since saving them can send messages.",
       inputSchema: z.object({
         id: z.string().optional().describe("The event type to update (id or uid)."),
         uid: z.string().optional(),
@@ -389,6 +392,12 @@ export function registerSchedulingTools(ctx: ToolContext): void {
       annotations: WRITE,
     },
     ({ id, settings, ...fields }) => {
+      // This tool doesn't say it reaches people, and these do, so they go through one that does.
+      if (settings && ("reminders" in settings || "notifications" in settings)) {
+        return failWith(
+          "Reminders and notifications can send messages: use save_scheduling_reminders, or coss.scheduling.eventTypes.update for notifications.",
+        );
+      }
       const body = { ...settings, ...given(fields) };
       if (id) {
         const { kind: _kind, ...update } = body as UpdateSchedulingEventTypeParams & {
@@ -511,6 +520,407 @@ export function registerSchedulingTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    "list_scheduling_reassign_candidates",
+    {
+      title: "List who a booking could go to",
+      description:
+        "The environment's other hosts, event type members first, each saying whether they're free at the booking's time and why not. Call this before reassign_scheduling_booking.",
+      inputSchema: z.object({ booking_id: bookingId }),
+      annotations: READ_ONLY,
+    },
+    ({ booking_id }) =>
+      respond(coss.scheduling.bookings.reassignCandidates(booking_id), (page) => ({
+        candidates: page.data,
+      })),
+  );
+
+  server.registerTool(
+    "reassign_scheduling_booking",
+    {
+      title: "Reassign a booking",
+      description:
+        "Gives a booking to another host, keeping its id and time. Both hosts and the attendee are told unless notify_attendee is false. Name to_host, or set auto to let coss.com pick the fairest who's free. A group session moves as a whole. overrides go past what a candidate's `reason` said (and any_host past not taking the event type): only use one when the user asks, and say why in note.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        to_host: z.string().optional().describe("The new host's id or uid."),
+        auto: z.boolean().optional().describe("Let coss.com pick."),
+        from_host: z
+          .string()
+          .optional()
+          .describe("Who's leaving, when the booking has several hosts."),
+        reason_code: z.enum([
+          "host_unavailable",
+          "out_of_office",
+          "workload",
+          "customer_request",
+          "offboarding",
+          "other",
+        ]),
+        note: z.string().optional().describe("Why. Required with an availability override."),
+        overrides: z
+          .array(
+            z.enum([
+              "any_host",
+              "out_of_office",
+              "outside_availability",
+              "host_busy",
+              "limit_reached",
+              "calendar_unverified",
+            ]),
+          )
+          .optional(),
+        notify_attendee: z.boolean().optional().describe("Default: true."),
+      }),
+      annotations: SENDS,
+    },
+    ({ booking_id, to_host, auto, from_host, reason_code, note, overrides, notify_attendee }) =>
+      respond(
+        coss.scheduling.bookings.reassign(booking_id, {
+          changes: [given({ to_host, auto, from_host })],
+          reason_code,
+          ...given({ note, overrides }),
+          ...(notify_attendee === undefined ? {} : { notify: { attendee: notify_attendee } }),
+        }),
+        bookingSummary,
+      ),
+  );
+
+  const reassignmentSelection = z.object({
+    host: z.string().optional().describe("This host's bookings, by id or uid."),
+    out_of_office: z.string().optional().describe("The bookings that fall in this entry."),
+    booking_ids: z.array(z.string()).optional(),
+    series: z.string().optional().describe("A series' occurrences still to come."),
+    start_after: z.string().optional().describe("ISO 8601."),
+    start_before: z.string().optional().describe("ISO 8601."),
+    event_types: z.array(z.string()).optional(),
+    external_conflict: z
+      .boolean()
+      .optional()
+      .describe("Only those with something else on the host's calendar at that time."),
+  });
+  const reassignmentStrategy = z.object({
+    to_host: z.string().optional().describe("Give them all to this host."),
+    preferred_hosts: z.array(z.string()).optional().describe("Try these first, in order."),
+    otherwise: z
+      .enum(["auto", "leave"])
+      .optional()
+      .describe("After preferred_hosts: pick the fairest who's free, or leave it where it is."),
+    assignments: z
+      .array(
+        z.object({
+          booking: z.string(),
+          to_host: z.string(),
+          from_host: z.string().optional(),
+        }),
+      )
+      .optional()
+      .describe("Who each goes to: a preview, with any changes."),
+  });
+  const reassignmentOverrides = z
+    .array(
+      z.enum([
+        "any_host",
+        "out_of_office",
+        "outside_availability",
+        "host_busy",
+        "limit_reached",
+        "calendar_unverified",
+      ]),
+    )
+    .optional();
+
+  server.registerTool(
+    "preview_scheduling_reassignment",
+    {
+      title: "Preview a bulk reassignment",
+      description:
+        "Who each of many bookings would go to, and why not, without moving anything. Always call this before create_scheduling_reassignment and show the user what would happen.",
+      inputSchema: z.object({
+        selection: reassignmentSelection,
+        strategy: reassignmentStrategy.optional(),
+        overrides: reassignmentOverrides,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ selection, strategy, overrides }) =>
+      respond(
+        coss.scheduling.reassignments.preview({
+          selection,
+          ...given({ strategy, overrides }),
+        }),
+        (preview) => preview,
+      ),
+  );
+
+  server.registerTool(
+    "create_scheduling_reassignment",
+    {
+      title: "Start a bulk reassignment",
+      description:
+        "Moves many bookings to other hosts in the background, telling each host once and attendees per booking. A booking nobody can take stays where it is. Follow it with get_scheduling_reassignment. Only with the user's go-ahead on a preview.",
+      inputSchema: z.object({
+        selection: reassignmentSelection,
+        strategy: reassignmentStrategy.optional(),
+        reason_code: z.enum([
+          "host_unavailable",
+          "out_of_office",
+          "workload",
+          "customer_request",
+          "offboarding",
+          "other",
+        ]),
+        note: z.string().optional().describe("Why. Required with an availability override."),
+        overrides: reassignmentOverrides,
+        notify_attendees: z.boolean().optional().describe("Default: true."),
+      }),
+      annotations: SENDS,
+    },
+    ({ selection, strategy, reason_code, note, overrides, notify_attendees }) =>
+      respond(
+        coss.scheduling.reassignments.create({
+          selection,
+          reason_code,
+          ...given({ strategy, note, overrides }),
+          ...(notify_attendees === undefined ? {} : { notify: { attendees: notify_attendees } }),
+        }),
+        (run) => run,
+      ),
+  );
+
+  server.registerTool(
+    "get_scheduling_reassignment",
+    {
+      title: "Get a bulk reassignment",
+      description:
+        "How a run is going, with a count per outcome and what happened to each booking.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: READ_ONLY,
+    },
+    async ({ reassignment_id }) => {
+      const run = await coss.scheduling.reassignments.get(reassignment_id);
+      if (run.error) return respond(Promise.resolve(run), (value) => value);
+      return respond(
+        coss.scheduling.reassignments.items(reassignment_id, { limit: 100 }),
+        (items) => ({
+          ...run.data,
+          items: items.data,
+          more_items: items.has_more,
+        }),
+      );
+    },
+  );
+
+  server.registerTool(
+    "cancel_scheduling_reassignment",
+    {
+      title: "Cancel a bulk reassignment",
+      description: "Stops what hasn't happened yet. What's moved stays moved.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: WRITE,
+    },
+    ({ reassignment_id }) =>
+      respond(coss.scheduling.reassignments.cancel(reassignment_id), (run) => run),
+  );
+
+  server.registerTool(
+    "undo_scheduling_reassignment",
+    {
+      title: "Undo a bulk reassignment",
+      description:
+        "Gives back what a finished run moved, as a new run. A booking that's moved on since stays where it went. Everyone's told again.",
+      inputSchema: z.object({ reassignment_id: z.string() }),
+      annotations: SENDS,
+    },
+    ({ reassignment_id }) =>
+      respond(coss.scheduling.reassignments.undo(reassignment_id), (run) => run),
+  );
+
+  server.registerTool(
+    "list_scheduling_out_of_office",
+    {
+      title: "List out of office entries",
+      description: "Time hosts are away, newest first. Pass a host for one person's.",
+      inputSchema: z.object({
+        host: z.string().optional().describe("The host's id or uid."),
+        limit: limitSchema(20),
+        cursor: cursorSchema,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ host: hostRef, limit, cursor }) =>
+      respond(
+        coss.scheduling.outOfOffice.list({
+          limit,
+          ...(hostRef ? { host: hostRef } : {}),
+          ...(cursor ? { after: cursor } : {}),
+        }),
+        (page) => ({ entries: page.data, next_cursor: nextCursor(page) }),
+      ),
+  );
+
+  server.registerTool(
+    "create_scheduling_out_of_office",
+    {
+      title: "Mark hosts as away",
+      description:
+        "Stops hosts being offered during some time: start_date and end_date for whole days (the last one included), or start and end instants for part of a day. Give one of host, hosts and host_filter. Existing bookings stay and their host is emailed a count (see list_scheduling_out_of_office_conflicts), unless existing_bookings is reassign, which starts moving them and emails their attendees and hosts. public_message is shown to people booking, and can't hold a link.",
+      inputSchema: z.object({
+        delegates: z
+          .array(z.string())
+          .optional()
+          .describe("Who can be booked in their place during it, in order."),
+        existing_bookings: z
+          .enum(["leave", "reassign"])
+          .optional()
+          .describe(
+            "Bookings already in the way: only report them (the default), or move them to whoever's free.",
+          ),
+        host: z.string().optional(),
+        hosts: z.array(z.string()).optional(),
+        host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).optional(),
+        start: z.string().optional().describe("An ISO 8601 instant."),
+        end: z.string().optional().describe("An ISO 8601 instant."),
+        start_date: z.string().optional().describe("YYYY-MM-DD."),
+        end_date: z.string().optional().describe("YYYY-MM-DD, included."),
+        reason: z.string().optional(),
+        public_message: z.string().optional(),
+        notes: z.string().optional(),
+      }),
+      annotations: SENDS,
+    },
+    (args) =>
+      respond(
+        coss.scheduling.outOfOffice.create(given(args) as CreateSchedulingOutOfOfficeParams),
+        (page) => ({ entries: page.data }),
+      ),
+  );
+
+  server.registerTool(
+    "delete_scheduling_out_of_office",
+    {
+      title: "Remove an out of office entry",
+      description: "The host can be booked in that time again.",
+      inputSchema: z.object({ id: z.string().describe("The entry's id.") }),
+      annotations: DESTRUCTIVE,
+    },
+    ({ id }) => respond(coss.scheduling.outOfOffice.remove(id), (result) => result),
+  );
+
+  server.registerTool(
+    "list_scheduling_out_of_office_conflicts",
+    {
+      title: "List bookings in an out of office entry",
+      description:
+        "Live bookings of the host that fall in the entry, soonest first. Entries never change them: reassign_scheduling_booking does.",
+      inputSchema: z.object({ id: z.string().describe("The entry's id.") }),
+      annotations: READ_ONLY,
+    },
+    ({ id }) =>
+      respond(coss.scheduling.outOfOffice.conflicts(id), (page) => ({ bookings: page.data })),
+  );
+
+  server.registerTool(
+    "list_scheduling_booking_notifications",
+    {
+      title: "List a booking's notifications",
+      description:
+        "What's been queued for a booking and what became of it. Use it to answer why someone " +
+        "did or didn't get a reminder: `outcome` is null while waiting, `sent`, or the reason not. " +
+        "Newest first. It never says who a notification went to.",
+      inputSchema: z.object({
+        booking_id: bookingId,
+        limit: limitSchema(50),
+        cursor: cursorSchema,
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ booking_id, limit, cursor }) =>
+      respond(
+        coss.scheduling.bookings.notifications(booking_id, given({ limit, after: cursor })),
+        (page) => ({
+          next_cursor: nextCursor(page),
+          notifications: page.data.map((row) =>
+            compact({
+              kind: row.kind,
+              reminder_key: row.reminder_key,
+              channel: row.channel,
+              recipient: row.recipient,
+              due_at: row.due_at,
+              finished_at: row.finished_at,
+              outcome: row.outcome,
+            }),
+          ),
+        }),
+      ),
+  );
+
+  server.registerTool(
+    "mark_scheduling_no_show",
+    {
+      title: "Mark a booking as a no-show",
+      description:
+        "Records that the attendee didn't come, once the booking has started. Webhooks fire and " +
+        "any reminder timed from `no_show` is sent. It can't be undone; marking it again changes nothing.",
+      inputSchema: z.object({ booking_id: bookingId }),
+      annotations: SENDS,
+    },
+    ({ booking_id }) => respond(coss.scheduling.bookings.markNoShow(booking_id), bookingSummary),
+  );
+
+  server.registerTool(
+    "get_scheduling_reminders",
+    {
+      title: "Get scheduling reminders",
+      description:
+        "What goes out around a booking: the environment's list, or an event type's own with `event_type`. " +
+        "`reminders: null` on an event type means it inherits; on the environment, a reminder a day before.",
+      inputSchema: z.object({
+        event_type: z.string().optional().describe("An event type (id or uid)."),
+      }),
+      annotations: READ_ONLY,
+    },
+    ({ event_type }) =>
+      event_type
+        ? respond(coss.scheduling.eventTypes.get(event_type), (found) => ({
+            event_type: found.id,
+            reminders: found.reminders,
+          }))
+        : respond(coss.scheduling.settings.get(), (found) => ({ reminders: found.reminders })),
+  );
+
+  server.registerTool(
+    "save_scheduling_reminders",
+    {
+      title: "Save scheduling reminders",
+      description:
+        "Replaces the whole list, for the environment or one event type (`null` goes back to " +
+        "inheriting). Each entry says when (`anchor` with `before_minutes` or `after_minutes`) and who " +
+        "(`send`, `email_to`), and optionally its own `subject`, `message` or `sms_message` with " +
+        "{{variables}}, a `button` and `only_if`. Upcoming bookings pick it up, so reminders can reach " +
+        "people as a result. read_docs on /docs/scheduling/reminders has the details.",
+      inputSchema: z.object({
+        event_type: z
+          .string()
+          .optional()
+          .describe("An event type (id or uid). Default: all of them."),
+        reminders: z.array(z.record(z.string(), z.unknown())).nullable(),
+      }),
+      annotations: SENDS,
+    },
+    ({ event_type, reminders }) => {
+      const list = reminders as SchedulingReminderInput[] | null;
+      return event_type
+        ? respond(coss.scheduling.eventTypes.update(event_type, { reminders: list }), (found) => ({
+            event_type: found.id,
+            reminders: found.reminders,
+          }))
+        : respond(coss.scheduling.settings.update({ reminders: list }), (found) => ({
+            reminders: found.reminders,
+          }));
+    },
+  );
+
+  server.registerTool(
     "create_scheduling_session",
     {
       title: "Create a scheduling session",
@@ -519,13 +929,22 @@ export function registerSchedulingTools(ctx: ToolContext): void {
         host: z.string().optional(),
         event_type: z.string().optional(),
         booking_id: z.string().optional(),
+        manager_hosts: z
+          .array(z.string())
+          .optional()
+          .describe("A team lead's page for these hosts: who's away, and moving their bookings."),
         expires_in: z.number().int().optional().describe("Seconds."),
       }),
       annotations: WRITE,
     },
-    ({ host: hostRef, event_type, booking_id, expires_in }) => {
-      if ([hostRef, event_type, booking_id].filter(Boolean).length !== 1) {
-        return failWith("Pass exactly one of host, event_type and booking_id.");
+    ({ host: hostRef, event_type, booking_id, manager_hosts, expires_in }) => {
+      if ([hostRef, event_type, booking_id, manager_hosts].filter(Boolean).length !== 1) {
+        return failWith("Pass exactly one of host, event_type, booking_id and manager_hosts.");
+      }
+      if (manager_hosts) {
+        return respond(
+          coss.scheduling.sessions.createForManager(given({ hosts: manager_hosts, expires_in })),
+        );
       }
       if (booking_id) return respond(coss.scheduling.sessions.createForBooking(booking_id));
       if (event_type) {

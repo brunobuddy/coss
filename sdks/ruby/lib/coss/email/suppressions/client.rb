@@ -244,6 +244,8 @@ module Coss
           raise error_class.new(response.body, code: code)
         end
 
+        # One entry of the suppression list of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

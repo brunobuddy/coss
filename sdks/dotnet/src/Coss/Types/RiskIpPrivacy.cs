@@ -11,12 +11,21 @@ public record RiskIpPrivacy : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Whether it's a VPN exit.
+    /// </summary>
     [JsonPropertyName("vpn")]
     public required bool Vpn { get; set; }
 
+    /// <summary>
+    /// Whether it's a proxy.
+    /// </summary>
     [JsonPropertyName("proxy")]
     public required bool Proxy { get; set; }
 
+    /// <summary>
+    /// Whether it's a privacy relay.
+    /// </summary>
     [JsonPropertyName("relay")]
     public required bool Relay { get; set; }
 

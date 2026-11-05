@@ -97,18 +97,30 @@ public class InboxesClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public Inbox get(String inboxId) {
         return this.rawClient.get(inboxId).body();
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public Inbox get(String inboxId, RequestOptions requestOptions) {
         return this.rawClient.get(inboxId, requestOptions).body();
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public Inbox get(String inboxId, GetInboxesRequest request) {
         return this.rawClient.get(inboxId, request).body();
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public Inbox get(String inboxId, GetInboxesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(inboxId, request, requestOptions).body();
     }

@@ -13,7 +13,7 @@ public record CreateSignTemplateRequestRolesItem : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     /// <summary>
-    /// The role's key, e.g. `client`.
+    /// The role's id within the template, used by fields and signers.
     /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }

@@ -107,6 +107,8 @@ class DocumentsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SignDocument:
         """
+        An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+
         Parameters
         ----------
         id : str
@@ -278,6 +280,8 @@ class AsyncDocumentsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SignDocument:
         """
+        An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+
         Parameters
         ----------
         id : str

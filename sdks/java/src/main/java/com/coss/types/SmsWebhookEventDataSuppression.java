@@ -32,11 +32,17 @@ public final class SmsWebhookEventDataSuppression {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The suppression's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return Why the number is suppressed.
+     */
     @JsonProperty("reason")
     public SmsWebhookEventDataSuppressionReason getReason() {
         return reason;
@@ -72,12 +78,18 @@ public final class SmsWebhookEventDataSuppression {
     }
 
     public interface IdStage {
+        /**
+         * <p>The suppression's id.</p>
+         */
         ReasonStage id(@NotNull String id);
 
         Builder from(SmsWebhookEventDataSuppression other);
     }
 
     public interface ReasonStage {
+        /**
+         * <p>Why the number is suppressed.</p>
+         */
         _FinalStage reason(@NotNull SmsWebhookEventDataSuppressionReason reason);
     }
 
@@ -107,6 +119,10 @@ public final class SmsWebhookEventDataSuppression {
             return this;
         }
 
+        /**
+         * <p>The suppression's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public ReasonStage id(@NotNull String id) {
@@ -114,6 +130,10 @@ public final class SmsWebhookEventDataSuppression {
             return this;
         }
 
+        /**
+         * <p>Why the number is suppressed.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("reason")
         public _FinalStage reason(@NotNull SmsWebhookEventDataSuppressionReason reason) {

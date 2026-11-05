@@ -71,6 +71,8 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// One submission of the form, with its data, files and Risk's assessment.
+//
 // Example:
 //
 //	request := &forms.GetSubmissionsRequest{

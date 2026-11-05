@@ -9,8 +9,16 @@ from .audience_contacts_added_object import AudienceContactsAddedObject
 
 class AudienceContactsAdded(UniversalBaseModel):
     object: AudienceContactsAddedObject
-    added: int
-    existing: int
+    added: int = pydantic.Field()
+    """
+    Contacts newly added.
+    """
+
+    existing: int = pydantic.Field()
+    """
+    Contacts that were already members.
+    """
+
     missing: typing.List[str] = pydantic.Field()
     """
     Ids or addresses of no contact.

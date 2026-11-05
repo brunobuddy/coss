@@ -17,42 +17,78 @@ public record EmailMessage : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Who it's sent from.
+    /// </summary>
     [JsonPropertyName("from")]
     public required string From { get; set; }
 
+    /// <summary>
+    /// The `To` addresses.
+    /// </summary>
     [JsonPropertyName("to")]
     public IEnumerable<string> To { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `Cc` addresses.
+    /// </summary>
     [JsonPropertyName("cc")]
     public IEnumerable<string> Cc { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `Bcc` addresses.
+    /// </summary>
     [JsonPropertyName("bcc")]
     public IEnumerable<string> Bcc { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `Reply-To` addresses.
+    /// </summary>
     [JsonPropertyName("reply_to")]
     public IEnumerable<string> ReplyTo { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The subject, rendered if it came from a template.
+    /// </summary>
     [JsonPropertyName("subject")]
     public required string Subject { get; set; }
 
+    /// <summary>
+    /// The HTML part. `null`: none, or the body was discarded.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("html")]
     public string? Html { get; set; }
 
+    /// <summary>
+    /// The plain text part. `null`: none, or the body was discarded.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("text")]
     public string? Text { get; set; }
 
+    /// <summary>
+    /// The custom headers it was sent with.
+    /// </summary>
     [JsonPropertyName("headers")]
     public Dictionary<string, string> Headers { get; set; } = new Dictionary<string, string>();
 
+    /// <summary>
+    /// Your tags on the email.
+    /// </summary>
     [JsonPropertyName("tags")]
     public IEnumerable<EmailMessageTagsItem> Tags { get; set; } = new List<EmailMessageTagsItem>();
 
+    /// <summary>
+    /// The email's category, which suppressions and tracking rules can scope to. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("category")]
     public string? Category { get; set; }
 
+    /// <summary>
+    /// `transactional` or `marketing`.
+    /// </summary>
     [JsonPropertyName("stream")]
     public required EmailMessageStream Stream { get; set; }
 
@@ -69,6 +105,9 @@ public record EmailMessage : IJsonOnDeserialized
     [JsonPropertyName("failure")]
     public EmailFailure? Failure { get; set; }
 
+    /// <summary>
+    /// Each recipient, with how delivery to them went.
+    /// </summary>
     [JsonPropertyName("recipients")]
     public IEnumerable<EmailRecipient> Recipients { get; set; } = new List<EmailRecipient>();
 
@@ -90,6 +129,9 @@ public record EmailMessage : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When it was handed to the provider. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("sent_at")]
     public DateTime? SentAt { get; set; }

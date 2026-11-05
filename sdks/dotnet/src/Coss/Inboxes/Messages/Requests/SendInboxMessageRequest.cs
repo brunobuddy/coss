@@ -20,13 +20,22 @@ public record SendInboxMessageRequest
     [JsonIgnore]
     public string? IdempotencyKey { get; set; }
 
+    /// <summary>
+    /// Who it goes to.
+    /// </summary>
     [JsonPropertyName("to")]
     public required OneOf<string, IEnumerable<string>> To { get; set; }
 
+    /// <summary>
+    /// Who it's copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("cc")]
     public OneOf<string, IEnumerable<string>>? Cc { get; set; }
 
+    /// <summary>
+    /// Who it's blind copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("bcc")]
     public OneOf<string, IEnumerable<string>>? Bcc { get; set; }
@@ -58,6 +67,9 @@ public record SendInboxMessageRequest
     [JsonPropertyName("attachments")]
     public IEnumerable<SendEmailAttachment>? Attachments { get; set; }
 
+    /// <summary>
+    /// Your tags on the email.
+    /// </summary>
     [Optional]
     [JsonPropertyName("tags")]
     public IEnumerable<SendInboxMessageRequestTagsItem>? Tags { get; set; }

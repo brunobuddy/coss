@@ -29,6 +29,7 @@ const EVENT_TYPE: EventTypeObjectOutput = {
   limits: [{ period: "day", max: 8, scope: "host" }],
   capacity: null,
   requires_approval: true,
+  reassignment_enabled: true,
   approval_ttl_minutes: 1440,
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 60,
@@ -49,6 +50,8 @@ const EVENT_TYPE: EventTypeObjectOutput = {
     { type: "in_person", address: "1 Main St" },
   ],
   host_filter: { licensed_in: ["CA", "NY"] },
+  notifications: null,
+  reminders: null,
   hosts: [
     { host: "host_a", role: "required", weight: 100, schedule: null },
     { host: "host_b", role: "member", weight: 50, schedule: "sched_1" },
@@ -198,6 +201,13 @@ describe("the event type form", () => {
       }),
     );
     expect(changes).toEqual({ max_guests: 5, host_calendar_details: "neutral" });
+  });
+
+  test("whether a booking can go to another host is one of the form's", () => {
+    const state = eventTypeFormState(EVENT_TYPE);
+    expect(state.reassignmentEnabled).toBe(true);
+    state.reassignmentEnabled = false;
+    expect(eventTypePayload(state, "pool").reassignment_enabled).toBe(false);
   });
 
   test("a group never sends guests, which the API would refuse", () => {

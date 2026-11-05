@@ -11,6 +11,9 @@ public record SubaccountStatsDay : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The UTC date.
+    /// </summary>
     [JsonPropertyName("date")]
     public required DateOnly Date { get; set; }
 
@@ -26,15 +29,27 @@ public record SubaccountStatsDay : IJsonOnDeserialized
     [JsonPropertyName("sent")]
     public required long Sent { get; set; }
 
+    /// <summary>
+    /// Deliveries that day.
+    /// </summary>
     [JsonPropertyName("delivered")]
     public required long Delivered { get; set; }
 
+    /// <summary>
+    /// Bounces that day.
+    /// </summary>
     [JsonPropertyName("bounced")]
     public required long Bounced { get; set; }
 
+    /// <summary>
+    /// Complaints that day.
+    /// </summary>
     [JsonPropertyName("complained")]
     public required long Complained { get; set; }
 
+    /// <summary>
+    /// Failures that day.
+    /// </summary>
     [JsonPropertyName("failed")]
     public required long Failed { get; set; }
 

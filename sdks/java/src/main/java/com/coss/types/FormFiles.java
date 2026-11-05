@@ -44,21 +44,33 @@ public final class FormFiles {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether uploads are accepted (<code>multipart/form-data</code>).
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
     }
 
+    /**
+     * @return Most files per submission.
+     */
     @JsonProperty("max_files")
     public long getMaxFiles() {
         return maxFiles;
     }
 
+    /**
+     * @return Largest file, in bytes.
+     */
     @JsonProperty("max_file_bytes")
     public long getMaxFileBytes() {
         return maxFileBytes;
     }
 
+    /**
+     * @return MIME types accepted. Empty: images, PDFs, text and Office.
+     */
     @JsonProperty("allowed_types")
     public List<String> getAllowedTypes() {
         return allowedTypes;
@@ -97,16 +109,25 @@ public final class FormFiles {
     }
 
     public interface EnabledStage {
+        /**
+         * <p>Whether uploads are accepted (<code>multipart/form-data</code>).</p>
+         */
         MaxFilesStage enabled(boolean enabled);
 
         Builder from(FormFiles other);
     }
 
     public interface MaxFilesStage {
+        /**
+         * <p>Most files per submission.</p>
+         */
         MaxFileBytesStage maxFiles(long maxFiles);
     }
 
     public interface MaxFileBytesStage {
+        /**
+         * <p>Largest file, in bytes.</p>
+         */
         _FinalStage maxFileBytes(long maxFileBytes);
     }
 
@@ -117,6 +138,9 @@ public final class FormFiles {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>MIME types accepted. Empty: images, PDFs, text and Office.</p>
+         */
         _FinalStage allowedTypes(List<String> allowedTypes);
 
         _FinalStage addAllowedTypes(String allowedTypes);
@@ -148,6 +172,10 @@ public final class FormFiles {
             return this;
         }
 
+        /**
+         * <p>Whether uploads are accepted (<code>multipart/form-data</code>).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public MaxFilesStage enabled(boolean enabled) {
@@ -155,6 +183,10 @@ public final class FormFiles {
             return this;
         }
 
+        /**
+         * <p>Most files per submission.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("max_files")
         public MaxFileBytesStage maxFiles(long maxFiles) {
@@ -162,6 +194,10 @@ public final class FormFiles {
             return this;
         }
 
+        /**
+         * <p>Largest file, in bytes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("max_file_bytes")
         public _FinalStage maxFileBytes(long maxFileBytes) {
@@ -169,6 +205,10 @@ public final class FormFiles {
             return this;
         }
 
+        /**
+         * <p>MIME types accepted. Empty: images, PDFs, text and Office.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllAllowedTypes(List<String> allowedTypes) {
             if (allowedTypes != null) {
@@ -177,12 +217,19 @@ public final class FormFiles {
             return this;
         }
 
+        /**
+         * <p>MIME types accepted. Empty: images, PDFs, text and Office.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllowedTypes(String allowedTypes) {
             this.allowedTypes.add(allowedTypes);
             return this;
         }
 
+        /**
+         * <p>MIME types accepted. Empty: images, PDFs, text and Office.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "allowed_types", nulls = Nulls.SKIP)
         public _FinalStage allowedTypes(List<String> allowedTypes) {

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # A number sends skip.
     class SmsSuppressionCheckSuppression < Internal::Types::Model
       field :object, -> { Coss::Types::SmsSuppressionCheckSuppressionObject }, optional: false, nullable: false
 

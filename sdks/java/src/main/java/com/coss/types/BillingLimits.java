@@ -50,6 +50,9 @@ public final class BillingLimits {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Sending domains. <code>null</code>: unlimited.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("domains")
     public OptionalNullable<Long> getDomains() {
@@ -59,6 +62,9 @@ public final class BillingLimits {
         return domains;
     }
 
+    /**
+     * @return Members of the organization. <code>null</code>: unlimited.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("members")
     public OptionalNullable<Long> getMembers() {
@@ -68,6 +74,9 @@ public final class BillingLimits {
         return members;
     }
 
+    /**
+     * @return Webhook endpoints per environment. <code>null</code>: unlimited.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("webhook_endpoints_per_environment")
     public OptionalNullable<Long> getWebhookEndpointsPerEnvironment() {
@@ -77,6 +86,9 @@ public final class BillingLimits {
         return webhookEndpointsPerEnvironment;
     }
 
+    /**
+     * @return Contacts per environment. <code>null</code>: unlimited.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("contacts_per_environment")
     public OptionalNullable<Long> getContactsPerEnvironment() {
@@ -86,6 +98,9 @@ public final class BillingLimits {
         return contactsPerEnvironment;
     }
 
+    /**
+     * @return Inboxes. <code>null</code>: unlimited.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("inboxes")
     public OptionalNullable<Long> getInboxes() {
@@ -189,6 +204,9 @@ public final class BillingLimits {
             return this;
         }
 
+        /**
+         * <p>Sending domains. <code>null</code>: unlimited.</p>
+         */
         @JsonSetter(value = "domains", nulls = Nulls.SKIP)
         public Builder domains(OptionalNullable<Long> domains) {
             this.domains = domains;
@@ -220,6 +238,9 @@ public final class BillingLimits {
             return this;
         }
 
+        /**
+         * <p>Members of the organization. <code>null</code>: unlimited.</p>
+         */
         @JsonSetter(value = "members", nulls = Nulls.SKIP)
         public Builder members(OptionalNullable<Long> members) {
             this.members = members;
@@ -251,6 +272,9 @@ public final class BillingLimits {
             return this;
         }
 
+        /**
+         * <p>Webhook endpoints per environment. <code>null</code>: unlimited.</p>
+         */
         @JsonSetter(value = "webhook_endpoints_per_environment", nulls = Nulls.SKIP)
         public Builder webhookEndpointsPerEnvironment(OptionalNullable<Long> webhookEndpointsPerEnvironment) {
             this.webhookEndpointsPerEnvironment = webhookEndpointsPerEnvironment;
@@ -282,6 +306,9 @@ public final class BillingLimits {
             return this;
         }
 
+        /**
+         * <p>Contacts per environment. <code>null</code>: unlimited.</p>
+         */
         @JsonSetter(value = "contacts_per_environment", nulls = Nulls.SKIP)
         public Builder contactsPerEnvironment(OptionalNullable<Long> contactsPerEnvironment) {
             this.contactsPerEnvironment = contactsPerEnvironment;
@@ -313,6 +340,9 @@ public final class BillingLimits {
             return this;
         }
 
+        /**
+         * <p>Inboxes. <code>null</code>: unlimited.</p>
+         */
         @JsonSetter(value = "inboxes", nulls = Nulls.SKIP)
         public Builder inboxes(OptionalNullable<Long> inboxes) {
             this.inboxes = inboxes;

@@ -56,9 +56,15 @@ public record SignFieldInputDocument : IJsonOnDeserialized
     [JsonPropertyName("y")]
     public required double Y { get; set; }
 
+    /// <summary>
+    /// In PDF points.
+    /// </summary>
     [JsonPropertyName("width")]
     public required double Width { get; set; }
 
+    /// <summary>
+    /// In PDF points.
+    /// </summary>
     [JsonPropertyName("height")]
     public required double Height { get; set; }
 

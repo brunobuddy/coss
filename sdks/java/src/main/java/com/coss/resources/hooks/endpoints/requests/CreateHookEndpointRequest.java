@@ -62,6 +62,9 @@ public final class CreateHookEndpointRequest {
         return url;
     }
 
+    /**
+     * @return Your note about it.
+     */
     @JsonProperty("description")
     public Optional<String> getDescription() {
         return description;
@@ -99,6 +102,9 @@ public final class CreateHookEndpointRequest {
         return metadata;
     }
 
+    /**
+     * @return Default <code>true</code>. <code>false</code> creates it disabled, with <code>disabled_reason: manual</code>.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -159,6 +165,9 @@ public final class CreateHookEndpointRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your note about it.</p>
+         */
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
@@ -191,6 +200,9 @@ public final class CreateHookEndpointRequest {
 
         _FinalStage metadata(Map<String, String> metadata);
 
+        /**
+         * <p>Default <code>true</code>. <code>false</code> creates it disabled, with <code>disabled_reason: manual</code>.</p>
+         */
         _FinalStage enabled(Optional<Boolean> enabled);
 
         _FinalStage enabled(Boolean enabled);
@@ -236,12 +248,19 @@ public final class CreateHookEndpointRequest {
             return this;
         }
 
+        /**
+         * <p>Default <code>true</code>. <code>false</code> creates it disabled, with <code>disabled_reason: manual</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage enabled(Boolean enabled) {
             this.enabled = Optional.ofNullable(enabled);
             return this;
         }
 
+        /**
+         * <p>Default <code>true</code>. <code>false</code> creates it disabled, with <code>disabled_reason: manual</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public _FinalStage enabled(Optional<Boolean> enabled) {
@@ -329,12 +348,19 @@ public final class CreateHookEndpointRequest {
             return this;
         }
 
+        /**
+         * <p>Your note about it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = Optional.ofNullable(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(Optional<String> description) {

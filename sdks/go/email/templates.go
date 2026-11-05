@@ -23,7 +23,8 @@ type CreateEmailTemplateRequest struct {
 	// Shown in the dashboard.
 	Name string `json:"name" url:"-"`
 	// A name to send the template by instead of its id, e.g. `welcome`: the same alias can be used in every environment.
-	Alias       *string `json:"alias,omitempty" url:"-"`
+	Alias *string `json:"alias,omitempty" url:"-"`
+	// Your note about it, shown in the dashboard.
 	Description *string `json:"description,omitempty" url:"-"`
 	// The locale sends fall back to when they ask for none, or for one without content. Defaults to the first entry of `contents` (or "en").
 	DefaultLocale *string `json:"default_locale,omitempty" url:"-"`
@@ -386,10 +387,12 @@ var (
 
 type UpdateEmailTemplateRequest struct {
 	// The template's id or alias.
-	ID   string  `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Shown in the dashboard.
 	Name *string `json:"name,omitempty" url:"-"`
 	// `null` removes the alias.
-	Alias       *string `json:"alias,omitempty" url:"-"`
+	Alias *string `json:"alias,omitempty" url:"-"`
+	// Your note about it. `null` removes it.
 	Description *string `json:"description,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

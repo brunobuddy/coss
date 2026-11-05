@@ -49,6 +49,9 @@ public record AuditEvent : IJsonOnDeserialized
     [JsonPropertyName("target_type")]
     public string? TargetType { get; set; }
 
+    /// <summary>
+    /// The id of what it acted on. `null`: nothing in particular.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("target_id")]
     public string? TargetId { get; set; }
@@ -80,10 +83,16 @@ public record AuditEvent : IJsonOnDeserialized
     [JsonPropertyName("metadata")]
     public Dictionary<string, object?> Metadata { get; set; } = new Dictionary<string, object?>();
 
+    /// <summary>
+    /// The actor's address. `null`: unknown.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("client_ip")]
     public string? ClientIp { get; set; }
 
+    /// <summary>
+    /// The actor's `User-Agent`. `null`: unknown.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("user_agent")]
     public string? UserAgent { get; set; }

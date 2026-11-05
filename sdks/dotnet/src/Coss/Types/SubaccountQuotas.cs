@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Its own sending limits.
+/// </summary>
 [Serializable]
 public record SubaccountQuotas : IJsonOnDeserialized
 {

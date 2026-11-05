@@ -9,8 +9,16 @@ from .create_sign_request_request_signers_item_delivery import CreateSignRequest
 
 
 class CreateSignRequestRequestSignersItem(UniversalBaseModel):
-    name: str
-    email: str
+    name: str = pydantic.Field()
+    """
+    Shown on the signing page and on the certificate.
+    """
+
+    email: str = pydantic.Field()
+    """
+    Where a `delivery: email` signer gets their link. Unique within a request.
+    """
+
     delivery: typing.Optional[CreateSignRequestRequestSignersItemDelivery] = pydantic.Field(default=None)
     """
     `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page (create a session) and vouches for who the signer is.

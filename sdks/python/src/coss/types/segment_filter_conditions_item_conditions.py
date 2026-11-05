@@ -11,8 +11,15 @@ from .segment_filter_conditions_item_conditions_match import SegmentFilterCondit
 
 
 class SegmentFilterConditionsItemConditions(UniversalBaseModel):
-    match: SegmentFilterConditionsItemConditionsMatch
-    conditions: typing.List[SegmentFilterConditionsItemConditionsConditionsItem]
+    match: SegmentFilterConditionsItemConditionsMatch = pydantic.Field()
+    """
+    `all`: every condition must hold; `any`: one is enough.
+    """
+
+    conditions: typing.List[SegmentFilterConditionsItemConditionsConditionsItem] = pydantic.Field()
+    """
+    The group's conditions.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

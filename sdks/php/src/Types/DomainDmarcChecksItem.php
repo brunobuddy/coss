@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class DomainDmarcChecksItem extends JsonSerializableType
 {
     /**
-     * @var value-of<DomainDmarcChecksItemId> $id
+     * @var value-of<DomainDmarcChecksItemId> $id Which check this is.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var bool $ok
+     * @var bool $ok Whether it passes.
      */
     #[JsonProperty('ok')]
     public bool $ok;
 
     /**
-     * @var string $message
+     * @var string $message What it found.
      */
     #[JsonProperty('message')]
     public string $message;

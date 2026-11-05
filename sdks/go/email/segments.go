@@ -15,6 +15,7 @@ var (
 )
 
 type CreateSegmentRequest struct {
+	// Your name for the segment, unique in the environment.
 	Name   string                `json:"name" url:"-"`
 	Filter *cossgo.SegmentFilter `json:"filter" url:"-"`
 
@@ -216,7 +217,8 @@ var (
 
 type UpdateSegmentRequest struct {
 	// The segment's id.
-	ID     string                `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Your name for the segment, unique in the environment.
 	Name   *string               `json:"name,omitempty" url:"-"`
 	Filter *cossgo.SegmentFilter `json:"filter,omitempty" url:"-"`
 

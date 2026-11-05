@@ -3,6 +3,7 @@
  * Wire-level drift between the API and the SDK's hand-written types fails here or in
  * contract-types.ts (compile time).
  */
+
 import { describe, expect, test } from "bun:test";
 import { createCreditGrant, runDueBillingPeriods } from "@coss/billing";
 import { createTestContract, recordTestUsage } from "@coss/billing/testing";
@@ -25,6 +26,8 @@ import { createLogWriter } from "@coss/logs";
 import { cachedOverrides, setRateLimitOverride } from "@coss/ratelimit";
 import { memoryLimiter } from "@coss/ratelimit/testing";
 import { suspendOrganization } from "@coss/reputation";
+import { runDueReassignments } from "@coss/scheduling";
+import { testSchedulingDeps } from "@coss/scheduling/testing";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { API_VERSIONS, LATEST_API_VERSION } from "@coss/versioning";
 import {
@@ -1966,6 +1969,330 @@ describe("coss.risk checkouts, devices and calibration against the API", () => {
   });
 });
 
+describe("coss.scheduling.holidayCalendars against the API", () => {
+  test("creates, reads, changes and removes one", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const host = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const created = await scheduling.holidayCalendars.create({
+      name: "UK",
+      country: "GB",
+      hosts: ["first"],
+      regions: ["England"],
+    });
+    const calendar = must(created.data);
+    expect(calendar).toMatchObject({
+      object: "scheduling.holiday_calendar",
+      source: "country",
+      country: "GB",
+      hosts: [host.id],
+      regions: ["England"],
+    });
+    const list = must((await scheduling.holidayCalendars.list()).data);
+    expect(list.data.map((row) => row.id)).toContain(calendar.id);
+    expect(must((await scheduling.holidayCalendars.get(calendar.id)).data).name).toBe("UK");
+    expect(must((await scheduling.holidayCalendars.holidays(calendar.id)).data).object).toBe(
+      "list",
+    );
+    const renamed = must(
+      (await scheduling.holidayCalendars.update(calendar.id, { name: "London" })).data,
+    );
+    expect(renamed.name).toBe("London");
+    const sandboxFeed = await scheduling.holidayCalendars.create({
+      name: "Feed",
+      ics_url: "https://example.com/holidays.ics",
+      hosts: ["first"],
+    });
+    expect(sandboxFeed.error?.code).toBe("invalid_holiday_calendar");
+    expect(must((await scheduling.holidayCalendars.remove(calendar.id)).data).deleted).toBe(true);
+    expect((await scheduling.holidayCalendars.get(calendar.id)).error?.code).toBe("not_found");
+  });
+});
+
+describe("coss.scheduling.reassignments against the API", () => {
+  test("previews, runs, reports, undoes and cancels", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    const first = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const second = must(
+      (await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" })).data,
+    );
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: pool.id,
+          start: "2031-01-06T10:00:00.000Z",
+          host: "first",
+          attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+    const preview = must(
+      (
+        await scheduling.reassignments.preview({
+          selection: { host: "first" },
+          strategy: { preferred_hosts: ["second"] },
+        })
+      ).data,
+    );
+    expect(preview.items[0]).toMatchObject({ booking: booking.id, to_host: second.id });
+
+    const created = await scheduling.reassignments.create(
+      {
+        selection: { host: "first" },
+        strategy: { to_host: "second" },
+        reason_code: "out_of_office",
+      },
+      { idempotencyKey: "move-them" },
+    );
+    const run = must(created.data);
+    expect(run).toMatchObject({ object: "scheduling.reassignment", status: "pending" });
+    const replay = await scheduling.reassignments.create(
+      {
+        selection: { host: "first" },
+        strategy: { to_host: "second" },
+        reason_code: "out_of_office",
+      },
+      { idempotencyKey: "move-them" },
+    );
+    expect(replay.data?.id).toBe(run.id);
+
+    const early = await scheduling.reassignments.undo(run.id);
+    expect(early.error?.code).toBe("reassignment_not_finished");
+
+    const deps = testSchedulingDeps();
+    await runDueReassignments(deps, { scope: { organizationIds: [tenant.organization.id] } });
+    const done = must((await scheduling.reassignments.get(run.id)).data);
+    expect(done.status).toBe("completed");
+    expect(done.counts.reassigned).toBe(1);
+    const items = must((await scheduling.reassignments.items(run.id)).data);
+    expect(items.data[0]).toMatchObject({
+      object: "scheduling.reassignment_item",
+      booking: booking.id,
+      from_host: first.id,
+      to_host: second.id,
+      outcome: "reassigned",
+    });
+    const list = must((await scheduling.reassignments.list()).data);
+    expect(list.data.map((row) => row.id)).toContain(run.id);
+
+    const undo = must((await scheduling.reassignments.undo(run.id)).data);
+    expect(undo.undo_of).toBe(run.id);
+    const cancelled = must((await scheduling.reassignments.cancel(undo.id)).data);
+    expect(cancelled.status).toBe("cancelled");
+  });
+
+  test("an out of office entry can start one", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" });
+    await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" });
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    await scheduling.bookings.create({
+      event_type: pool.id,
+      start: "2031-01-06T10:00:00.000Z",
+      host: "first",
+      attendee: { uid: "p", name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+    });
+    const entries = must(
+      (
+        await scheduling.outOfOffice.create({
+          host: "first",
+          start: "2031-01-06T09:00:00.000Z",
+          end: "2031-01-06T18:00:00.000Z",
+          existing_bookings: "reassign",
+          reassign: { preferred_hosts: ["second"] },
+        })
+      ).data,
+    );
+    expect(entries.data[0]?.existing_bookings).toBe("reassign");
+    const runs = must((await scheduling.reassignments.list()).data);
+    expect(runs.data[0]?.out_of_office).toBe(entries.data[0]?.id as string);
+  });
+});
+
+describe("coss.scheduling.bookings.reassign against the API", () => {
+  test("lists who could take it, gives it to them, and refuses what it should", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const rules = [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }];
+    const first = must(
+      (await scheduling.hosts.create({ uid: "first", name: "First", time_zone: "UTC" })).data,
+    );
+    const second = must(
+      (await scheduling.hosts.create({ uid: "second", name: "Second", time_zone: "UTC" })).data,
+    );
+    await scheduling.schedules.create("first", { rules });
+    await scheduling.schedules.create("second", { rules });
+    const pool = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          kind: "pool",
+          duration_minutes: 30,
+          hosts: [{ host: "first" }, { host: "second" }],
+        })
+      ).data,
+    );
+    expect(pool.reassignment_enabled).toBe(true);
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: pool.id,
+          host: "first",
+          start: "2031-01-06T10:00:00.000Z",
+          attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+    const candidates = await scheduling.bookings.reassignCandidates(booking.id);
+    expect(candidates.data?.data[0]).toMatchObject({
+      object: "scheduling.reassign_candidate",
+      host: second.id,
+      member: true,
+      available: true,
+      reason: null,
+    });
+    const moved = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ to_host: "second" }],
+      reason_code: "out_of_office",
+    });
+    expect(moved.data?.hosts).toEqual([second.id]);
+    expect(moved.data?.id).toBe(booking.id);
+    const again = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ to_host: "second" }],
+      reason_code: "other",
+    });
+    expect(again.error?.code).toBe("invalid_reassignment");
+    const back = await scheduling.bookings.reassign(booking.id, {
+      changes: [{ auto: true }],
+      reason_code: "workload",
+    });
+    expect(back.data?.hosts).toEqual([first.id]);
+  });
+});
+
+describe("coss.scheduling.outOfOffice against the API", () => {
+  test("marks a host away, stops offering them, shows conflicts and takes it back", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+    const host = must(
+      (await scheduling.hosts.create({ uid: "doctor_1", name: "Dr. Reyes", time_zone: "UTC" }))
+        .data,
+    );
+    await scheduling.schedules.create("doctor_1", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "09:00", end: "17:00" }],
+    });
+    const eventType = must(
+      (
+        await scheduling.eventTypes.create({
+          title: "Consultation",
+          duration_minutes: 30,
+          hosts: [{ host: "doctor_1" }],
+        })
+      ).data,
+    );
+    const booking = must(
+      (
+        await scheduling.bookings.create({
+          event_type: eventType.id,
+          start: "2031-01-06T10:00:00.000Z",
+          attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+        })
+      ).data,
+    );
+
+    const created = must(
+      (
+        await scheduling.outOfOffice.create({
+          host: "doctor_1",
+          start_date: "2031-01-06",
+          end_date: "2031-01-06",
+          reason: "vacation",
+          notes: "Lisbon",
+          public_message: "Back on Tuesday.",
+        })
+      ).data,
+    );
+    const entry = must(created.data[0]);
+    expect(entry).toMatchObject({
+      object: "scheduling.out_of_office",
+      host: host.id,
+      reason: "vacation",
+      notes: "Lisbon",
+      source: "api",
+      all_day: { start_date: "2031-01-06", end_date: "2031-01-06", time_zone: "UTC" },
+    });
+    expect((await scheduling.outOfOffice.get(entry.id)).data?.id).toBe(entry.id);
+    expect((await scheduling.outOfOffice.list({ host: "doctor_1" })).data?.data.length).toBe(1);
+    const slots = await scheduling.slots.list(eventType.id, {
+      start: "2031-01-06T00:00:00.000Z",
+      end: "2031-01-07T00:00:00.000Z",
+    });
+    expect(slots.data?.data).toEqual([]);
+    const conflicts = await scheduling.outOfOffice.conflicts(entry.id);
+    expect(conflicts.data?.data.map((conflict) => conflict.booking)).toEqual([booking.id]);
+    expect((await scheduling.bookings.get(booking.id)).data?.status).toBe("confirmed");
+
+    const moved = await scheduling.outOfOffice.update(entry.id, { end_date: "2031-01-07" });
+    expect(moved.data?.all_day?.end_date).toBe("2031-01-07");
+    const synced = await scheduling.outOfOffice.put("leave_1", {
+      host: "doctor_1",
+      start_date: "2031-02-03",
+      end_date: "2031-02-03",
+    });
+    expect(synced.data?.external_id).toBe("leave_1");
+    const again = await scheduling.outOfOffice.put("leave_1", {
+      host: "doctor_1",
+      start_date: "2031-02-04",
+      end_date: "2031-02-04",
+    });
+    expect(again.data?.id).toBe(must(synced.data).id);
+
+    const removed = await scheduling.outOfOffice.remove(entry.id);
+    expect(removed.data).toEqual({
+      object: "scheduling.out_of_office",
+      id: entry.id,
+      deleted: true,
+    });
+    expect((await scheduling.outOfOffice.get(entry.id)).error?.code).toBe("not_found");
+  });
+});
+
 describe("coss.scheduling against the API", () => {
   test("host, schedule, event type, slots, a booking's life, a hold, a session", async () => {
     const tenant = await createTestTenant();
@@ -2055,5 +2382,86 @@ describe("coss.scheduling against the API", () => {
     expect(erased.error).toBeNull();
     const erasedByEmail = await scheduling.attendees.eraseByEmail("nobody@example.com");
     expect(erasedByEmail.data?.erased).toBe(0);
+  });
+});
+
+describe("coss.scheduling reminders against the API", () => {
+  test("a list round-trips, and a booking says what it queued", async () => {
+    const tenant = await createTestTenant();
+    const { app } = createTestApp();
+    const { scheduling } = clientFor(app, tenant.sandboxKey);
+
+    const settings = await scheduling.settings.update({
+      email_from: "appointments@example.com",
+      email_reply_to: "desk@example.com",
+      reminders: [
+        { anchor: "start", before_minutes: 60, send: ["email_attendee", "webhook"] },
+        {
+          key: "follow_up",
+          anchor: "end",
+          after_minutes: 120,
+          send: ["email_attendee"],
+          subject: "How did it go, {{attendee_first_name}}?",
+          button: { label: "Feedback", url: "https://example.com/f?b={{booking_id}}" },
+          only_if: { metadata: { plan: "pro" }, location_types: ["zoom"] },
+        },
+      ],
+    });
+    expect(settings.error).toBeNull();
+    expect(settings.data?.email_reply_to).toBe("desk@example.com");
+    expect(settings.data?.reminders?.map((reminder) => reminder.key)).toEqual([
+      "start-60",
+      "follow_up",
+    ]);
+    expect(settings.data?.reminders?.[1]?.skip_no_show).toBe(true);
+
+    const refused = await scheduling.settings.update({
+      reminders: [
+        {
+          anchor: "start",
+          before_minutes: 5,
+          send: ["sms_attendee"],
+          sms_message: "Hi {{attendee_name}}",
+        },
+      ],
+    });
+    expect(refused.error?.status).toBe(422);
+
+    const host = (
+      await scheduling.hosts.create({ name: "Dr. Reyes", phone: "+15550002222", time_zone: "UTC" })
+    ).data;
+    if (!host) throw new Error("no host");
+    expect(host.phone).toBe("+15550002222");
+    await scheduling.schedules.create(host.id, {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "23:59" }],
+    });
+    const eventType = (
+      await scheduling.eventTypes.create({
+        title: "Consultation",
+        duration_minutes: 30,
+        hosts: [{ host: host.id }],
+        notifications: { confirmed: { email_host: false } },
+        reminders: [{ key: "own", anchor: "start", before_minutes: 30, send: ["email_host"] }],
+      })
+    ).data;
+    if (!eventType) throw new Error("no event type");
+    expect(eventType.notifications).toEqual({ confirmed: { email_host: false } });
+    expect(eventType.reminders?.[0]?.key).toBe("own");
+
+    const start = new Date(Date.UTC(new Date().getUTCFullYear() + 1, 0, 4, 15));
+    const booking = (
+      await scheduling.bookings.create({
+        event_type: eventType.id,
+        start: start.toISOString(),
+        attendee: { name: "Sam", email: "sam@example.com", time_zone: "UTC" },
+      })
+    ).data;
+    if (!booking) throw new Error("no booking");
+    const sends = await scheduling.bookings.notifications(booking.id);
+    expect(sends.error).toBeNull();
+    const kinds = sends.data?.data.map((row) => row.reminder_key ?? row.kind).sort();
+    expect(kinds).toEqual(["confirmed", "ended", "own", "started"]);
+    expect(JSON.stringify(sends.data)).not.toContain("sam@example.com");
+    expect((await scheduling.bookings.notifications("book_missing")).error?.status).toBe(404);
   });
 });

@@ -61,6 +61,7 @@ export type EventTypeFormState = {
   windowTo: string;
   limits: LimitRow[];
   requiresApproval: boolean;
+  reassignmentEnabled: boolean;
   approvalTtl: string;
   holdTtl: string;
   cancelNotice: string;
@@ -108,6 +109,7 @@ export function eventTypeFormState(eventType: EventTypeObjectOutput): EventTypeF
       scope: limit.scope,
     })),
     requiresApproval: eventType.requires_approval,
+    reassignmentEnabled: eventType.reassignment_enabled,
     approvalTtl: String(eventType.approval_ttl_minutes),
     holdTtl: String(eventType.hold_ttl_seconds),
     cancelNotice: String(eventType.cancel_notice_minutes),
@@ -205,6 +207,7 @@ export function eventTypePayload(state: EventTypeFormState, kind: EventTypeObjec
       scope: limit.scope,
     })),
     requires_approval: state.requiresApproval,
+    reassignment_enabled: state.reassignmentEnabled,
     approval_ttl_minutes: Number(state.approvalTtl),
     hold_ttl_seconds: Number(state.holdTtl),
     cancel_notice_minutes: Number(state.cancelNotice),

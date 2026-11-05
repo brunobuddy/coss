@@ -31,37 +31,37 @@ class EmailTracking extends JsonSerializableType
     public bool $unsubscribe;
 
     /**
-     * @var int $openCount
+     * @var int $openCount Times opened. Mail clients that prefetch images inflate it.
      */
     #[JsonProperty('open_count')]
     public int $openCount;
 
     /**
-     * @var ?DateTime $firstOpenedAt
+     * @var ?DateTime $firstOpenedAt When it was first opened. `null`: not yet.
      */
     #[JsonProperty('first_opened_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $firstOpenedAt;
 
     /**
-     * @var ?DateTime $lastOpenedAt
+     * @var ?DateTime $lastOpenedAt When it was last opened. `null`: not yet.
      */
     #[JsonProperty('last_opened_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastOpenedAt;
 
     /**
-     * @var int $clickCount
+     * @var int $clickCount Link clicks. Link scanners inflate it.
      */
     #[JsonProperty('click_count')]
     public int $clickCount;
 
     /**
-     * @var ?DateTime $firstClickedAt
+     * @var ?DateTime $firstClickedAt When a link was first clicked. `null`: not yet.
      */
     #[JsonProperty('first_clicked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $firstClickedAt;
 
     /**
-     * @var ?DateTime $lastClickedAt
+     * @var ?DateTime $lastClickedAt When a link was last clicked. `null`: not yet.
      */
     #[JsonProperty('last_clicked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastClickedAt;

@@ -14,13 +14,13 @@ class SegmentFilterConditionsItemAudienceId extends JsonSerializableType
     public string $field;
 
     /**
-     * @var value-of<SegmentFilterConditionsItemAudienceIdOp> $op
+     * @var value-of<SegmentFilterConditionsItemAudienceIdOp> $op Whether the contact is in the audience.
      */
     #[JsonProperty('op')]
     public string $op;
 
     /**
-     * @var string $audienceId
+     * @var string $audienceId The audience's id.
      */
     #[JsonProperty('audience_id')]
     public string $audienceId;

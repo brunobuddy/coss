@@ -73,34 +73,58 @@ public class AsyncListsClient {
         return this.rawClient.add(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CompletableFuture<RiskListEntry> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CompletableFuture<RiskListEntry> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CompletableFuture<RiskListEntry> get(String id, GetListsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CompletableFuture<RiskListEntry> get(String id, GetListsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CompletableFuture<DeletedRiskListEntry> remove(String id) {
         return this.rawClient.remove(id).thenApply(response -> response.body());
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CompletableFuture<DeletedRiskListEntry> remove(String id, RequestOptions requestOptions) {
         return this.rawClient.remove(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CompletableFuture<DeletedRiskListEntry> remove(String id, RemoveListsRequest request) {
         return this.rawClient.remove(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CompletableFuture<DeletedRiskListEntry> remove(
             String id, RemoveListsRequest request, RequestOptions requestOptions) {
         return this.rawClient.remove(id, request, requestOptions).thenApply(response -> response.body());

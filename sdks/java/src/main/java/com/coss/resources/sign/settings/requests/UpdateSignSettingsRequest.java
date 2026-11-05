@@ -60,11 +60,17 @@ public final class UpdateSignSettingsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Origins that may embed the signing page in an iframe, like <code>https://app.example.com</code> (sandbox environments also <code>http://localhost:&lt;port&gt;</code>). Empty: it can only be opened on its own.
+     */
     @JsonProperty("allowed_origins")
     public Optional<List<String>> getAllowedOrigins() {
         return allowedOrigins;
     }
 
+    /**
+     * @return The requester's name signers see. <code>null</code>: the organization's name.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("display_name")
     public OptionalNullable<String> getDisplayName() {
@@ -74,6 +80,9 @@ public final class UpdateSignSettingsRequest {
         return displayName;
     }
 
+    /**
+     * @return The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("accent_color")
     public OptionalNullable<String> getAccentColor() {
@@ -83,11 +92,17 @@ public final class UpdateSignSettingsRequest {
         return accentColor;
     }
 
+    /**
+     * @return The signing page's theme. <code>system</code> follows the signer's device.
+     */
     @JsonProperty("theme")
     public Optional<UpdateSignSettingsRequestTheme> getTheme() {
         return theme;
     }
 
+    /**
+     * @return Your own consent text signers accept before they see a document. <code>null</code>: coss.com's default. Have your counsel review a replacement.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("disclosure")
     public OptionalNullable<String> getDisclosure() {
@@ -97,6 +112,9 @@ public final class UpdateSignSettingsRequest {
         return disclosure;
     }
 
+    /**
+     * @return Signing emails come from this address, on a verified domain in live environments. <code>null</code>: from coss.com, as &quot;&lt;display name&gt; via coss.com&quot;.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email_from")
     public OptionalNullable<String> getEmailFrom() {
@@ -106,6 +124,9 @@ public final class UpdateSignSettingsRequest {
         return emailFrom;
     }
 
+    /**
+     * @return The default days between reminders for new requests. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("reminder_interval_days")
     public OptionalNullable<Integer> getReminderIntervalDays() {
@@ -219,6 +240,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Origins that may embed the signing page in an iframe, like <code>https://app.example.com</code> (sandbox environments also <code>http://localhost:&lt;port&gt;</code>). Empty: it can only be opened on its own.</p>
+         */
         @JsonSetter(value = "allowed_origins", nulls = Nulls.SKIP)
         public Builder allowedOrigins(Optional<List<String>> allowedOrigins) {
             this.allowedOrigins = allowedOrigins;
@@ -230,6 +254,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The requester's name signers see. <code>null</code>: the organization's name.</p>
+         */
         @JsonSetter(value = "display_name", nulls = Nulls.SKIP)
         public Builder displayName(OptionalNullable<String> displayName) {
             this.displayName = displayName;
@@ -261,6 +288,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The signing page's accent color, as <code>#RRGGBB</code>. <code>null</code>: the default.</p>
+         */
         @JsonSetter(value = "accent_color", nulls = Nulls.SKIP)
         public Builder accentColor(OptionalNullable<String> accentColor) {
             this.accentColor = accentColor;
@@ -292,6 +322,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The signing page's theme. <code>system</code> follows the signer's device.</p>
+         */
         @JsonSetter(value = "theme", nulls = Nulls.SKIP)
         public Builder theme(Optional<UpdateSignSettingsRequestTheme> theme) {
             this.theme = theme;
@@ -303,6 +336,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Your own consent text signers accept before they see a document. <code>null</code>: coss.com's default. Have your counsel review a replacement.</p>
+         */
         @JsonSetter(value = "disclosure", nulls = Nulls.SKIP)
         public Builder disclosure(OptionalNullable<String> disclosure) {
             this.disclosure = disclosure;
@@ -334,6 +370,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Signing emails come from this address, on a verified domain in live environments. <code>null</code>: from coss.com, as &quot;&lt;display name&gt; via coss.com&quot;.</p>
+         */
         @JsonSetter(value = "email_from", nulls = Nulls.SKIP)
         public Builder emailFrom(OptionalNullable<String> emailFrom) {
             this.emailFrom = emailFrom;
@@ -365,6 +404,9 @@ public final class UpdateSignSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The default days between reminders for new requests. <code>null</code>: none.</p>
+         */
         @JsonSetter(value = "reminder_interval_days", nulls = Nulls.SKIP)
         public Builder reminderIntervalDays(OptionalNullable<Integer> reminderIntervalDays) {
             this.reminderIntervalDays = reminderIntervalDays;

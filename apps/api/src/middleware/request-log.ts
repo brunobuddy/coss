@@ -53,7 +53,7 @@ const FORM_SUBMISSIONS = /^\/v1\/forms\/[^/]+\/submissions(\/|$)/;
  * delegation's requests carry a service account's private key or an app's client secret.
  */
 const SCHEDULING_PERSONAL =
-  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions|calendar_delegations)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
+  /^\/v1\/scheduling\/((bookings|holds|series|attendees|booker_sessions|calendar_delegations|out_of_office|reassignments|holiday_calendars)(\/|$)|hosts\/[^/]+\/calendar_connections)/;
 /**
  * Responses that are capabilities: preference links change a contact's consent and need
  * `contact:update`, and Sign's session links (the token is in the URL's fragment too) sign as a
@@ -62,6 +62,7 @@ const SCHEDULING_PERSONAL =
 const CAPABILITY_RESPONSES = [
   /^\/v1\/scheduling\/hosts\/[^/]+\/sessions$/,
   /^\/v1\/scheduling\/booker_sessions$/,
+  /^\/v1\/scheduling\/manager_sessions$/,
   /^\/v1\/contacts\/[^/]+\/preference_links$/,
   /^\/v1\/sign\/requests\/[^/]+\/signers\/[^/]+\/sessions$/,
   /^\/v1\/sign\/templates\/[^/]+\/builder_sessions$/,

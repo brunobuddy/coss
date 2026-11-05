@@ -24,7 +24,7 @@ class FormSubmission extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $formId
+     * @var string $formId The id of the form it was posted to.
      */
     #[JsonProperty('form_id')]
     public string $formId;
@@ -45,19 +45,19 @@ class FormSubmission extends JsonSerializableType
     public array $data;
 
     /**
-     * @var ?string $submitterEmail
+     * @var ?string $submitterEmail The value of the form's `submitter.email_field`. `null` when it has none.
      */
     #[JsonProperty('submitter_email')]
     public ?string $submitterEmail;
 
     /**
-     * @var array<FormSubmissionFile> $files
+     * @var array<FormSubmissionFile> $files Uploaded files. Download them with the API.
      */
     #[JsonProperty('files'), ArrayType([FormSubmissionFile::class])]
     public array $files;
 
     /**
-     * @var ?value-of<FormSubmissionSpamReason> $spamReason
+     * @var ?value-of<FormSubmissionSpamReason> $spamReason Why it was flagged. `honeypot`: the honeypot field was filled. `risk_block`: Risk blocked it. `risk_review`: Risk asked for a review. `content`: its text passed `content_threshold`. `null`: not flagged.
      */
     #[JsonProperty('spam_reason')]
     public ?string $spamReason;
@@ -69,49 +69,49 @@ class FormSubmission extends JsonSerializableType
     public ?FormSubmissionRisk $risk;
 
     /**
-     * @var ?string $ip
+     * @var ?string $ip The address it was posted from. `null`: unknown.
      */
     #[JsonProperty('ip')]
     public ?string $ip;
 
     /**
-     * @var ?string $userAgent
+     * @var ?string $userAgent The browser's `User-Agent`. `null`: not sent.
      */
     #[JsonProperty('user_agent')]
     public ?string $userAgent;
 
     /**
-     * @var ?string $origin
+     * @var ?string $origin The site it was posted from. `null`: not sent.
      */
     #[JsonProperty('origin')]
     public ?string $origin;
 
     /**
-     * @var ?string $referrer
+     * @var ?string $referrer The page it was posted from. `null`: not sent.
      */
     #[JsonProperty('referrer')]
     public ?string $referrer;
 
     /**
-     * @var ?DateTime $confirmedAt
+     * @var ?DateTime $confirmedAt When the submitter clicked the emailed link. `null`: they haven't, or the form doesn't verify.
      */
     #[JsonProperty('confirmed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $confirmedAt;
 
     /**
-     * @var ?DateTime $acceptedAt
+     * @var ?DateTime $acceptedAt When it became `accepted`. `null`: it hasn't.
      */
     #[JsonProperty('accepted_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $acceptedAt;
 
     /**
-     * @var ?DateTime $releasedAt
+     * @var ?DateTime $releasedAt When it was released from `held` or `spam`. `null`: it wasn't.
      */
     #[JsonProperty('released_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $releasedAt;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;

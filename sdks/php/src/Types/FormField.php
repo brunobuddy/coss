@@ -9,43 +9,43 @@ use Coss\Core\Types\ArrayType;
 class FormField extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The `name` the form's input posts.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var value-of<FormFieldType> $type
+     * @var value-of<FormFieldType> $type Validates the value and picks the input on hosted pages.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?string $label
+     * @var ?string $label Shown on hosted pages and in notifications. `null`: the name.
      */
     #[JsonProperty('label')]
     public ?string $label;
 
     /**
-     * @var bool $required
+     * @var bool $required Whether a submission must include it.
      */
     #[JsonProperty('required')]
     public bool $required;
 
     /**
-     * @var ?string $placeholder
+     * @var ?string $placeholder Shown in the empty input on hosted pages. `null`: none.
      */
     #[JsonProperty('placeholder')]
     public ?string $placeholder;
 
     /**
-     * @var array<string> $options
+     * @var array<string> $options The choices of `select`, `radio` and `checkbox` fields. Empty for other types.
      */
     #[JsonProperty('options'), ArrayType(['string'])]
     public array $options;
 
     /**
-     * @var ?int $maxLength
+     * @var ?int $maxLength The longest value accepted, in characters. `null`: only the overall limit.
      */
     #[JsonProperty('max_length')]
     public ?int $maxLength;

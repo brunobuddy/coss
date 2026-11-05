@@ -10,14 +10,30 @@ from .sign_request_webhook_event_data_status import SignRequestWebhookEventDataS
 
 
 class SignRequestWebhookEventData(UniversalBaseModel):
-    sign_request_id: str
+    """
+    The request. Never documents or field values.
+    """
+
+    sign_request_id: str = pydantic.Field()
+    """
+    The signature request's id.
+    """
+
     status: SignRequestWebhookEventDataStatus = pydantic.Field()
     """
     The request's status after the event.
     """
 
-    title: str
-    metadata: typing.Dict[str, str]
+    title: str = pydantic.Field()
+    """
+    The request's title.
+    """
+
+    metadata: typing.Dict[str, str] = pydantic.Field()
+    """
+    Your own key-value pairs.
+    """
+
     signer: typing.Optional[SignRequestWebhookEventDataSigner] = pydantic.Field(default=None)
     """
     The signer who viewed, signed or declined; `null` otherwise.
@@ -28,8 +44,15 @@ class SignRequestWebhookEventData(UniversalBaseModel):
     A decline's reason, if the signer gave one.
     """
 
-    sandbox: bool
-    occurred_at: dt.datetime
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

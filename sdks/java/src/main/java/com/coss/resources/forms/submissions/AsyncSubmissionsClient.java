@@ -62,18 +62,30 @@ public class AsyncSubmissionsClient {
         return this.rawClient.list(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<FormSubmission> get(String id, String submissionId) {
         return this.rawClient.get(id, submissionId).thenApply(response -> response.body());
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<FormSubmission> get(String id, String submissionId, RequestOptions requestOptions) {
         return this.rawClient.get(id, submissionId, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<FormSubmission> get(String id, String submissionId, GetSubmissionsRequest request) {
         return this.rawClient.get(id, submissionId, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<FormSubmission> get(
             String id, String submissionId, GetSubmissionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, submissionId, request, requestOptions).thenApply(response -> response.body());

@@ -97,6 +97,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One topic of the API key's environment.
+//
 // Example:
 //
 //	request := &email.GetTopicsRequest{

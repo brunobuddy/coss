@@ -10,14 +10,25 @@ from .contact_import_object import ContactImportObject
 
 class ContactImport(UniversalBaseModel):
     object: ContactImportObject
-    created: int
-    updated: int
+    created: int = pydantic.Field()
+    """
+    Contacts created.
+    """
+
+    updated: int = pydantic.Field()
+    """
+    Existing contacts updated.
+    """
+
     kept_unsubscribed: int = pydantic.Field()
     """
     Existing contacts the import marked `subscribed` that stay `unsubscribed`: an import never re-subscribes anyone.
     """
 
-    invalid: typing.List[ContactImportInvalidItem]
+    invalid: typing.List[ContactImportInvalidItem] = pydantic.Field()
+    """
+    Entries that were refused. The rest of the import still went through.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

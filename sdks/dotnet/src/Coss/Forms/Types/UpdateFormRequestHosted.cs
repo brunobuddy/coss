@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The page coss.com can serve for this form. Only the fields given change.
+/// </summary>
 [Serializable]
 public record UpdateFormRequestHosted : IJsonOnDeserialized
 {
@@ -18,18 +21,30 @@ public record UpdateFormRequestHosted : IJsonOnDeserialized
     [JsonPropertyName("enabled")]
     public bool? Enabled { get; set; }
 
+    /// <summary>
+    /// The page's heading. `null`: the form's name.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("title")]
     public Optional<string?> Title { get; set; }
 
+    /// <summary>
+    /// Text under the heading. `null`: none.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }
 
+    /// <summary>
+    /// The submit button's label. `null`: the default.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("submit_label")]
     public Optional<string?> SubmitLabel { get; set; }
 
+    /// <summary>
+    /// Shown after a submission. `null`: the default.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("success_message")]
     public Optional<string?> SuccessMessage { get; set; }

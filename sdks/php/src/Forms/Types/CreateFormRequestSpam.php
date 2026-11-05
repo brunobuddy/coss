@@ -5,6 +5,9 @@ namespace Coss\Forms\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * How submissions are screened. Only the fields given change.
+ */
 class CreateFormRequestSpam extends JsonSerializableType
 {
     /**

@@ -17,6 +17,9 @@ public record InboxThreadSummary : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The inbox's id.
+    /// </summary>
     [JsonPropertyName("inbox_id")]
     public required string InboxId { get; set; }
 
@@ -33,6 +36,9 @@ public record InboxThreadSummary : IJsonOnDeserialized
     [JsonPropertyName("participants")]
     public IEnumerable<string> Participants { get; set; } = new List<string>();
 
+    /// <summary>
+    /// Messages in the thread.
+    /// </summary>
     [JsonPropertyName("message_count")]
     public required long MessageCount { get; set; }
 
@@ -43,6 +49,9 @@ public record InboxThreadSummary : IJsonOnDeserialized
     [JsonPropertyName("preview")]
     public string? Preview { get; set; }
 
+    /// <summary>
+    /// When its latest message was received or sent.
+    /// </summary>
     [JsonPropertyName("last_message_at")]
     public required DateTime LastMessageAt { get; set; }
 

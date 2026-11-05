@@ -68,6 +68,7 @@ export {
   listUserOrganizations,
   listVerifiedMemberEmails,
   type Membership,
+  memberStillHolds,
   type OrganizationMember,
   type OrganizationSummary,
   type PendingInvitation,

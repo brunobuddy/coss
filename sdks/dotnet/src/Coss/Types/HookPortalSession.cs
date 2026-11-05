@@ -17,6 +17,9 @@ public record HookPortalSession : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the application this session manages.
+    /// </summary>
     [JsonPropertyName("application_id")]
     public required string ApplicationId { get; set; }
 
@@ -32,9 +35,15 @@ public record HookPortalSession : IJsonOnDeserialized
     [JsonPropertyName("token")]
     public required string Token { get; set; }
 
+    /// <summary>
+    /// Whether the user can only look.
+    /// </summary>
     [JsonPropertyName("read_only")]
     public required bool ReadOnly { get; set; }
 
+    /// <summary>
+    /// When the session stops working.
+    /// </summary>
     [JsonPropertyName("expires_at")]
     public required DateTime ExpiresAt { get; set; }
 

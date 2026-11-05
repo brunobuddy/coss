@@ -14,7 +14,7 @@ class UpdateContactTopicsRequestTopicsItem extends JsonSerializableType
     public string $topic;
 
     /**
-     * @var value-of<UpdateContactTopicsRequestTopicsItemStatus> $status
+     * @var value-of<UpdateContactTopicsRequestTopicsItemStatus> $status `opted_in` or `opted_out` of the topic.
      */
     #[JsonProperty('status')]
     public string $status;

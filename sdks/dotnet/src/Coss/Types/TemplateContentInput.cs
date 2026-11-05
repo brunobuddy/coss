@@ -12,7 +12,7 @@ public record TemplateContentInput : IJsonOnDeserialized
         new Dictionary<string, JsonElement>();
 
     /// <summary>
-    /// A BCP 47 language tag, e.g. "en" or "pt-BR".
+    /// The BCP 47 language tag this content is for, unique in `contents`.
     /// </summary>
     [JsonPropertyName("locale")]
     public required string Locale { get; set; }

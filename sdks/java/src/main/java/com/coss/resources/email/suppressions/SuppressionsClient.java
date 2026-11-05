@@ -133,18 +133,30 @@ public class SuppressionsClient {
         return this.rawClient.export(request, requestOptions).body();
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public Suppression get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public Suppression get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public Suppression get(String id, GetSuppressionsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public Suppression get(String id, GetSuppressionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

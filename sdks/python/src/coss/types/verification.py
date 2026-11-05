@@ -17,8 +17,16 @@ from .verification_tags_item import VerificationTagsItem
 class Verification(UniversalBaseModel):
     object: VerificationObject
     id: str
-    channel: VerificationChannel
-    to: str
+    channel: VerificationChannel = pydantic.Field()
+    """
+    `sms` or `email`.
+    """
+
+    to: str = pydantic.Field()
+    """
+    The phone number (E.164) or address the code goes to.
+    """
+
     country: typing.Optional[str] = pydantic.Field(default=None)
     """
     ISO 3166 country of a phone number.
@@ -44,20 +52,36 @@ class Verification(UniversalBaseModel):
     Wrong codes checked so far.
     """
 
-    max_attempts: int
+    max_attempts: int = pydantic.Field()
+    """
+    How many wrong codes end it.
+    """
+
     sends: typing.List[VerificationSend] = pydantic.Field()
     """
     Each time the code was sent.
     """
 
-    tags: typing.List[VerificationTagsItem]
+    tags: typing.List[VerificationTagsItem] = pydantic.Field()
+    """
+    Your tags on the verification.
+    """
+
     sandbox: bool = pydantic.Field()
     """
     Made in a sandbox environment: simulated, and the code is always zeros.
     """
 
-    expires_at: dt.datetime
-    approved_at: typing.Optional[dt.datetime] = None
+    expires_at: dt.datetime = pydantic.Field()
+    """
+    When the code stops working.
+    """
+
+    approved_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the right code was checked. `null`: it wasn't.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

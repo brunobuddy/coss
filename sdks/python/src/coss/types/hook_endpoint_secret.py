@@ -9,7 +9,10 @@ from .hook_endpoint_secret_object import HookEndpointSecretObject
 
 class HookEndpointSecret(UniversalBaseModel):
     object: HookEndpointSecretObject
-    secret: str
+    secret: str = pydantic.Field()
+    """
+    The endpoint's `whsec_…` signing secret (Standard Webhooks).
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

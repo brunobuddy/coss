@@ -105,6 +105,8 @@ class AuditEventsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AuditEvent:
         """
+        One event of the organization's audit log.
+
         Parameters
         ----------
         id : str
@@ -237,6 +239,8 @@ class AsyncAuditEventsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AuditEvent:
         """
+        One event of the organization's audit log.
+
         Parameters
         ----------
         id : str

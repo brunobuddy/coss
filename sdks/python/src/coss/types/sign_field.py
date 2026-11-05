@@ -9,19 +9,66 @@ from .sign_field_type import SignFieldType
 
 
 class SignField(UniversalBaseModel):
+    """
+    A box on a page that one signer fills.
+    """
+
     object: SignFieldObject
     id: str
-    signer_id: str
-    document_id: str
-    type: SignFieldType
-    page: int
-    x: float
-    y: float
-    width: float
-    height: float
-    required: bool
-    label: typing.Optional[str] = None
-    anchor: typing.Optional[str] = None
+    signer_id: str = pydantic.Field()
+    """
+    The id of the signer who fills it.
+    """
+
+    document_id: str = pydantic.Field()
+    """
+    The id of the document it's on.
+    """
+
+    type: SignFieldType = pydantic.Field()
+    """
+    `signature` and `initials` take the signer's adopted signature, `date_signed` is filled with the signing date, `name` and `email` with the signer's, `text` and `checkbox` by the signer.
+    """
+
+    page: int = pydantic.Field()
+    """
+    1-based page number.
+    """
+
+    x: float = pydantic.Field()
+    """
+    Left edge, in PDF points from the page's left.
+    """
+
+    y: float = pydantic.Field()
+    """
+    Top edge, in PDF points from the page's top.
+    """
+
+    width: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    height: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    required: bool = pydantic.Field()
+    """
+    Whether a signer can finish with it empty.
+    """
+
+    label: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown to the signer. `null`: none.
+    """
+
+    anchor: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The text anchor it was placed by. `null`: placed by position.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

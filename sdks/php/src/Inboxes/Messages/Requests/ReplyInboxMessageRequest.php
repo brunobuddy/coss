@@ -26,7 +26,7 @@ class ReplyInboxMessageRequest extends JsonSerializableType
      * @var (
      *    string
      *   |array<string>
-     * )|null $cc
+     * )|null $cc Who it's copied to.
      */
     #[JsonProperty('cc'), Union('string', ['string'], 'null')]
     public string|array|null $cc;
@@ -35,7 +35,7 @@ class ReplyInboxMessageRequest extends JsonSerializableType
      * @var (
      *    string
      *   |array<string>
-     * )|null $bcc
+     * )|null $bcc Who it's blind copied to.
      */
     #[JsonProperty('bcc'), Union('string', ['string'], 'null')]
     public string|array|null $bcc;
@@ -59,7 +59,7 @@ class ReplyInboxMessageRequest extends JsonSerializableType
     public ?array $attachments;
 
     /**
-     * @var ?array<ReplyInboxMessageRequestTagsItem> $tags
+     * @var ?array<ReplyInboxMessageRequestTagsItem> $tags Your tags on the email.
      */
     #[JsonProperty('tags'), ArrayType([ReplyInboxMessageRequestTagsItem::class])]
     public ?array $tags;

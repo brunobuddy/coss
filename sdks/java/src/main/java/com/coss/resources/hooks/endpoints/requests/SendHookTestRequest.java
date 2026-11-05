@@ -34,6 +34,9 @@ public final class SendHookTestRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The event type to send as.
+     */
     @JsonProperty("event_type")
     public String getEventType() {
         return eventType;
@@ -77,6 +80,9 @@ public final class SendHookTestRequest {
     }
 
     public interface EventTypeStage {
+        /**
+         * <p>The event type to send as.</p>
+         */
         _FinalStage eventType(@NotNull String eventType);
 
         Builder from(SendHookTestRequest other);
@@ -115,6 +121,10 @@ public final class SendHookTestRequest {
             return this;
         }
 
+        /**
+         * <p>The event type to send as.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("event_type")
         public _FinalStage eventType(@NotNull String eventType) {

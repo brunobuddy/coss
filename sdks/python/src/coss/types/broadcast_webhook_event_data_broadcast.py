@@ -8,9 +8,20 @@ from .broadcast_webhook_event_data_broadcast_status import BroadcastWebhookEvent
 
 
 class BroadcastWebhookEventDataBroadcast(UniversalBaseModel):
-    id: str
-    name: str
-    status: BroadcastWebhookEventDataBroadcastStatus
+    id: str = pydantic.Field()
+    """
+    The broadcast's id.
+    """
+
+    name: str = pydantic.Field()
+    """
+    Its name.
+    """
+
+    status: BroadcastWebhookEventDataBroadcastStatus = pydantic.Field()
+    """
+    Its status after this event.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

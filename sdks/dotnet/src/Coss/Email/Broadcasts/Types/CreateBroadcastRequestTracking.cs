@@ -5,6 +5,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss.Email;
 
+/// <summary>
+/// Which opens and clicks are tracked.
+/// </summary>
 [Serializable]
 public record CreateBroadcastRequestTracking : IJsonOnDeserialized
 {
@@ -12,10 +15,16 @@ public record CreateBroadcastRequestTracking : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Track opens with a pixel.
+    /// </summary>
     [Optional]
     [JsonPropertyName("opens")]
     public bool? Opens { get; set; }
 
+    /// <summary>
+    /// Track clicks by rewriting links.
+    /// </summary>
     [Optional]
     [JsonPropertyName("clicks")]
     public bool? Clicks { get; set; }

@@ -11,12 +11,21 @@ public record DomainDmarcChecksItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Which check this is.
+    /// </summary>
     [JsonPropertyName("id")]
     public required DomainDmarcChecksItemId Id { get; set; }
 
+    /// <summary>
+    /// Whether it passes.
+    /// </summary>
     [JsonPropertyName("ok")]
     public required bool Ok { get; set; }
 
+    /// <summary>
+    /// What it found.
+    /// </summary>
     [JsonPropertyName("message")]
     public required string Message { get; set; }
 

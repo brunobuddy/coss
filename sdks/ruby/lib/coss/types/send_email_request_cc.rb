@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Who it's copied to.
     class SendEmailRequestCc < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

@@ -22,25 +22,25 @@ class SmsNumber extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $phoneNumber
+     * @var string $phoneNumber The number, in E.164.
      */
     #[JsonProperty('phone_number')]
     public string $phoneNumber;
 
     /**
-     * @var value-of<SmsNumberKind> $kind
+     * @var value-of<SmsNumberKind> $kind `local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).
      */
     #[JsonProperty('kind')]
     public string $kind;
 
     /**
-     * @var string $country
+     * @var string $country Its country (ISO 3166-1 alpha-2).
      */
     #[JsonProperty('country')]
     public string $country;
 
     /**
-     * @var value-of<SmsNumberStatus> $status
+     * @var value-of<SmsNumberStatus> $status `pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.
      */
     #[JsonProperty('status')]
     public string $status;

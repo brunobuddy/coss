@@ -1,4 +1,5 @@
 using Coss.Hooks;
+using Coss.Scheduling;
 using Coss.Sign;
 
 namespace Coss;
@@ -23,5 +24,6 @@ public partial interface ICossClient
     public IInboxesClient Inboxes { get; }
     public IRiskClient Risk { get; }
     public IHooksClient Hooks { get; }
+    public ISchedulingClient Scheduling { get; }
     public ISignClient Sign { get; }
 }

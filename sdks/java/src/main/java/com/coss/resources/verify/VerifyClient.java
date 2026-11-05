@@ -5,23 +5,29 @@ package com.coss.resources.verify;
 
 import com.coss.core.ClientOptions;
 import com.coss.core.RequestOptions;
+import com.coss.core.Suppliers;
 import com.coss.resources.verify.requests.CancelVerifyRequest;
 import com.coss.resources.verify.requests.CheckVerificationRequest;
 import com.coss.resources.verify.requests.GetVerifyRequest;
 import com.coss.resources.verify.requests.ListVerifyRequest;
 import com.coss.resources.verify.requests.StartVerificationRequest;
+import com.coss.resources.verify.settings.SettingsClient;
 import com.coss.types.Verification;
 import com.coss.types.VerificationCheck;
 import com.coss.types.VerificationList;
+import java.util.function.Supplier;
 
 public class VerifyClient {
     protected final ClientOptions clientOptions;
 
     private final RawVerifyClient rawClient;
 
+    protected final Supplier<SettingsClient> settingsClient;
+
     public VerifyClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.rawClient = new RawVerifyClient(clientOptions);
+        this.settingsClient = Suppliers.memoize(() -> new SettingsClient(clientOptions));
     }
 
     /**
@@ -87,18 +93,30 @@ public class VerifyClient {
         return this.rawClient.check(request, requestOptions).body();
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public Verification get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public Verification get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public Verification get(String id, GetVerifyRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public Verification get(String id, GetVerifyRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
@@ -129,5 +147,9 @@ public class VerifyClient {
      */
     public Verification cancel(String id, CancelVerifyRequest request, RequestOptions requestOptions) {
         return this.rawClient.cancel(id, request, requestOptions).body();
+    }
+
+    public SettingsClient settings() {
+        return this.settingsClient.get();
     }
 }

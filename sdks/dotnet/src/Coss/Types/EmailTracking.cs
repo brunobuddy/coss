@@ -32,24 +32,42 @@ public record EmailTracking : IJsonOnDeserialized
     [JsonPropertyName("unsubscribe")]
     public required bool Unsubscribe { get; set; }
 
+    /// <summary>
+    /// Times opened. Mail clients that prefetch images inflate it.
+    /// </summary>
     [JsonPropertyName("open_count")]
     public required long OpenCount { get; set; }
 
+    /// <summary>
+    /// When it was first opened. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("first_opened_at")]
     public DateTime? FirstOpenedAt { get; set; }
 
+    /// <summary>
+    /// When it was last opened. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_opened_at")]
     public DateTime? LastOpenedAt { get; set; }
 
+    /// <summary>
+    /// Link clicks. Link scanners inflate it.
+    /// </summary>
     [JsonPropertyName("click_count")]
     public required long ClickCount { get; set; }
 
+    /// <summary>
+    /// When a link was first clicked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("first_clicked_at")]
     public DateTime? FirstClickedAt { get; set; }
 
+    /// <summary>
+    /// When a link was last clicked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_clicked_at")]
     public DateTime? LastClickedAt { get; set; }

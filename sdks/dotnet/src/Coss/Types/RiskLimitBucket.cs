@@ -29,6 +29,9 @@ public record RiskLimitBucket : IJsonOnDeserialized
     [JsonPropertyName("limit")]
     public required long Limit { get; set; }
 
+    /// <summary>
+    /// How many seconds `limit` tokens take to be added.
+    /// </summary>
     [JsonPropertyName("period_seconds")]
     public required long PeriodSeconds { get; set; }
 

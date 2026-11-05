@@ -50,11 +50,17 @@ public final class AudienceContactsAdded {
         return object;
     }
 
+    /**
+     * @return Contacts newly added.
+     */
     @JsonProperty("added")
     public long getAdded() {
         return added;
     }
 
+    /**
+     * @return Contacts that were already members.
+     */
     @JsonProperty("existing")
     public long getExisting() {
         return existing;
@@ -107,10 +113,16 @@ public final class AudienceContactsAdded {
     }
 
     public interface AddedStage {
+        /**
+         * <p>Contacts newly added.</p>
+         */
         ExistingStage added(long added);
     }
 
     public interface ExistingStage {
+        /**
+         * <p>Contacts that were already members.</p>
+         */
         _FinalStage existing(long existing);
     }
 
@@ -162,6 +174,10 @@ public final class AudienceContactsAdded {
             return this;
         }
 
+        /**
+         * <p>Contacts newly added.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("added")
         public ExistingStage added(long added) {
@@ -169,6 +185,10 @@ public final class AudienceContactsAdded {
             return this;
         }
 
+        /**
+         * <p>Contacts that were already members.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("existing")
         public _FinalStage existing(long existing) {

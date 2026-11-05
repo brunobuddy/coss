@@ -41,6 +41,9 @@ public final class SignRequestSignedDocument {
         return sha256;
     }
 
+    /**
+     * @return When it was sealed.
+     */
     @JsonProperty("sealed_at")
     public OffsetDateTime getSealedAt() {
         return sealedAt;
@@ -85,6 +88,9 @@ public final class SignRequestSignedDocument {
     }
 
     public interface SealedAtStage {
+        /**
+         * <p>When it was sealed.</p>
+         */
         _FinalStage sealedAt(@NotNull OffsetDateTime sealedAt);
     }
 
@@ -125,6 +131,10 @@ public final class SignRequestSignedDocument {
             return this;
         }
 
+        /**
+         * <p>When it was sealed.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sealed_at")
         public _FinalStage sealedAt(@NotNull OffsetDateTime sealedAt) {

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Who it's blind copied to.
     class SendEmailRequestBcc < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

@@ -93,6 +93,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+//
 // Example:
 //
 //	request := &risk.GetLimitBucketsRequest{

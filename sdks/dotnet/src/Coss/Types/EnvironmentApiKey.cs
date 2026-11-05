@@ -20,6 +20,9 @@ public record EnvironmentApiKey : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The key's name. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("name")]
     public string? Name { get; set; }

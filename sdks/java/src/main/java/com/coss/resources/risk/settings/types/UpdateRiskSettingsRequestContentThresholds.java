@@ -46,6 +46,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The score at which <code>content.spam</code> fires. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spam")
     public OptionalNullable<Double> getSpam() {
@@ -55,6 +58,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
         return spam;
     }
 
+    /**
+     * @return The score at which <code>content.phishing</code> fires. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("phishing")
     public OptionalNullable<Double> getPhishing() {
@@ -64,6 +70,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
         return phishing;
     }
 
+    /**
+     * @return The score at which <code>content.malware</code> fires. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("malware")
     public OptionalNullable<Double> getMalware() {
@@ -73,6 +82,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
         return malware;
     }
 
+    /**
+     * @return The score at which <code>content.fraud</code> fires. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("fraud")
     public OptionalNullable<Double> getFraud() {
@@ -162,6 +174,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
             return this;
         }
 
+        /**
+         * <p>The score at which <code>content.spam</code> fires. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "spam", nulls = Nulls.SKIP)
         public Builder spam(OptionalNullable<Double> spam) {
             this.spam = spam;
@@ -193,6 +208,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
             return this;
         }
 
+        /**
+         * <p>The score at which <code>content.phishing</code> fires. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "phishing", nulls = Nulls.SKIP)
         public Builder phishing(OptionalNullable<Double> phishing) {
             this.phishing = phishing;
@@ -224,6 +242,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
             return this;
         }
 
+        /**
+         * <p>The score at which <code>content.malware</code> fires. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "malware", nulls = Nulls.SKIP)
         public Builder malware(OptionalNullable<Double> malware) {
             this.malware = malware;
@@ -255,6 +276,9 @@ public final class UpdateRiskSettingsRequestContentThresholds {
             return this;
         }
 
+        /**
+         * <p>The score at which <code>content.fraud</code> fires. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "fraud", nulls = Nulls.SKIP)
         public Builder fraud(OptionalNullable<Double> fraud) {
             this.fraud = fraud;

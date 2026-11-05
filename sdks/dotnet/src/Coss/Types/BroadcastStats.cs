@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// How its emails fared so far.
+/// </summary>
 [Serializable]
 public record BroadcastStats : IJsonOnDeserialized
 {
@@ -17,9 +20,15 @@ public record BroadcastStats : IJsonOnDeserialized
     [JsonPropertyName("recipients")]
     public required long Recipients { get; set; }
 
+    /// <summary>
+    /// Emails accepted by the provider.
+    /// </summary>
     [JsonPropertyName("sent")]
     public required long Sent { get; set; }
 
+    /// <summary>
+    /// Emails delivered to recipients' servers.
+    /// </summary>
     [JsonPropertyName("delivered")]
     public required long Delivered { get; set; }
 
@@ -29,9 +38,15 @@ public record BroadcastStats : IJsonOnDeserialized
     [JsonPropertyName("bounced")]
     public required long Bounced { get; set; }
 
+    /// <summary>
+    /// Emails marked as spam by recipients.
+    /// </summary>
     [JsonPropertyName("complained")]
     public required long Complained { get; set; }
 
+    /// <summary>
+    /// Emails that couldn't be sent.
+    /// </summary>
     [JsonPropertyName("failed")]
     public required long Failed { get; set; }
 

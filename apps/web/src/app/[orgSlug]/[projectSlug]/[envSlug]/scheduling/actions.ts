@@ -4,19 +4,26 @@ import {
   approveBooking,
   type BookingActor,
   cancelBooking,
+  cancelReassignment,
   createBookerSession,
   createCalendarDelegation,
+  createDashboardSession,
   createEventType,
+  createHolidayCalendar,
   createHost,
   createHostSession,
   createManageSession,
   createSchedule,
   declineBooking,
   deleteCalendarDelegation,
+  deleteHolidayCalendar,
   deleteHost,
+  deleteOutOfOffice,
   getEventType,
   getHost,
+  markNoShow,
   SchedulingError,
+  undoReassignment,
   updateCalendarDelegation,
   updateEventType,
   updateHost,
@@ -25,7 +32,11 @@ import {
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
+  CreateHolidayCalendarRequest,
   EVENT_TYPE_KINDS,
+  type ReassignmentObjectOutput,
+  Reminders,
+  UndoReassignmentRequest,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
   UpdateHostRequest,
@@ -255,6 +266,10 @@ export async function createHostAction(
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "create");
     const email = formString(formData, "email");
+    const phone = formString(formData, "phone");
+    if (phone && !/^\+[1-9]\d{6,14}$/.test(phone)) {
+      throw new ActionError("Enter the phone number with its country code, like +15551234567.");
+    }
     const billing = await usageGate();
     const host = await friendly(() =>
       createHost(
@@ -263,6 +278,7 @@ export async function createHostAction(
           name: formString(formData, "name"),
           time_zone: formString(formData, "timeZone"),
           ...(email ? { email } : {}),
+          ...(phone ? { phone } : {}),
         },
         {
           screen: configuredDeps().screenSetup,
@@ -283,6 +299,110 @@ export async function createHostAction(
     });
     refresh();
     return { id: host.id };
+  });
+}
+
+export async function cancelReassignmentAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const row = await friendly(() =>
+      cancelReassignment(env, formString(formData, "reassignmentId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_reassignment.cancelled", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function undoReassignmentAction(
+  _prev: ActionResult<ReassignmentObjectOutput> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const parsed = UndoReassignmentRequest.safeParse({
+      notify: { attendees: formData.get("notifyAttendees") === "on" },
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const row = await friendly(() =>
+      undoReassignment(
+        env,
+        formString(formData, "reassignmentId"),
+        parsed.data,
+        configuredDeps(),
+        actorOf(context),
+      ),
+    );
+    await audit(context, "scheduling_reassignment.undone", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return row;
+  });
+}
+
+export async function createHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "create");
+    const hosts = formData.getAll("hostId").map(String);
+    if (hosts.length === 0) throw new ActionError("Choose at least one host.");
+    const country = formString(formData, "country");
+    const icsUrl = formString(formData, "icsUrl");
+    const parsed = CreateHolidayCalendarRequest.safeParse({
+      name: formString(formData, "name"),
+      ...(icsUrl ? { ics_url: icsUrl } : { country }),
+      hosts,
+      delegates: formData.getAll("delegateId").map(String),
+      existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const calendar = await friendly(() =>
+      // A feed's address can hold a token, so it's encrypted with what calendars' credentials are.
+      createHolidayCalendar(env, parsed.data, {
+        ...configuredDeps(),
+        calendars: schedulingCalendarDeps(),
+      }),
+    );
+    await audit(context, "scheduling_holiday_calendar.created", {
+      type: "scheduling_holiday_calendar",
+      id: calendar.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const removed = await friendly(() =>
+      deleteHolidayCalendar(env, formString(formData, "calendarId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_holiday_calendar.deleted", {
+      type: "scheduling_holiday_calendar",
+      id: removed.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteOutOfOfficeAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const { id } = await friendly(() =>
+      deleteOutOfOffice(env, formString(formData, "entryId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_out_of_office.deleted", {
+      type: "scheduling_out_of_office",
+      id,
+    });
+    refresh();
+    return null;
   });
 }
 
@@ -358,6 +478,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
     const current = await friendly(() => getHost(env, id));
     const name = formString(formData, "name");
     const email = formString(formData, "email") || null;
+    const phone = formString(formData, "phone") || null;
     const uid = formString(formData, "uid") || null;
     const timeZone = formString(formData, "timeZone");
     // Only what changed: a name goes through screening. The schema is the API's, so a blank name or
@@ -366,6 +487,7 @@ export async function updateHostAction(_prev: ActionResult | null, formData: For
       UpdateHostRequest.safeParse({
         ...(name !== current.name.trim() ? { name } : {}),
         ...(email !== (current.email?.trim() || null) ? { email } : {}),
+        ...(phone !== (current.phone?.trim() || null) ? { phone } : {}),
         ...(uid !== (current.uid?.trim() || null) ? { uid } : {}),
         ...(timeZone !== current.time_zone ? { time_zone: timeZone } : {}),
         attributes: readJson(formString(formData, "attributes"), "Attributes") ?? {},
@@ -446,6 +568,39 @@ export async function openBookingManagerAction(
       }),
     );
     return { url: session.url as string };
+  });
+}
+
+/**
+ * Who's away and moving bookings, across this environment. That means knowing who's free and what
+ * time a date means, which only runs in the API (`packages/scheduling/AGENTS.md`, "Slots"), so the
+ * dashboard opens the page that calls it. Worth a line in the audit log, since it reaches every host.
+ */
+export async function openTeamPageAction(
+  _prev: ActionResult<{ url: string }> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const publicUrl = publicUrlOrThrow();
+    const session = await friendly(() =>
+      createDashboardSession(env, { createdByUserId: context.session.user.id, publicUrl }),
+    );
+    await audit(context, "scheduling_team_page.opened", {
+      type: "environment",
+      id: env.environmentId,
+    });
+    const focus = new URLSearchParams();
+    for (const [name, param] of [
+      ["tab", "tab"],
+      ["bookingId", "booking"],
+      ["outOfOfficeId", "out_of_office"],
+    ] as const) {
+      const value = formString(formData, name);
+      if (value) focus.set(param, value);
+    }
+    const [page, token] = (session.url as string).split("#");
+    return { url: `${page}${focus.size > 0 ? `?${focus}` : ""}#${token}` };
   });
 }
 
@@ -609,6 +764,55 @@ export async function declineBookingAction(_prev: ActionResult | null, formData:
   });
 }
 
+export async function markNoShowAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const booking = await friendly(() =>
+      markNoShow(env, formString(formData, "bookingId"), configuredDeps(), actorOf(context)),
+    );
+    await audit(context, "scheduling_booking.no_show", {
+      type: "scheduling_booking",
+      id: booking.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+/** A whole list at a time, for the environment or one event type; `null` goes back to inheriting. */
+export async function saveRemindersAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const eventTypeId = formString(formData, "eventTypeId");
+    const raw: unknown = JSON.parse(formString(formData, "reminders"));
+    const parsed = raw === null ? null : Reminders.safeParse(raw);
+    if (parsed && !parsed.success) {
+      throw new ActionError(parsed.error.issues[0]?.message ?? "This reminder isn't valid.");
+    }
+    const reminders = parsed ? parsed.data : null;
+    const deps = configuredDeps();
+    const checks = { screen: deps.screenSetup, verifiedAddress: deps.verifiedAddress };
+    if (eventTypeId) {
+      const eventType = await friendly(() =>
+        updateEventType(env, eventTypeId, { reminders }, checks),
+      );
+      await audit(context, "scheduling_event_type.updated", {
+        type: "scheduling_event_type",
+        id: eventType.id,
+        label: eventType.title,
+      });
+    } else {
+      await friendly(() => updateSettings(env, { reminders }, checks));
+      await audit(context, "scheduling_settings.updated", {
+        type: "scheduling_settings",
+        id: env.environmentId,
+      });
+    }
+    refresh();
+    return null;
+  });
+}
+
 export async function saveSettingsAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -617,6 +821,7 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
       .filter(Boolean);
     const brandName = formString(formData, "brandName");
     const emailFrom = formString(formData, "emailFrom");
+    const emailReplyTo = formString(formData, "emailReplyTo");
     const smsFrom = formString(formData, "smsFrom");
     const accentColor = formString(formData, "accentColor");
     const useAccent = formString(formData, "useAccentColor") === "on";
@@ -641,11 +846,17 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
               ? { logo: null }
               : {}),
           email_from: emailFrom || null,
+          email_reply_to: emailReplyTo || null,
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
+          host_reassignment: formData.get("hostReassignment") === "on" ? "eligible" : "off",
+          name_host_in_attendee_emails: formData.get("nameHostInAttendeeEmails") === "on",
         },
-        { screen: configuredDeps().screenSetup },
+        {
+          screen: configuredDeps().screenSetup,
+          verifiedAddress: configuredDeps().verifiedAddress,
+        },
       ),
     );
     await audit(context, "scheduling_settings.updated", {

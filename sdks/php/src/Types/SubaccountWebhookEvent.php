@@ -22,7 +22,7 @@ class SubaccountWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<SubaccountWebhookEventType> $type
+     * @var value-of<SubaccountWebhookEventType> $type What changed for the sub-account.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,13 +34,13 @@ class SubaccountWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var SubaccountWebhookEventData $data
+     * @var SubaccountWebhookEventData $data The sub-account's standing.
      */
     #[JsonProperty('data')]
     public SubaccountWebhookEventData $data;

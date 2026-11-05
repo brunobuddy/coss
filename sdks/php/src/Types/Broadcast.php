@@ -23,7 +23,7 @@ class Broadcast extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Shown only to you.
      */
     #[JsonProperty('name')]
     public string $name;
@@ -35,91 +35,91 @@ class Broadcast extends JsonSerializableType
     public string $status;
 
     /**
-     * @var ?string $audienceId
+     * @var ?string $audienceId The audience it goes to. `null`: a segment.
      */
     #[JsonProperty('audience_id')]
     public ?string $audienceId;
 
     /**
-     * @var ?string $segmentId
+     * @var ?string $segmentId The segment it goes to. `null`: an audience.
      */
     #[JsonProperty('segment_id')]
     public ?string $segmentId;
 
     /**
-     * @var ?string $topic
+     * @var ?string $topic The topic it's about (its key), and its emails' `category`. `null`: none.
      */
     #[JsonProperty('topic')]
     public ?string $topic;
 
     /**
-     * @var string $from
+     * @var string $from Who it's sent from.
      */
     #[JsonProperty('from')]
     public string $from;
 
     /**
-     * @var array<string> $replyTo
+     * @var array<string> $replyTo Addresses replies go to.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public array $replyTo;
 
     /**
-     * @var string $subject
+     * @var string $subject The subject, before contact fields are filled in.
      */
     #[JsonProperty('subject')]
     public string $subject;
 
     /**
-     * @var ?string $previewText
+     * @var ?string $previewText The inbox preview line. `null`: none.
      */
     #[JsonProperty('preview_text')]
     public ?string $previewText;
 
     /**
-     * @var ?string $html
+     * @var ?string $html The HTML part, before contact fields are filled in. `null`: text only.
      */
     #[JsonProperty('html')]
     public ?string $html;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain text part. `null`: HTML only.
      */
     #[JsonProperty('text')]
     public ?string $text;
 
     /**
-     * @var BroadcastTracking $tracking
+     * @var BroadcastTracking $tracking Which opens and clicks are tracked.
      */
     #[JsonProperty('tracking')]
     public BroadcastTracking $tracking;
 
     /**
-     * @var ?int $ratePerSecond
+     * @var ?int $ratePerSecond Recipients per second. `null`: the plan's marketing rate.
      */
     #[JsonProperty('rate_per_second')]
     public ?int $ratePerSecond;
 
     /**
-     * @var ?DateTime $scheduledAt
+     * @var ?DateTime $scheduledAt When it's set to start. `null`: not scheduled.
      */
     #[JsonProperty('scheduled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $scheduledAt;
 
     /**
-     * @var ?DateTime $startedAt
+     * @var ?DateTime $startedAt When sending started. `null`: it hasn't.
      */
     #[JsonProperty('started_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $startedAt;
 
     /**
-     * @var ?DateTime $completedAt
+     * @var ?DateTime $completedAt When it finished. `null`: it hasn't.
      */
     #[JsonProperty('completed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $completedAt;
 
     /**
-     * @var ?DateTime $canceledAt
+     * @var ?DateTime $canceledAt When it was canceled. `null`: it wasn't.
      */
     #[JsonProperty('canceled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $canceledAt;
@@ -137,7 +137,7 @@ class Broadcast extends JsonSerializableType
     public ?string $pauseReason;
 
     /**
-     * @var ?BroadcastError $error
+     * @var ?BroadcastError $error Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
      */
     #[JsonProperty('error')]
     public ?BroadcastError $error;

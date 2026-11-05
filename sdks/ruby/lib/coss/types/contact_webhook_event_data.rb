@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The contact, without its properties.
     class ContactWebhookEventData < Internal::Types::Model
       field :contact, -> { Coss::Types::ContactWebhookEventDataContact }, optional: false, nullable: false
 

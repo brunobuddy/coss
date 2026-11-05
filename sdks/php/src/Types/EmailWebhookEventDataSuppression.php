@@ -11,13 +11,13 @@ use Coss\Core\Json\JsonProperty;
 class EmailWebhookEventDataSuppression extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The suppression's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var string $scope
+     * @var string $scope What it covers: every email, every marketing email, or one category.
      */
     #[JsonProperty('scope')]
     public string $scope;

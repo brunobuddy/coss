@@ -13,6 +13,9 @@ public partial interface ISubmissionsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One submission of the form, with its data, files and Risk's assessment.
+    /// </summary>
     WithRawResponseTask<FormSubmission> GetAsync(
         GetSubmissionsRequest request,
         RequestOptions? options = null,

@@ -16,7 +16,11 @@ from .domain_dmarc_stage import DomainDmarcStage
 
 class DomainDmarc(UniversalBaseModel):
     object: DomainDmarcObject
-    domain_id: str
+    domain_id: str = pydantic.Field()
+    """
+    The domain's id.
+    """
+
     report_address: typing.Optional[str] = pydantic.Field(default=None)
     """
     Where the domain's DMARC aggregate reports go (`rua=mailto:…`). `null` when this deployment doesn't receive email.
@@ -68,8 +72,15 @@ class DomainDmarc(UniversalBaseModel):
     The readiness checks gating `next`, from the last 14 days of reports.
     """
 
-    warnings: typing.List[str]
-    report_summary: DomainDmarcReportSummary
+    warnings: typing.List[str] = pydantic.Field()
+    """
+    Things to look at before tightening the policy.
+    """
+
+    report_summary: DomainDmarcReportSummary = pydantic.Field()
+    """
+    What the aggregate reports of this period say.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

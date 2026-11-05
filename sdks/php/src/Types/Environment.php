@@ -23,13 +23,13 @@ class Environment extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name The environment's name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $slug
+     * @var string $slug The environment's slug, as in dashboard URLs.
      */
     #[JsonProperty('slug')]
     public string $slug;
@@ -41,13 +41,13 @@ class Environment extends JsonSerializableType
     public string $mode;
 
     /**
-     * @var EnvironmentProject $project
+     * @var EnvironmentProject $project The project it belongs to.
      */
     #[JsonProperty('project')]
     public EnvironmentProject $project;
 
     /**
-     * @var EnvironmentOrganization $organization
+     * @var EnvironmentOrganization $organization The organization it belongs to.
      */
     #[JsonProperty('organization')]
     public EnvironmentOrganization $organization;

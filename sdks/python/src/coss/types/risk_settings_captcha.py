@@ -8,8 +8,15 @@ from .risk_settings_captcha_provider import RiskSettingsCaptchaProvider
 
 
 class RiskSettingsCaptcha(UniversalBaseModel):
-    provider: RiskSettingsCaptchaProvider
-    required: bool
+    provider: RiskSettingsCaptchaProvider = pydantic.Field()
+    """
+    The captcha provider.
+    """
+
+    required: bool = pydantic.Field()
+    """
+    Whether assessments without a token get `captcha.missing`.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

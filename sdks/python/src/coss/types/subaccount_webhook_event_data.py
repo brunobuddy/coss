@@ -11,16 +11,40 @@ from .subaccount_webhook_event_data_status import SubaccountWebhookEventDataStat
 
 
 class SubaccountWebhookEventData(UniversalBaseModel):
-    subaccount_id: str
-    uid: typing.Optional[str] = None
-    status: SubaccountWebhookEventDataStatus
-    previous_status: SubaccountWebhookEventDataPreviousStatus
+    """
+    The sub-account's standing.
+    """
+
+    subaccount_id: str = pydantic.Field()
+    """
+    The sub-account's id.
+    """
+
+    uid: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your own id for it. `null`: none.
+    """
+
+    status: SubaccountWebhookEventDataStatus = pydantic.Field()
+    """
+    Its status after this event.
+    """
+
+    previous_status: SubaccountWebhookEventDataPreviousStatus = pydantic.Field()
+    """
+    Its status before.
+    """
+
     trigger: typing.Optional[str] = pydantic.Field(default=None)
     """
     What changed it: a check (`bounce_rate`, `complaint_rate`), `content_screening` or `reinstated`.
     """
 
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
+
     checks: typing.List[ReputationCheck] = pydantic.Field()
     """
     The measurements behind the change (empty for reinstatements and screening).

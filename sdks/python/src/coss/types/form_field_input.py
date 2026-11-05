@@ -28,13 +28,20 @@ class FormFieldInput(UniversalBaseModel):
     Default false.
     """
 
-    placeholder: typing.Optional[str] = None
+    placeholder: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown in the empty input on hosted pages.
+    """
+
     options: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
     """
     The choices of `select`, `radio` and `checkbox` fields.
     """
 
-    max_length: typing.Optional[int] = None
+    max_length: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The longest value accepted, in characters.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

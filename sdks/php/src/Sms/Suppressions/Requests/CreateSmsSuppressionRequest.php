@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class CreateSmsSuppressionRequest extends JsonSerializableType
 {
     /**
-     * @var string $phoneNumber
+     * @var string $phoneNumber The number to suppress, in E.164.
      */
     #[JsonProperty('phone_number')]
     public string $phoneNumber;

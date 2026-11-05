@@ -14,10 +14,16 @@ public record EmailWebhookEventDataUnsubscribe : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The contact who unsubscribed. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("contact_id")]
     public string? ContactId { get; set; }
 
+    /// <summary>
+    /// The topic they left. `null`: marketing altogether.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("topic")]
     public string? Topic { get; set; }

@@ -64,6 +64,9 @@ public final class RiskWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What happened to the assessment.
+     */
     @JsonProperty("type")
     public RiskWebhookEventType getType() {
         return type;
@@ -82,6 +85,9 @@ public final class RiskWebhookEvent {
         return createdAt;
     }
 
+    /**
+     * @return The assessment, without its signals.
+     */
     @JsonProperty("data")
     public RiskWebhookEventData getData() {
         return data;
@@ -135,6 +141,9 @@ public final class RiskWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened to the assessment.</p>
+         */
         ApiVersionStage type(@NotNull RiskWebhookEventType type);
     }
 
@@ -150,6 +159,9 @@ public final class RiskWebhookEvent {
     }
 
     public interface DataStage {
+        /**
+         * <p>The assessment, without its signals.</p>
+         */
         _FinalStage data(@NotNull RiskWebhookEventData data);
     }
 
@@ -210,6 +222,10 @@ public final class RiskWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What happened to the assessment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull RiskWebhookEventType type) {
@@ -235,6 +251,10 @@ public final class RiskWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The assessment, without its signals.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull RiskWebhookEventData data) {

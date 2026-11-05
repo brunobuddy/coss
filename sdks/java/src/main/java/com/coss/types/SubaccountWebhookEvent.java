@@ -64,6 +64,9 @@ public final class SubaccountWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What changed for the sub-account.
+     */
     @JsonProperty("type")
     public SubaccountWebhookEventType getType() {
         return type;
@@ -77,11 +80,17 @@ public final class SubaccountWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The sub-account's standing.
+     */
     @JsonProperty("data")
     public SubaccountWebhookEventData getData() {
         return data;
@@ -135,6 +144,9 @@ public final class SubaccountWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What changed for the sub-account.</p>
+         */
         ApiVersionStage type(@NotNull SubaccountWebhookEventType type);
     }
 
@@ -146,10 +158,16 @@ public final class SubaccountWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The sub-account's standing.</p>
+         */
         _FinalStage data(@NotNull SubaccountWebhookEventData data);
     }
 
@@ -210,6 +228,10 @@ public final class SubaccountWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What changed for the sub-account.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull SubaccountWebhookEventType type) {
@@ -228,6 +250,10 @@ public final class SubaccountWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -235,6 +261,10 @@ public final class SubaccountWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The sub-account's standing.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull SubaccountWebhookEventData data) {

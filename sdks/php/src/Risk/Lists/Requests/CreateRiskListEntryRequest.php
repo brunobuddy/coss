@@ -24,13 +24,13 @@ class CreateRiskListEntryRequest extends JsonSerializableType
     public string $type;
 
     /**
-     * @var string $value
+     * @var string $value What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
      */
     #[JsonProperty('value')]
     public string $value;
 
     /**
-     * @var ?string $note
+     * @var ?string $note Your note about it.
      */
     #[JsonProperty('note')]
     public ?string $note;

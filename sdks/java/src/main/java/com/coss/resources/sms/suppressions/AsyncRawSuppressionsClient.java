@@ -323,10 +323,16 @@ public class AsyncRawSuppressionsClient {
         return future;
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppressionCheck>> check(CheckSuppressionsRequest request) {
         return check(request, null);
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppressionCheck>> check(
             CheckSuppressionsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -430,18 +436,30 @@ public class AsyncRawSuppressionsClient {
         return future;
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppression>> get(String id) {
         return get(id, GetSuppressionsRequest.builder().build());
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppression>> get(String id, RequestOptions requestOptions) {
         return get(id, GetSuppressionsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppression>> get(String id, GetSuppressionsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<SmsSuppression>> get(
             String id, GetSuppressionsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

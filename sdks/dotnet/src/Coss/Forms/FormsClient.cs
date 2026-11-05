@@ -998,6 +998,9 @@ public partial class FormsClient : IFormsClient
         return new WithRawResponseTask<Form>(CreateAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+    /// </summary>
     /// <example><code>
     /// await client.Forms.GetAsync(new GetFormsRequest { Id = "form_01kd2m8n3p4q5r6s7t8v9w0x1y" });
     /// </code></example>

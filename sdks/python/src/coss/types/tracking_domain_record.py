@@ -13,7 +13,11 @@ class TrackingDomainRecord(UniversalBaseModel):
     The DNS record to publish, with the result of the last check.
     """
 
-    type: TrackingDomainRecordType
+    type: TrackingDomainRecordType = pydantic.Field()
+    """
+    The record's type.
+    """
+
     name: str = pydantic.Field()
     """
     The fully qualified record name to create.

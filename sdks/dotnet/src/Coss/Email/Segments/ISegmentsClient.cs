@@ -22,18 +22,27 @@ public partial interface ISegmentsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One segment of the API key's environment, with its filter.
+    /// </summary>
     WithRawResponseTask<Segment> GetAsync(
         GetSegmentsRequest request,
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Deletes a segment. The contacts it matched stay.
+    /// </summary>
     WithRawResponseTask<DeletedSegment> RemoveAsync(
         RemoveSegmentsRequest request,
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Changes a segment's name or filter. Only the fields given change.
+    /// </summary>
     WithRawResponseTask<Segment> UpdateAsync(
         UpdateSegmentRequest request,
         RequestOptions? options = null,

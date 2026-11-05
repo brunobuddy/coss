@@ -49,6 +49,110 @@ A pool's `required` hosts need a member: if narrowing leaves none, nobody's offe
 A booker session's `attributes` come from the customer's server and are encrypted, since with an attendee they can say
 what someone needs; the browser never sees them or sends its own.
 
+## Out of office
+
+`out-of-office.ts`: time a host is away, one row per host. `HostInputs.away` keeps them from being offered, and
+`isBookable` checks it before the calendar's verdict, so the reason's honest, and before the session branch, so a
+running session can't be joined; `joinGroupSession` checks it too, since a join with live seats never calls
+`isBookable`. **It only touches an existing booking if it's asked to** (`existing_bookings: "reassign"`, which starts a
+run; see "Moving many"). Otherwise it reports them as conflicts (`listOutOfOfficeConflicts`, and a count-only email to
+the host unless they did it themselves). Accepted: confirming a hold or approving a request
+that was already there skips the check, and those bookings show up as conflicts.
+
+- A write takes `for no key update` on the host row, and bookers hold `share`, so a booking either commits first and
+  is a conflict, or sees the entry. It takes the rows of whoever's covering too, since a booking with them holds theirs
+  and not the principal's, and it reads their cover again once it does (`coverAsItStands`), for the same people it was found through.
+- `reason` can say someone's on medical leave, so it stays out of webhooks, logs, calendars and anything a booker sees
+  (`slotLost` hides that a host is out of office, too). Notes are encrypted; `public_message` is what bookers read,
+  screened, with no links.
+- Deleting is soft: the ledger row that removes its calendar event belongs to the entry, and a hard delete would
+  cascade it away and orphan the event. Notes and the message go at once; the row goes within 30 days. A holiday's
+  deleted row stays as its tombstone.
+- Whole dates resolve to instants once, in the host's zone then: moving zones later doesn't move them, and the dates
+  are only kept for showing back. `all_day` says so on the wire.
+- The calendar block is a ledger row with a third kind of owner (`out_of_office_id`), titled "Out of office", which
+  `flagExternalConflicts` subtracts like any event of ours, and `checkHostEditedEvents` ignores.
+
+Delegates (`scheduling_out_of_office_delegate`) are new-booking candidates only: `candidatesOf`'s last step adds them,
+sets `coverage`, and `HostInputs.onlyWithin` keeps them to meetings that touch the principal's time away, in `isBookable`,
+so slots and booking can't disagree. Each caller of `loadHostInputs` passes it through (`hostInputOf`, `ClaimPlan.coverage`).
+
+- `candidatesOf` asks nothing about time but "hasn't ended yet": a principal has to be a candidate themselves
+  (routing narrowing applies to them first), and a delegate must match a pool's filter and the narrowed attributes and
+  not be removed by name. Required hosts have no delegates, and it isn't transitive.
+- A delegate ranks at `max(own ratio, principal's ratio)`: their own low count would otherwise make them take everything.
+- A group has one host, but picks them by time, in `createOne`: the first of its host and their delegates who can take it.
+  Coverage is checked on every join, like being away.
+- `levelReturningHost` raises a pool member's `fair_units` to the lowest peer's ratio when an entry ends, once
+  (`fairness_leveled_at`), never downward, and not while another entry has them away.
+
+Holiday calendars (`holidays.ts`) turn a country's holidays or a customer's feed into ordinary entries, `source: holiday`,
+one per host and day, in the host's zone. `source_key` (`<calendar>:<host>:<date>`, unique per environment) is how a sync
+knows what's there; a deleted row keeps it as a tombstone, so someone opting out of a date isn't given it back. A date
+that's gone from the feed, or a host who's left, clears its key as well, since nobody chose that.
+
+- A failed, partial or empty read keeps what's there. `holidaysFromIcs` only takes whole days, and treats what it can't
+  understand as a failed read. A country's list is shared (`scheduling_public_holiday`, no organization), since requests
+  for it say nothing about anyone. It's read from Google's public ICS URL, which is unofficial.
+- A feed's URL can hold a token: `WEBHOOK_SECRETS_KEY` and `reencryptWebhookSecrets`, never a log or a response, and
+  `last_error` can't name it. It goes through `pinnedDavTransport` (public addresses, pinned), a 3xx is a failed read, and
+  sandbox environments don't read them.
+- Names are unscreened, so entries carry `public_holiday` and no name: never in an email, a calendar event, or anything
+  a booker sees.
+
+## Reassigning
+
+`reassign.ts`: a booking goes to another host, keeping its id and time, for every kind. The target is claimed **before**
+the source lets go (`releaseHostClaim`), under `retryingDeadlocks`, so a lost race leaves the booking as it was. The
+source only takes `key share`, with no status check, since leaving a disabled host is how someone gets offboarded.
+
+- `isBookable`'s `skip` is how a booking that exists doesn't answer the grid, notice and window again, and how overrides
+  work. Nothing can skip `already_claimed`, and the exclusion constraint has the last word anyway.
+- A hold or request keeps what's left of its time (`claimRemainingSeconds`, from the same SQL clock, rounded down),
+  never more: under a second is `hold_expired`, not a claim whose range would raise `22000`. It's read after the target's
+  locks, since waiting for them comes out of that time.
+- `auto` keeps to what the booking was routed with. A pool's booking that can't say (`encrypted_attributes` is null)
+  refuses `auto`, rather than guessing nothing narrowed it; someone naming a host knows who they're choosing.
+- A group session has one host, so a seat's reassignment moves all of it. Seats lock before the session, since cancelling
+  takes them in that order, and they're read again once locked. A target's old session row with no live claim is in the
+  way only of `scheduling_group_session_slot_unique`, and is cleared; one with a claim is a real conflict.
+- One that's started changes for the record only: no claim, calendar, count or notice. `auditClaims` looks at future
+  bookings for this reason.
+- `reason_code` and `note` go nowhere but the booking's history. The note's encrypted (`encrypted_note`, not `details`,
+  which outlives the attendee's data) and goes with their details, and isn't written about someone already erased, as a
+  queued run's would be otherwise.
+- Host emails address `hostId`, and only those joining and leaving hear: a co-host has nothing new to know. Each hears
+  what's changed since they last heard: going A to B to C tells A and C and not B, and going back to A tells nobody.
+
+## Moving many
+
+`reassignments.ts`: a run is a row and its items, and each booking goes through `reassignBooking` in its own transaction,
+so one that can't move never holds up the rest. **It never cancels a booking**: one nobody can take stays, and its item
+says `no_candidate`.
+
+- Creating a run only inserts its row. The worker's `scheduling-reassignments` loop works out the items once: an item's
+  FK takes `key share` on a booking, and doing that under out of office's hold on the host would deadlock with a
+  reschedule, which takes the booking and then the host. `reassignment-row.ts` is what out of office calls, and imports
+  only the database, since `out-of-office.ts` is imported by `bookings.ts`, whose internals `reassign.ts` destructures
+  when it loads: importing `reassign.ts` from there is an import cycle that crashes.
+- A run is leased (`lease_until`, `for update skip locked`), and renewing the lease before each item is the fence: a
+  worker that lost it, or a run that's been cancelled, stops. A move's outcome is written by `onMoved`, in the move's own
+  transaction, so a report can't disagree with what happened, and a crash in between can't leave a booking moved and
+  its item pending. It only writes over `pending`, like any other outcome, and a move that finds the item decided rolls
+  back: that's what stops a worker that lost its lease while waiting on a lock, since nothing can tell it.
+- A preview simulates: it adds what it's proposed to each host's claims and limits, and to a pool's counts, so two
+  bookings can't be promised one free hour. It uses `isBookable` and `candidatesOf` per booking's routing, like the run,
+  and promises nothing: the run decides again.
+- A session counts once, as `min(id)` of its seats: never page bookings and dedupe afterwards, or a big session eats the
+  limit. The 5,000 cap counts the same way, and it's on what's asked for: a run an entry starts takes everything in it.
+- Hosts get one `reassignment_summary` email per run, with counts read at send time, and `quietHosts` keeps per-booking
+  ones away, so a digest carries no calendar invitations or cancellations; `notify.hosts: "each"` does, one per seat
+  of a session for both hosts, since each seat's invitation has a UID of its own. Each booking's event type has its say over a digest, as over a
+  booking moved by itself: what it silences is neither counted nor a reason to send one. Attendees still hear per booking. Each booking's history gets its own copy of the note; the run's is
+  cleared when it finishes, and only exists for that long.
+- `existing_bookings: "reassign"` delays the conflicts email by 15 minutes, since it counts what's left when it's sent.
+  Changing an entry's notes doesn't start another run; changing its times does.
+
 ## Slots
 
 `isBookable` is the one definition of "can this be booked": listing and booking both call it, so they can't disagree.
@@ -64,6 +168,10 @@ hosted page in a tab through a session with `createdByUserId` (`openBookerAction
 session acts as the member (`sessionActor`), past attendees' cutoffs. A manage session made this way lasts an hour.
 `listRescheduleSlots` answers where a booking can move the way `rescheduleBooking` checks it: its own hosts (none disabled
 or taken off the event type), length and buffers, with its own claims left out. Change them together.
+Reassigning, its candidates, a run's preview and out of office's dates all work out time too, so the dashboard opens the
+team page for them (`openTeamPageAction`), and a test refuses them in its code (`apps/web/test/scheduling-bun-only.test.ts`).
+Starting a run from there happens on that page as well; undoing or cancelling one, and deleting an entry, only write rows
+and the worker does the rest, so they stay in the dashboard.
 A new event type field goes in the dashboard's form too
 (`apps/web/src/lib/scheduling-edit.ts`, `event-type-form.tsx`), or typecheck fails on the test fixtures there.
 
@@ -118,6 +226,19 @@ A new event type field goes in the dashboard's form too
   work once and expire unused, so `clientFor` re-reads after a refused refresh and `refreshIdleZoomConnections` keeps
   idle ones alive. `notZoomMeeting()` keeps these rows out of what's subtracted from busy times. Losing Zoom never hides
   a host. The app's deauthorization event comes to `POST /scheduling/zoom/events`.
+
+A Meet or Teams link becomes a `link` location on the booking, stored with `conference` and `conference_host_id` (both
+stripped from the wire), so when a host leaves, the link only resets if the meeting was theirs (`locationWithoutHost`).
+A Zoom meeting's owner is its ledger row (`meetingOwnerOf`), and it keeps running the meeting however hosts sort. Links
+older than `conference_host_id` have no known owner, so they reset. Co-hosts each ask for a Meet at creation, and only
+the first answer becomes the booking's link: a co-host's event can hold its own unused conference, though its location
+text is rewritten to the booking's. A browser only chooses among an event type's `locations` (`locationFromBrowser`):
+it can't supply its own link or address.
+
+A booking's ledger row can come back when a host leaves and returns, and its `key_generation` makes a key not yet used
+(`eventKey`). Removing an event (`setCalendarState` with `absent`) goes by the ledger's rows, not today's write target,
+so an event on a calendar that's stopped being one still goes. Slots for moving a booking come from the hosts it has
+(`listRescheduleSlots`), never `candidatesOf`, which answers who'd take a new one.
 
 ### Delegation
 
@@ -185,9 +306,27 @@ once, and every host on it gets their calendar with no consent screen.
   domain-wide delegation, Graph ids matching between `/me` and `/users/{id}`, app-only subscriptions and Teams links)
   needs checking against a real Workspace and tenant when any of this changes.
 
-A Meet or Teams link becomes a `link` location on the booking, stored with `conference` (stripped from the wire), so a
-new host gets a meeting of their own (`locationForNewHost`). A browser only chooses among an event type's `locations`
-(`locationFromBrowser`): it can't supply its own link or address.
+## Team pages
+
+`manager.ts`: a `manager` session reaches the hosts it names, or those matching `manager_host_filter` on every request
+(`managedHosts`). There's no team table: who manages whom is the customer's to say, when they mint one. An empty filter
+is refused at minting, since `{}` matches everyone. The exception is `createDashboardSession`: a dashboard member who opens
+this page reaches every host of the environment, for an hour, acting as themselves, and it's in the audit log. The API
+asks on every request whether they can still change Scheduling (`memberStillHolds`), since leaving an organization doesn't
+end a session.
+
+- It's checked before anything's read, and **again with the booking locked** (`fromHosts`, `toHosts` in `reassign.ts`):
+  until then, a booking may have moved to someone out of reach. Someone else's looks like it doesn't exist.
+- Bookings it reads are `ManagedBooking`: when, what and who's hosting. It never calls `toBookingObject` for a response,
+  and `getBooking` only to check hosts, since a lead's job is cover and not the attendee.
+- A run from a team page says who each goes to (`checkManagedRun`), since `otherwise: auto` could reach another team, and
+  the worker has no session to ask. Its entries can't start a run either, by asking or by moving an entry that was made to
+  (`startsNoRun`, a host's page too): moving bookings is its own step.
+- A migration adding an enum value and using it in a check runs in one transaction, where a literal of the new value is
+  refused (`55P04`): that's why `scheduling_session_scope` says `kind::text = 'manager'`.
+
+`settings.host_reassignment` is `off` by default: with `eligible`, hosts can give their own bookings to someone free who
+takes that event type, seeing names only, with no overrides, and being told no more than that someone can't (`namesOnly`).
 
 A `link`, `phone` or `in_person` location left blank takes the value of the booked host's `locations`, once a host has
 won (`withHostLocation`), and stays blank if they have none: nobody loses availability over it. It's stored with
@@ -211,6 +350,9 @@ attendee sees times, never other hosts.
 - Attendee contact details and answers, and a booker session's fixed attendee, are encrypted with
   `SCHEDULING_DATA_KEYS`. Only `email_hmac` is searchable. A new column on this ring goes in
   `SCHEDULING_DATA_KEY_COLUMNS` and `reencryptSchedulingData` (a test compares the list with the database).
+- `scheduling_booking.encrypted_attributes` keeps what a booking was routed with, for choosing another host later. Null
+  means that can't be known (booked before it existed, or erased or redacted), never "nothing narrowed it", which is
+  an encrypted `{}`. It goes with the attendee's details: on redaction and on `eraseAttendee`.
 - Answers come back only from `getBooking`: never lists, webhooks, logs, emails or calendars. The dashboard's iOS
   routes map bookings to name or uid only (`scheduling/wire.ts` under `apps/web/src/app/api/mobile/v1`).
 - Webhooks and log lines carry ids, times and statuses. `request-log.ts` keeps no bodies of these routes.
@@ -248,12 +390,42 @@ attendee sees times, never other hosts.
 ## Notifications
 
 `notifications.ts` resolves policy once, into outbox rows in the deciding transaction: core code never branches on it.
-Rows hold no content; a row's rendered at send time and dropped if stale. A change that keeps a booking's time but
-bumps its version (a location, a meeting link) calls `carryReminders`, or its reminder would look stale. Booking emails use `@coss/email-layout` with
+Rows hold no content; a row's rendered at send time and dropped if stale. Booking emails use `@coss/email-layout` with
 no customer HTML and no links but the manage link, and pass `screeningExempt`: per-email screening would send patients'
 names to the AI Gateway. In exchange, text a customer controls is screened at setup (`screening.ts`) and can't hold a
 link. Never add a free-form field to these emails without screening it. SMS goes through `@coss/sms`, so it's sampled
 as usual: keep names out of it.
+
+`reminders.ts` is what a `reminders` list means, at the event type (which replaces the environment's) or the
+environment; `null` everywhere is the old one reminder a day before, on `notifications.reminder`'s channels, keyed
+`reminder`. Each rule makes rows, `started` and `ended` are rows every confirmed booking gets, and these rules hold:
+
+- A rule's row names its rule and is timed from `anchor_at`, the moment as it was when queued. That, not the booking's
+  `version`, is what makes it stale: a location or a no-show bumps the version and moves nothing. A row with no
+  `anchor_at` came from a task older than this, mid-deploy, and keeps the version check.
+- The dedupe key names the rule, timing and moment, so planning is safe to repeat (`reconcileReminders`, also run by
+  the `scheduling-reminder-sync` loop when a list changes). A conflict revives a row only if it was `superseded` or
+  `stale`: a booking moved away and back gets its reminder back, and nothing `sent` goes twice.
+- **A rule is read again when its row is due** (`ruleVerdict`, `addEditedTargets`), so a row takes its rule's current
+  words, timing and recipients and a removal needs no rebuild. Only a new rule needs rows made for existing bookings,
+  and only for ones that haven't ended. A row never assumes the walk has run: it may not have, and it reaches only some
+  bookings. The keys make the two safe together.
+- **Customer words never leave under coss.com's address.** `subject`, `message` and `button` need `email_from`, and
+  `coss*` on `SchedulingEmail` are always fixed copy, which is what the fallback sends. That also caps what coss.com
+  pays for: without `email_from`, at most two rules send email (`withinCossAllowance`, checked at save and when due).
+- `attendee_name` is what a booker typed, aimed at an address they chose: `safeName` renders one with a link in it as
+  nothing. Answers are never variables. `sms_message` can't use names. `reminder-copy.ts` is client-safe, so the
+  dashboard's preview runs the same code as the worker.
+- A reminder's standard words, labels and values follow the recipient's language like any other message's
+  (`standardSubject`, `standardLead`, `timeUntil`), and a fixed address takes the first host's. What a customer wrote
+  has one version, in whatever language they wrote it.
+- A `button` or `email_to` is checked against the injected `verifiedAddress` in live environments, and refused without
+  one. A button's URL takes only `{{booking_id}}`, so what's sent is what was checked.
+- A webhook row reports and finishes in one transaction, booking locked first like every other writer of these rows, so
+  two workers can't both report. A webhook is never dropped for being late; an email or text is (`too_late`).
+- `email_attendee` reaches guests too, on the same terms as other mail (`guestsAreTold`, `ownSenderOnly`): only from the customer's
+  own address, with no manage link, and not for what isn't about them (a request, a no-show).
+- What became of every row is public (`listBookingNotifications`) and never says who it went to.
 
 Branding only applies under the customer's own `email_from`: `renderMessage` puts their name or logo and accent in
 `html`, and `cossHtml`, what coss.com's address sends, has none of them. `scheduling_logo` holds a PNG or JPEG checked
@@ -313,7 +485,7 @@ outside the requested window. `FakeGoogleCalendarApi` (`./testing`) echoes write
 signature (`testServiceAccount`); `FakeGraphApi` only answers `/users/{mailbox}` paths, so a client left on `/me` shows.
 
 `bun run --cwd apps/worker scheduling:load` (`--hosts 500 --days 14 --concurrency 32 --bookings 500 --existing 20 --busy
-10 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the
+10 --away 2 --searches 30 --races 20 --big-table-rows 5000`, `--sandbox`, `--capped`) measures search, slots and booking on the
 test database: the package's own functions, in one process, with no API and no provider calls. By default a live
 environment on the Pro plan; `--capped` adds a usage cap, which makes every booking update one quota row. Pool size:
 `DATABASE_POOL_MAX`. It exits 1 if a race didn't have the winners it should or anything failed unexpectedly, and prints

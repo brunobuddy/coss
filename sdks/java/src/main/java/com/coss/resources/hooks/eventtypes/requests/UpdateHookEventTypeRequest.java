@@ -47,6 +47,9 @@ public final class UpdateHookEventTypeRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return What this event means, shown to your users. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -151,6 +154,9 @@ public final class UpdateHookEventTypeRequest {
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public Builder description(OptionalNullable<String> description) {
             this.description = description;

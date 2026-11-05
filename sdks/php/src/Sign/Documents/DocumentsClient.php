@@ -181,6 +181,8 @@ class DocumentsClient
     }
 
     /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     *
      * Example:
      * ```php
      * $client->sign->documents->get(

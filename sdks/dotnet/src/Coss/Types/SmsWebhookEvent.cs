@@ -20,6 +20,9 @@ public record SmsWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required SmsWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What happened to the message.
+    /// </summary>
     [JsonPropertyName("type")]
     public required SmsWebhookEventType Type { get; set; }
 
@@ -29,6 +32,9 @@ public record SmsWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 

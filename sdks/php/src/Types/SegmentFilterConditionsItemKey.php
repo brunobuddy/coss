@@ -15,13 +15,13 @@ class SegmentFilterConditionsItemKey extends JsonSerializableType
     public string $field;
 
     /**
-     * @var string $key
+     * @var string $key The custom property to test.
      */
     #[JsonProperty('key')]
     public string $key;
 
     /**
-     * @var value-of<SegmentFilterConditionsItemKeyOp> $op
+     * @var value-of<SegmentFilterConditionsItemKeyOp> $op How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
      */
     #[JsonProperty('op')]
     public string $op;

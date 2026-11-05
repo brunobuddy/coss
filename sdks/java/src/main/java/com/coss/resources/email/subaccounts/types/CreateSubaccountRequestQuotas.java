@@ -42,6 +42,9 @@ public final class CreateSubaccountRequestQuotas {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Most recipients a day. <code>null</code> removes the limit.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("recipients_per_day")
     public OptionalNullable<Integer> getRecipientsPerDay() {
@@ -51,6 +54,9 @@ public final class CreateSubaccountRequestQuotas {
         return recipientsPerDay;
     }
 
+    /**
+     * @return Most recipients a second. <code>null</code> removes the limit.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("recipients_per_second")
     public OptionalNullable<Integer> getRecipientsPerSecond() {
@@ -60,6 +66,9 @@ public final class CreateSubaccountRequestQuotas {
         return recipientsPerSecond;
     }
 
+    /**
+     * @return How many recipients a moment may take before the per-second rate applies. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("burst")
     public OptionalNullable<Integer> getBurst() {
@@ -138,6 +147,9 @@ public final class CreateSubaccountRequestQuotas {
             return this;
         }
 
+        /**
+         * <p>Most recipients a day. <code>null</code> removes the limit.</p>
+         */
         @JsonSetter(value = "recipients_per_day", nulls = Nulls.SKIP)
         public Builder recipientsPerDay(OptionalNullable<Integer> recipientsPerDay) {
             this.recipientsPerDay = recipientsPerDay;
@@ -169,6 +181,9 @@ public final class CreateSubaccountRequestQuotas {
             return this;
         }
 
+        /**
+         * <p>Most recipients a second. <code>null</code> removes the limit.</p>
+         */
         @JsonSetter(value = "recipients_per_second", nulls = Nulls.SKIP)
         public Builder recipientsPerSecond(OptionalNullable<Integer> recipientsPerSecond) {
             this.recipientsPerSecond = recipientsPerSecond;
@@ -200,6 +215,9 @@ public final class CreateSubaccountRequestQuotas {
             return this;
         }
 
+        /**
+         * <p>How many recipients a moment may take before the per-second rate applies. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "burst", nulls = Nulls.SKIP)
         public Builder burst(OptionalNullable<Integer> burst) {
             this.burst = burst;

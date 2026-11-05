@@ -23,7 +23,7 @@ class CreateEmailTemplateRequest extends JsonSerializableType
     public ?string $alias;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it, shown in the dashboard.
      */
     #[JsonProperty('description')]
     public ?string $description;

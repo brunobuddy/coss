@@ -110,6 +110,9 @@ public final class CreateSignRequestRequest {
         return documents;
     }
 
+    /**
+     * @return Who signs, and what each fills.
+     */
     @JsonProperty("signers")
     public List<CreateSignRequestRequestSignersItem> getSigners() {
         return signers;
@@ -252,6 +255,9 @@ public final class CreateSignRequestRequest {
 
         _FinalStage addAllDocuments(List<CreateSignRequestRequestDocumentsItem> documents);
 
+        /**
+         * <p>Who signs, and what each fills.</p>
+         */
         _FinalStage signers(List<CreateSignRequestRequestSignersItem> signers);
 
         _FinalStage addSigners(CreateSignRequestRequestSignersItem signers);
@@ -481,6 +487,10 @@ public final class CreateSignRequestRequest {
             return this;
         }
 
+        /**
+         * <p>Who signs, and what each fills.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllSigners(List<CreateSignRequestRequestSignersItem> signers) {
             if (signers != null) {
@@ -489,12 +499,19 @@ public final class CreateSignRequestRequest {
             return this;
         }
 
+        /**
+         * <p>Who signs, and what each fills.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addSigners(CreateSignRequestRequestSignersItem signers) {
             this.signers.add(signers);
             return this;
         }
 
+        /**
+         * <p>Who signs, and what each fills.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "signers", nulls = Nulls.SKIP)
         public _FinalStage signers(List<CreateSignRequestRequestSignersItem> signers) {

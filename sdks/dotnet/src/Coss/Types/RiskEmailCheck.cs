@@ -14,6 +14,9 @@ public record RiskEmailCheck : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RiskEmailCheckObject Object { get; set; }
 
+    /// <summary>
+    /// The address checked.
+    /// </summary>
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 
@@ -23,6 +26,9 @@ public record RiskEmailCheck : IJsonOnDeserialized
     [JsonPropertyName("valid")]
     public required bool Valid { get; set; }
 
+    /// <summary>
+    /// Its domain. `null` when it isn't valid.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("domain")]
     public string? Domain { get; set; }
@@ -34,6 +40,9 @@ public record RiskEmailCheck : IJsonOnDeserialized
     [JsonPropertyName("canonical")]
     public string? Canonical { get; set; }
 
+    /// <summary>
+    /// Whether its domain is a known burner service.
+    /// </summary>
     [JsonPropertyName("disposable")]
     public required bool Disposable { get; set; }
 
@@ -43,9 +52,15 @@ public record RiskEmailCheck : IJsonOnDeserialized
     [JsonPropertyName("deliverability")]
     public required RiskEmailCheckDeliverability Deliverability { get; set; }
 
+    /// <summary>
+    /// Whether it's a role mailbox, like `info@`.
+    /// </summary>
     [JsonPropertyName("role_account")]
     public required bool RoleAccount { get; set; }
 
+    /// <summary>
+    /// Whether its domain is a free mailbox provider.
+    /// </summary>
     [JsonPropertyName("free_provider")]
     public required bool FreeProvider { get; set; }
 

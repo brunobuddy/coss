@@ -96,6 +96,8 @@ func (c *Client) Upload(
 	return response.Body, nil
 }
 
+// An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+//
 // Example:
 //
 //	request := &sign.GetDocumentsRequest{

@@ -61,6 +61,9 @@ public final class Audience {
         return id;
     }
 
+    /**
+     * @return Your name for the list, unique in the environment.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -129,6 +132,9 @@ public final class Audience {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the list, unique in the environment.</p>
+         */
         ContactCountStage name(@NotNull String name);
     }
 
@@ -200,6 +206,10 @@ public final class Audience {
             return this;
         }
 
+        /**
+         * <p>Your name for the list, unique in the environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public ContactCountStage name(@NotNull String name) {

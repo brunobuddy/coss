@@ -11,9 +11,15 @@ public record SegmentFilterConditionsItemConditionsConditionsItemTopic : IJsonOn
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Whether emails about the topic reach the contact.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemConditionsConditionsItemTopicOp Op { get; set; }
 
+    /// <summary>
+    /// The topic's key.
+    /// </summary>
     [JsonPropertyName("topic")]
     public required string Topic { get; set; }
 

@@ -9,10 +9,25 @@ from ..core.serialization import FieldMetadata
 
 
 class FormNotifications(UniversalBaseModel):
-    recipients: typing.List[str]
+    """
+    Emails about accepted submissions.
+    """
+
+    recipients: typing.List[str] = pydantic.Field()
+    """
+    Who gets an email for each accepted submission.
+    """
+
     from_: typing_extensions.Annotated[
-        typing.Optional[str], FieldMetadata(alias="from"), pydantic.Field(alias="from")
+        typing.Optional[str],
+        FieldMetadata(alias="from"),
+        pydantic.Field(
+            alias="from", description='The notification\'s sender. `null`: coss.com, as "<form name> via coss.com".'
+        ),
     ] = None
+    """
+    The notification's sender. `null`: coss.com, as "<form name> via coss.com".
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -65,6 +65,11 @@ class EmailWebhookEventData(UniversalBaseModel):
     Only for an email sent for a sub-account: its id.
     """
 
+    traceparent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Only for an email sent with a W3C `traceparent` header: that trace context (normalized to version `00`), also sent as this request's `traceparent` header, so handling the event joins the sender's trace.
+    """
+
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
     else:

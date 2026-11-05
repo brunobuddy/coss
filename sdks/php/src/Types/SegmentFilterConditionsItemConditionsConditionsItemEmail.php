@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class SegmentFilterConditionsItemConditionsConditionsItemEmail extends JsonSerializableType
 {
     /**
-     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemEmailOp> $op
+     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemEmailOp> $op How to compare the contact's address.
      */
     #[JsonProperty('op')]
     public string $op;
 
     /**
-     * @var string $value
+     * @var string $value What to compare it with.
      */
     #[JsonProperty('value')]
     public string $value;

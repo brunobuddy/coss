@@ -9,6 +9,7 @@ import (
 	big "math/big"
 )
 
+// The signing page's theme. `system` follows the signer's device.
 type UpdateSignSettingsRequestTheme string
 
 const (
@@ -45,13 +46,20 @@ var (
 )
 
 type UpdateSignSettingsRequest struct {
-	AllowedOrigins       []string                        `json:"allowed_origins,omitempty" url:"-"`
-	DisplayName          *string                         `json:"display_name,omitempty" url:"-"`
-	AccentColor          *string                         `json:"accent_color,omitempty" url:"-"`
-	Theme                *UpdateSignSettingsRequestTheme `json:"theme,omitempty" url:"-"`
-	Disclosure           *string                         `json:"disclosure,omitempty" url:"-"`
-	EmailFrom            *string                         `json:"email_from,omitempty" url:"-"`
-	ReminderIntervalDays *int                            `json:"reminder_interval_days,omitempty" url:"-"`
+	// Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
+	AllowedOrigins []string `json:"allowed_origins,omitempty" url:"-"`
+	// The requester's name signers see. `null`: the organization's name.
+	DisplayName *string `json:"display_name,omitempty" url:"-"`
+	// The signing page's accent color, as `#RRGGBB`. `null`: the default.
+	AccentColor *string `json:"accent_color,omitempty" url:"-"`
+	// The signing page's theme. `system` follows the signer's device.
+	Theme *UpdateSignSettingsRequestTheme `json:"theme,omitempty" url:"-"`
+	// Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
+	Disclosure *string `json:"disclosure,omitempty" url:"-"`
+	// Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
+	EmailFrom *string `json:"email_from,omitempty" url:"-"`
+	// The default days between reminders for new requests. `null`: none.
+	ReminderIntervalDays *int `json:"reminder_interval_days,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

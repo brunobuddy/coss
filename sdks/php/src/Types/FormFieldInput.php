@@ -33,7 +33,7 @@ class FormFieldInput extends JsonSerializableType
     public ?bool $required;
 
     /**
-     * @var ?string $placeholder
+     * @var ?string $placeholder Shown in the empty input on hosted pages.
      */
     #[JsonProperty('placeholder')]
     public ?string $placeholder;
@@ -45,7 +45,7 @@ class FormFieldInput extends JsonSerializableType
     public ?array $options;
 
     /**
-     * @var ?int $maxLength
+     * @var ?int $maxLength The longest value accepted, in characters.
      */
     #[JsonProperty('max_length')]
     public ?int $maxLength;

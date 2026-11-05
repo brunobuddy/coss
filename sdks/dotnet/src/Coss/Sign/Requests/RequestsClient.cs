@@ -290,6 +290,18 @@ public partial class RequestsClient : IRequestsClient
                                 Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
                             }
                         );
+                    case 402:
+                        throw new PaymentRequiredError(
+                            JsonUtils.Deserialize<ErrorResponse>(responseBody),
+                            rawResponse: new Coss.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
                     case 403:
                         throw new ForbiddenError(
                             JsonUtils.Deserialize<ErrorResponse>(responseBody),
@@ -863,6 +875,18 @@ public partial class RequestsClient : IRequestsClient
                         );
                     case 401:
                         throw new UnauthorizedError(
+                            JsonUtils.Deserialize<ErrorResponse>(responseBody),
+                            rawResponse: new Coss.RawResponse()
+                            {
+                                StatusCode = response.Raw.StatusCode,
+                                Url =
+                                    response.Raw.RequestMessage?.RequestUri
+                                    ?? new Uri("about:blank"),
+                                Headers = ResponseHeaders.FromHttpResponseMessage(response.Raw),
+                            }
+                        );
+                    case 402:
+                        throw new PaymentRequiredError(
                             JsonUtils.Deserialize<ErrorResponse>(responseBody),
                             rawResponse: new Coss.RawResponse()
                             {
@@ -1772,6 +1796,9 @@ public partial class RequestsClient : IRequestsClient
         );
     }
 
+    /// <summary>
+    /// A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+    /// </summary>
     /// <example><code>
     /// await client.Sign.Requests.GetAsync(
     ///     new GetRequestsRequest { Id = "sreq_01k7c8m4q2f3e9v6t5r1n0p8yz" }

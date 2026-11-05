@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # How its emails fared so far.
     class BroadcastStats < Internal::Types::Model
       field :recipients, -> { Integer }, optional: false, nullable: false
 

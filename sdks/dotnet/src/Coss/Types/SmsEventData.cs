@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Details of the event, where it has any.
+/// </summary>
 [Serializable]
 public record SmsEventData : IJsonOnDeserialized
 {

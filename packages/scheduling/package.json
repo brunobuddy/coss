@@ -8,7 +8,9 @@
     "./branding": "./src/branding.ts",
     "./description-links": "./src/description-links.ts",
     "./engine": "./src/engine/index.ts",
+    "./reminder-copy": "./src/reminder-copy.ts",
     "./schemas": "./src/schemas.ts",
+    "./holiday-countries": "./src/holiday-countries.ts",
     "./testing": "./src/testing.ts",
     "./env": "./src/env.ts",
     "./runtime": "./src/runtime.ts"

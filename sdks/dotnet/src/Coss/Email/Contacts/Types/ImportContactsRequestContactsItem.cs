@@ -19,10 +19,16 @@ public record ImportContactsRequestContactsItem : IJsonOnDeserialized
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 
+    /// <summary>
+    /// Their first name.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("first_name")]
     public Optional<string?> FirstName { get; set; }
 
+    /// <summary>
+    /// Their last name.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("last_name")]
     public Optional<string?> LastName { get; set; }

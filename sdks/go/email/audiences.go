@@ -73,6 +73,7 @@ var (
 )
 
 type CreateAudienceRequest struct {
+	// Your name for the list, unique in the environment.
 	Name string `json:"name" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -456,7 +457,8 @@ var (
 
 type UpdateAudienceRequest struct {
 	// The audience's id.
-	ID   string `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Your name for the list, unique in the environment.
 	Name string `json:"name" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

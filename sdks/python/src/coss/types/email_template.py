@@ -11,15 +11,31 @@ from .email_template_object import EmailTemplateObject
 class EmailTemplate(UniversalBaseModel):
     object: EmailTemplateObject
     id: str
-    alias: typing.Optional[str] = None
-    name: str
-    description: typing.Optional[str] = None
+    alias: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    A name to send the template by instead of its id. `null`: none.
+    """
+
+    name: str = pydantic.Field()
+    """
+    Shown in the dashboard.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your note about it. `null`: none.
+    """
+
     published_version: typing.Optional[int] = pydantic.Field(default=None)
     """
     The version sends use; `null` until the draft is first published.
     """
 
-    published_at: typing.Optional[dt.datetime] = None
+    published_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the published version was published. `null`: never.
+    """
+
     has_unpublished_changes: bool = pydantic.Field()
     """
     Whether the draft was changed since it was last published.

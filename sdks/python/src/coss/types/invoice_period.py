@@ -8,8 +8,19 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class InvoicePeriod(UniversalBaseModel):
-    start: dt.datetime
-    end: dt.datetime
+    """
+    What period it covers.
+    """
+
+    start: dt.datetime = pydantic.Field()
+    """
+    When the period starts (inclusive).
+    """
+
+    end: dt.datetime = pydantic.Field()
+    """
+    When the period ends (exclusive).
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

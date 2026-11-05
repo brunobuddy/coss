@@ -48,9 +48,13 @@ describe("the catalogs", () => {
     "subject_cancelled",
     "subject_declined",
     "subject_reminder",
+    "subject_happening",
+    "subject_finished",
+    "subject_no_show",
     "reason_attendee",
     "reason_guest",
     "reason_host",
+    "reason_address",
     "reconnect_through",
   ] as const;
 

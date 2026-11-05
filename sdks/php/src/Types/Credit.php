@@ -29,13 +29,13 @@ class Credit extends JsonSerializableType
     public string $kind;
 
     /**
-     * @var int $amount
+     * @var int $amount How much was granted: cents, or units for a `units` credit.
      */
     #[JsonProperty('amount')]
     public int $amount;
 
     /**
-     * @var int $remaining
+     * @var int $remaining How much is left, in the same unit as `amount`.
      */
     #[JsonProperty('remaining')]
     public int $remaining;
@@ -59,31 +59,31 @@ class Credit extends JsonSerializableType
     public string $appliesTo;
 
     /**
-     * @var value-of<CreditSource> $source
+     * @var value-of<CreditSource> $source Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.
      */
     #[JsonProperty('source')]
     public string $source;
 
     /**
-     * @var string $description
+     * @var string $description What it's for.
      */
     #[JsonProperty('description')]
     public string $description;
 
     /**
-     * @var DateTime $effectiveAt
+     * @var DateTime $effectiveAt When it can start being used.
      */
     #[JsonProperty('effective_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $effectiveAt;
 
     /**
-     * @var ?DateTime $expiresAt
+     * @var ?DateTime $expiresAt When what's left expires. `null`: never.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiresAt;
 
     /**
-     * @var ?DateTime $voidedAt
+     * @var ?DateTime $voidedAt When it was voided. `null`: it wasn't.
      */
     #[JsonProperty('voided_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $voidedAt;

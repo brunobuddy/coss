@@ -10,7 +10,7 @@ use Coss\Core\Types\Date;
 class VerificationSend extends JsonSerializableType
 {
     /**
-     * @var value-of<VerificationSendChannel> $channel
+     * @var value-of<VerificationSendChannel> $channel `sms` or `email`.
      */
     #[JsonProperty('channel')]
     public string $channel;

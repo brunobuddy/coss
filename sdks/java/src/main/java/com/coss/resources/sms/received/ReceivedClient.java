@@ -55,18 +55,30 @@ public class ReceivedClient {
         return this.rawClient.list(request, requestOptions).body();
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public ReceivedSms get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public ReceivedSms get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public ReceivedSms get(String id, GetReceivedRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public ReceivedSms get(String id, GetReceivedRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

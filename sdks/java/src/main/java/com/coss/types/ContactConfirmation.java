@@ -43,6 +43,9 @@ public final class ContactConfirmation {
         return object;
     }
 
+    /**
+     * @return The contact's id.
+     */
     @JsonProperty("contact_id")
     public String getContactId() {
         return contactId;
@@ -92,6 +95,9 @@ public final class ContactConfirmation {
     }
 
     public interface ContactIdStage {
+        /**
+         * <p>The contact's id.</p>
+         */
         StatusStage contactId(@NotNull String contactId);
     }
 
@@ -138,6 +144,10 @@ public final class ContactConfirmation {
             return this;
         }
 
+        /**
+         * <p>The contact's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("contact_id")
         public StatusStage contactId(@NotNull String contactId) {

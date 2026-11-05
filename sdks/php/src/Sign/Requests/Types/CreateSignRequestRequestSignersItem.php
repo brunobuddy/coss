@@ -12,13 +12,13 @@ use Coss\Core\Types\Union;
 class CreateSignRequestRequestSignersItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name Shown on the signing page and on the certificate.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $email
+     * @var string $email Where a `delivery: email` signer gets their link. Unique within a request.
      */
     #[JsonProperty('email')]
     public string $email;

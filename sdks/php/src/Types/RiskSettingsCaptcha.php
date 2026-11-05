@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class RiskSettingsCaptcha extends JsonSerializableType
 {
     /**
-     * @var value-of<RiskSettingsCaptchaProvider> $provider
+     * @var value-of<RiskSettingsCaptchaProvider> $provider The captcha provider.
      */
     #[JsonProperty('provider')]
     public string $provider;
 
     /**
-     * @var bool $required
+     * @var bool $required Whether assessments without a token get `captcha.missing`.
      */
     #[JsonProperty('required')]
     public bool $required;

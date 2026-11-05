@@ -2,6 +2,8 @@ namespace Coss;
 
 public partial interface IVerifyClient
 {
+    public Coss.Verify.ISettingsClient Settings { get; }
+
     /// <summary>
     /// Verifications of the API key's environment, newest first. Pass the last `id` as `after` to get the next page while `has_more` is true.
     /// </summary>
@@ -29,6 +31,9 @@ public partial interface IVerifyClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// A verification's status and destination. Its code is never returned.
+    /// </summary>
     WithRawResponseTask<Verification> GetAsync(
         GetVerifyRequest request,
         RequestOptions? options = null,

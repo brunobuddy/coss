@@ -13,7 +13,11 @@ from .webhook_delivery_status import WebhookDeliveryStatus
 class WebhookDelivery(UniversalBaseModel):
     object: WebhookDeliveryObject
     id: str
-    endpoint_id: str
+    endpoint_id: str = pydantic.Field()
+    """
+    The id of the endpoint it's delivered to.
+    """
+
     event_id: str = pydantic.Field()
     """
     The event's id: the `id` of the payload and the `webhook-id` header.
@@ -21,14 +25,26 @@ class WebhookDelivery(UniversalBaseModel):
 
     event_type: str
     status: WebhookDeliveryStatus
-    attempt_count: int
+    attempt_count: int = pydantic.Field()
+    """
+    How many attempts were made so far.
+    """
+
     next_attempt_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the next attempt is due; `null` once the delivery is finished.
     """
 
-    last_status_code: typing.Optional[int] = None
-    last_error: typing.Optional[str] = None
+    last_status_code: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    """
+
+    last_error: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    """
+
     payload: typing.Dict[str, typing.Any] = pydantic.Field()
     """
     The event body, exactly as posted to the endpoint.

@@ -12,12 +12,35 @@ class RiskCheckoutSignals(UniversalBaseModel):
     What you sent in `checkout` (never the card).
     """
 
-    amount: int
-    currency: str
-    card_country: typing.Optional[str] = None
-    card_funding: typing.Optional[RiskCheckoutSignalsCardFunding] = None
-    billing_country: typing.Optional[str] = None
-    shipping_country: typing.Optional[str] = None
+    amount: int = pydantic.Field()
+    """
+    The amount you sent, in the currency's smallest unit.
+    """
+
+    currency: str = pydantic.Field()
+    """
+    The currency you sent.
+    """
+
+    card_country: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The card's country. `null` when not given.
+    """
+
+    card_funding: typing.Optional[RiskCheckoutSignalsCardFunding] = pydantic.Field(default=None)
+    """
+    The card's funding type. `null` when not given.
+    """
+
+    billing_country: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The billing country. `null` when not given.
+    """
+
+    shipping_country: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The shipping country. `null` when not given.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

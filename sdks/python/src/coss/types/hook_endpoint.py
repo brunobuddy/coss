@@ -12,18 +12,46 @@ from .hook_endpoint_object import HookEndpointObject
 class HookEndpoint(UniversalBaseModel):
     object: HookEndpointObject
     id: str
-    application_id: str
-    url: str
-    description: typing.Optional[str] = None
-    filter_types: typing.List[str]
-    rate_limit_per_second: typing.Optional[int] = None
-    enabled: bool
+    application_id: str = pydantic.Field()
+    """
+    The id of the application it belongs to.
+    """
+
+    url: str = pydantic.Field()
+    """
+    Where deliveries are sent.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your note about it. `null`: none.
+    """
+
+    filter_types: typing.List[str] = pydantic.Field()
+    """
+    Only these event types are delivered. Empty: every type.
+    """
+
+    rate_limit_per_second: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    At most this many requests per second to this endpoint. `null`: no limit of its own.
+    """
+
+    enabled: bool = pydantic.Field()
+    """
+    Whether new messages are delivered to it.
+    """
+
     disabled_reason: typing.Optional[HookEndpointDisabledReason] = pydantic.Field(default=None)
     """
     `manual`: disabled by you or its user. `failing`: its deliveries failed every attempt for five days, so coss.com disabled it. `null` while enabled.
     """
 
-    disabled_at: typing.Optional[dt.datetime] = None
+    disabled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was disabled. `null`: it's enabled.
+    """
+
     failing_since: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When its current run of failed deliveries began; cleared by the next success. `null` while healthy.
@@ -34,7 +62,11 @@ class HookEndpoint(UniversalBaseModel):
     After a secret roll, requests are also signed with the previous secret until then.
     """
 
-    metadata: typing.Dict[str, str]
+    metadata: typing.Dict[str, str] = pydantic.Field()
+    """
+    Your own key-value pairs.
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

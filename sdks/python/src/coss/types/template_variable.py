@@ -10,12 +10,35 @@ from .template_variable_type import TemplateVariableType
 
 
 class TemplateVariable(UniversalBaseModel):
-    name: str
-    type: TemplateVariableType
-    required: bool
-    default: typing.Optional[TemplateVariableDefault] = None
-    description: typing.Optional[str] = None
-    fields: typing.Optional[typing.List[TemplateVariableFieldsItem]] = None
+    name: str = pydantic.Field()
+    """
+    Used in the template as `{{name}}`.
+    """
+
+    type: TemplateVariableType = pydantic.Field()
+    """
+    `string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).
+    """
+
+    required: bool = pydantic.Field()
+    """
+    Whether sends must pass it, unless it has a `default`.
+    """
+
+    default: typing.Optional[TemplateVariableDefault] = pydantic.Field(default=None)
+    """
+    Used when a send leaves it out.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What it's for, shown in the dashboard.
+    """
+
+    fields: typing.Optional[typing.List[TemplateVariableFieldsItem]] = pydantic.Field(default=None)
+    """
+    A list's item fields.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

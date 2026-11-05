@@ -12,9 +12,20 @@ class FormSubmissionRisk(UniversalBaseModel):
     Risk's assessment; `null` when none ran (honeypot).
     """
 
-    assessment_id: typing.Optional[str] = None
-    decision: typing.Optional[FormSubmissionRiskDecision] = None
-    score: typing.Optional[float] = None
+    assessment_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The id of Risk's assessment. `null`: none is recorded.
+    """
+
+    decision: typing.Optional[FormSubmissionRiskDecision] = pydantic.Field(default=None)
+    """
+    Risk's decision. `null`: none is recorded.
+    """
+
+    score: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    Risk's score. `null`: none is recorded.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

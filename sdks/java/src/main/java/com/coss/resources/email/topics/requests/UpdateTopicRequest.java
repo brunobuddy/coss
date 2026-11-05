@@ -52,11 +52,17 @@ public final class UpdateTopicRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Shown in the preference center.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
     }
 
+    /**
+     * @return Shown in the preference center under its name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -155,6 +161,9 @@ public final class UpdateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;
@@ -166,6 +175,9 @@ public final class UpdateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         */
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public Builder description(OptionalNullable<String> description) {
             this.description = description;

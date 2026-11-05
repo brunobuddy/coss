@@ -40,16 +40,25 @@ public final class TemplateVariableInputFieldsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Used inside <code>{{#each}}</code> as <code>{{name}}</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return The field's type.
+     */
     @JsonProperty("type")
     public TemplateVariableInputFieldsItemType getType() {
         return type;
     }
 
+    /**
+     * @return Whether each item must have it. Defaults to true.
+     */
     @JsonProperty("required")
     public Optional<Boolean> getRequired() {
         return required;
@@ -85,12 +94,18 @@ public final class TemplateVariableInputFieldsItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>Used inside <code>{{#each}}</code> as <code>{{name}}</code>.</p>
+         */
         TypeStage name(@NotNull String name);
 
         Builder from(TemplateVariableInputFieldsItem other);
     }
 
     public interface TypeStage {
+        /**
+         * <p>The field's type.</p>
+         */
         _FinalStage type(@NotNull TemplateVariableInputFieldsItemType type);
     }
 
@@ -101,6 +116,9 @@ public final class TemplateVariableInputFieldsItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Whether each item must have it. Defaults to true.</p>
+         */
         _FinalStage required(Optional<Boolean> required);
 
         _FinalStage required(Boolean required);
@@ -127,6 +145,10 @@ public final class TemplateVariableInputFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Used inside <code>{{#each}}</code> as <code>{{name}}</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public TypeStage name(@NotNull String name) {
@@ -134,6 +156,10 @@ public final class TemplateVariableInputFieldsItem {
             return this;
         }
 
+        /**
+         * <p>The field's type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public _FinalStage type(@NotNull TemplateVariableInputFieldsItemType type) {
@@ -141,12 +167,19 @@ public final class TemplateVariableInputFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Whether each item must have it. Defaults to true.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage required(Boolean required) {
             this.required = Optional.ofNullable(required);
             return this;
         }
 
+        /**
+         * <p>Whether each item must have it. Defaults to true.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "required", nulls = Nulls.SKIP)
         public _FinalStage required(Optional<Boolean> required) {

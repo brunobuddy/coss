@@ -24,12 +24,16 @@ var (
 type Environment struct {
 	Object EnvironmentObject `json:"object" url:"object"`
 	// The environment's id.
-	ID   string `json:"id" url:"id"`
+	ID string `json:"id" url:"id"`
+	// The environment's name.
 	Name string `json:"name" url:"name"`
+	// The environment's slug, as in dashboard URLs.
 	Slug string `json:"slug" url:"slug"`
 	// `live` delivers email; `sandbox` (`coss_test_` keys) never does.
-	Mode         EnvironmentMode          `json:"mode" url:"mode"`
-	Project      *EnvironmentProject      `json:"project" url:"project"`
+	Mode EnvironmentMode `json:"mode" url:"mode"`
+	// The project it belongs to.
+	Project *EnvironmentProject `json:"project" url:"project"`
+	// The organization it belongs to.
 	Organization *EnvironmentOrganization `json:"organization" url:"organization"`
 	// The API key making this request.
 	APIKey *EnvironmentAPIKey `json:"api_key" url:"api_key"`
@@ -228,7 +232,8 @@ var environmentAPIKeyNullableFields = map[string]*big.Int{
 // The API key making this request.
 type EnvironmentAPIKey struct {
 	// The key's id.
-	ID   string  `json:"id" url:"id"`
+	ID string `json:"id" url:"id"`
+	// The key's name. `null`: none.
 	Name *string `json:"name,omitempty" url:"name,omitempty"`
 	// The key's first characters, as shown in the dashboard.
 	Start *string `json:"start,omitempty" url:"start,omitempty"`
@@ -449,8 +454,10 @@ var (
 	environmentOrganizationFieldName       = big.NewInt(1 << 1)
 	environmentOrganizationFieldSlug       = big.NewInt(1 << 2)
 	environmentOrganizationFieldAPIVersion = big.NewInt(1 << 3)
+	environmentOrganizationFieldHipaaMode  = big.NewInt(1 << 4)
 )
 
+// The organization it belongs to.
 type EnvironmentOrganization struct {
 	// The organization's id.
 	ID string `json:"id" url:"id"`
@@ -460,6 +467,8 @@ type EnvironmentOrganization struct {
 	Slug string `json:"slug" url:"slug"`
 	// The organization's pinned API version: what requests without a `Coss-Version` header and new webhook endpoints get.
 	APIVersion string `json:"api_version" url:"api_version"`
+	// Whether the organization is in HIPAA mode, which refuses some requests with `hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.
+	HipaaMode bool `json:"hipaa_mode" url:"hipaa_mode"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -494,6 +503,13 @@ func (e *EnvironmentOrganization) GetAPIVersion() string {
 		return ""
 	}
 	return e.APIVersion
+}
+
+func (e *EnvironmentOrganization) GetHipaaMode() bool {
+	if e == nil {
+		return false
+	}
+	return e.HipaaMode
 }
 
 func (e *EnvironmentOrganization) GetExtraProperties() map[string]interface{} {
@@ -538,6 +554,13 @@ func (e *EnvironmentOrganization) SetSlug(slug string) {
 func (e *EnvironmentOrganization) SetAPIVersion(apiVersion string) {
 	e.APIVersion = apiVersion
 	e.require(environmentOrganizationFieldAPIVersion)
+}
+
+// SetHipaaMode sets the HipaaMode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *EnvironmentOrganization) SetHipaaMode(hipaaMode bool) {
+	e.HipaaMode = hipaaMode
+	e.require(environmentOrganizationFieldHipaaMode)
 }
 
 func (e *EnvironmentOrganization) UnmarshalJSON(data []byte) error {
@@ -588,6 +611,7 @@ var (
 	environmentProjectFieldSlug = big.NewInt(1 << 2)
 )
 
+// The project it belongs to.
 type EnvironmentProject struct {
 	// The project's id.
 	ID string `json:"id" url:"id"`

@@ -1,0 +1,313 @@
+---
+title: Reminders
+description: "One list says what goes out around a booking: before or after it, or after any change, by email, SMS or webhook, in your own words."
+---
+
+A booking gets one reminder by default: an email to the attendee a day before. A `reminders` list replaces
+that. Each entry says when it goes out and who hears about it, and that's all it needs:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  reminders: [
+    { anchor: "start", before_minutes: 1440, send: ["email_attendee"] },
+    { anchor: "start", before_minutes: 60, send: ["sms_attendee", "email_host"] },
+    { anchor: "end", after_minutes: 120, send: ["email_attendee"] },
+  ],
+});
+```
+
+Give a reminder a `key` if you'll change its timing later. Without one, its key comes from its timing, so a
+new timing is a new reminder, and what was waiting for the old one is dropped. The dashboard keeps a key for you.
+
+There's nothing else to set up. Upcoming bookings pick up a new list within a minute, for moments still ahead (saving a list never sends anything right away), and an edit or a
+removal applies to anything still waiting.
+
+To give one event type its own list, set it there. It replaces the environment's whole list; `null` goes
+back to inheriting it and an empty list means no reminders at all.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.eventTypes.update("initial_consultation", {
+  reminders: [{ anchor: "start", before_minutes: 15, send: ["sms_attendee"] }],
+});
+```
+
+In the dashboard, this is **Scheduling → Reminders**, with a preview of each email.
+
+## When
+
+`anchor` is the moment a reminder is timed from.
+
+| `anchor` | Timed from | Timing |
+| --- | --- | --- |
+| `start` | The booking's start | `before_minutes` or `after_minutes` |
+| `end` | The booking's end | `before_minutes` or `after_minutes` |
+| `confirmed` | It was confirmed or approved | `after_minutes`, default 0 |
+| `rescheduled` | It was moved | `after_minutes`, default 0 |
+| `cancelled` | It was cancelled | `after_minutes`, default 0 |
+| `declined` | It was declined, or its approval deadline passed | `after_minutes`, default 0 |
+| `pending_approval` | It's waiting for approval | `after_minutes`, default 0 |
+| `no_show` | It was [marked a no-show](/docs/scheduling/bookings) | `after_minutes`, default 0 |
+
+Reminders on `start` and `end` are only for confirmed bookings: a pending request gets them once it's
+approved. If a booking moves, they move with it, and anything else stops as soon as the booking no longer
+fits it: a reminder timed from `confirmed` doesn't go out once the booking is cancelled. Times can be up to a
+year before and 60 days after.
+
+If a booking is made after a reminder's moment, that reminder is skipped and the booking records
+why. For something that has to happen whatever the notice, such as sending an intake form, set
+`send_if_late: true` and it goes out straight away, as long as the meeting is still ahead. A confirmation
+always goes out, so the usual one-hour or one-day reminder doesn't need this.
+
+A reminder that's more than a day late is dropped rather than sent, and one before the start never goes out
+after it. Webhooks are always sent, however late, since they report something that happened.
+
+## Who
+
+`send` lists who hears about it: `email_attendee`, `email_host`, `sms_attendee`, `sms_host` and `webhook`.
+`email_to` adds up to five fixed addresses, such as a front desk. In live environments they must be verified
+members of your organization, or on one of your verified domains.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  reminders: [
+    {
+      key: "desk",
+      anchor: "start",
+      before_minutes: 30,
+      send: ["email_host"],
+      email_to: ["frontdesk@example.com"],
+    },
+  ],
+});
+```
+
+A text needs [`sms_from`](/docs/scheduling/notifications) and a phone number: the attendee's, or the host's
+`phone`. Getting their consent is yours to do, and a STOP is always honored.
+
+An email goes from your `email_from`. Without one, coss.com sends it on your behalf, in its own words,
+and at most two reminders can send email that way.
+
+`email_attendee` includes a booking's guests, from your own address only and with no manage link. They don't
+hear about a request until it's approved, or about a no-show, which is about the attendee.
+
+## Your own words
+
+`subject` and `message` replace the standard wording of an email. The booking's details, the time in the
+recipient's own zone and the manage link stay below your words, so a message can be one line.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  reminders: [
+    {
+      key: "follow_up",
+      anchor: "end",
+      after_minutes: 120,
+      send: ["email_attendee"],
+      subject: "How did it go, {{attendee_first_name}}?",
+      message: "Thanks for meeting {{host_name}} about {{event_title}}.",
+      button: { label: "Leave feedback", url: "https://example.com/feedback?b={{booking_id}}" },
+    },
+    {
+      key: "day_before",
+      anchor: "start",
+      before_minutes: 1440,
+      send: ["sms_attendee"],
+      sms_message: "{{event_title}} is {{time_until}}, at {{time}}.",
+    },
+  ],
+});
+```
+
+| Variable | What it is |
+| --- | --- |
+| `{{event_title}}` | The event type's title |
+| `{{brand}}` | Your brand name |
+| `{{booking_id}}` | The booking's id |
+| `{{location}}` | Where it happens, such as the meeting link |
+| `{{time_until}}` | How long until it starts, such as "in 1 hour", in the recipient's language |
+| `{{date}}`, `{{time}}`, `{{end_time}}` | When, in the recipient's time zone and language |
+| `{{time_zone}}` | The recipient's time zone |
+| `{{attendee_name}}`, `{{attendee_first_name}}` | The attendee's name, or a stand-in such as "there" |
+| `{{host_name}}` | The host's name, or a stand-in such as "your host" |
+
+A name outside this list is refused when you save, so a typo never reaches anyone's inbox. A name with a link
+in it, which a booker could type themselves, renders as if there were none. Answers to booking questions
+aren't available here: they never appear in emails.
+
+The standard wording says what's true when it goes out, so a reminder timed from the end of a meeting that hasn't
+started yet still says it's coming up.
+
+The standard wording, the labels around your text and these values follow [the recipient's
+language](/docs/scheduling/notifications#languages). A fixed address in `email_to` gets the first host's. Your own
+`subject`, `message`, `sms_message` and `button` go out as you wrote them, in every language: there's one version of
+each.
+
+What you write is plain text and can't contain links, and in live environments it's checked for abuse
+when you save it, rather than each email being screened. So:
+
+- Your own words only go out from your own address. They need `email_from`, and if that domain stops being
+  verified, coss.com sends its standard wording rather than yours.
+- `button` is the one link you can add, to an https address on one of your verified domains. Its path or
+  query can use `{{booking_id}}`.
+- `sms_message` can't use names, since SMS is sampled by [content screening](/docs/content-screening). Your
+  brand goes first and "Reply STOP to opt out." goes last.
+
+Keep these about the booking. Scheduling emails have no unsubscribe link, so marketing belongs in
+[broadcasts](/docs/email/broadcasts).
+
+## Only some bookings
+
+`only_if` limits a reminder to bookings that match, checked when it's due. Tag a booking with whatever
+you need to branch on:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  reminders: [
+    {
+      key: "prep",
+      anchor: "start",
+      before_minutes: 2880,
+      send: ["email_attendee"],
+      only_if: { metadata: { plan: "pro" }, location_types: ["zoom", "google_meet"] },
+    },
+  ],
+});
+```
+
+Reminders on `end` skip a booking marked a no-show. Set `skip_no_show` to change that, on any reminder.
+
+## After a no-show or a cancellation
+
+Timing a reminder from what happened covers most follow-ups:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  reminders: [
+    {
+      key: "missed_you",
+      anchor: "no_show",
+      after_minutes: 15,
+      send: ["email_attendee"],
+      subject: "Sorry we missed you",
+      message: "We hope everything's all right. Book another time whenever suits you.",
+      button: { label: "Book again", url: "https://example.com/book" },
+    },
+    { key: "come_back", anchor: "cancelled", after_minutes: 10080, send: ["webhook"] },
+  ],
+});
+```
+
+## Your own wording for a confirmation
+
+Turn the standard email off and time your own from `confirmed`. `include_invite` keeps the calendar invitation:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.settings.update({
+  email_from: "appointments@example.com",
+  notifications: { confirmed: { email_attendee: false } },
+  reminders: [
+    {
+      key: "welcome",
+      anchor: "confirmed",
+      send: ["email_attendee"],
+      subject: "You're booked, {{attendee_first_name}}",
+      message: "See you {{time_until}}. Here's everything you need.",
+      include_invite: true,
+    },
+  ],
+});
+```
+
+## Webhooks at any moment
+
+Two webhooks fire for every confirmed booking, at the moment it starts and ends. There's nothing to turn on,
+and an endpoint added later still hears about bookings that already exist:
+
+- `scheduling.booking.started`
+- `scheduling.booking.ended`
+
+For any other moment, add `webhook` to a reminder's `send`. `scheduling.booking.reminder` says which reminder
+it is, so one endpoint can handle them all:
+
+```json
+{
+  "type": "scheduling.booking.reminder",
+  "data": {
+    "booking_id": "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    "status": "confirmed",
+    "reminder": {
+      "key": "prep",
+      "anchor": "start",
+      "before_minutes": 90,
+      "after_minutes": null,
+      "scheduled_for": "2027-01-04T13:30:00.000Z"
+    },
+    "occurred_at": "2027-01-04T13:30:00.000Z"
+  }
+}
+```
+
+They use your [webhook endpoints](/docs/webhooks), with the same signatures, retries and API versions. Like every
+scheduling webhook, they carry ids, times and statuses only. `occurred_at` is when the moment was, even if
+the delivery was later. A group session sends one per seat.
+
+This is how to go beyond what a reminder can do: send a WhatsApp message from your own account, or decide in
+your own code whether to send anything at all.
+
+## Why didn't they get it?
+
+Everything queued for a booking is on its page in the dashboard, and available from the API:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+const bookingId = "book_01kd2m9a0b1c2d3e4f5g6h7j8m";
+// ---cut---
+const { data } = await coss.scheduling.bookings.notifications(bookingId);
+// data?.data[0]: { kind, reminder_key, channel, recipient, due_at, finished_at, outcome }
+```
+
+It lists the newest first, a page at a time, and never says who a notification went to.
+
+| `outcome` | What happened |
+| --- | --- |
+| `null` | It's waiting for `due_at` |
+| `sent` | It was handed to the email or SMS product, or the webhook was queued |
+| `too_late` | Its moment had passed when the booking was made, or it was too late to be useful |
+| `filtered` | The booking didn't match `only_if` |
+| `no_show` | The booking was marked a no-show |
+| `no_address` | There was nobody to send it to, such as a text to someone without a phone number |
+| `no_sender` | It needs `sms_from` or, past the first two reminders that send email, `email_from` |
+| `stale` | The reminder was removed or changed, or the booking no longer fits it |
+| `superseded` | The booking moved or was cancelled first |
+| `failed` | Sending failed, even after retries |
+
+After `sent`, the [email](/docs/email/sending) or [SMS message](/docs/sms/sending) has its own delivery status.
+
+## What it costs
+
+Reminders are free to configure. An email from your own domain is billed like any email, and a text like any
+text message. Webhooks aren't billed.

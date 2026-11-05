@@ -19,6 +19,9 @@ public final class RiskAssessmentDegradedItem {
     public static final RiskAssessmentDegradedItem DOMAIN_AGE =
             new RiskAssessmentDegradedItem(Value.DOMAIN_AGE, "domain_age");
 
+    public static final RiskAssessmentDegradedItem USAGE_LIMIT =
+            new RiskAssessmentDegradedItem(Value.USAGE_LIMIT, "usage_limit");
+
     public static final RiskAssessmentDegradedItem VELOCITY =
             new RiskAssessmentDegradedItem(Value.VELOCITY, "velocity");
 
@@ -68,6 +71,8 @@ public final class RiskAssessmentDegradedItem {
                 return visitor.visitIpData();
             case DOMAIN_AGE:
                 return visitor.visitDomainAge();
+            case USAGE_LIMIT:
+                return visitor.visitUsageLimit();
             case VELOCITY:
                 return visitor.visitVelocity();
             case IP_PRIVACY:
@@ -91,6 +96,8 @@ public final class RiskAssessmentDegradedItem {
                 return IP_DATA;
             case "domain_age":
                 return DOMAIN_AGE;
+            case "usage_limit":
+                return USAGE_LIMIT;
             case "velocity":
                 return VELOCITY;
             case "ip_privacy":
@@ -115,6 +122,8 @@ public final class RiskAssessmentDegradedItem {
 
         IP_PRIVACY,
 
+        USAGE_LIMIT,
+
         UNKNOWN
     }
 
@@ -132,6 +141,8 @@ public final class RiskAssessmentDegradedItem {
         T visitContent();
 
         T visitIpPrivacy();
+
+        T visitUsageLimit();
 
         T visitUnknown(String unknownType);
     }

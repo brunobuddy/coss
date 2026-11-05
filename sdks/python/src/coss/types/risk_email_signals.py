@@ -8,21 +8,45 @@ from .risk_email_signals_deliverability import RiskEmailSignalsDeliverability
 
 
 class RiskEmailSignals(UniversalBaseModel):
+    """
+    What the address says. `null` on an assessment with no email.
+    """
+
     domain: typing.Optional[str] = pydantic.Field(default=None)
     """
     `null` once the address is removed (90 days after the assessment).
     """
 
-    valid: bool
-    disposable: bool
+    valid: bool = pydantic.Field()
+    """
+    Whether it's syntactically valid.
+    """
+
+    disposable: bool = pydantic.Field()
+    """
+    Whether its domain is a known burner service.
+    """
+
     deliverability: RiskEmailSignalsDeliverability = pydantic.Field()
     """
     From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.
     """
 
-    role_account: bool
-    free_provider: bool
-    suggestion: typing.Optional[str] = None
+    role_account: bool = pydantic.Field()
+    """
+    Whether it's a role mailbox, like `info@`.
+    """
+
+    free_provider: bool = pydantic.Field()
+    """
+    Whether its domain is a free mailbox provider.
+    """
+
+    suggestion: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    `email.typo`: the likely intended domain. `null` otherwise.
+    """
+
     domain_age_days: typing.Optional[int] = pydantic.Field(default=None)
     """
     Days since the domain was registered (RDAP); `null` when unknown or not looked up (free providers, disposable domains).

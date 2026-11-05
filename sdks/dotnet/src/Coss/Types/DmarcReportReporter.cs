@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Who sent the report.
+/// </summary>
 [Serializable]
 public record DmarcReportReporter : IJsonOnDeserialized
 {
@@ -11,9 +14,15 @@ public record DmarcReportReporter : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The reporting organization.
+    /// </summary>
     [JsonPropertyName("org_name")]
     public required string OrgName { get; set; }
 
+    /// <summary>
+    /// Its contact address.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("email")]
     public string? Email { get; set; }

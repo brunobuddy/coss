@@ -140,41 +140,65 @@ public final class EmailSummary {
         return id;
     }
 
+    /**
+     * @return Who it's sent from.
+     */
     @JsonProperty("from")
     public String getFrom() {
         return from;
     }
 
+    /**
+     * @return The <code>To</code> addresses.
+     */
     @JsonProperty("to")
     public List<String> getTo() {
         return to;
     }
 
+    /**
+     * @return The <code>Cc</code> addresses.
+     */
     @JsonProperty("cc")
     public List<String> getCc() {
         return cc;
     }
 
+    /**
+     * @return The <code>Bcc</code> addresses.
+     */
     @JsonProperty("bcc")
     public List<String> getBcc() {
         return bcc;
     }
 
+    /**
+     * @return The <code>Reply-To</code> addresses.
+     */
     @JsonProperty("reply_to")
     public List<String> getReplyTo() {
         return replyTo;
     }
 
+    /**
+     * @return The subject, rendered if it came from a template.
+     */
     @JsonProperty("subject")
     public String getSubject() {
         return subject;
     }
 
+    /**
+     * @return Your tags on the email.
+     */
     @JsonProperty("tags")
     public List<EmailSummaryTagsItem> getTags() {
         return tags;
     }
 
+    /**
+     * @return The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("category")
     public OptionalNullable<String> getCategory() {
@@ -184,6 +208,9 @@ public final class EmailSummary {
         return category;
     }
 
+    /**
+     * @return <code>transactional</code> or <code>marketing</code>.
+     */
     @JsonProperty("stream")
     public EmailSummaryStream getStream() {
         return stream;
@@ -209,6 +236,9 @@ public final class EmailSummary {
         return failure;
     }
 
+    /**
+     * @return Each recipient, with how delivery to them went.
+     */
     @JsonProperty("recipients")
     public List<EmailRecipient> getRecipients() {
         return recipients;
@@ -232,6 +262,9 @@ public final class EmailSummary {
         return createdAt;
     }
 
+    /**
+     * @return When it was handed to the provider. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("sent_at")
     public OptionalNullable<OffsetDateTime> getSentAt() {
@@ -441,14 +474,23 @@ public final class EmailSummary {
     }
 
     public interface FromStage {
+        /**
+         * <p>Who it's sent from.</p>
+         */
         SubjectStage from(@NotNull String from);
     }
 
     public interface SubjectStage {
+        /**
+         * <p>The subject, rendered if it came from a template.</p>
+         */
         StreamStage subject(@NotNull String subject);
     }
 
     public interface StreamStage {
+        /**
+         * <p><code>transactional</code> or <code>marketing</code>.</p>
+         */
         StatusStage stream(@NotNull EmailSummaryStream stream);
     }
 
@@ -485,36 +527,54 @@ public final class EmailSummary {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The <code>To</code> addresses.</p>
+         */
         _FinalStage to(List<String> to);
 
         _FinalStage addTo(String to);
 
         _FinalStage addAllTo(List<String> to);
 
+        /**
+         * <p>The <code>Cc</code> addresses.</p>
+         */
         _FinalStage cc(List<String> cc);
 
         _FinalStage addCc(String cc);
 
         _FinalStage addAllCc(List<String> cc);
 
+        /**
+         * <p>The <code>Bcc</code> addresses.</p>
+         */
         _FinalStage bcc(List<String> bcc);
 
         _FinalStage addBcc(String bcc);
 
         _FinalStage addAllBcc(List<String> bcc);
 
+        /**
+         * <p>The <code>Reply-To</code> addresses.</p>
+         */
         _FinalStage replyTo(List<String> replyTo);
 
         _FinalStage addReplyTo(String replyTo);
 
         _FinalStage addAllReplyTo(List<String> replyTo);
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         _FinalStage tags(List<EmailSummaryTagsItem> tags);
 
         _FinalStage addTags(EmailSummaryTagsItem tags);
 
         _FinalStage addAllTags(List<EmailSummaryTagsItem> tags);
 
+        /**
+         * <p>The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.</p>
+         */
         _FinalStage category(OptionalNullable<String> category);
 
         _FinalStage category(String category);
@@ -534,12 +594,18 @@ public final class EmailSummary {
 
         _FinalStage failure(Nullable<EmailFailure> failure);
 
+        /**
+         * <p>Each recipient, with how delivery to them went.</p>
+         */
         _FinalStage recipients(List<EmailRecipient> recipients);
 
         _FinalStage addRecipients(EmailRecipient recipients);
 
         _FinalStage addAllRecipients(List<EmailRecipient> recipients);
 
+        /**
+         * <p>When it was handed to the provider. <code>null</code>: not yet.</p>
+         */
         _FinalStage sentAt(OptionalNullable<OffsetDateTime> sentAt);
 
         _FinalStage sentAt(OffsetDateTime sentAt);
@@ -713,6 +779,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>Who it's sent from.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("from")
         public SubjectStage from(@NotNull String from) {
@@ -720,6 +790,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The subject, rendered if it came from a template.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subject")
         public StreamStage subject(@NotNull String subject) {
@@ -727,6 +801,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p><code>transactional</code> or <code>marketing</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("stream")
         public StatusStage stream(@NotNull EmailSummaryStream stream) {
@@ -1027,6 +1105,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the provider. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(Nullable<OffsetDateTime> sentAt) {
             if (sentAt.isNull()) {
@@ -1039,6 +1121,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the provider. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(Optional<OffsetDateTime> sentAt) {
             if (sentAt.isPresent()) {
@@ -1049,12 +1135,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>When it was handed to the provider. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sentAt(OffsetDateTime sentAt) {
             this.sentAt = OptionalNullable.of(sentAt);
             return this;
         }
 
+        /**
+         * <p>When it was handed to the provider. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "sent_at", nulls = Nulls.SKIP)
         public _FinalStage sentAt(OptionalNullable<OffsetDateTime> sentAt) {
@@ -1062,6 +1155,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>Each recipient, with how delivery to them went.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllRecipients(List<EmailRecipient> recipients) {
             if (recipients != null) {
@@ -1070,12 +1167,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>Each recipient, with how delivery to them went.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addRecipients(EmailRecipient recipients) {
             this.recipients.add(recipients);
             return this;
         }
 
+        /**
+         * <p>Each recipient, with how delivery to them went.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "recipients", nulls = Nulls.SKIP)
         public _FinalStage recipients(List<EmailRecipient> recipients) {
@@ -1136,6 +1240,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage category(Nullable<String> category) {
             if (category.isNull()) {
@@ -1148,6 +1256,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage category(Optional<String> category) {
             if (category.isPresent()) {
@@ -1158,12 +1270,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage category(String category) {
             this.category = OptionalNullable.of(category);
             return this;
         }
 
+        /**
+         * <p>The email's category, which suppressions and tracking rules can scope to. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "category", nulls = Nulls.SKIP)
         public _FinalStage category(OptionalNullable<String> category) {
@@ -1171,6 +1290,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTags(List<EmailSummaryTagsItem> tags) {
             if (tags != null) {
@@ -1179,12 +1302,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTags(EmailSummaryTagsItem tags) {
             this.tags.add(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(List<EmailSummaryTagsItem> tags) {
@@ -1195,6 +1325,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Reply-To</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReplyTo(List<String> replyTo) {
             if (replyTo != null) {
@@ -1203,12 +1337,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Reply-To</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReplyTo(String replyTo) {
             this.replyTo.add(replyTo);
             return this;
         }
 
+        /**
+         * <p>The <code>Reply-To</code> addresses.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public _FinalStage replyTo(List<String> replyTo) {
@@ -1219,6 +1360,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Bcc</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllBcc(List<String> bcc) {
             if (bcc != null) {
@@ -1227,12 +1372,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Bcc</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addBcc(String bcc) {
             this.bcc.add(bcc);
             return this;
         }
 
+        /**
+         * <p>The <code>Bcc</code> addresses.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "bcc", nulls = Nulls.SKIP)
         public _FinalStage bcc(List<String> bcc) {
@@ -1243,6 +1395,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Cc</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllCc(List<String> cc) {
             if (cc != null) {
@@ -1251,12 +1407,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>Cc</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addCc(String cc) {
             this.cc.add(cc);
             return this;
         }
 
+        /**
+         * <p>The <code>Cc</code> addresses.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public _FinalStage cc(List<String> cc) {
@@ -1267,6 +1430,10 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>To</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTo(List<String> to) {
             if (to != null) {
@@ -1275,12 +1442,19 @@ public final class EmailSummary {
             return this;
         }
 
+        /**
+         * <p>The <code>To</code> addresses.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTo(String to) {
             this.to.add(to);
             return this;
         }
 
+        /**
+         * <p>The <code>To</code> addresses.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "to", nulls = Nulls.SKIP)
         public _FinalStage to(List<String> to) {

@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Who it's about.
+/// </summary>
 [Serializable]
 public record RiskAssessmentUser : IJsonOnDeserialized
 {
@@ -11,6 +14,9 @@ public record RiskAssessmentUser : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Your user id. `null`: none given.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("id")]
     public string? Id { get; set; }

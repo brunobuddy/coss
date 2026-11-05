@@ -14,9 +14,15 @@ public record SegmentFilterConditionsItemAudienceId : IJsonOnDeserialized
     [JsonPropertyName("field")]
     public required SegmentFilterConditionsItemAudienceIdField Field { get; set; }
 
+    /// <summary>
+    /// Whether the contact is in the audience.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemAudienceIdOp Op { get; set; }
 
+    /// <summary>
+    /// The audience's id.
+    /// </summary>
     [JsonPropertyName("audience_id")]
     public required string AudienceId { get; set; }
 

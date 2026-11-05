@@ -35,9 +35,20 @@ class TrackingDomain(UniversalBaseModel):
     """
 
     created_at: dt.datetime
-    last_checked_at: typing.Optional[dt.datetime] = None
-    activated_at: typing.Optional[dt.datetime] = None
-    failed_at: typing.Optional[dt.datetime] = None
+    last_checked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was last checked. `null`: not yet.
+    """
+
+    activated_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it became active. `null`: it isn't.
+    """
+
+    failed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it failed. `null`: it hasn't.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

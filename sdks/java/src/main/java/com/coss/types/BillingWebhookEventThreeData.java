@@ -56,6 +56,9 @@ public final class BillingWebhookEventThreeData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The organization's id.
+     */
     @JsonProperty("organization_id")
     public String getOrganizationId() {
         return organizationId;
@@ -143,6 +146,9 @@ public final class BillingWebhookEventThreeData {
     }
 
     public interface OrganizationIdStage {
+        /**
+         * <p>The organization's id.</p>
+         */
         OccurredAtStage organizationId(@NotNull String organizationId);
 
         Builder from(BillingWebhookEventThreeData other);
@@ -223,6 +229,10 @@ public final class BillingWebhookEventThreeData {
             return this;
         }
 
+        /**
+         * <p>The organization's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("organization_id")
         public OccurredAtStage organizationId(@NotNull String organizationId) {

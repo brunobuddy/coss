@@ -8,10 +8,13 @@ use Coss\Core\Types\ArrayType;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * The request. Never documents or field values.
+ */
 class SignRequestWebhookEventData extends JsonSerializableType
 {
     /**
-     * @var string $signRequestId
+     * @var string $signRequestId The signature request's id.
      */
     #[JsonProperty('sign_request_id')]
     public string $signRequestId;
@@ -23,13 +26,13 @@ class SignRequestWebhookEventData extends JsonSerializableType
     public string $status;
 
     /**
-     * @var string $title
+     * @var string $title The request's title.
      */
     #[JsonProperty('title')]
     public string $title;
 
     /**
-     * @var array<string, string> $metadata
+     * @var array<string, string> $metadata Your own key-value pairs.
      */
     #[JsonProperty('metadata'), ArrayType(['string' => 'string'])]
     public array $metadata;
@@ -47,13 +50,13 @@ class SignRequestWebhookEventData extends JsonSerializableType
     public ?string $reason;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

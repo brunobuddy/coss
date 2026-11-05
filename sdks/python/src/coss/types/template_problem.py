@@ -8,11 +8,30 @@ from .template_problem_field import TemplateProblemField
 
 
 class TemplateProblem(UniversalBaseModel):
-    locale: str
-    field: TemplateProblemField
-    message: str
-    line: int
-    column: int
+    locale: str = pydantic.Field()
+    """
+    The locale whose content it's in.
+    """
+
+    field: TemplateProblemField = pydantic.Field()
+    """
+    The part of the content it's in.
+    """
+
+    message: str = pydantic.Field()
+    """
+    What's wrong.
+    """
+
+    line: int = pydantic.Field()
+    """
+    The line it's on, from 1.
+    """
+
+    column: int = pydantic.Field()
+    """
+    The column it's at, from 1.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

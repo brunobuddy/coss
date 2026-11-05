@@ -13,13 +13,13 @@ use Coss\Core\Types\Date;
 class BillingPeriod extends JsonSerializableType
 {
     /**
-     * @var DateTime $start
+     * @var DateTime $start When the period starts (inclusive).
      */
     #[JsonProperty('start'), Date(Date::TYPE_DATETIME)]
     public DateTime $start;
 
     /**
-     * @var DateTime $end
+     * @var DateTime $end When the period ends (exclusive).
      */
     #[JsonProperty('end'), Date(Date::TYPE_DATETIME)]
     public DateTime $end;

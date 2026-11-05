@@ -17,12 +17,21 @@ public record HookDelivery : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the application.
+    /// </summary>
     [JsonPropertyName("application_id")]
     public required string ApplicationId { get; set; }
 
+    /// <summary>
+    /// The id of the message being delivered.
+    /// </summary>
     [JsonPropertyName("message_id")]
     public required string MessageId { get; set; }
 
+    /// <summary>
+    /// The id of the endpoint it's delivered to.
+    /// </summary>
     [JsonPropertyName("endpoint_id")]
     public required string EndpointId { get; set; }
 
@@ -32,17 +41,29 @@ public record HookDelivery : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required HookDeliveryStatus Status { get; set; }
 
+    /// <summary>
+    /// How many attempts were made so far.
+    /// </summary>
     [JsonPropertyName("attempt_count")]
     public required long AttemptCount { get; set; }
 
+    /// <summary>
+    /// When the next attempt runs. `null`: none is due, because it finished.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("next_attempt_at")]
     public DateTime? NextAttemptAt { get; set; }
 
+    /// <summary>
+    /// The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_status_code")]
     public long? LastStatusCode { get; set; }
 
+    /// <summary>
+    /// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_error")]
     public string? LastError { get; set; }
@@ -50,6 +71,9 @@ public record HookDelivery : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When it `succeeded` or `failed`. `null`: still `pending`.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("finished_at")]
     public DateTime? FinishedAt { get; set; }

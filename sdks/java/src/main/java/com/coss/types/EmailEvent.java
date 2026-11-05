@@ -70,11 +70,17 @@ public final class EmailEvent {
         return id;
     }
 
+    /**
+     * @return The email's id.
+     */
     @JsonProperty("email_id")
     public String getEmailId() {
         return emailId;
     }
 
+    /**
+     * @return What happened, such as <code>email.delivered</code> or <code>email.bounced</code>.
+     */
     @JsonProperty("type")
     public EmailEventType getType() {
         return type;
@@ -92,6 +98,9 @@ public final class EmailEvent {
         return recipient;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -154,14 +163,23 @@ public final class EmailEvent {
     }
 
     public interface EmailIdStage {
+        /**
+         * <p>The email's id.</p>
+         */
         TypeStage emailId(@NotNull String emailId);
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened, such as <code>email.delivered</code> or <code>email.bounced</code>.</p>
+         */
         OccurredAtStage type(@NotNull EmailEventType type);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         DataStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -236,6 +254,10 @@ public final class EmailEvent {
             return this;
         }
 
+        /**
+         * <p>The email's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email_id")
         public TypeStage emailId(@NotNull String emailId) {
@@ -243,6 +265,10 @@ public final class EmailEvent {
             return this;
         }
 
+        /**
+         * <p>What happened, such as <code>email.delivered</code> or <code>email.bounced</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public OccurredAtStage type(@NotNull EmailEventType type) {
@@ -250,6 +276,10 @@ public final class EmailEvent {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public DataStage occurredAt(@NotNull OffsetDateTime occurredAt) {

@@ -9,28 +9,31 @@ use Coss\Core\Types\Union;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * The submission.
+ */
 class FormSubmissionWebhookEventData extends JsonSerializableType
 {
     /**
-     * @var string $formId
+     * @var string $formId The form's id.
      */
     #[JsonProperty('form_id')]
     public string $formId;
 
     /**
-     * @var string $formName
+     * @var string $formName The form's name.
      */
     #[JsonProperty('form_name')]
     public string $formName;
 
     /**
-     * @var string $submissionId
+     * @var string $submissionId The submission's id.
      */
     #[JsonProperty('submission_id')]
     public string $submissionId;
 
     /**
-     * @var value-of<FormSubmissionWebhookEventDataStatus> $status
+     * @var value-of<FormSubmissionWebhookEventDataStatus> $status The submission's status after this event.
      */
     #[JsonProperty('status')]
     public string $status;
@@ -45,7 +48,7 @@ class FormSubmissionWebhookEventData extends JsonSerializableType
     public array $data;
 
     /**
-     * @var ?string $submitterEmail
+     * @var ?string $submitterEmail The value of the form's `submitter.email_field`. `null` when it has none.
      */
     #[JsonProperty('submitter_email')]
     public ?string $submitterEmail;
@@ -57,19 +60,19 @@ class FormSubmissionWebhookEventData extends JsonSerializableType
     public array $files;
 
     /**
-     * @var ?value-of<FormSubmissionWebhookEventDataSpamReason> $spamReason
+     * @var ?value-of<FormSubmissionWebhookEventDataSpamReason> $spamReason Why it was flagged. `null`: not flagged.
      */
     #[JsonProperty('spam_reason')]
     public ?string $spamReason;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When this happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

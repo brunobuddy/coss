@@ -48,7 +48,7 @@ public final class TemplateContentInput {
     }
 
     /**
-     * @return A BCP 47 language tag, e.g. &quot;en&quot; or &quot;pt-BR&quot;.
+     * @return The BCP 47 language tag this content is for, unique in <code>contents</code>.
      */
     @JsonProperty("locale")
     public String getLocale() {
@@ -133,7 +133,7 @@ public final class TemplateContentInput {
 
     public interface LocaleStage {
         /**
-         * <p>A BCP 47 language tag, e.g. &quot;en&quot; or &quot;pt-BR&quot;.</p>
+         * <p>The BCP 47 language tag this content is for, unique in <code>contents</code>.</p>
          */
         SubjectStage locale(@NotNull String locale);
 
@@ -202,7 +202,7 @@ public final class TemplateContentInput {
         }
 
         /**
-         * <p>A BCP 47 language tag, e.g. &quot;en&quot; or &quot;pt-BR&quot;.</p>
+         * <p>The BCP 47 language tag this content is for, unique in <code>contents</code>.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override

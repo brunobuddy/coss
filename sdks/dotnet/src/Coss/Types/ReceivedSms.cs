@@ -29,9 +29,15 @@ public record ReceivedSms : IJsonOnDeserialized
     [JsonPropertyName("to")]
     public required string To { get; set; }
 
+    /// <summary>
+    /// The text.
+    /// </summary>
     [JsonPropertyName("body")]
     public required string Body { get; set; }
 
+    /// <summary>
+    /// Segments the text took.
+    /// </summary>
     [JsonPropertyName("segments")]
     public required long Segments { get; set; }
 
@@ -42,6 +48,9 @@ public record ReceivedSms : IJsonOnDeserialized
     [JsonPropertyName("keyword")]
     public ReceivedSmsKeyword? Keyword { get; set; }
 
+    /// <summary>
+    /// Whether it's a simulated message of a sandbox environment.
+    /// </summary>
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 

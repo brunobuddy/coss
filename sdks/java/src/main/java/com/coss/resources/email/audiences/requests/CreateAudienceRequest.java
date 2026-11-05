@@ -28,6 +28,9 @@ public final class CreateAudienceRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the list, unique in the environment.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -63,6 +66,9 @@ public final class CreateAudienceRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the list, unique in the environment.</p>
+         */
         _FinalStage name(@NotNull String name);
 
         Builder from(CreateAudienceRequest other);
@@ -91,6 +97,10 @@ public final class CreateAudienceRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the list, unique in the environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public _FinalStage name(@NotNull String name) {

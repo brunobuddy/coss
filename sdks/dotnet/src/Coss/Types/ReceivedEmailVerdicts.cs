@@ -14,22 +14,37 @@ public record ReceivedEmailVerdicts : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The spam verdict.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("spam")]
     public ReceivedEmailVerdictsSpam? Spam { get; set; }
 
+    /// <summary>
+    /// The virus verdict.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("virus")]
     public ReceivedEmailVerdictsVirus? Virus { get; set; }
 
+    /// <summary>
+    /// The SPF verdict.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("spf")]
     public ReceivedEmailVerdictsSpf? Spf { get; set; }
 
+    /// <summary>
+    /// The DKIM verdict.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("dkim")]
     public ReceivedEmailVerdictsDkim? Dkim { get; set; }
 
+    /// <summary>
+    /// The DMARC verdict.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("dmarc")]
     public ReceivedEmailVerdictsDmarc? Dmarc { get; set; }

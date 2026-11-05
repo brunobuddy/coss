@@ -26,6 +26,7 @@ var (
 )
 
 type CreateFormRequest struct {
+	// Your name for the form, shown in the dashboard and in notifications.
 	Name string `json:"name" url:"-"`
 	// `false`: submissions are refused.
 	Enabled *bool `json:"enabled,omitempty" url:"-"`
@@ -36,13 +37,19 @@ type CreateFormRequest struct {
 	// Sites that may post to the form, like `https://www.example.com` (sandbox environments also `http://localhost:<port>`). Empty (default): any.
 	AllowedOrigins []string `json:"allowed_origins,omitempty" url:"-"`
 	// Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
-	RedirectURL   *string                         `json:"redirect_url,omitempty" url:"-"`
-	Spam          *CreateFormRequestSpam          `json:"spam,omitempty" url:"-"`
-	Submitter     *CreateFormRequestSubmitter     `json:"submitter,omitempty" url:"-"`
+	RedirectURL *string `json:"redirect_url,omitempty" url:"-"`
+	// How submissions are screened. Only the fields given change.
+	Spam *CreateFormRequestSpam `json:"spam,omitempty" url:"-"`
+	// Who the submitter is, and whether they must confirm by email. Only the fields given change.
+	Submitter *CreateFormRequestSubmitter `json:"submitter,omitempty" url:"-"`
+	// Emails about accepted submissions. Only the fields given change.
 	Notifications *CreateFormRequestNotifications `json:"notifications,omitempty" url:"-"`
-	Contacts      *CreateFormRequestContacts      `json:"contacts,omitempty" url:"-"`
-	Files         *CreateFormRequestFiles         `json:"files,omitempty" url:"-"`
-	Hosted        *CreateFormRequestHosted        `json:"hosted,omitempty" url:"-"`
+	// Turning submissions into contacts. Only the fields given change.
+	Contacts *CreateFormRequestContacts `json:"contacts,omitempty" url:"-"`
+	// File uploads. Only the fields given change.
+	Files *CreateFormRequestFiles `json:"files,omitempty" url:"-"`
+	// The page coss.com can serve for this form. Only the fields given change.
+	Hosted *CreateFormRequestHosted `json:"hosted,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -424,29 +431,42 @@ var formNullableFields = map[string]*big.Int{
 }
 
 type Form struct {
-	Object  FormObject `json:"object" url:"object"`
-	ID      string     `json:"id" url:"id"`
-	Name    string     `json:"name" url:"name"`
-	Enabled bool       `json:"enabled" url:"enabled"`
+	Object FormObject `json:"object" url:"object"`
+	ID     string     `json:"id" url:"id"`
+	// Your name for the form, shown in the dashboard and in notifications.
+	Name string `json:"name" url:"name"`
+	// `false`: submissions are refused.
+	Enabled bool `json:"enabled" url:"enabled"`
 	// Where the form posts: `<form action=…>`.
 	Endpoint string `json:"endpoint" url:"endpoint"`
 	// The hosted page, when `hosted.enabled`; `null` otherwise.
-	HostedURL      *string            `json:"hosted_url,omitempty" url:"hosted_url,omitempty"`
-	Fields         []*FormField       `json:"fields,omitempty" url:"fields,omitempty"`
-	StrictFields   bool               `json:"strict_fields" url:"strict_fields"`
-	AllowedOrigins []string           `json:"allowed_origins" url:"allowed_origins"`
-	RedirectURL    *string            `json:"redirect_url,omitempty" url:"redirect_url,omitempty"`
-	Spam           *FormSpam          `json:"spam" url:"spam"`
-	Submitter      *FormSubmitter     `json:"submitter" url:"submitter"`
-	Notifications  *FormNotifications `json:"notifications" url:"notifications"`
-	Contacts       *FormContacts      `json:"contacts" url:"contacts"`
-	Files          *FormFiles         `json:"files" url:"files"`
-	Hosted         *FormHosted        `json:"hosted" url:"hosted"`
+	HostedURL *string `json:"hosted_url,omitempty" url:"hosted_url,omitempty"`
+	// The form's fields. `null`: any field is accepted, without validation.
+	Fields []*FormField `json:"fields,omitempty" url:"fields,omitempty"`
+	// With `fields`: whether fields the form doesn't define are refused.
+	StrictFields bool `json:"strict_fields" url:"strict_fields"`
+	// Sites that may post to the form. Empty: any.
+	AllowedOrigins []string `json:"allowed_origins" url:"allowed_origins"`
+	// Where browsers go after an HTML post. `null`: coss.com's thank-you page.
+	RedirectURL *string `json:"redirect_url,omitempty" url:"redirect_url,omitempty"`
+	// How submissions are screened.
+	Spam *FormSpam `json:"spam" url:"spam"`
+	// Who the submitter is, and whether they must confirm by email.
+	Submitter *FormSubmitter `json:"submitter" url:"submitter"`
+	// Emails about accepted submissions.
+	Notifications *FormNotifications `json:"notifications" url:"notifications"`
+	// Turning submissions into contacts.
+	Contacts *FormContacts `json:"contacts" url:"contacts"`
+	// File uploads.
+	Files *FormFiles `json:"files" url:"files"`
+	// The page coss.com can serve for this form.
+	Hosted *FormHosted `json:"hosted" url:"hosted"`
 	// coss.com disabled the form for abuse; contact support.
-	DisabledByAdmin bool      `json:"disabled_by_admin" url:"disabled_by_admin"`
-	Sandbox         bool      `json:"sandbox" url:"sandbox"`
-	CreatedAt       time.Time `json:"created_at" url:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at" url:"updated_at"`
+	DisabledByAdmin bool `json:"disabled_by_admin" url:"disabled_by_admin"`
+	// Whether the form belongs to a sandbox environment.
+	Sandbox   bool      `json:"sandbox" url:"sandbox"`
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	UpdatedAt time.Time `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -829,14 +849,22 @@ var formContactsNullableFields = map[string]*big.Int{
 	"last_name_field":  formContactsFieldLastNameField,
 }
 
+// Turning submissions into contacts.
 type FormContacts struct {
-	Enabled        bool              `json:"enabled" url:"enabled"`
-	AudienceIDs    []string          `json:"audience_ids" url:"audience_ids"`
-	Topics         []string          `json:"topics" url:"topics"`
-	DoubleOptIn    *bool             `json:"double_opt_in,omitempty" url:"double_opt_in,omitempty"`
-	FirstNameField *string           `json:"first_name_field,omitempty" url:"first_name_field,omitempty"`
-	LastNameField  *string           `json:"last_name_field,omitempty" url:"last_name_field,omitempty"`
-	Properties     map[string]string `json:"properties" url:"properties"`
+	// Whether each accepted submission becomes a contact.
+	Enabled bool `json:"enabled" url:"enabled"`
+	// Audiences the contact joins.
+	AudienceIDs []string `json:"audience_ids" url:"audience_ids"`
+	// Topic keys the contact is opted into.
+	Topics []string `json:"topics" url:"topics"`
+	// Whether new contacts confirm by email first. `null`: the environment's marketing settings decide.
+	DoubleOptIn *bool `json:"double_opt_in,omitempty" url:"double_opt_in,omitempty"`
+	// The field holding the contact's first name. `null`: none.
+	FirstNameField *string `json:"first_name_field,omitempty" url:"first_name_field,omitempty"`
+	// The field holding the contact's last name. `null`: none.
+	LastNameField *string `json:"last_name_field,omitempty" url:"last_name_field,omitempty"`
+	// Contact property key → the field whose value it takes.
+	Properties map[string]string `json:"properties" url:"properties"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1026,13 +1054,20 @@ var formFieldNullableFields = map[string]*big.Int{
 }
 
 type FormField struct {
-	Name        string        `json:"name" url:"name"`
-	Type        FormFieldType `json:"type" url:"type"`
-	Label       *string       `json:"label,omitempty" url:"label,omitempty"`
-	Required    bool          `json:"required" url:"required"`
-	Placeholder *string       `json:"placeholder,omitempty" url:"placeholder,omitempty"`
-	Options     []string      `json:"options" url:"options"`
-	MaxLength   *int64        `json:"max_length,omitempty" url:"max_length,omitempty"`
+	// The `name` the form's input posts.
+	Name string `json:"name" url:"name"`
+	// Validates the value and picks the input on hosted pages.
+	Type FormFieldType `json:"type" url:"type"`
+	// Shown on hosted pages and in notifications. `null`: the name.
+	Label *string `json:"label,omitempty" url:"label,omitempty"`
+	// Whether a submission must include it.
+	Required bool `json:"required" url:"required"`
+	// Shown in the empty input on hosted pages. `null`: none.
+	Placeholder *string `json:"placeholder,omitempty" url:"placeholder,omitempty"`
+	// The choices of `select`, `radio` and `checkbox` fields. Empty for other types.
+	Options []string `json:"options" url:"options"`
+	// The longest value accepted, in characters. `null`: only the overall limit.
+	MaxLength *int64 `json:"max_length,omitempty" url:"max_length,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1222,11 +1257,13 @@ type FormFieldInput struct {
 	// Shown on hosted pages and in notifications. Default: the name.
 	Label *string `json:"label,omitempty" url:"label,omitempty"`
 	// Default false.
-	Required    *bool   `json:"required,omitempty" url:"required,omitempty"`
+	Required *bool `json:"required,omitempty" url:"required,omitempty"`
+	// Shown in the empty input on hosted pages.
 	Placeholder *string `json:"placeholder,omitempty" url:"placeholder,omitempty"`
 	// The choices of `select`, `radio` and `checkbox` fields.
-	Options   []string `json:"options,omitempty" url:"options,omitempty"`
-	MaxLength *int     `json:"max_length,omitempty" url:"max_length,omitempty"`
+	Options []string `json:"options,omitempty" url:"options,omitempty"`
+	// The longest value accepted, in characters.
+	MaxLength *int `json:"max_length,omitempty" url:"max_length,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1444,6 +1481,7 @@ func (f FormFieldInputType) Ptr() *FormFieldInputType {
 	return &f
 }
 
+// Validates the value and picks the input on hosted pages.
 type FormFieldType string
 
 const (
@@ -1503,10 +1541,15 @@ var (
 	formFilesFieldAllowedTypes = big.NewInt(1 << 3)
 )
 
+// File uploads.
 type FormFiles struct {
-	Enabled      bool     `json:"enabled" url:"enabled"`
-	MaxFiles     int64    `json:"max_files" url:"max_files"`
-	MaxFileBytes int64    `json:"max_file_bytes" url:"max_file_bytes"`
+	// Whether uploads are accepted (`multipart/form-data`).
+	Enabled bool `json:"enabled" url:"enabled"`
+	// Most files per submission.
+	MaxFiles int64 `json:"max_files" url:"max_files"`
+	// Largest file, in bytes.
+	MaxFileBytes int64 `json:"max_file_bytes" url:"max_file_bytes"`
+	// MIME types accepted. Empty: images, PDFs, text and Office.
 	AllowedTypes []string `json:"allowed_types" url:"allowed_types"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1648,13 +1691,20 @@ var formHostedNullableFields = map[string]*big.Int{
 	"published_at":    formHostedFieldPublishedAt,
 }
 
+// The page coss.com can serve for this form.
 type FormHosted struct {
-	Enabled        bool       `json:"enabled" url:"enabled"`
-	Title          *string    `json:"title,omitempty" url:"title,omitempty"`
-	Description    *string    `json:"description,omitempty" url:"description,omitempty"`
-	SubmitLabel    *string    `json:"submit_label,omitempty" url:"submit_label,omitempty"`
-	SuccessMessage *string    `json:"success_message,omitempty" url:"success_message,omitempty"`
-	PublishedAt    *time.Time `json:"published_at,omitempty" url:"published_at,omitempty"`
+	// Whether the page is served at `hosted_url`.
+	Enabled bool `json:"enabled" url:"enabled"`
+	// The page's heading. `null`: the form's name.
+	Title *string `json:"title,omitempty" url:"title,omitempty"`
+	// Text under the heading. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The submit button's label. `null`: the default.
+	SubmitLabel *string `json:"submit_label,omitempty" url:"submit_label,omitempty"`
+	// Shown after a submission. `null`: the default.
+	SuccessMessage *string `json:"success_message,omitempty" url:"success_message,omitempty"`
+	// When the page was turned on, or what it shows last changed. `null`: never published.
+	PublishedAt *time.Time `json:"published_at,omitempty" url:"published_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1967,9 +2017,12 @@ var formNotificationsNullableFields = map[string]*big.Int{
 	"from": formNotificationsFieldFrom,
 }
 
+// Emails about accepted submissions.
 type FormNotifications struct {
+	// Who gets an email for each accepted submission.
 	Recipients []string `json:"recipients" url:"recipients"`
-	From       *string  `json:"from,omitempty" url:"from,omitempty"`
+	// The notification's sender. `null`: coss.com, as "<form name> via coss.com".
+	From *string `json:"from,omitempty" url:"from,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2104,12 +2157,18 @@ var formSpamNullableFields = map[string]*big.Int{
 	"content_threshold": formSpamFieldContentThreshold,
 }
 
+// How submissions are screened.
 type FormSpam struct {
-	HoneypotField    string           `json:"honeypot_field" url:"honeypot_field"`
-	Captcha          FormSpamCaptcha  `json:"captcha" url:"captcha"`
-	CaptchaSiteKey   *string          `json:"captcha_site_key,omitempty" url:"captcha_site_key,omitempty"`
-	ContentThreshold *float64         `json:"content_threshold,omitempty" url:"content_threshold,omitempty"`
-	OnReview         FormSpamOnReview `json:"on_review" url:"on_review"`
+	// A field people leave empty; a submission that fills it is spam.
+	HoneypotField string `json:"honeypot_field" url:"honeypot_field"`
+	// `required`: submissions need a captcha token. `off`: they don't.
+	Captcha FormSpamCaptcha `json:"captcha" url:"captcha"`
+	// The captcha's site key, which hosted pages render the widget with. `null`: none set.
+	CaptchaSiteKey *string `json:"captcha_site_key,omitempty" url:"captcha_site_key,omitempty"`
+	// A submission whose text scores at least this in a content category is spam. `null`: the environment's risk settings decide.
+	ContentThreshold *float64 `json:"content_threshold,omitempty" url:"content_threshold,omitempty"`
+	// When Risk's decision is `review`: `hold` keeps the submission until you release it, `deliver` delivers it.
+	OnReview FormSpamOnReview `json:"on_review" url:"on_review"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2253,6 +2312,7 @@ func (f *FormSpam) String() string {
 	return fmt.Sprintf("%#v", f)
 }
 
+// `required`: submissions need a captcha token. `off`: they don't.
 type FormSpamCaptcha string
 
 const (
@@ -2275,6 +2335,7 @@ func (f FormSpamCaptcha) Ptr() *FormSpamCaptcha {
 	return &f
 }
 
+// When Risk's decision is `review`: `hold` keeps the submission until you release it, `deliver` delivers it.
 type FormSpamOnReview string
 
 const (
@@ -2308,9 +2369,13 @@ var formSubmitterNullableFields = map[string]*big.Int{
 	"confirmation_from": formSubmitterFieldConfirmationFrom,
 }
 
+// Who the submitter is, and whether they must confirm by email.
 type FormSubmitter struct {
-	EmailField       string  `json:"email_field" url:"email_field"`
-	Verify           bool    `json:"verify" url:"verify"`
+	// The field holding the submitter's email address.
+	EmailField string `json:"email_field" url:"email_field"`
+	// Whether submissions wait until the submitter clicks a link emailed to them.
+	Verify bool `json:"verify" url:"verify"`
+	// The verification email's sender. `null`: none set.
 	ConfirmationFrom *string `json:"confirmation_from,omitempty" url:"confirmation_from,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2444,16 +2509,19 @@ var createFormRequestContactsNullableFields = map[string]*big.Int{
 	"last_name_field":  createFormRequestContactsFieldLastNameField,
 }
 
+// Turning submissions into contacts. Only the fields given change.
 type CreateFormRequestContacts struct {
-	Enabled     *bool    `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Turn each accepted submission into a contact, from `submitter.email_field`. Default false.
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Audiences the contact joins. They must exist in this environment.
 	AudienceIDs []string `json:"audience_ids,omitempty" url:"audience_ids,omitempty"`
 	// Topic keys the contact is opted into.
 	Topics []string `json:"topics,omitempty" url:"topics,omitempty"`
 	// New contacts confirm their subscription by email first. `null` (default): the environment's marketing settings decide.
 	DoubleOptIn *bool `json:"double_opt_in,omitempty" url:"double_opt_in,omitempty"`
-	// The `name` the form's input posts.
+	// The field holding the contact's first name. `null`: none.
 	FirstNameField *string `json:"first_name_field,omitempty" url:"first_name_field,omitempty"`
-	// The `name` the form's input posts.
+	// The field holding the contact's last name. `null`: none.
 	LastNameField *string `json:"last_name_field,omitempty" url:"last_name_field,omitempty"`
 	// Contact property key → the field whose value it takes.
 	Properties map[string]string `json:"properties,omitempty" url:"properties,omitempty"`
@@ -2635,11 +2703,14 @@ var (
 	createFormRequestFilesFieldAllowedTypes = big.NewInt(1 << 3)
 )
 
+// File uploads. Only the fields given change.
 type CreateFormRequestFiles struct {
 	// Accept uploads (`multipart/form-data`). Default false.
-	Enabled      *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
-	MaxFiles     *int  `json:"max_files,omitempty" url:"max_files,omitempty"`
-	MaxFileBytes *int  `json:"max_file_bytes,omitempty" url:"max_file_bytes,omitempty"`
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Most files per submission. Default 3.
+	MaxFiles *int `json:"max_files,omitempty" url:"max_files,omitempty"`
+	// Largest file, in bytes. Default and maximum 10 MB.
+	MaxFileBytes *int `json:"max_file_bytes,omitempty" url:"max_file_bytes,omitempty"`
 	// MIME types (`image/*` allowed). Empty: images, PDFs, text and Office.
 	AllowedTypes []string `json:"allowed_types,omitempty" url:"allowed_types,omitempty"`
 
@@ -2780,12 +2851,17 @@ var createFormRequestHostedNullableFields = map[string]*big.Int{
 	"success_message": createFormRequestHostedFieldSuccessMessage,
 }
 
+// The page coss.com can serve for this form. Only the fields given change.
 type CreateFormRequestHosted struct {
 	// Serve the form as a page at its `hosted_url` (needs `fields`). Default false.
-	Enabled        *bool   `json:"enabled,omitempty" url:"enabled,omitempty"`
-	Title          *string `json:"title,omitempty" url:"title,omitempty"`
-	Description    *string `json:"description,omitempty" url:"description,omitempty"`
-	SubmitLabel    *string `json:"submit_label,omitempty" url:"submit_label,omitempty"`
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// The page's heading. `null`: the form's name.
+	Title *string `json:"title,omitempty" url:"title,omitempty"`
+	// Text under the heading. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The submit button's label. `null`: the default.
+	SubmitLabel *string `json:"submit_label,omitempty" url:"submit_label,omitempty"`
+	// Shown after a submission. `null`: the default.
 	SuccessMessage *string `json:"success_message,omitempty" url:"success_message,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2940,6 +3016,7 @@ var createFormRequestNotificationsNullableFields = map[string]*big.Int{
 	"from": createFormRequestNotificationsFieldFrom,
 }
 
+// Emails about accepted submissions. Only the fields given change.
 type CreateFormRequestNotifications struct {
 	// Who gets an email for each accepted submission: members of your organization, or addresses on its verified domains.
 	Recipients []string `json:"recipients,omitempty" url:"recipients,omitempty"`
@@ -3060,6 +3137,7 @@ var createFormRequestSpamNullableFields = map[string]*big.Int{
 	"content_threshold": createFormRequestSpamFieldContentThreshold,
 }
 
+// How submissions are screened. Only the fields given change.
 type CreateFormRequestSpam struct {
 	// A field people leave empty (hide it with CSS); a submission that fills it is spam. Default `_gotcha`.
 	HoneypotField *string `json:"honeypot_field,omitempty" url:"honeypot_field,omitempty"`
@@ -3271,6 +3349,7 @@ var createFormRequestSubmitterNullableFields = map[string]*big.Int{
 	"confirmation_from": createFormRequestSubmitterFieldConfirmationFrom,
 }
 
+// Who the submitter is, and whether they must confirm by email. Only the fields given change.
 type CreateFormRequestSubmitter struct {
 	// The field holding the submitter's email address (Risk checks it, notifications reply to it, contacts are made from it). Default `email`.
 	EmailField *string `json:"email_field,omitempty" url:"email_field,omitempty"`
@@ -3410,16 +3489,19 @@ var updateFormRequestContactsNullableFields = map[string]*big.Int{
 	"last_name_field":  updateFormRequestContactsFieldLastNameField,
 }
 
+// Turning submissions into contacts. Only the fields given change.
 type UpdateFormRequestContacts struct {
-	Enabled     *bool    `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Turn each accepted submission into a contact, from `submitter.email_field`. Default false.
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Audiences the contact joins. They must exist in this environment.
 	AudienceIDs []string `json:"audience_ids,omitempty" url:"audience_ids,omitempty"`
 	// Topic keys the contact is opted into.
 	Topics []string `json:"topics,omitempty" url:"topics,omitempty"`
 	// New contacts confirm their subscription by email first. `null` (default): the environment's marketing settings decide.
 	DoubleOptIn *bool `json:"double_opt_in,omitempty" url:"double_opt_in,omitempty"`
-	// The `name` the form's input posts.
+	// The field holding the contact's first name. `null`: none.
 	FirstNameField *string `json:"first_name_field,omitempty" url:"first_name_field,omitempty"`
-	// The `name` the form's input posts.
+	// The field holding the contact's last name. `null`: none.
 	LastNameField *string `json:"last_name_field,omitempty" url:"last_name_field,omitempty"`
 	// Contact property key → the field whose value it takes.
 	Properties map[string]string `json:"properties,omitempty" url:"properties,omitempty"`
@@ -3601,11 +3683,14 @@ var (
 	updateFormRequestFilesFieldAllowedTypes = big.NewInt(1 << 3)
 )
 
+// File uploads. Only the fields given change.
 type UpdateFormRequestFiles struct {
 	// Accept uploads (`multipart/form-data`). Default false.
-	Enabled      *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
-	MaxFiles     *int  `json:"max_files,omitempty" url:"max_files,omitempty"`
-	MaxFileBytes *int  `json:"max_file_bytes,omitempty" url:"max_file_bytes,omitempty"`
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// Most files per submission. Default 3.
+	MaxFiles *int `json:"max_files,omitempty" url:"max_files,omitempty"`
+	// Largest file, in bytes. Default and maximum 10 MB.
+	MaxFileBytes *int `json:"max_file_bytes,omitempty" url:"max_file_bytes,omitempty"`
 	// MIME types (`image/*` allowed). Empty: images, PDFs, text and Office.
 	AllowedTypes []string `json:"allowed_types,omitempty" url:"allowed_types,omitempty"`
 
@@ -3746,12 +3831,17 @@ var updateFormRequestHostedNullableFields = map[string]*big.Int{
 	"success_message": updateFormRequestHostedFieldSuccessMessage,
 }
 
+// The page coss.com can serve for this form. Only the fields given change.
 type UpdateFormRequestHosted struct {
 	// Serve the form as a page at its `hosted_url` (needs `fields`). Default false.
-	Enabled        *bool   `json:"enabled,omitempty" url:"enabled,omitempty"`
-	Title          *string `json:"title,omitempty" url:"title,omitempty"`
-	Description    *string `json:"description,omitempty" url:"description,omitempty"`
-	SubmitLabel    *string `json:"submit_label,omitempty" url:"submit_label,omitempty"`
+	Enabled *bool `json:"enabled,omitempty" url:"enabled,omitempty"`
+	// The page's heading. `null`: the form's name.
+	Title *string `json:"title,omitempty" url:"title,omitempty"`
+	// Text under the heading. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
+	// The submit button's label. `null`: the default.
+	SubmitLabel *string `json:"submit_label,omitempty" url:"submit_label,omitempty"`
+	// Shown after a submission. `null`: the default.
 	SuccessMessage *string `json:"success_message,omitempty" url:"success_message,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3906,6 +3996,7 @@ var updateFormRequestNotificationsNullableFields = map[string]*big.Int{
 	"from": updateFormRequestNotificationsFieldFrom,
 }
 
+// Emails about accepted submissions. Only the fields given change.
 type UpdateFormRequestNotifications struct {
 	// Who gets an email for each accepted submission: members of your organization, or addresses on its verified domains.
 	Recipients []string `json:"recipients,omitempty" url:"recipients,omitempty"`
@@ -4026,6 +4117,7 @@ var updateFormRequestSpamNullableFields = map[string]*big.Int{
 	"content_threshold": updateFormRequestSpamFieldContentThreshold,
 }
 
+// How submissions are screened. Only the fields given change.
 type UpdateFormRequestSpam struct {
 	// A field people leave empty (hide it with CSS); a submission that fills it is spam. Default `_gotcha`.
 	HoneypotField *string `json:"honeypot_field,omitempty" url:"honeypot_field,omitempty"`
@@ -4237,6 +4329,7 @@ var updateFormRequestSubmitterNullableFields = map[string]*big.Int{
 	"confirmation_from": updateFormRequestSubmitterFieldConfirmationFrom,
 }
 
+// Who the submitter is, and whether they must confirm by email. Only the fields given change.
 type UpdateFormRequestSubmitter struct {
 	// The field holding the submitter's email address (Risk checks it, notifications reply to it, contacts are made from it). Default `email`.
 	EmailField *string `json:"email_field,omitempty" url:"email_field,omitempty"`
@@ -4377,7 +4470,8 @@ var (
 
 type UpdateFormRequest struct {
 	// The form's id.
-	ID   string  `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Your name for the form, shown in the dashboard and in notifications.
 	Name *string `json:"name,omitempty" url:"-"`
 	// `false`: submissions are refused.
 	Enabled *bool `json:"enabled,omitempty" url:"-"`
@@ -4388,13 +4482,19 @@ type UpdateFormRequest struct {
 	// Sites that may post to the form, like `https://www.example.com` (sandbox environments also `http://localhost:<port>`). Empty (default): any.
 	AllowedOrigins []string `json:"allowed_origins,omitempty" url:"-"`
 	// Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
-	RedirectURL   *string                         `json:"redirect_url,omitempty" url:"-"`
-	Spam          *UpdateFormRequestSpam          `json:"spam,omitempty" url:"-"`
-	Submitter     *UpdateFormRequestSubmitter     `json:"submitter,omitempty" url:"-"`
+	RedirectURL *string `json:"redirect_url,omitempty" url:"-"`
+	// How submissions are screened. Only the fields given change.
+	Spam *UpdateFormRequestSpam `json:"spam,omitempty" url:"-"`
+	// Who the submitter is, and whether they must confirm by email. Only the fields given change.
+	Submitter *UpdateFormRequestSubmitter `json:"submitter,omitempty" url:"-"`
+	// Emails about accepted submissions. Only the fields given change.
 	Notifications *UpdateFormRequestNotifications `json:"notifications,omitempty" url:"-"`
-	Contacts      *UpdateFormRequestContacts      `json:"contacts,omitempty" url:"-"`
-	Files         *UpdateFormRequestFiles         `json:"files,omitempty" url:"-"`
-	Hosted        *UpdateFormRequestHosted        `json:"hosted,omitempty" url:"-"`
+	// Turning submissions into contacts. Only the fields given change.
+	Contacts *UpdateFormRequestContacts `json:"contacts,omitempty" url:"-"`
+	// File uploads. Only the fields given change.
+	Files *UpdateFormRequestFiles `json:"files,omitempty" url:"-"`
+	// The page coss.com can serve for this form. Only the fields given change.
+	Hosted *UpdateFormRequestHosted `json:"hosted,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

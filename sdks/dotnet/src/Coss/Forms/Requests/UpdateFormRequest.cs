@@ -12,6 +12,9 @@ public record UpdateFormRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Your name for the form, shown in the dashboard and in notifications.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -51,26 +54,44 @@ public record UpdateFormRequest
     [JsonPropertyName("redirect_url")]
     public Optional<string?> RedirectUrl { get; set; }
 
+    /// <summary>
+    /// How submissions are screened. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("spam")]
     public UpdateFormRequestSpam? Spam { get; set; }
 
+    /// <summary>
+    /// Who the submitter is, and whether they must confirm by email. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("submitter")]
     public UpdateFormRequestSubmitter? Submitter { get; set; }
 
+    /// <summary>
+    /// Emails about accepted submissions. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("notifications")]
     public UpdateFormRequestNotifications? Notifications { get; set; }
 
+    /// <summary>
+    /// Turning submissions into contacts. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("contacts")]
     public UpdateFormRequestContacts? Contacts { get; set; }
 
+    /// <summary>
+    /// File uploads. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("files")]
     public UpdateFormRequestFiles? Files { get; set; }
 
+    /// <summary>
+    /// The page coss.com can serve for this form. Only the fields given change.
+    /// </summary>
     [Optional]
     [JsonPropertyName("hosted")]
     public UpdateFormRequestHosted? Hosted { get; set; }

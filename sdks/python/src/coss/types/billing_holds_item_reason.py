@@ -2,4 +2,4 @@
 
 import typing
 
-BillingHoldsItemReason = typing.Union[typing.Literal["delinquent", "spend_limit", "admin"], typing.Any]
+BillingHoldsItemReason = typing.Union[typing.Literal["delinquent", "spend_limit", "credit_limit", "admin"], typing.Any]

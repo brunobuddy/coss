@@ -9,8 +9,16 @@ from .domain_dmarc_next_policy import DomainDmarcNextPolicy
 
 
 class DomainDmarcNext(UniversalBaseModel):
-    kind: DomainDmarcNextKind
-    policy: DomainDmarcNextPolicy
+    kind: DomainDmarcNextKind = pydantic.Field()
+    """
+    The kind of step this is.
+    """
+
+    policy: DomainDmarcNextPolicy = pydantic.Field()
+    """
+    The policy that step gets to.
+    """
+
     record: str = pydantic.Field()
     """
     The TXT record to publish at `_dmarc.<domain>`.

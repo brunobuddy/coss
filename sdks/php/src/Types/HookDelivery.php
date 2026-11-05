@@ -22,19 +22,19 @@ class HookDelivery extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $applicationId
+     * @var string $applicationId The id of the application.
      */
     #[JsonProperty('application_id')]
     public string $applicationId;
 
     /**
-     * @var string $messageId
+     * @var string $messageId The id of the message being delivered.
      */
     #[JsonProperty('message_id')]
     public string $messageId;
 
     /**
-     * @var string $endpointId
+     * @var string $endpointId The id of the endpoint it's delivered to.
      */
     #[JsonProperty('endpoint_id')]
     public string $endpointId;
@@ -46,25 +46,25 @@ class HookDelivery extends JsonSerializableType
     public string $status;
 
     /**
-     * @var int $attemptCount
+     * @var int $attemptCount How many attempts were made so far.
      */
     #[JsonProperty('attempt_count')]
     public int $attemptCount;
 
     /**
-     * @var ?DateTime $nextAttemptAt
+     * @var ?DateTime $nextAttemptAt When the next attempt runs. `null`: none is due, because it finished.
      */
     #[JsonProperty('next_attempt_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $nextAttemptAt;
 
     /**
-     * @var ?int $lastStatusCode
+     * @var ?int $lastStatusCode The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
      */
     #[JsonProperty('last_status_code')]
     public ?int $lastStatusCode;
 
     /**
-     * @var ?string $lastError
+     * @var ?string $lastError Why the latest attempt failed. `null`: it didn't, or no attempt yet.
      */
     #[JsonProperty('last_error')]
     public ?string $lastError;
@@ -76,7 +76,7 @@ class HookDelivery extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $finishedAt
+     * @var ?DateTime $finishedAt When it `succeeded` or `failed`. `null`: still `pending`.
      */
     #[JsonProperty('finished_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $finishedAt;

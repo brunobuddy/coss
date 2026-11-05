@@ -10,7 +10,7 @@ use Coss\Core\Types\ArrayType;
 class UpdateContactTopicsRequest extends JsonSerializableType
 {
     /**
-     * @var array<UpdateContactTopicsRequestTopicsItem> $topics
+     * @var array<UpdateContactTopicsRequestTopicsItem> $topics The contact's choices per topic. Topics not listed keep theirs.
      */
     #[JsonProperty('topics'), ArrayType([UpdateContactTopicsRequestTopicsItem::class])]
     public array $topics;

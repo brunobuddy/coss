@@ -13,16 +13,35 @@ class BillingContract(UniversalBaseModel):
     The contract in effect; `null` on the Free plan.
     """
 
-    id: str
-    kind: BillingContractKind
-    effective_from: dt.datetime
-    effective_until: typing.Optional[dt.datetime] = None
+    id: str = pydantic.Field()
+    """
+    The contract's id.
+    """
+
+    kind: BillingContractKind = pydantic.Field()
+    """
+    `self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own.
+    """
+
+    effective_from: dt.datetime = pydantic.Field()
+    """
+    When it took effect.
+    """
+
+    effective_until: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it ends. `null`: no end is set.
+    """
+
     term_end: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     End of a committed term.
     """
 
-    auto_renew: bool
+    auto_renew: bool = pydantic.Field()
+    """
+    Whether a committed term renews when it ends.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

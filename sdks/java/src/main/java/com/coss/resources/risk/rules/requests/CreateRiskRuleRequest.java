@@ -62,11 +62,17 @@ public final class CreateRiskRuleRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the rule, returned with reasons when it decides.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Default <code>true</code>.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -80,6 +86,9 @@ public final class CreateRiskRuleRequest {
         return position;
     }
 
+    /**
+     * @return Events it applies to. Default: every event.
+     */
     @JsonProperty("events")
     public Optional<List<RiskEvent>> getEvents() {
         return events;
@@ -93,6 +102,9 @@ public final class CreateRiskRuleRequest {
         return match;
     }
 
+    /**
+     * @return What must hold, by <code>match</code>.
+     */
     @JsonProperty("conditions")
     public List<RiskRuleCondition> getConditions() {
         return conditions;
@@ -140,6 +152,9 @@ public final class CreateRiskRuleRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the rule, returned with reasons when it decides.</p>
+         */
         ActionStage name(@NotNull String name);
 
         Builder from(CreateRiskRuleRequest other);
@@ -156,6 +171,9 @@ public final class CreateRiskRuleRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Default <code>true</code>.</p>
+         */
         _FinalStage enabled(Optional<Boolean> enabled);
 
         _FinalStage enabled(Boolean enabled);
@@ -167,6 +185,9 @@ public final class CreateRiskRuleRequest {
 
         _FinalStage position(Integer position);
 
+        /**
+         * <p>Events it applies to. Default: every event.</p>
+         */
         _FinalStage events(Optional<List<RiskEvent>> events);
 
         _FinalStage events(List<RiskEvent> events);
@@ -178,6 +199,9 @@ public final class CreateRiskRuleRequest {
 
         _FinalStage match(CreateRiskRuleRequestMatch match);
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         */
         _FinalStage conditions(List<RiskRuleCondition> conditions);
 
         _FinalStage addConditions(RiskRuleCondition conditions);
@@ -218,6 +242,10 @@ public final class CreateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the rule, returned with reasons when it decides.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public ActionStage name(@NotNull String name) {
@@ -232,6 +260,10 @@ public final class CreateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllConditions(List<RiskRuleCondition> conditions) {
             if (conditions != null) {
@@ -240,12 +272,19 @@ public final class CreateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addConditions(RiskRuleCondition conditions) {
             this.conditions.add(conditions);
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "conditions", nulls = Nulls.SKIP)
         public _FinalStage conditions(List<RiskRuleCondition> conditions) {
@@ -276,12 +315,19 @@ public final class CreateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Events it applies to. Default: every event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage events(List<RiskEvent> events) {
             this.events = Optional.ofNullable(events);
             return this;
         }
 
+        /**
+         * <p>Events it applies to. Default: every event.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "events", nulls = Nulls.SKIP)
         public _FinalStage events(Optional<List<RiskEvent>> events) {
@@ -309,12 +355,19 @@ public final class CreateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Default <code>true</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage enabled(Boolean enabled) {
             this.enabled = Optional.ofNullable(enabled);
             return this;
         }
 
+        /**
+         * <p>Default <code>true</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public _FinalStage enabled(Optional<Boolean> enabled) {

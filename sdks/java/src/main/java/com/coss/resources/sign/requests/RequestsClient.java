@@ -79,18 +79,30 @@ public class RequestsClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public SignRequest get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public SignRequest get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public SignRequest get(String id, GetRequestsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public SignRequest get(String id, GetRequestsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

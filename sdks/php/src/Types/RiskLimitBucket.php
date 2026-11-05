@@ -34,7 +34,7 @@ class RiskLimitBucket extends JsonSerializableType
     public int $limit;
 
     /**
-     * @var int $periodSeconds
+     * @var int $periodSeconds How many seconds `limit` tokens take to be added.
      */
     #[JsonProperty('period_seconds')]
     public int $periodSeconds;

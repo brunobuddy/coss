@@ -12,6 +12,9 @@ public record UpdateEmailTemplateRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Shown in the dashboard.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -23,6 +26,9 @@ public record UpdateEmailTemplateRequest
     [JsonPropertyName("alias")]
     public Optional<string?> Alias { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null` removes it.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }

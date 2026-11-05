@@ -14,7 +14,7 @@ class HookEndpointSecret extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $secret
+     * @var string $secret The endpoint's `whsec_…` signing secret (Standard Webhooks).
      */
     #[JsonProperty('secret')]
     public string $secret;

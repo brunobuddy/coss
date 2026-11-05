@@ -26,6 +26,8 @@ public readonly record struct LogDrainSource : IStringEnum
 
     public static readonly LogDrainSource Forms = new(Values.Forms);
 
+    public static readonly LogDrainSource Scheduling = new(Values.Scheduling);
+
     public static readonly LogDrainSource Audit = new(Values.Audit);
 
     public LogDrainSource(string value)
@@ -141,6 +143,8 @@ public readonly record struct LogDrainSource : IStringEnum
         public const string Verify = "verify";
 
         public const string Forms = "forms";
+
+        public const string Scheduling = "scheduling";
 
         public const string Audit = "audit";
     }

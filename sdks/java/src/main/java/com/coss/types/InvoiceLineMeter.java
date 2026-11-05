@@ -7,14 +7,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class InvoiceLineMeter {
+    public static final InvoiceLineMeter EMAIL_RECEIVED_DATA =
+            new InvoiceLineMeter(Value.EMAIL_RECEIVED_DATA, "email.received_data");
+
     public static final InvoiceLineMeter EMAIL_DEDICATED_IP =
             new InvoiceLineMeter(Value.EMAIL_DEDICATED_IP, "email.dedicated_ip");
 
     public static final InvoiceLineMeter SMS_RECEIVED_SEGMENTS =
             new InvoiceLineMeter(Value.SMS_RECEIVED_SEGMENTS, "sms.received_segments");
 
-    public static final InvoiceLineMeter VIDEO_PARTICIPANT_MINUTES =
-            new InvoiceLineMeter(Value.VIDEO_PARTICIPANT_MINUTES, "video.participant_minutes");
+    public static final InvoiceLineMeter RISK_ASSESSMENTS =
+            new InvoiceLineMeter(Value.RISK_ASSESSMENTS, "risk.assessments");
+
+    public static final InvoiceLineMeter SCHEDULING_HOSTS =
+            new InvoiceLineMeter(Value.SCHEDULING_HOSTS, "scheduling.hosts");
+
+    public static final InvoiceLineMeter FORMS_FILE_UPLOADS =
+            new InvoiceLineMeter(Value.FORMS_FILE_UPLOADS, "forms.file_uploads");
 
     public static final InvoiceLineMeter FORMS_SUBMISSIONS =
             new InvoiceLineMeter(Value.FORMS_SUBMISSIONS, "forms.submissions");
@@ -29,10 +38,15 @@ public final class InvoiceLineMeter {
     public static final InvoiceLineMeter SMS_REGISTRATIONS =
             new InvoiceLineMeter(Value.SMS_REGISTRATIONS, "sms.registrations");
 
+    public static final InvoiceLineMeter RISK_CONTENT_CHECKS =
+            new InvoiceLineMeter(Value.RISK_CONTENT_CHECKS, "risk.content_checks");
+
     public static final InvoiceLineMeter EMAIL_RECIPIENTS =
             new InvoiceLineMeter(Value.EMAIL_RECIPIENTS, "email.recipients");
 
     public static final InvoiceLineMeter EMAIL_RECEIVED = new InvoiceLineMeter(Value.EMAIL_RECEIVED, "email.received");
+
+    public static final InvoiceLineMeter HOOKS_MESSAGES = new InvoiceLineMeter(Value.HOOKS_MESSAGES, "hooks.messages");
 
     public static final InvoiceLineMeter SCHEDULING_BOOKINGS =
             new InvoiceLineMeter(Value.SCHEDULING_BOOKINGS, "scheduling.bookings");
@@ -44,6 +58,9 @@ public final class InvoiceLineMeter {
             new InvoiceLineMeter(Value.SIGN_COMPLETED_REQUESTS, "sign.completed_requests");
 
     public static final InvoiceLineMeter VERIFY_SMS = new InvoiceLineMeter(Value.VERIFY_SMS, "verify.sms");
+
+    public static final InvoiceLineMeter EMAIL_ATTACHMENT_DATA =
+            new InvoiceLineMeter(Value.EMAIL_ATTACHMENT_DATA, "email.attachment_data");
 
     public static final InvoiceLineMeter SMS_NUMBERS = new InvoiceLineMeter(Value.SMS_NUMBERS, "sms.numbers");
 
@@ -79,12 +96,18 @@ public final class InvoiceLineMeter {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case EMAIL_RECEIVED_DATA:
+                return visitor.visitEmailReceivedData();
             case EMAIL_DEDICATED_IP:
                 return visitor.visitEmailDedicatedIp();
             case SMS_RECEIVED_SEGMENTS:
                 return visitor.visitSmsReceivedSegments();
-            case VIDEO_PARTICIPANT_MINUTES:
-                return visitor.visitVideoParticipantMinutes();
+            case RISK_ASSESSMENTS:
+                return visitor.visitRiskAssessments();
+            case SCHEDULING_HOSTS:
+                return visitor.visitSchedulingHosts();
+            case FORMS_FILE_UPLOADS:
+                return visitor.visitFormsFileUploads();
             case FORMS_SUBMISSIONS:
                 return visitor.visitFormsSubmissions();
             case EMAIL_INBOXES:
@@ -95,10 +118,14 @@ public final class InvoiceLineMeter {
                 return visitor.visitRiskPhoneChecks();
             case SMS_REGISTRATIONS:
                 return visitor.visitSmsRegistrations();
+            case RISK_CONTENT_CHECKS:
+                return visitor.visitRiskContentChecks();
             case EMAIL_RECIPIENTS:
                 return visitor.visitEmailRecipients();
             case EMAIL_RECEIVED:
                 return visitor.visitEmailReceived();
+            case HOOKS_MESSAGES:
+                return visitor.visitHooksMessages();
             case SCHEDULING_BOOKINGS:
                 return visitor.visitSchedulingBookings();
             case VERIFY_VERIFICATIONS:
@@ -107,6 +134,8 @@ public final class InvoiceLineMeter {
                 return visitor.visitSignCompletedRequests();
             case VERIFY_SMS:
                 return visitor.visitVerifySms();
+            case EMAIL_ATTACHMENT_DATA:
+                return visitor.visitEmailAttachmentData();
             case SMS_NUMBERS:
                 return visitor.visitSmsNumbers();
             case UNKNOWN:
@@ -118,12 +147,18 @@ public final class InvoiceLineMeter {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static InvoiceLineMeter valueOf(String value) {
         switch (value) {
+            case "email.received_data":
+                return EMAIL_RECEIVED_DATA;
             case "email.dedicated_ip":
                 return EMAIL_DEDICATED_IP;
             case "sms.received_segments":
                 return SMS_RECEIVED_SEGMENTS;
-            case "video.participant_minutes":
-                return VIDEO_PARTICIPANT_MINUTES;
+            case "risk.assessments":
+                return RISK_ASSESSMENTS;
+            case "scheduling.hosts":
+                return SCHEDULING_HOSTS;
+            case "forms.file_uploads":
+                return FORMS_FILE_UPLOADS;
             case "forms.submissions":
                 return FORMS_SUBMISSIONS;
             case "email.inboxes":
@@ -134,10 +169,14 @@ public final class InvoiceLineMeter {
                 return RISK_PHONE_CHECKS;
             case "sms.registrations":
                 return SMS_REGISTRATIONS;
+            case "risk.content_checks":
+                return RISK_CONTENT_CHECKS;
             case "email.recipients":
                 return EMAIL_RECIPIENTS;
             case "email.received":
                 return EMAIL_RECEIVED;
+            case "hooks.messages":
+                return HOOKS_MESSAGES;
             case "scheduling.bookings":
                 return SCHEDULING_BOOKINGS;
             case "verify.verifications":
@@ -146,6 +185,8 @@ public final class InvoiceLineMeter {
                 return SIGN_COMPLETED_REQUESTS;
             case "verify.sms":
                 return VERIFY_SMS;
+            case "email.attachment_data":
+                return EMAIL_ATTACHMENT_DATA;
             case "sms.numbers":
                 return SMS_NUMBERS;
             default:
@@ -158,7 +199,11 @@ public final class InvoiceLineMeter {
 
         EMAIL_DEDICATED_IP,
 
+        EMAIL_ATTACHMENT_DATA,
+
         EMAIL_RECEIVED,
+
+        EMAIL_RECEIVED_DATA,
 
         EMAIL_INBOXES,
 
@@ -174,15 +219,23 @@ public final class InvoiceLineMeter {
 
         RISK_PHONE_CHECKS,
 
+        RISK_ASSESSMENTS,
+
+        RISK_CONTENT_CHECKS,
+
         VERIFY_VERIFICATIONS,
 
         VERIFY_SMS,
 
         FORMS_SUBMISSIONS,
 
-        VIDEO_PARTICIPANT_MINUTES,
+        FORMS_FILE_UPLOADS,
 
         SCHEDULING_BOOKINGS,
+
+        SCHEDULING_HOSTS,
+
+        HOOKS_MESSAGES,
 
         UNKNOWN
     }
@@ -192,7 +245,11 @@ public final class InvoiceLineMeter {
 
         T visitEmailDedicatedIp();
 
+        T visitEmailAttachmentData();
+
         T visitEmailReceived();
+
+        T visitEmailReceivedData();
 
         T visitEmailInboxes();
 
@@ -208,15 +265,23 @@ public final class InvoiceLineMeter {
 
         T visitRiskPhoneChecks();
 
+        T visitRiskAssessments();
+
+        T visitRiskContentChecks();
+
         T visitVerifyVerifications();
 
         T visitVerifySms();
 
         T visitFormsSubmissions();
 
-        T visitVideoParticipantMinutes();
+        T visitFormsFileUploads();
 
         T visitSchedulingBookings();
+
+        T visitSchedulingHosts();
+
+        T visitHooksMessages();
 
         T visitUnknown(String unknownType);
     }

@@ -395,6 +395,8 @@ class RawSmsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Sms]:
         """
+        One message sent from the API key's environment, with its current status.
+
         Parameters
         ----------
         id : str
@@ -1120,6 +1122,8 @@ class AsyncRawSmsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AsyncHttpResponse[Sms]:
         """
+        One message sent from the API key's environment, with its current status.
+
         Parameters
         ----------
         id : str

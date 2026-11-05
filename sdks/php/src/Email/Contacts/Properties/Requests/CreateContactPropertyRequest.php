@@ -10,13 +10,13 @@ use Coss\Core\Types\Union;
 class CreateContactPropertyRequest extends JsonSerializableType
 {
     /**
-     * @var string $key
+     * @var string $key How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
      */
     #[JsonProperty('key')]
     public string $key;
 
     /**
-     * @var value-of<CreateContactPropertyRequestType> $type
+     * @var value-of<CreateContactPropertyRequestType> $type What values it takes. `date` values are ISO 8601 strings. Can't change.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -26,7 +26,7 @@ class CreateContactPropertyRequest extends JsonSerializableType
      *    string
      *   |float
      *   |bool
-     * )|null $fallback
+     * )|null $fallback Used in templates for contacts without a value.
      */
     #[JsonProperty('fallback'), Union('string', 'float', 'bool', 'null')]
     public string|float|bool|null $fallback;

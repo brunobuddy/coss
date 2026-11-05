@@ -8,14 +8,13 @@
  */
 import { recordUsage } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
-import { ID_PREFIXES, isId, newId } from "@coss/db/id";
+import { ID_PREFIXES, isId } from "@coss/db/id";
 import {
   requestHash as hashRequest,
   IDEMPOTENCY_KEY_TTL_MS,
   withIdempotencyKey,
 } from "@coss/db/idempotency";
-import { appendLogEntries } from "@coss/logs";
-import { decryptSecret, encryptSecret, enqueueWebhookMessage } from "@coss/webhooks";
+import { decryptSecret, encryptSecret } from "@coss/webhooks";
 import {
   and,
   asc,
@@ -39,6 +38,7 @@ import {
   emailLookup,
   encryptAnswers,
   encryptContact,
+  encryptRouting,
 } from "./attendees.ts";
 import {
   type Candidates,
@@ -46,11 +46,13 @@ import {
   candidatesOf,
   checkWindow,
   combineSlots,
+  hostInputOf,
   loadHostInputs,
   type SlotResult,
   slotRuleOf,
   takeTurn,
 } from "./availability.ts";
+import { type BookingActor, participants, recordChange } from "./booking-record.ts";
 import { hostsBusyNow } from "./calendar/live-check.ts";
 import { announce } from "./calendar/writes.ts";
 import { ZOOM_CALENDAR_ID } from "./calendar/zoom.ts";
@@ -65,12 +67,14 @@ import {
   releaseSessionClaim,
   tryClaim,
 } from "./claims.ts";
+import { type Interval, overlapsAny, subtractIntervals } from "./engine/intervals.ts";
 import { type PoolMember, rankCandidates, startingUnits } from "./engine/rank.ts";
 import { expandRecurrence } from "./engine/recurrence.ts";
 import {
   isBookable,
   limitUsageKey,
   listSlots,
+  type NotBookableReason,
   occupiedRange,
   type SlotRule,
 } from "./engine/slots.ts";
@@ -79,7 +83,13 @@ import { SchedulingError } from "./errors.ts";
 import { type EventTypeRow, resolveEventType } from "./event-types.ts";
 import { confirmedSeats, withSessionLocation } from "./group-sessions.ts";
 import { checkTimeZone, type HostRow, hostsByIds, resolveHost } from "./hosts.ts";
-import { carryReminders, enqueueBookingNotifications } from "./notifications.ts";
+import {
+  carryAnchorlessReminders,
+  enqueueBookingNotifications,
+  enqueueNoShowReminders,
+  enqueueReassignment,
+} from "./notifications.ts";
+import { hostsAwayDuring, standingCover } from "./out-of-office.ts";
 import { refuseNewBookingWhileHeld, requireLiveFeature, requireRouting } from "./plan.ts";
 import {
   type AttendeeInputOutput,
@@ -110,12 +120,11 @@ const {
 } = schema;
 
 export type BookingRow = typeof schedulingBooking.$inferSelect;
-type AttendeeRow = typeof schedulingAttendee.$inferSelect;
 type Scope = Pick<SchedulingEnvironment, "organizationId" | "environmentId">;
 type Answers = Record<string, string | string[]>;
 type Location = NonNullable<BookingRow["location"]>;
 
-export type BookingActor = NonNullable<typeof schedulingBookingEvent.$inferInsert.actor>;
+export type { BookingActor } from "./booking-record.ts";
 
 export type BookingRequest = {
   /** The API's gate on `attributes`. A session's were checked when it was made, so it passes none. */
@@ -283,10 +292,51 @@ function wireLocation(location: BookingRow["location"]): BookingRow["location"] 
   if (!("conference" in location) && !fromHostOf(location)) return location;
   const {
     conference: _conference,
+    conference_host_id: _conferenceHost,
     fromHost: _fromHost,
     ...rest
-  } = location as typeof location & { conference?: string; fromHost?: string };
+  } = location as typeof location & {
+    conference?: string;
+    conference_host_id?: string;
+    fromHost?: string;
+  };
   return rest as BookingRow["location"];
+}
+
+/** Whose account runs a booking's meeting, when that's known: older Meet and Teams links don't say. */
+async function meetingOwnerOf(tx: Executor, booking: BookingRow): Promise<string | null> {
+  const location = booking.location;
+  if (location?.type === "link" && "conference_host_id" in location) {
+    return location.conference_host_id as string;
+  }
+  if (location?.type !== "zoom") return null;
+  const [row] = await tx
+    .select({ hostId: schedulingCalendarEvent.hostId })
+    .from(schedulingCalendarEvent)
+    .innerJoin(schedulingCalendar, eq(schedulingCalendar.id, schedulingCalendarEvent.calendarId))
+    .where(
+      and(
+        eq(schedulingCalendarEvent.bookingId, booking.id),
+        eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+        eq(schedulingCalendarEvent.desiredState, "present"),
+        eq(schedulingCalendar.externalId, ZOOM_CALENDAR_ID),
+      ),
+    );
+  return row?.hostId ?? null;
+}
+
+/**
+ * The location once a host leaves, or null if it stands: a meeting may be someone else's, and
+ * their own office or link goes with them, to the hosts it has now.
+ */
+async function locationWithoutHost(
+  tx: Executor,
+  booking: BookingRow,
+  hostId: string,
+  hosts: readonly HostRow[],
+): Promise<BookingRow["location"]> {
+  const owner = await meetingOwnerOf(tx, booking);
+  return owner && owner !== hostId ? null : locationForNewHost(booking.location, hostId, hosts);
 }
 
 /** Once hosts have won, a location left open takes the value of theirs. */
@@ -358,10 +408,14 @@ function checkStart(startMs: number): void {
   }
 }
 
+// Whoever's booking doesn't get to read that someone's out of office, least of all an attendee.
 const slotLost = (reason?: string) =>
   new SchedulingError(
     "slot_unavailable",
-    reason ? `That time isn't available (${reason}).` : "That time isn't available.",
+    // Neither says anything a booker should learn: that someone's away, or who's covering for them.
+    reason && reason !== "out_of_office" && reason !== "outside_coverage"
+      ? `That time isn't available (${reason}).`
+      : "That time isn't available.",
     { param: "start" },
   );
 
@@ -403,6 +457,8 @@ async function lockHostsAndMemberships(
   tx: Executor,
   eventType: EventTypeRow,
   hostIds: readonly string[],
+  /** Someone named a host past membership, who may have been taken off it (`any_host`). */
+  opts: { evenIfRemoved?: boolean } = {},
 ): Promise<void> {
   const sorted = [...hostIds].sort();
   const active = await tx
@@ -427,7 +483,7 @@ async function lockHostsAndMemberships(
         eq(schedulingEventTypeHost.eventTypeId, eventType.id),
         eq(schedulingEventTypeHost.organizationId, eventType.organizationId),
         inArray(schedulingEventTypeHost.hostId, sorted),
-        isNull(schedulingEventTypeHost.removedAt),
+        opts.evenIfRemoved ? undefined : isNull(schedulingEventTypeHost.removedAt),
       ),
     )
     .orderBy(asc(schedulingEventTypeHost.hostId))
@@ -472,7 +528,7 @@ async function lockLimitBuckets(
   }
 }
 
-type ClaimPlan = {
+export type ClaimPlan = {
   eventType: EventTypeRow;
   rule: SlotRule;
   scope: Scope;
@@ -480,7 +536,38 @@ type ClaimPlan = {
   nowMs: number;
   failureMode: "hide" | "last_known";
   ttlSeconds: number | null;
+  /** Reassigning: what a booking that exists doesn't have to answer again, and any overrides. */
+  skip?: readonly NotBookableReason[] | undefined;
+  /** Who's only standing in for someone, and when. */
+  coverage?: ReadonlyMap<string, readonly Interval[]> | undefined;
+  /** And whose time away that came from. */
+  coverPrincipals?: ReadonlyMap<string, readonly string[]> | undefined;
 };
+
+/**
+ * Who could take this was worked out before waiting for anyone's lock, and cover may have been taken
+ * back since: it's what that said, and still stands. It can't have grown into a new reason to book.
+ */
+async function coverAsItStands(
+  executor: Executor,
+  plan: ClaimPlan,
+  hosts: readonly { id: string }[],
+): Promise<ReadonlyMap<string, readonly Interval[]>> {
+  const { coverage } = plan;
+  if (!coverage) return new Map();
+  const standing = await standingCover(
+    executor,
+    plan.scope,
+    hosts.flatMap((host) => (coverage.has(host.id) ? [host.id] : [])),
+    plan.coverPrincipals,
+  );
+  const result = new Map<string, readonly Interval[]>();
+  for (const [hostId, windows] of coverage) {
+    const now = standing.get(hostId) ?? [];
+    result.set(hostId, subtractIntervals(windows, subtractIntervals(windows, now)));
+  }
+  return result;
+}
 
 /** What's committed now says about each host. Null: not found. */
 async function verdictsOf(
@@ -490,12 +577,14 @@ async function verdictsOf(
   schedules: ReadonlyMap<string, string | null>,
 ) {
   const { eventType, rule, scope, startMs, nowMs } = plan;
+  const cover = await coverAsItStands(executor, plan, hosts);
   const loaded = await loadHostInputs(executor, {
     scope,
     hosts: hosts.map((host) => ({
       id: host.id,
       timeZone: host.timeZone,
       scheduleId: schedules.get(host.id) ?? null,
+      onlyWithin: cover.get(host.id),
     })),
     eventTypeId: eventType.id,
     fromMs: startMs,
@@ -506,7 +595,10 @@ async function verdictsOf(
   return new Map(
     hosts.map((host) => {
       const inputs = loaded.get(host.id);
-      return [host.id, inputs ? isBookable(startMs, { nowMs, rule, host: inputs }) : null];
+      return [
+        host.id,
+        inputs ? isBookable(startMs, { nowMs, rule, host: inputs, skip: plan.skip }) : null,
+      ];
     }),
   );
 }
@@ -561,12 +653,31 @@ function schedulesOf(candidates: Candidates): Map<string, string | null> {
   );
 }
 
+/** Who's only here standing in for someone, and when. */
+function coverageWindows(candidates: Candidates): Map<string, Interval[]> {
+  return new Map(
+    candidates.members.flatMap((entry) =>
+      entry.coverage ? [[entry.host.id, entry.coverage.windows] as const] : [],
+    ),
+  );
+}
+
+function coverPrincipals(candidates: Candidates): Map<string, readonly string[]> {
+  return new Map(
+    candidates.members.flatMap((entry) =>
+      entry.coverage ? [[entry.host.id, entry.coverage.principals] as const] : [],
+    ),
+  );
+}
+
 function ranked(candidates: Candidates, seed: string): HostRow[] {
-  const members: PoolMember[] = candidates.members.map(({ host, membership }) => ({
+  const members: PoolMember[] = candidates.members.map(({ host, membership, coverage }) => ({
     hostId: host.id,
     weight: membership?.weight ?? 100,
     fairUnits: membership?.fairUnits ?? 0,
     lastAssignedAtMs: membership?.lastAssignedAt?.getTime() ?? null,
+    atLeastRatio: coverage?.principalRatio,
+    coverPosition: coverage?.position,
   }));
   const byId = new Map(candidates.members.map((entry) => [entry.host.id, entry.host]));
   return rankCandidates(members, seed).map((id) => byId.get(id) as HostRow);
@@ -613,138 +724,6 @@ async function assignAndClaim(
     }
   }
   throw slotLost(lastReason);
-}
-
-function toWebhookData(
-  booking: BookingRow,
-  hostIds: readonly string[],
-  attendeeUids: readonly string[],
-  occurredAt: Date,
-  extra: { previousStart?: Date } = {},
-) {
-  return {
-    booking_id: booking.id,
-    event_type_id: booking.eventTypeId,
-    status: booking.status,
-    start: booking.startAt.toISOString(),
-    end: booking.endAt.toISOString(),
-    host_ids: [...hostIds],
-    attendee_uids: [...attendeeUids],
-    series_id: booking.seriesId,
-    ...(extra.previousStart ? { previous_start: extra.previousStart.toISOString() } : {}),
-    occurred_at: occurredAt.toISOString(),
-  };
-}
-
-async function participants(
-  tx: Executor,
-  booking: Pick<BookingRow, "id" | "organizationId">,
-): Promise<{ hostIds: string[]; attendees: AttendeeRow[] }> {
-  const hosts = await tx
-    .select({ hostId: schedulingBookingHost.hostId })
-    .from(schedulingBookingHost)
-    .where(
-      and(
-        eq(schedulingBookingHost.bookingId, booking.id),
-        eq(schedulingBookingHost.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(asc(schedulingBookingHost.hostId));
-  const attendees = await tx
-    .select()
-    .from(schedulingAttendee)
-    .where(
-      and(
-        eq(schedulingAttendee.bookingId, booking.id),
-        eq(schedulingAttendee.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(asc(schedulingAttendee.role), asc(schedulingAttendee.id));
-  return { hostIds: hosts.map((row) => row.hostId), attendees };
-}
-
-/**
- * What every change records: its history row (sequenced under the booking's lock), webhook and log
- * line. None of them carry a person's details.
- */
-async function recordChange(
-  tx: Executor,
-  booking: BookingRow,
-  input: {
-    type: string;
-    webhook: SchedulingWebhookEventType | null;
-    actor: BookingActor;
-    occurredAt: Date;
-    details?: Record<string, unknown>;
-    previousStart?: Date;
-    message: string;
-    level?: "info" | "warning";
-  },
-): Promise<void> {
-  const [last] = await tx
-    .select({ sequence: schedulingBookingEvent.sequence })
-    .from(schedulingBookingEvent)
-    .where(
-      and(
-        eq(schedulingBookingEvent.bookingId, booking.id),
-        eq(schedulingBookingEvent.organizationId, booking.organizationId),
-      ),
-    )
-    .orderBy(desc(schedulingBookingEvent.sequence))
-    .limit(1);
-  await tx.insert(schedulingBookingEvent).values({
-    organizationId: booking.organizationId,
-    bookingId: booking.id,
-    sequence: (last?.sequence ?? 0) + 1,
-    type: input.type,
-    actor: input.actor,
-    details: input.details ?? {},
-    occurredAt: input.occurredAt,
-  });
-  const { hostIds, attendees } = await participants(tx, booking);
-  if (input.webhook) {
-    const id = newId(ID_PREFIXES.webhookEvent);
-    await enqueueWebhookMessage(tx, {
-      id,
-      organizationId: booking.organizationId,
-      environmentId: booking.environmentId,
-      type: input.webhook,
-      payload: {
-        id,
-        object: "event",
-        type: input.webhook,
-        created_at: input.occurredAt.toISOString(),
-        data: toWebhookData(
-          booking,
-          hostIds,
-          attendees.flatMap((attendee) => (attendee.uid ? [attendee.uid] : [])),
-          input.occurredAt,
-          input.previousStart ? { previousStart: input.previousStart } : {},
-        ),
-      },
-    });
-  }
-  await appendLogEntries(tx, [
-    {
-      organizationId: booking.organizationId,
-      projectId: booking.projectId,
-      environmentId: booking.environmentId,
-      occurredAt: input.occurredAt,
-      source: "scheduling",
-      level: input.level ?? "info",
-      type: input.type,
-      message: input.message,
-      resourceType: "scheduling_booking",
-      resourceId: booking.id,
-      attributes: {
-        event_type_id: booking.eventTypeId,
-        status: booking.status,
-        host_ids: hostIds,
-        start: booking.startAt.toISOString(),
-      },
-      searchTerms: [booking.eventTypeId, ...hostIds],
-    },
-  ]);
 }
 
 /** One unit per confirmed booking, or per group session. Sandbox bookings aren't billed. */
@@ -854,6 +833,29 @@ async function setCalendarState(
   state: "present" | "absent",
 ): Promise<void> {
   if (hostIds.length === 0) return;
+  const sessionId = booking.groupSessionId;
+  if (state === "absent") {
+    // Whatever these hosts' events are on now, which may not be where they'd be written today.
+    await tx
+      .update(schedulingCalendarEvent)
+      .set({
+        desiredState: "absent",
+        desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+        nextAttemptAt: sql`clock_timestamp()`,
+        attempts: 0,
+      })
+      .where(
+        and(
+          sessionId
+            ? eq(schedulingCalendarEvent.groupSessionId, sessionId)
+            : eq(schedulingCalendarEvent.bookingId, booking.id),
+          eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+          inArray(schedulingCalendarEvent.hostId, [...hostIds]),
+          eq(schedulingCalendarEvent.desiredState, "present"),
+        ),
+      );
+    return;
+  }
   const calendars = await tx
     .select({
       id: schedulingCalendar.id,
@@ -880,14 +882,12 @@ async function setCalendarState(
     .orderBy(asc(schedulingCalendar.hostId));
   const targets = calendars.filter((calendar) => calendar.writeTarget);
   if (booking.location?.type === "zoom") {
-    // One meeting however many hosts there are: the first with Zoom connected runs it.
-    const meeting = calendars.find((calendar) => calendar.externalId === ZOOM_CALENDAR_ID);
+    // One meeting however many hosts there are: whoever runs it now, or the first with Zoom connected.
+    const zooms = calendars.filter((calendar) => calendar.externalId === ZOOM_CALENDAR_ID);
+    const owner = await meetingOwnerOf(tx, booking);
+    const meeting = zooms.find((calendar) => calendar.hostId === owner) ?? zooms[0];
     if (meeting) targets.push(meeting);
-    else if (
-      state === "present" &&
-      !booking.location.url &&
-      !targets.some((target) => target.provider === "simulated")
-    ) {
+    else if (!booking.location.url && !targets.some((target) => target.provider === "simulated")) {
       await announce(
         tx,
         booking,
@@ -897,9 +897,8 @@ async function setCalendarState(
       );
     }
   }
-  const sessionId = booking.groupSessionId;
   // A session can come back after its event went, and a provider's key doesn't work twice.
-  if (sessionId && state === "present") {
+  if (sessionId) {
     await tx
       .delete(schedulingCalendarEvent)
       .where(
@@ -995,6 +994,7 @@ async function insertBookingRow(
       seriesId: values.seriesId ?? null,
       seriesIndex: values.seriesIndex ?? null,
       metadata: request.metadata ?? {},
+      encryptedAttributes: encryptRouting(request.attributes, context.deps),
       idempotencyKey: values.idempotencyKey,
       requestHash: values.hash,
     })
@@ -1119,6 +1119,12 @@ async function joinGroupSession(
     );
   const liveSeats = await liveSeatCount(tx, session);
   if (liveSeats >= session.capacity) throw new LostSlot("session_full");
+  // A running session isn't re-checked below, and its host's still away if they went after it began.
+  const endMs = startMs + rule.durationMinutes * MINUTE_MS;
+  const away = await hostsAwayDuring(tx, eventType, [host.id], startMs, endMs);
+  if (away.has(host.id)) throw new LostSlot("out_of_office");
+  const covering = (await coverAsItStands(tx, plan, [host])).get(host.id);
+  if (covering && !overlapsAny(covering, startMs, endMs)) throw new LostSlot("outside_coverage");
   await settleSessionLocation(tx, session, liveSeats, location);
   const ttlSeconds = plan.ttlSeconds;
   const sessionClaim = { organizationId: eventType.organizationId, groupSessionId: session.id };
@@ -1127,7 +1133,7 @@ async function joinGroupSession(
     if (claimed) await releaseSessionClaim(tx, sessionClaim);
     const loaded = await loadHostInputs(tx, {
       scope,
-      hosts: [{ id: host.id, timeZone: host.timeZone, scheduleId }],
+      hosts: [{ id: host.id, timeZone: host.timeZone, scheduleId, onlyWithin: covering }],
       eventTypeId: eventType.id,
       fromMs: startMs,
       toMs: startMs + rule.durationMinutes * MINUTE_MS,
@@ -1443,34 +1449,41 @@ async function createOne(
   let won: { hosts: HostRow[]; liveUntil: Date | null };
   let current = booking;
   if (eventType.kind === "group") {
-    const entry = candidates.members[0] ?? candidates.required[0];
-    if (!entry) throw slotLost("no_hosts");
+    // A group has one host, but someone may be standing in: whoever can have this time, in order.
+    const entries = [...candidates.members, ...candidates.required];
+    if (entries.length === 0) throw slotLost("no_hosts");
     const shared = sharedLocation(
       eventType,
       chooseLocation(eventType, request.location),
       request.locationFromBrowser,
     );
-    const chosen = shared && withHostLocation(shared, [entry.host]);
-    try {
-      const joined = await tx.transaction((savepoint) =>
-        joinGroupSession(
-          savepoint,
-          plan,
-          booking,
-          entry.host,
-          entry.membership?.scheduleId ?? null,
-          {
-            chosen,
-            wanted: request.location,
-          },
-        ),
-      );
-      won = { hosts: [entry.host], liveUntil: joined.liveUntil };
-      current = { ...booking, groupSessionId: joined.sessionId };
-    } catch (error) {
-      if (error instanceof LostSlot) throw slotLost(error.reason);
-      throw error;
+    let lost: string | undefined;
+    let joined: { host: HostRow; liveUntil: Date | null; sessionId: string } | null = null;
+    for (const entry of entries) {
+      try {
+        const session = await inSavepoint(tx, (savepoint) =>
+          joinGroupSession(
+            savepoint,
+            plan,
+            booking,
+            entry.host,
+            entry.membership?.scheduleId ?? null,
+            {
+              chosen: shared && withHostLocation(shared, [entry.host]),
+              wanted: request.location,
+            },
+          ),
+        );
+        joined = { host: entry.host, ...session };
+        break;
+      } catch (error) {
+        if (!(error instanceof LostSlot)) throw error;
+        lost = error.reason;
+      }
     }
+    if (!joined) throw slotLost(lost);
+    won = { hosts: [joined.host], liveUntil: joined.liveUntil };
+    current = { ...booking, groupSessionId: joined.sessionId };
   } else {
     won = await assignAndClaim(tx, plan, candidates, booking.id, booking.id);
     current = await settleHostLocation(tx, current, won.hosts);
@@ -1585,7 +1598,19 @@ async function withLiveCheck(
   deps: SchedulingDeps,
 ): Promise<Candidates> {
   if (!deps.calendars) return candidates;
-  const top = ranked(candidates, seed).slice(0, LIVE_CHECK_CANDIDATES);
+  // Only ones who could take it: this makes a few paid requests, so none go on someone who's away.
+  const away = await hostsAwayDuring(
+    db,
+    env,
+    candidates.members.map((entry) => entry.host.id),
+    plan.startMs,
+    plan.startMs + plan.rule.durationMinutes * MINUTE_MS,
+  );
+  const present = {
+    required: candidates.required,
+    members: candidates.members.filter((entry) => !away.has(entry.host.id)),
+  };
+  const top = ranked(present, seed).slice(0, LIVE_CHECK_CANDIDATES);
   const hostIds = [
     ...candidates.required.map((entry) => entry.host.id),
     ...top.map((host) => host.id),
@@ -1678,6 +1703,8 @@ async function book(
     nowMs: now.getTime(),
     failureMode,
     ttlSeconds,
+    coverage: coverageWindows(candidates),
+    coverPrincipals: coverPrincipals(candidates),
   };
   const context: NewBookingContext = { env, eventType, deps, actor, now };
   const hash = hashRequest({
@@ -2260,6 +2287,28 @@ export async function approveBooking(
   return toBookingObject(db, row, deps);
 }
 
+/** What `reassign.ts` builds on. Not part of the package's interface. */
+export const bookingInternals = {
+  coverPrincipals,
+  coverageWindows,
+  LostSlot,
+  assignFairly,
+  bumped,
+  locationForNewHost,
+  locationWithoutHost,
+  lockBooking,
+  lockHostsAndMemberships,
+  lockLimitBuckets,
+  notChangeable,
+  participants,
+  ranked,
+  recordChange,
+  retryingDeadlocks,
+  schedulesOf,
+  setCalendarState,
+  verdictsOf,
+};
+
 /**
  * Where a booking could move to, answered the way `rescheduleBooking` checks: its own hosts, none
  * disabled or taken off the event type and all of them free, at its own length and buffers, with its own claims
@@ -2391,6 +2440,16 @@ export async function rescheduleBooking(
         ),
       );
     const member = rows.find((row) => row.role === "member");
+    // Asking for the host it has is just moving the booking.
+    const replacing = replacement && replacement.id !== member?.hostId ? replacement : null;
+    if (replacing && !eventType.reassignmentEnabled) {
+      throw new SchedulingError(
+        "booking_not_changeable",
+        "This event type's bookings stay with their hosts.",
+      );
+    }
+    let replacementCoverage: Map<string, Interval[]> | undefined;
+    let replacementPrincipals: Map<string, readonly string[]> | undefined;
     if (replacement && !member) {
       throw new SchedulingError("invalid_event_type", "This booking's hosts can't be changed.", {
         param: "host",
@@ -2398,14 +2457,19 @@ export async function rescheduleBooking(
     }
     if (replacement) {
       const { members } = await candidatesOf(tx, env, eventType, { hostRef: replacement.id });
-      if (!members.some((candidate) => candidate.host.id === replacement.id)) {
+      const entry = members.find((candidate) => candidate.host.id === replacement.id);
+      if (!entry) {
         throw new SchedulingError("invalid_event_type", "That host can't take this event type.", {
           param: "host",
         });
       }
+      if (entry.coverage) {
+        replacementCoverage = new Map([[replacement.id, entry.coverage.windows]]);
+        replacementPrincipals = new Map([[replacement.id, entry.coverage.principals]]);
+      }
     }
-    const hosts = replacement
-      ? [...current.filter((host) => host.id !== member?.hostId), replacement]
+    const hosts = replacing
+      ? [...current.filter((host) => host.id !== member?.hostId), replacing]
       : current;
     const ttlSeconds =
       booking.status === "held"
@@ -2439,6 +2503,8 @@ export async function rescheduleBooking(
       nowMs: now.getTime(),
       failureMode: await calendarFailureModeOf(tx, env),
       ttlSeconds,
+      coverage: replacementCoverage,
+      coverPrincipals: replacementPrincipals,
     };
     try {
       await tx.transaction(async (savepoint) => {
@@ -2449,7 +2515,25 @@ export async function rescheduleBooking(
       if (error instanceof LostSlot) throw slotLost(error.reason);
       throw error;
     }
-    if (replacement && member && replacement.id !== member.hostId) {
+    if (replacing && member) {
+      await tx
+        .insert(schedulingBookingHost)
+        .values({
+          bookingId: booking.id,
+          hostId: replacing.id,
+          organizationId: booking.organizationId,
+          role: "member",
+        })
+        .onConflictDoNothing();
+      // With both on the booking: what comes back is the share it added, on the row that's leaving.
+      if (eventType.kind === "pool" && booking.startAt > now) {
+        for (const move of [
+          { hostId: member.hostId, delta: -1 as const },
+          { hostId: replacing.id, delta: 1 as const },
+        ].sort((a, b) => (a.hostId < b.hostId ? -1 : 1))) {
+          await assignFairly(tx, booking, [move.hostId], move.delta);
+        }
+      }
       await tx
         .delete(schedulingBookingHost)
         .where(
@@ -2459,20 +2543,11 @@ export async function rescheduleBooking(
             eq(schedulingBookingHost.hostId, member.hostId),
           ),
         );
-      await tx
-        .insert(schedulingBookingHost)
-        .values({
-          bookingId: booking.id,
-          hostId: replacement.id,
-          organizationId: booking.organizationId,
-          role: "member",
-        })
-        .onConflictDoNothing();
     }
     // Naming the host it already has changes nothing about where it happens.
     const newLocation =
-      replacement && replacement.id !== member?.hostId
-        ? locationForNewHost(booking.location, member?.hostId, hosts)
+      replacement && member && replacement.id !== member.hostId
+        ? await locationWithoutHost(tx, booking, member.hostId, hosts)
         : null;
     const updated = await bumped(tx, booking, {
       startAt: new Date(input.startMs),
@@ -2483,7 +2558,7 @@ export async function rescheduleBooking(
     });
     const after = await participants(tx, updated);
     if (updated.status === "confirmed") {
-      if (replacement && member) await setCalendarState(tx, updated, [member.hostId], "absent");
+      if (replacing && member) await setCalendarState(tx, updated, [member.hostId], "absent");
       await setCalendarState(tx, updated, after.hostIds, "present");
     }
     await recordChange(tx, updated, {
@@ -2495,8 +2570,28 @@ export async function rescheduleBooking(
       details: { previous_start: booking.startAt.toISOString() },
       message: "Booking rescheduled",
     });
+    if (replacing && member) {
+      await recordChange(tx, updated, {
+        type: "scheduling.booking.reassigned",
+        webhook: "scheduling.booking.reassigned",
+        actor,
+        occurredAt: now,
+        previousHostIds: hostIds,
+        details: { previous_host_ids: hostIds },
+        message: "Booking reassigned",
+      });
+    }
     if (updated.status !== "held") {
       await enqueueBookingNotifications(tx, updated, "rescheduled", now);
+      // They'd hear nothing otherwise: `rescheduled` goes to the hosts it has now.
+      if (replacing && member) {
+        await enqueueReassignment(
+          tx,
+          updated,
+          { added: [], removed: [member.hostId], attendee: false },
+          now,
+        );
+      }
     }
     return updated;
   });
@@ -2518,6 +2613,8 @@ export async function markNoShow(
     if (booking.startAt.getTime() > now.getTime()) {
       throw new SchedulingError("booking_not_changeable", "This booking hasn't started yet.");
     }
+    // Once is the news: marking it again would send everything timed from it again.
+    if (booking.noShowAt) return booking;
     const updated = await bumped(tx, booking, { noShowAt: now });
     await recordChange(tx, updated, {
       type: "scheduling.booking.no_show",
@@ -2526,6 +2623,7 @@ export async function markNoShow(
       occurredAt: now,
       message: "Attendee marked as a no-show",
     });
+    await enqueueNoShowReminders(tx, updated, now);
     return updated;
   });
   return toBookingObject(db, row, deps);
@@ -2543,9 +2641,9 @@ export async function updateBookingLocation(
     if (booking.status === "cancelled" || booking.status === "declined") {
       throw notChangeable(booking);
     }
-    // A seat's version stays: nothing about the seat changed, and a bump would drop its reminder.
+    // A seat's version stays: nothing about the seat changed.
     const updated = booking.groupSessionId ? booking : await bumped(tx, booking, { location });
-    if (!booking.groupSessionId) await carryReminders(tx, updated);
+    if (!booking.groupSessionId) await carryAnchorlessReminders(tx, updated);
     await recordChange(tx, updated, {
       type: "scheduling.booking.location_ready",
       webhook: "scheduling.booking.location_ready",
@@ -2652,7 +2750,15 @@ export async function getBookingOverview(
   booking: BookingObjectOutput;
   eventTypeTitle: string | null;
   hosts: { id: string; name: string }[];
-  events: { id: string; type: string; actor: BookingActor["kind"]; occurredAt: Date }[];
+  events: {
+    id: string;
+    type: string;
+    actor: BookingActor["kind"];
+    occurredAt: Date;
+    /** Why it was reassigned, when someone said: only here, never lists, webhooks or logs. */
+    reasonCode: string | null;
+    note: string | null;
+  }[];
 }> {
   const row = await bookingRow(scope, id);
   const booking = await toBookingObject(db, row, deps);
@@ -2685,6 +2791,8 @@ export async function getBookingOverview(
         type: schedulingBookingEvent.type,
         actor: schedulingBookingEvent.actor,
         occurredAt: schedulingBookingEvent.occurredAt,
+        details: schedulingBookingEvent.details,
+        encryptedNote: schedulingBookingEvent.encryptedNote,
       })
       .from(schedulingBookingEvent)
       .where(
@@ -2700,7 +2808,14 @@ export async function getBookingOverview(
     booking,
     eventTypeTitle: eventType?.title ?? null,
     hosts,
-    events: events.map((event) => ({ ...event, actor: event.actor.kind })),
+    events: events.map((event) => ({
+      id: event.id,
+      type: event.type,
+      occurredAt: event.occurredAt,
+      actor: event.actor.kind,
+      reasonCode: typeof event.details.reason_code === "string" ? event.details.reason_code : null,
+      note: event.encryptedNote ? decryptSecret(event.encryptedNote, deps.dataKeys) : null,
+    })),
   };
 }
 
@@ -2928,11 +3043,7 @@ export async function previewSeries(
   for (const startMs of starts) {
     const loaded = await loadHostInputs(db, {
       scope: env,
-      hosts: entries.map((entry) => ({
-        id: entry.host.id,
-        timeZone: entry.host.timeZone,
-        scheduleId: entry.membership?.scheduleId ?? null,
-      })),
+      hosts: entries.map(hostInputOf),
       eventTypeId: eventType.id,
       fromMs: startMs,
       toMs: startMs + durationMinutes * MINUTE_MS,
@@ -2990,12 +3101,14 @@ async function seriesChoices(
   const { starts, rule, nowMs } = input;
   const required = candidates.required.map((entry) => entry.host);
   const schedules = schedulesOf(candidates);
+  const coverage = coverageWindows(candidates);
   const loaded = await loadHostInputs(db, {
     scope: env,
     hosts: [...required, ...members].map((host) => ({
       id: host.id,
       timeZone: host.timeZone,
       scheduleId: schedules.get(host.id) ?? null,
+      onlyWithin: coverage.get(host.id),
     })),
     eventTypeId: input.eventTypeId,
     fromMs: Math.min(...starts),
@@ -3095,6 +3208,8 @@ export async function createSeries(
         nowMs: now.getTime(),
         failureMode,
         ttlSeconds,
+        coverage: coverageWindows(candidates),
+        coverPrincipals: coverPrincipals(candidates),
       };
       try {
         const created = await inSavepoint(tx, async (savepoint) => {

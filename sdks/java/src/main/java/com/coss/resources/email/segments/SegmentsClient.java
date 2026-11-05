@@ -75,50 +75,86 @@ public class SegmentsClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public Segment get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public Segment get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public Segment get(String id, GetSegmentsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public Segment get(String id, GetSegmentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public DeletedSegment remove(String id) {
         return this.rawClient.remove(id).body();
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public DeletedSegment remove(String id, RequestOptions requestOptions) {
         return this.rawClient.remove(id, requestOptions).body();
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public DeletedSegment remove(String id, RemoveSegmentsRequest request) {
         return this.rawClient.remove(id, request).body();
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public DeletedSegment remove(String id, RemoveSegmentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.remove(id, request, requestOptions).body();
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public Segment update(String id) {
         return this.rawClient.update(id).body();
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public Segment update(String id, RequestOptions requestOptions) {
         return this.rawClient.update(id, requestOptions).body();
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public Segment update(String id, UpdateSegmentRequest request) {
         return this.rawClient.update(id, request).body();
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public Segment update(String id, UpdateSegmentRequest request, RequestOptions requestOptions) {
         return this.rawClient.update(id, request, requestOptions).body();
     }

@@ -7,7 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class SignEventDetails(UniversalBaseModel):
-    reason: typing.Optional[str] = None
+    """
+    What this event recorded, depending on its type.
+    """
+
+    reason: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    `declined`: the signer's reason.
+    """
+
     document_sha256: typing.Optional[typing.Dict[str, str]] = pydantic.Field(default=None)
     """
     Each document's SHA-256 at that moment, by document id.
@@ -18,13 +26,21 @@ class SignEventDetails(UniversalBaseModel):
     SHA-256 of the consent text the signer accepted.
     """
 
-    field_ids: typing.Optional[typing.List[str]] = None
+    field_ids: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
+    """
+    `signed`: the fields the signer filled.
+    """
+
     signature_sha256: typing.Optional[str] = pydantic.Field(default=None)
     """
     SHA-256 of the signature image the signer adopted.
     """
 
-    initials_sha256: typing.Optional[str] = None
+    initials_sha256: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    SHA-256 of the initials image the signer adopted.
+    """
+
     session_id: typing.Optional[str] = pydantic.Field(default=None)
     """
     The signing session the signer used.

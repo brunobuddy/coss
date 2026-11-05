@@ -26,55 +26,55 @@ class EmailSummary extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $from
+     * @var string $from Who it's sent from.
      */
     #[JsonProperty('from')]
     public string $from;
 
     /**
-     * @var array<string> $to
+     * @var array<string> $to The `To` addresses.
      */
     #[JsonProperty('to'), ArrayType(['string'])]
     public array $to;
 
     /**
-     * @var array<string> $cc
+     * @var array<string> $cc The `Cc` addresses.
      */
     #[JsonProperty('cc'), ArrayType(['string'])]
     public array $cc;
 
     /**
-     * @var array<string> $bcc
+     * @var array<string> $bcc The `Bcc` addresses.
      */
     #[JsonProperty('bcc'), ArrayType(['string'])]
     public array $bcc;
 
     /**
-     * @var array<string> $replyTo
+     * @var array<string> $replyTo The `Reply-To` addresses.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public array $replyTo;
 
     /**
-     * @var string $subject
+     * @var string $subject The subject, rendered if it came from a template.
      */
     #[JsonProperty('subject')]
     public string $subject;
 
     /**
-     * @var array<EmailSummaryTagsItem> $tags
+     * @var array<EmailSummaryTagsItem> $tags Your tags on the email.
      */
     #[JsonProperty('tags'), ArrayType([EmailSummaryTagsItem::class])]
     public array $tags;
 
     /**
-     * @var ?string $category
+     * @var ?string $category The email's category, which suppressions and tracking rules can scope to. `null`: none.
      */
     #[JsonProperty('category')]
     public ?string $category;
 
     /**
-     * @var value-of<EmailSummaryStream> $stream
+     * @var value-of<EmailSummaryStream> $stream `transactional` or `marketing`.
      */
     #[JsonProperty('stream')]
     public string $stream;
@@ -92,7 +92,7 @@ class EmailSummary extends JsonSerializableType
     public ?EmailFailure $failure;
 
     /**
-     * @var array<EmailRecipient> $recipients
+     * @var array<EmailRecipient> $recipients Each recipient, with how delivery to them went.
      */
     #[JsonProperty('recipients'), ArrayType([EmailRecipient::class])]
     public array $recipients;
@@ -116,7 +116,7 @@ class EmailSummary extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $sentAt
+     * @var ?DateTime $sentAt When it was handed to the provider. `null`: not yet.
      */
     #[JsonProperty('sent_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $sentAt;

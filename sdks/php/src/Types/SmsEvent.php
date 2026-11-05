@@ -22,19 +22,19 @@ class SmsEvent extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $smsId
+     * @var string $smsId The id of the message.
      */
     #[JsonProperty('sms_id')]
     public string $smsId;
 
     /**
-     * @var value-of<SmsEventType> $type
+     * @var value-of<SmsEventType> $type What happened: `sms.scheduled`, `sms.sent`, `sms.delivered`, `sms.undelivered`, `sms.failed`, `sms.suppressed` or `sms.canceled`.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

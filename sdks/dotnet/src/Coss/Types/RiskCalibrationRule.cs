@@ -11,9 +11,15 @@ public record RiskCalibrationRule : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The rule's id.
+    /// </summary>
     [JsonPropertyName("rule")]
     public required string Rule { get; set; }
 
+    /// <summary>
+    /// The rule's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

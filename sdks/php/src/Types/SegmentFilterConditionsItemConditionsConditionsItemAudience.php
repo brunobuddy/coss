@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class SegmentFilterConditionsItemConditionsConditionsItemAudience extends JsonSerializableType
 {
     /**
-     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemAudienceOp> $op
+     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemAudienceOp> $op Whether the contact is in the audience.
      */
     #[JsonProperty('op')]
     public string $op;
 
     /**
-     * @var string $audienceId
+     * @var string $audienceId The audience's id.
      */
     #[JsonProperty('audience_id')]
     public string $audienceId;

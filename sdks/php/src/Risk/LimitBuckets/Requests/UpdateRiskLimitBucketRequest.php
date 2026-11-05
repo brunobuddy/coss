@@ -9,25 +9,25 @@ use Coss\Risk\LimitBuckets\Types\UpdateRiskLimitBucketRequestOnFailure;
 class UpdateRiskLimitBucketRequest extends JsonSerializableType
 {
     /**
-     * @var ?int $limit
+     * @var ?int $limit Tokens added per `period_seconds`.
      */
     #[JsonProperty('limit')]
     public ?int $limit;
 
     /**
-     * @var ?int $periodSeconds
+     * @var ?int $periodSeconds How many seconds `limit` tokens take to be added.
      */
     #[JsonProperty('period_seconds')]
     public ?int $periodSeconds;
 
     /**
-     * @var ?int $burst
+     * @var ?int $burst The bucket's size: how many requests a key can make at once.
      */
     #[JsonProperty('burst')]
     public ?int $burst;
 
     /**
-     * @var ?value-of<UpdateRiskLimitBucketRequestOnFailure> $onFailure
+     * @var ?value-of<UpdateRiskLimitBucketRequestOnFailure> $onFailure The answer while coss.com can't count: `allow` or `deny`.
      */
     #[JsonProperty('on_failure')]
     public ?string $onFailure;

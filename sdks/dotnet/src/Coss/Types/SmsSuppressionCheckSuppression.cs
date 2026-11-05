@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// A number sends skip.
+/// </summary>
 [Serializable]
 public record SmsSuppressionCheckSuppression : IJsonOnDeserialized
 {
@@ -17,6 +20,9 @@ public record SmsSuppressionCheckSuppression : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The suppressed number, in E.164.
+    /// </summary>
     [JsonPropertyName("phone_number")]
     public required string PhoneNumber { get; set; }
 

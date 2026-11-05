@@ -7,6 +7,9 @@ use Coss\Core\Json\JsonProperty;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * One recipient of an email and how delivery to them went.
+ */
 class EmailRecipient extends JsonSerializableType
 {
     /**
@@ -16,7 +19,7 @@ class EmailRecipient extends JsonSerializableType
     public string $address;
 
     /**
-     * @var value-of<EmailRecipientType> $type
+     * @var value-of<EmailRecipientType> $type Which list it's on: `to`, `cc` or `bcc`.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -28,7 +31,7 @@ class EmailRecipient extends JsonSerializableType
     public string $status;
 
     /**
-     * @var ?DateTime $lastEventAt
+     * @var ?DateTime $lastEventAt When its latest delivery event happened. `null`: none yet.
      */
     #[JsonProperty('last_event_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastEventAt;

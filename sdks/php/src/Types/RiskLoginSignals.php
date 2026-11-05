@@ -11,13 +11,13 @@ use Coss\Core\Json\JsonProperty;
 class RiskLoginSignals extends JsonSerializableType
 {
     /**
-     * @var bool $newCountry
+     * @var bool $newCountry Whether this user never logged in from this country in this environment.
      */
     #[JsonProperty('new_country')]
     public bool $newCountry;
 
     /**
-     * @var bool $newNetwork
+     * @var bool $newNetwork Whether this user never logged in from this network (ASN) in this environment.
      */
     #[JsonProperty('new_network')]
     public bool $newNetwork;

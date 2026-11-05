@@ -11,9 +11,15 @@ public record ReceivedEmailHeadersItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The header's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The header's value.
+    /// </summary>
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 

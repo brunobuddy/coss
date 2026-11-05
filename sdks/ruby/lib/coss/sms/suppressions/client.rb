@@ -97,6 +97,8 @@ module Coss
           end
         end
 
+        # Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -136,6 +138,8 @@ module Coss
           end
         end
 
+        # One entry of the SMS suppression list of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

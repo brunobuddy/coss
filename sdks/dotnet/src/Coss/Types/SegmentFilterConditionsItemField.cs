@@ -15,6 +15,9 @@ public record SegmentFilterConditionsItemField : IJsonOnDeserialized
     [JsonPropertyName("field")]
     public required SegmentFilterConditionsItemFieldField Field { get; set; }
 
+    /// <summary>
+    /// `before` or `after` a time, or created `within_days` the last days.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemFieldOp Op { get; set; }
 

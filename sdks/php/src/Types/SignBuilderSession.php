@@ -22,7 +22,7 @@ class SignBuilderSession extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $templateId
+     * @var string $templateId The id of the template it edits.
      */
     #[JsonProperty('template_id')]
     public string $templateId;
@@ -40,7 +40,7 @@ class SignBuilderSession extends JsonSerializableType
     public string $token;
 
     /**
-     * @var DateTime $expiresAt
+     * @var DateTime $expiresAt When the link stops working.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $expiresAt;

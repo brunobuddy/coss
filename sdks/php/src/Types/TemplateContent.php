@@ -8,25 +8,25 @@ use Coss\Core\Json\JsonProperty;
 class TemplateContent extends JsonSerializableType
 {
     /**
-     * @var string $locale
+     * @var string $locale The BCP 47 language tag this content is for.
      */
     #[JsonProperty('locale')]
     public string $locale;
 
     /**
-     * @var string $subject
+     * @var string $subject The subject template.
      */
     #[JsonProperty('subject')]
     public string $subject;
 
     /**
-     * @var ?string $html
+     * @var ?string $html The HTML template. `null`: text only.
      */
     #[JsonProperty('html')]
     public ?string $html;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain-text template. `null`: HTML only.
      */
     #[JsonProperty('text')]
     public ?string $text;

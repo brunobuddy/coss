@@ -142,6 +142,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+//
 // Example:
 //
 //	request := &sign.GetTemplatesRequest{

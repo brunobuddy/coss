@@ -56,18 +56,30 @@ public class AsyncLogsClient {
         return this.rawClient.list(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CompletableFuture<Log> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CompletableFuture<Log> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CompletableFuture<Log> get(String id, GetLogsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One line of the API key's environment log.
+     */
     public CompletableFuture<Log> get(String id, GetLogsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

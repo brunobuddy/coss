@@ -6,12 +6,21 @@ namespace Coss.Email;
 [Serializable]
 public record CreateTopicRequest
 {
+    /// <summary>
+    /// The `category` of the emails about this topic. Can't change.
+    /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center under its name. `null`: none.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }

@@ -21,6 +21,9 @@ public partial interface IPropertiesClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One contact property of the API key's environment: its key, type and fallback.
+    /// </summary>
     WithRawResponseTask<ContactProperty> GetAsync(
         GetPropertiesRequest request,
         RequestOptions? options = null,
@@ -36,6 +39,9 @@ public partial interface IPropertiesClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Changes the value used when a contact has none for this property. Its key and type can't change.
+    /// </summary>
     WithRawResponseTask<ContactProperty> UpdateAsync(
         UpdateContactPropertyRequest request,
         RequestOptions? options = null,

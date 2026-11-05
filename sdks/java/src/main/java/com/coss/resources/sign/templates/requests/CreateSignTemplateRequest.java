@@ -64,6 +64,9 @@ public final class CreateSignTemplateRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the template.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -93,11 +96,17 @@ public final class CreateSignTemplateRequest {
         return message;
     }
 
+    /**
+     * @return <code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.
+     */
     @JsonProperty("signing_order")
     public Optional<CreateSignTemplateRequestSigningOrder> getSigningOrder() {
         return signingOrder;
     }
 
+    /**
+     * @return Uploaded documents by id, or PDFs inline (base64).
+     */
     @JsonProperty("documents")
     public Optional<List<CreateSignTemplateRequestDocumentsItem>> getDocuments() {
         return documents;
@@ -168,6 +177,9 @@ public final class CreateSignTemplateRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the template.</p>
+         */
         _FinalStage name(@NotNull String name);
 
         Builder from(CreateSignTemplateRequest other);
@@ -202,10 +214,16 @@ public final class CreateSignTemplateRequest {
 
         _FinalStage message(Nullable<String> message);
 
+        /**
+         * <p><code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.</p>
+         */
         _FinalStage signingOrder(Optional<CreateSignTemplateRequestSigningOrder> signingOrder);
 
         _FinalStage signingOrder(CreateSignTemplateRequestSigningOrder signingOrder);
 
+        /**
+         * <p>Uploaded documents by id, or PDFs inline (base64).</p>
+         */
         _FinalStage documents(Optional<List<CreateSignTemplateRequestDocumentsItem>> documents);
 
         _FinalStage documents(List<CreateSignTemplateRequestDocumentsItem> documents);
@@ -258,6 +276,10 @@ public final class CreateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the template.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public _FinalStage name(@NotNull String name) {
@@ -305,12 +327,19 @@ public final class CreateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Uploaded documents by id, or PDFs inline (base64).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage documents(List<CreateSignTemplateRequestDocumentsItem> documents) {
             this.documents = Optional.ofNullable(documents);
             return this;
         }
 
+        /**
+         * <p>Uploaded documents by id, or PDFs inline (base64).</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "documents", nulls = Nulls.SKIP)
         public _FinalStage documents(Optional<List<CreateSignTemplateRequestDocumentsItem>> documents) {
@@ -318,12 +347,19 @@ public final class CreateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p><code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signingOrder(CreateSignTemplateRequestSigningOrder signingOrder) {
             this.signingOrder = Optional.ofNullable(signingOrder);
             return this;
         }
 
+        /**
+         * <p><code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "signing_order", nulls = Nulls.SKIP)
         public _FinalStage signingOrder(Optional<CreateSignTemplateRequestSigningOrder> signingOrder) {

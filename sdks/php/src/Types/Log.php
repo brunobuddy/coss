@@ -23,7 +23,7 @@ class Log extends JsonSerializableType
     public string $id;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;
@@ -59,19 +59,19 @@ class Log extends JsonSerializableType
     public ?string $requestId;
 
     /**
-     * @var ?string $apiKeyId
+     * @var ?string $apiKeyId The API key that made the request. `null`: not an API request.
      */
     #[JsonProperty('api_key_id')]
     public ?string $apiKeyId;
 
     /**
-     * @var ?string $method
+     * @var ?string $method The HTTP method. `null`: not an HTTP line.
      */
     #[JsonProperty('method')]
     public ?string $method;
 
     /**
-     * @var ?string $path
+     * @var ?string $path The request's path. `null`: not an API request.
      */
     #[JsonProperty('path')]
     public ?string $path;
@@ -89,25 +89,25 @@ class Log extends JsonSerializableType
     public ?int $statusCode;
 
     /**
-     * @var ?int $durationMs
+     * @var ?int $durationMs How long it took, in milliseconds. `null`: not timed.
      */
     #[JsonProperty('duration_ms')]
     public ?int $durationMs;
 
     /**
-     * @var ?string $clientIp
+     * @var ?string $clientIp The caller's address. `null`: not an API request.
      */
     #[JsonProperty('client_ip')]
     public ?string $clientIp;
 
     /**
-     * @var ?string $userAgent
+     * @var ?string $userAgent The caller's `User-Agent`. `null`: not sent.
      */
     #[JsonProperty('user_agent')]
     public ?string $userAgent;
 
     /**
-     * @var ?string $errorCode
+     * @var ?string $errorCode The error's `code`. `null`: no error.
      */
     #[JsonProperty('error_code')]
     public ?string $errorCode;
@@ -119,13 +119,13 @@ class Log extends JsonSerializableType
     public ?string $resourceType;
 
     /**
-     * @var ?string $resourceId
+     * @var ?string $resourceId The id of what it's about. `null`: nothing in particular.
      */
     #[JsonProperty('resource_id')]
     public ?string $resourceId;
 
     /**
-     * @var ?string $recipient
+     * @var ?string $recipient The recipient an email event is about. `null`: none.
      */
     #[JsonProperty('recipient')]
     public ?string $recipient;

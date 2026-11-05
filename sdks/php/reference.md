@@ -2061,6 +2061,20 @@ $client->sms->send(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message sent from the API key's environment, with its current status.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2481,6 +2495,20 @@ $client->verify->check(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A verification's status and destination. Its code is never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2694,7 +2722,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -2742,7 +2770,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$spam:** `?CreateFormRequestSpam` 
+**$spam:** `?CreateFormRequestSpam` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -2750,7 +2778,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$submitter:** `?CreateFormRequestSubmitter` 
+**$submitter:** `?CreateFormRequestSubmitter` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -2758,7 +2786,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$notifications:** `?CreateFormRequestNotifications` 
+**$notifications:** `?CreateFormRequestNotifications` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -2766,7 +2794,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$contacts:** `?CreateFormRequestContacts` 
+**$contacts:** `?CreateFormRequestContacts` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -2774,7 +2802,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$files:** `?CreateFormRequestFiles` 
+**$files:** `?CreateFormRequestFiles` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -2782,7 +2810,7 @@ $client->forms->create(
 <dl>
 <dd>
 
-**$hosted:** `?CreateFormRequestHosted` 
+**$hosted:** `?CreateFormRequestHosted` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -2797,6 +2825,20 @@ $client->forms->create(
 <details><summary><code>$client-&gt;forms-&gt;get($id) -> ?Form</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -2952,7 +2994,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -3000,7 +3042,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$spam:** `?UpdateFormRequestSpam` 
+**$spam:** `?UpdateFormRequestSpam` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -3008,7 +3050,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$submitter:** `?UpdateFormRequestSubmitter` 
+**$submitter:** `?UpdateFormRequestSubmitter` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -3016,7 +3058,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$notifications:** `?UpdateFormRequestNotifications` 
+**$notifications:** `?UpdateFormRequestNotifications` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -3024,7 +3066,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$contacts:** `?UpdateFormRequestContacts` 
+**$contacts:** `?UpdateFormRequestContacts` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -3032,7 +3074,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$files:** `?UpdateFormRequestFiles` 
+**$files:** `?UpdateFormRequestFiles` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -3040,7 +3082,7 @@ $client->forms->update(
 <dl>
 <dd>
 
-**$hosted:** `?UpdateFormRequestHosted` 
+**$hosted:** `?UpdateFormRequestHosted` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -3257,6 +3299,20 @@ $client->logs->list(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One line of the API key's environment log.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -3419,6 +3475,20 @@ $client->auditEvents->list(
 <details><summary><code>$client-&gt;auditEvents-&gt;get($id) -> ?AuditEvent</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One event of the organization's audit log.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -3638,7 +3708,7 @@ $client->logDrains->list();
 <dl>
 <dd>
 
-Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 </dd>
 </dl>
 </dd>
@@ -3694,6 +3764,22 @@ $client->logDrains->create(
 <dd>
 
 **$sources:** `?array` — What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$format:** `?string` — How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$authHeader:** `?LogDrainAuthHeader` 
     
 </dd>
 </dl>
@@ -3829,7 +3915,7 @@ $client->logDrains->delete(
 <dl>
 <dd>
 
-Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 </dd>
 </dl>
 </dd>
@@ -3896,7 +3982,23 @@ $client->logDrains->update(
 <dl>
 <dd>
 
-**$enabled:** `?bool` 
+**$format:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$authHeader:** `?LogDrainAuthHeader` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$enabled:** `?bool` — `false` disables it, and `true` enables it again.
     
 </dd>
 </dl>
@@ -4060,6 +4162,20 @@ $client->inboxes->create(
 <details><summary><code>$client-&gt;inboxes-&gt;get($inboxId) -> ?Inbox</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One inbox of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -4235,7 +4351,7 @@ $client->inboxes->update(
 <dl>
 <dd>
 
-Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
+Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans include some every month) unless they end in `block`. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
 </dd>
 </dl>
 </dd>
@@ -4659,7 +4775,7 @@ $client->risk->checkPhone(
 <dl>
 <dd>
 
-Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
+Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (`risk.content_checks`; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
 </dd>
 </dl>
 </dd>
@@ -5586,7 +5702,7 @@ $client->email->templates->create(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Your note about it, shown in the dashboard.
     
 </dd>
 </dl>
@@ -5797,7 +5913,7 @@ $client->email->templates->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Shown in the dashboard.
     
 </dd>
 </dl>
@@ -5813,7 +5929,7 @@ $client->email->templates->update(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -6594,6 +6710,20 @@ $client->email->suppressions->export(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -7008,7 +7138,7 @@ $client->email->subaccounts->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Your name for it.
     
 </dd>
 </dl>
@@ -7699,7 +7829,7 @@ $client->email->contacts->upsert(
 <dl>
 <dd>
 
-**$firstName:** `?string` 
+**$firstName:** `?string` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -7707,7 +7837,7 @@ $client->email->contacts->upsert(
 <dl>
 <dd>
 
-**$lastName:** `?string` 
+**$lastName:** `?string` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -7940,7 +8070,7 @@ $client->email->contacts->import(
 <dl>
 <dd>
 
-**$contacts:** `array` 
+**$contacts:** `array` — The contacts to create or update, at most 1,000.
     
 </dd>
 </dl>
@@ -8027,6 +8157,20 @@ $client->email->contacts->export(
 <details><summary><code>$client-&gt;email-&gt;contacts-&gt;get($id) -> ?Contact</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -8180,7 +8324,7 @@ $client->email->contacts->update(
 <dl>
 <dd>
 
-**$firstName:** `?string` 
+**$firstName:** `?string` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -8188,7 +8332,7 @@ $client->email->contacts->update(
 <dl>
 <dd>
 
-**$lastName:** `?string` 
+**$lastName:** `?string` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -8340,7 +8484,7 @@ $client->email->contacts->updateTopics(
 <dl>
 <dd>
 
-**$topics:** `array` 
+**$topics:** `array` — The contact's choices per topic. Topics not listed keep theirs.
     
 </dd>
 </dl>
@@ -8526,7 +8670,7 @@ $client->email->broadcasts->create(
 <dl>
 <dd>
 
-**$replyTo:** `?array` 
+**$replyTo:** `?array` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -8558,7 +8702,7 @@ $client->email->broadcasts->create(
 <dl>
 <dd>
 
-**$text:** `?string` 
+**$text:** `?string` — The plain text part. Takes the same placeholders as `html`.
     
 </dd>
 </dl>
@@ -8566,7 +8710,7 @@ $client->email->broadcasts->create(
 <dl>
 <dd>
 
-**$tracking:** `?CreateBroadcastRequestTracking` 
+**$tracking:** `?CreateBroadcastRequestTracking` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -8605,6 +8749,20 @@ $client->email->broadcasts->create(
 <details><summary><code>$client-&gt;email-&gt;broadcasts-&gt;get($id) -> ?Broadcast</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One broadcast of the API key's environment, with its status and stats.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -8763,7 +8921,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$audienceId:** `?string` 
+**$audienceId:** `?string` — Send to this audience. `null` clears it.
     
 </dd>
 </dl>
@@ -8771,7 +8929,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$segmentId:** `?string` 
+**$segmentId:** `?string` — Send to this segment. `null` clears it.
     
 </dd>
 </dl>
@@ -8779,7 +8937,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$topic:** `?string` 
+**$topic:** `?string` — The topic it's about (its key). `null` clears it.
     
 </dd>
 </dl>
@@ -8795,7 +8953,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$replyTo:** `?array` 
+**$replyTo:** `?array` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -8811,7 +8969,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$previewText:** `?string` 
+**$previewText:** `?string` — The inbox preview line. `null` removes it.
     
 </dd>
 </dl>
@@ -8819,7 +8977,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$html:** `?string` 
+**$html:** `?string` — The HTML part. `null` removes it, if `text` remains.
     
 </dd>
 </dl>
@@ -8827,7 +8985,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$text:** `?string` 
+**$text:** `?string` — The plain text part. `null` removes it, if `html` remains.
     
 </dd>
 </dl>
@@ -8835,7 +8993,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$tracking:** `?UpdateBroadcastRequestTracking` 
+**$tracking:** `?UpdateBroadcastRequestTracking` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -8843,7 +9001,7 @@ $client->email->broadcasts->update(
 <dl>
 <dd>
 
-**$ratePerSecond:** `?int` 
+**$ratePerSecond:** `?int` — Recipients per second. `null`: the plan's marketing rate.
     
 </dd>
 </dl>
@@ -9147,7 +9305,7 @@ $client->email->broadcasts->test(
 <dl>
 <dd>
 
-**$to:** `array` 
+**$to:** `array` — Who gets the test, at most 5 addresses.
     
 </dd>
 </dl>
@@ -9309,6 +9467,20 @@ $client->email->audiences->list(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -9337,7 +9509,7 @@ $client->email->audiences->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -9352,6 +9524,20 @@ $client->email->audiences->create(
 <details><summary><code>$client-&gt;email-&gt;audiences-&gt;get($id) -> ?Audience</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One audience of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -9451,6 +9637,20 @@ $client->email->audiences->remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Renames an audience. Its members stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -9488,7 +9688,7 @@ $client->email->audiences->update(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -9646,6 +9846,20 @@ $client->email->audiences->addContacts(
 <details><summary><code>$client-&gt;email-&gt;audiences-&gt;removeContact($id, $contactId) -> ?RemoveContactAudiencesResponse</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes a contact out of the audience. The contact itself stays.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -9822,7 +10036,7 @@ $client->email->segments->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -9845,6 +10059,20 @@ $client->email->segments->create(
 <details><summary><code>$client-&gt;email-&gt;segments-&gt;get($id) -> ?Segment</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One segment of the API key's environment, with its filter.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -9888,6 +10116,20 @@ $client->email->segments->get(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a segment. The contacts it matched stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -9930,6 +10172,20 @@ $client->email->segments->remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a segment's name or filter. Only the fields given change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -9967,7 +10223,7 @@ $client->email->segments->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -10173,7 +10429,7 @@ $client->email->topics->create(
 <dl>
 <dd>
 
-**$key:** `string` 
+**$key:** `string` — The `category` of the emails about this topic. Can't change.
     
 </dd>
 </dl>
@@ -10181,7 +10437,7 @@ $client->email->topics->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -10189,7 +10445,7 @@ $client->email->topics->create(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -10228,6 +10484,20 @@ $client->email->topics->create(
 <details><summary><code>$client-&gt;email-&gt;topics-&gt;get($id) -> ?Topic</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One topic of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10378,7 +10648,7 @@ $client->email->topics->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -10386,7 +10656,7 @@ $client->email->topics->update(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -10508,7 +10778,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$displayName:** `?string` 
+**$displayName:** `?string` — The sender's name in the preference center. `null`: the organization's.
     
 </dd>
 </dl>
@@ -10516,7 +10786,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$mailingAddress:** `?string` 
+**$mailingAddress:** `?string` — The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
     
 </dd>
 </dl>
@@ -10524,7 +10794,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$doubleOptInDefault:** `?bool` 
+**$doubleOptInDefault:** `?bool` — Whether contacts upserted without `double_opt_in` must confirm first.
     
 </dd>
 </dl>
@@ -10532,7 +10802,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$confirmationFrom:** `?string` 
+**$confirmationFrom:** `?string` — The sender of confirmation emails (a verified domain's address for live keys).
     
 </dd>
 </dl>
@@ -10540,7 +10810,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$confirmationSubject:** `?string` 
+**$confirmationSubject:** `?string` — `null`: coss.com's default.
     
 </dd>
 </dl>
@@ -10548,7 +10818,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$confirmationHtml:** `?string` 
+**$confirmationHtml:** `?string` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -10556,7 +10826,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$confirmationText:** `?string` 
+**$confirmationText:** `?string` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -10564,7 +10834,7 @@ $client->email->marketingSettings->update(
 <dl>
 <dd>
 
-**$confirmedRedirectUrl:** `?string` 
+**$confirmedRedirectUrl:** `?string` — Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
     
 </dd>
 </dl>
@@ -11001,7 +11271,7 @@ $client->email->contacts->properties->create(
 <dl>
 <dd>
 
-**$key:** `string` 
+**$key:** `string` — How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
     
 </dd>
 </dl>
@@ -11009,7 +11279,7 @@ $client->email->contacts->properties->create(
 <dl>
 <dd>
 
-**$type:** `string` 
+**$type:** `string` — What values it takes. `date` values are ISO 8601 strings. Can't change.
     
 </dd>
 </dl>
@@ -11017,7 +11287,7 @@ $client->email->contacts->properties->create(
 <dl>
 <dd>
 
-**$fallback:** `string|float|bool|null` 
+**$fallback:** `string|float|bool|null` — Used in templates for contacts without a value.
     
 </dd>
 </dl>
@@ -11032,6 +11302,20 @@ $client->email->contacts->properties->create(
 <details><summary><code>$client-&gt;email-&gt;contacts-&gt;properties-&gt;get($id) -> ?ContactProperty</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact property of the API key's environment: its key, type and fallback.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -11131,6 +11415,20 @@ $client->email->contacts->properties->remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the value used when a contact has none for this property. Its key and type can't change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -11168,7 +11466,7 @@ $client->email->contacts->properties->update(
 <dl>
 <dd>
 
-**$fallback:** `string|float|bool|null` 
+**$fallback:** `string|float|bool|null` — Used in templates for contacts without a value. `null` removes it.
     
 </dd>
 </dl>
@@ -11469,6 +11767,20 @@ $client->forms->submissions->list(
 <details><summary><code>$client-&gt;forms-&gt;submissions-&gt;get($id, $submissionId) -> ?FormSubmission</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One submission of the form, with its data, files and Risk's assessment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -11848,7 +12160,7 @@ $client->hooks->eventTypes->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
     
 </dd>
 </dl>
@@ -11856,7 +12168,7 @@ $client->hooks->eventTypes->create(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — What this event means, shown to your users.
     
 </dd>
 </dl>
@@ -12051,7 +12363,7 @@ $client->hooks->eventTypes->update(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — What this event means, shown to your users. `null` removes it.
     
 </dd>
 </dl>
@@ -12397,7 +12709,7 @@ $client->hooks->applications->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Shown to the application's users in the portal.
     
 </dd>
 </dl>
@@ -12548,7 +12860,7 @@ $client->hooks->endpoints->create(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Your note about it.
     
 </dd>
 </dl>
@@ -12588,7 +12900,7 @@ $client->hooks->endpoints->create(
 <dl>
 <dd>
 
-**$enabled:** `?bool` 
+**$enabled:** `?bool` — Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
     
 </dd>
 </dl>
@@ -12794,7 +13106,7 @@ $client->hooks->endpoints->update(
 <dl>
 <dd>
 
-**$url:** `?string` 
+**$url:** `?string` — Where deliveries are sent.
     
 </dd>
 </dl>
@@ -12802,7 +13114,7 @@ $client->hooks->endpoints->update(
 <dl>
 <dd>
 
-**$description:** `?string` 
+**$description:** `?string` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -12834,7 +13146,7 @@ $client->hooks->endpoints->update(
 <dl>
 <dd>
 
-**$enabled:** `?bool` 
+**$enabled:** `?bool` — `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
     
 </dd>
 </dl>
@@ -13201,7 +13513,7 @@ $client->hooks->endpoints->sendTest(
 <dl>
 <dd>
 
-**$eventType:** `string` 
+**$eventType:** `string` — The event type to send as.
     
 </dd>
 </dl>
@@ -13405,7 +13717,7 @@ $client->hooks->messages->list(
 <dl>
 <dd>
 
-Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 </dd>
 </dl>
 </dd>
@@ -14236,7 +14548,7 @@ $client->inboxes->messages->send(
 <dl>
 <dd>
 
-**$to:** `string|array` 
+**$to:** `string|array` — Who it goes to.
     
 </dd>
 </dl>
@@ -14244,7 +14556,7 @@ $client->inboxes->messages->send(
 <dl>
 <dd>
 
-**$cc:** `string|array|null` 
+**$cc:** `string|array|null` — Who it's copied to.
     
 </dd>
 </dl>
@@ -14252,7 +14564,7 @@ $client->inboxes->messages->send(
 <dl>
 <dd>
 
-**$bcc:** `string|array|null` 
+**$bcc:** `string|array|null` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -14292,7 +14604,7 @@ $client->inboxes->messages->send(
 <dl>
 <dd>
 
-**$tags:** `?array` 
+**$tags:** `?array` — Your tags on the email.
     
 </dd>
 </dl>
@@ -14524,7 +14836,7 @@ $client->inboxes->messages->reply(
 <dl>
 <dd>
 
-**$cc:** `string|array|null` 
+**$cc:** `string|array|null` — Who it's copied to.
     
 </dd>
 </dl>
@@ -14532,7 +14844,7 @@ $client->inboxes->messages->reply(
 <dl>
 <dd>
 
-**$bcc:** `string|array|null` 
+**$bcc:** `string|array|null` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -14564,7 +14876,7 @@ $client->inboxes->messages->reply(
 <dl>
 <dd>
 
-**$tags:** `?array` 
+**$tags:** `?array` — Your tags on the email.
     
 </dd>
 </dl>
@@ -14589,7 +14901,7 @@ $client->inboxes->messages->reply(
 <dl>
 <dd>
 
-The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 </dd>
 </dl>
 </dd>
@@ -14921,7 +15233,7 @@ $client->risk->lists->list(
 <dl>
 <dd>
 
-**$list_:** `?string` 
+**$list_:** `?string` — Which list: `allow` or `block`.
     
 </dd>
 </dl>
@@ -15022,7 +15334,7 @@ $client->risk->lists->add(
 <dl>
 <dd>
 
-**$value:** `string` 
+**$value:** `string` — What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
     
 </dd>
 </dl>
@@ -15030,7 +15342,7 @@ $client->risk->lists->add(
 <dl>
 <dd>
 
-**$note:** `?string` 
+**$note:** `?string` — Your note about it.
     
 </dd>
 </dl>
@@ -15053,6 +15365,20 @@ $client->risk->lists->add(
 <details><summary><code>$client-&gt;risk-&gt;lists-&gt;get($id) -> ?RiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One allow or block list entry of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -15095,6 +15421,20 @@ $client->risk->lists->get(
 <details><summary><code>$client-&gt;risk-&gt;lists-&gt;remove($id) -> ?DeletedRiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes an entry from its list. Later assessments no longer see it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -15282,7 +15622,7 @@ $client->risk->settings->update(
 <dl>
 <dd>
 
-**$reviewThreshold:** `?float` 
+**$reviewThreshold:** `?float` — Scores at or above it are `review`.
     
 </dd>
 </dl>
@@ -15290,7 +15630,7 @@ $client->risk->settings->update(
 <dl>
 <dd>
 
-**$blockThreshold:** `?float` 
+**$blockThreshold:** `?float` — Scores at or above it are `block`.
     
 </dd>
 </dl>
@@ -15298,7 +15638,7 @@ $client->risk->settings->update(
 <dl>
 <dd>
 
-**$disabledReasons:** `?array` 
+**$disabledReasons:** `?array` — Reasons that never fire in this environment. Replaces the list.
     
 </dd>
 </dl>
@@ -15436,7 +15776,7 @@ $client->risk->rules->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the rule, returned with reasons when it decides.
     
 </dd>
 </dl>
@@ -15444,7 +15784,7 @@ $client->risk->rules->create(
 <dl>
 <dd>
 
-**$enabled:** `?bool` 
+**$enabled:** `?bool` — Default `true`.
     
 </dd>
 </dl>
@@ -15460,7 +15800,7 @@ $client->risk->rules->create(
 <dl>
 <dd>
 
-**$events:** `?array` 
+**$events:** `?array` — Events it applies to. Default: every event.
     
 </dd>
 </dl>
@@ -15476,7 +15816,7 @@ $client->risk->rules->create(
 <dl>
 <dd>
 
-**$conditions:** `array` 
+**$conditions:** `array` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -15499,6 +15839,20 @@ $client->risk->rules->create(
 <details><summary><code>$client-&gt;risk-&gt;rules-&gt;get($id) -> ?RiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One rule of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -15541,6 +15895,20 @@ $client->risk->rules->get(
 <details><summary><code>$client-&gt;risk-&gt;rules-&gt;delete($id) -> ?DeletedRiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a rule. Later assessments no longer apply it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -15635,7 +16003,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Your name for the rule.
     
 </dd>
 </dl>
@@ -15643,7 +16011,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$enabled:** `?bool` 
+**$enabled:** `?bool` — `false` keeps it, and stops applying it.
     
 </dd>
 </dl>
@@ -15651,7 +16019,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$position:** `?int` 
+**$position:** `?int` — Rules are tried in ascending order.
     
 </dd>
 </dl>
@@ -15659,7 +16027,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$events:** `?array` 
+**$events:** `?array` — Events it applies to. Empty: every event.
     
 </dd>
 </dl>
@@ -15667,7 +16035,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$match_:** `?string` 
+**$match_:** `?string` — `all`: every condition must hold. `any`: one is enough.
     
 </dd>
 </dl>
@@ -15675,7 +16043,7 @@ $client->risk->rules->update(
 <dl>
 <dd>
 
-**$conditions:** `?array` 
+**$conditions:** `?array` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -15831,6 +16199,20 @@ $client->risk->limitBuckets->create(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -15981,6 +16363,87 @@ $client->risk->limitBuckets->update(
 <dl>
 <dd>
 
+**$limit:** `?int` — Tokens added per `period_seconds`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$periodSeconds:** `?int` — How many seconds `limit` tokens take to be added.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$burst:** `?int` — The bucket's size: how many requests a key can make at once.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$onFailure:** `?string` — The answer while coss.com can't count: `allow` or `deny`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Hosts
+<details><summary><code>$client-&gt;scheduling-&gt;hosts-&gt;list($request) -> ?SchedulingHostList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's hosts, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->hosts->list(
+    new ListHostsRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
 **$limit:** `?int` 
     
 </dd>
@@ -15989,7 +16452,79 @@ $client->risk->limitBuckets->update(
 <dl>
 <dd>
 
-**$periodSeconds:** `?int` 
+**$after:** `?string` — The last id of the previous page.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;hosts-&gt;create($request) -> ?SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A person who can be booked: one of your users, such as a doctor or a tutor.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->hosts->create(
+    new CreateHostRequest([
+        'uid' => 'doctor_482',
+        'name' => 'Dr. Ana Reyes',
+        'email' => 'ana@example.com',
+        'timeZone' => 'America/New_York',
+        'attributes' => [
+            'licensed_in' => [
+                'NY',
+                'NJ',
+            ],
+        ],
+        'locations' => [
+            SchedulingHostLocation::inPerson(new SchedulingHostLocationInPerson([
+                'address' => '12 Main St, New York, NY',
+            ])),
+        ],
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$uid:** `?string` — Your own id for this host, unique in the environment.
     
 </dd>
 </dl>
@@ -15997,7 +16532,7 @@ $client->risk->limitBuckets->update(
 <dl>
 <dd>
 
-**$burst:** `?int` 
+**$name:** `string` — The host's name.
     
 </dd>
 </dl>
@@ -16005,7 +16540,4342 @@ $client->risk->limitBuckets->update(
 <dl>
 <dd>
 
-**$onFailure:** `?string` 
+**$email:** `?string` — Where this host's notifications go. Not an identity, and need not be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$phone:** `?string` — Where this host's SMS reminders go, in E.164.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$calendarAccount:** `?string` — The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$timeZone:** `string` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locale:** `?string` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locations:** `?array` — This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;hosts-&gt;get($host) -> ?SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->hosts->get(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;hosts-&gt;remove($host) -> ?DeletedSchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes the host and its schedules and calendars. Refused while bookings are still to come (`host_has_live_bookings`): cancel them, or set the host's status to `disabled`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->hosts->remove(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;hosts-&gt;update($host, $request) -> ?SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. A `disabled` host keeps its bookings but gets no new ones.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->hosts->update(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateHostRequest([
+        'status' => UpdateHostRequestStatus::Disabled->value,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$uid:** `?string` — Your own id for this host, unique in the environment.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$name:** `?string` — The host's name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$email:** `?string` — Where this host's notifications go. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$phone:** `?string` — Where this host's SMS reminders go, in E.164. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$calendarAccount:** `?string` — Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$timeZone:** `?string` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locale:** `?string` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locations:** `?array` — Replaces this host's own locations. Existing bookings keep the location they have.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$status:** `?string` — A `disabled` host isn't offered. Its existing bookings stay.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Schedules
+<details><summary><code>$client-&gt;scheduling-&gt;schedules-&gt;list($host) -> ?SchedulingScheduleList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+All of the host's schedules, oldest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->schedules->list(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;schedules-&gt;create($host, $request) -> ?SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host's weekly hours and date overrides, in local time. The first one is the host's default.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->schedules->create(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new CreateSchedulesRequest([
+        'body' => new UpsertScheduleRequest([
+            'name' => 'Clinic hours',
+            'rules' => [
+                new SchedulingWeeklyRule([
+                    'days' => [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                    ],
+                    'start' => '09:00',
+                    'end' => '17:00',
+                ]),
+            ],
+            'overrides' => [
+                new SchedulingScheduleOverride([
+                    'date' => '2027-12-24',
+                    'ranges' => [
+                        new SchedulingScheduleOverrideRangesItem([
+                            'start' => 'start',
+                            'end' => 'end',
+                        ]),
+                    ],
+                ]),
+            ],
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$request:** `UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;schedules-&gt;get($host, $scheduleId) -> ?SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the host's schedules.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->schedules->get(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    'sched_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$scheduleId:** `string` — The schedule's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;schedules-&gt;update($host, $scheduleId, $request) -> ?SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces its weekly rules, and its overrides when given. Existing bookings stay: a schedule only decides what's offered next.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->schedules->update(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    'sched_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateSchedulesRequest([
+        'body' => new UpsertScheduleRequest([
+            'name' => 'Clinic hours',
+            'rules' => [
+                new SchedulingWeeklyRule([
+                    'days' => [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                    ],
+                    'start' => '09:00',
+                    'end' => '17:00',
+                ]),
+            ],
+            'overrides' => [
+                new SchedulingScheduleOverride([
+                    'date' => '2027-12-24',
+                    'ranges' => [
+                        new SchedulingScheduleOverrideRangesItem([
+                            'start' => 'start',
+                            'end' => 'end',
+                        ]),
+                    ],
+                ]),
+            ],
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$scheduleId:** `string` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$request:** `UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;schedules-&gt;remove($host, $scheduleId) -> ?DeletedSchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refused for the host's default schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->schedules->remove(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    'sched_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$scheduleId:** `string` — The schedule's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling EventTypes
+<details><summary><code>$client-&gt;scheduling-&gt;eventTypes-&gt;list($request) -> ?SchedulingEventTypeList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's event types, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->eventTypes->list(
+    new ListEventTypesRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$limit:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$after:** `?string` — The last id of the previous page.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;eventTypes-&gt;create($request) -> ?SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What can be booked: `one_on_one` with one host, `pool` for any free host, `collective` when every required host must be free, or `group` for a session with seats.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->eventTypes->create(
+    new CreateEventTypeRequest([
+        'kind' => CreateEventTypeRequestKind::OneOnOne->value,
+        'title' => 'Initial consultation',
+        'durationMinutes' => 30,
+        'bufferAfterMinutes' => 10,
+        'minNoticeMinutes' => 120,
+        'hosts' => [
+            new SchedulingEventTypeHostInput([
+                'host' => 'doctor_482',
+            ]),
+        ],
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$uid:** `?string` — Your own id for this event type, unique in the environment, accepted wherever its id is.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$kind:** `?string` — Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$description:** `?string` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$title:** `string` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `int` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationOptions:** `?array` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$stepMinutes:** `?int` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$gridTimeZone:** `?string` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bufferBeforeMinutes:** `?int` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bufferAfterMinutes:** `?int` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$minNoticeMinutes:** `?int` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bookingWindow:** `SchedulingBookingWindowDays|SchedulingBookingWindowFrom|null` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limits:** `?array` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$capacity:** `?int` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$requiresApproval:** `?bool` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$approvalTtlMinutes:** `?int` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$holdTtlSeconds:** `?int` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$cancelNoticeMinutes:** `?int` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$rescheduleNoticeMinutes:** `?int` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$maxGuests:** `?int` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$maxActiveBookingsPerAttendee:** `?int` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hostCalendarDetails:** `?string` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$questions:** `?array` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locations:** `?array` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hostFilter:** `?array` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$notifications:** `?array` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$reminders:** `?array` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hosts:** `?array` — Who can be booked. `one_on_one` and `group` take one; `collective` needs at least one `required` host.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;eventTypes-&gt;get($eventType) -> ?SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An event type by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->eventTypes->get(
+    'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;eventTypes-&gt;update($eventType, $request) -> ?SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. Existing bookings keep what they were booked with. Set `status` to `archived` to stop new bookings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->eventTypes->update(
+    'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateEventTypeRequest([
+        'minNoticeMinutes' => 240,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$uid:** `?string` — Your own id for this event type. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$description:** `?string` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$title:** `?string` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `?int` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationOptions:** `?array` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$stepMinutes:** `?int` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$gridTimeZone:** `?string` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bufferBeforeMinutes:** `?int` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bufferAfterMinutes:** `?int` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$minNoticeMinutes:** `?int` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$bookingWindow:** `SchedulingBookingWindowDays|SchedulingBookingWindowFrom|null` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limits:** `?array` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$capacity:** `?int` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$requiresApproval:** `?bool` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$approvalTtlMinutes:** `?int` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$holdTtlSeconds:** `?int` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$cancelNoticeMinutes:** `?int` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$rescheduleNoticeMinutes:** `?int` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$maxGuests:** `?int` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$maxActiveBookingsPerAttendee:** `?int` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hostCalendarDetails:** `?string` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$questions:** `?array` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$locations:** `?array` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hostFilter:** `?array` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$notifications:** `?array` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$reminders:** `?array` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$status:** `?string` — `archived` stops new bookings, and keeps existing ones.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hosts:** `?array` — Replaces the assigned hosts. Removed hosts keep their existing bookings.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Slots
+<details><summary><code>$client-&gt;scheduling-&gt;slots-&gt;list($eventType, $request) -> ?SchedulingSlotList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Starts an attendee can book between `start` and `end` (at most 62 days), as UTC instants to show in their own time zone. A host whose calendar can't be read isn't offered.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->slots->list(
+    'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new ListSlotsRequest([
+        'start' => '2027-01-04T15:00:00.000Z',
+        'end' => '2027-01-04T15:00:00.000Z',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$end:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — Only this host's slots (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?string` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;slots-&gt;explain($eventType, $request) -> ?SchedulingSlotExplanation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Why one start can or can't be booked right now, host by host, decided the same way a booking is. For support and debugging: it says when a host is busy, so don't show it to attendees.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->slots->explain(
+    'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new ExplainSlotsRequest([
+        'start' => '2027-01-04T15:00:00.000Z',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?string` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Availability
+<details><summary><code>$client-&gt;scheduling-&gt;availability-&gt;search($request) -> ?SchedulingAvailabilitySearchResult</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+For "who's free" pages: each matching host's soonest slots, soonest first, across up to 500 hosts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->availability->search(
+    new AvailabilitySearchRequest([
+        'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+        'start' => '2027-01-04T00:00:00.000Z',
+        'end' => '2027-01-18T00:00:00.000Z',
+        'attributes' => [
+            'licensed_in' => 'CA',
+        ],
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$end:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — Only hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$hosts:** `?array` — Only these hosts (ids or uids). Default: everyone the event type could offer.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$slotsPerHost:** `?int` — How many of each host's soonest slots to return.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?int` — Hosts to return, soonest availability first.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Bookings
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;list($request) -> ?SchedulingBookingList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's bookings, newest first. Answers aren't included.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->list(
+    new ListBookingsRequest([
+        'startAfter' => '2027-01-04T15:00:00.000Z',
+        'startBefore' => '2027-01-04T15:00:00.000Z',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$limit:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$after:** `?string` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$eventType:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$status:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attendeeUid:** `?string` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$startAfter:** `?string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$startBefore:** `?string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;create($request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books a slot, or joins a group session. Without a `host`, a pool chooses fairly among those free. An event type that requires approval answers with a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->create(
+    new CreateBookingRequest([
+        'idempotencyKey' => 'welcome-user-123',
+        'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+        'start' => '2027-01-04T15:00:00.000Z',
+        'attendee' => new SchedulingAttendeeInput([
+            'uid' => 'patient_77',
+            'name' => 'Sam Lee',
+            'email' => 'sam@example.com',
+            'timeZone' => 'UTC',
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$idempotencyKey:** `?string` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `?int` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attendee:** `SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$guests:** `?array` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$answers:** `?array` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$location:** `?CreateBookingRequestLocation` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;get($id) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A booking with its attendees and their answers.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->get(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;reschedule($id, $request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves it to a new time, keeping its id. The old time stays booked if the new one isn't free.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->reschedule(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new RescheduleBookingRequest([
+        'start' => '2027-01-05T15:00:00.000Z',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — The new start. The old time stays booked unless this one's free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — Move a pool booking to this host. Default: its current hosts.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;cancel($id, $request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Frees the time and removes the calendar event. A cancelled booking stays charged.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->cancel(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new CancelSchedulingBookingRequest([
+        'reason' => 'Feeling better',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$reason:** `?string` — Why it's being cancelled. Only retrieving this booking returns it: it's never in webhooks, logs or emails.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;events($id, $request) -> ?SchedulingBookingEventList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's happened to a booking, oldest first, and who did it. There's no personal data in here.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->events(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new EventsBookingsRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$after:** `?string` — The last id of the previous page.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;approve($id) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Confirms a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->approve(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;decline($id) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refuses a `pending_approval` booking and frees the time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->decline(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;notifications($id, $request) -> ?SchedulingBookingNotificationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->notifications(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new NotificationsBookingsRequest([]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$limit:** `?int` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$after:** `?string` — The last id of the previous page.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;markNoShow($id) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Records that the attendee didn't come, once the booking has started.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->markNoShow(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;bookings-&gt;updateLocation($id, $request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Where it happens, such as the meeting link you made after the `scheduling.booking.confirmed` webhook.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->bookings->updateLocation(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateBookingLocationRequest([
+        'location' => SchedulingLocation::link(new SchedulingLocationLink([
+            'url' => 'https://meet.example.com/abc',
+        ])),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$location:** `SchedulingLocation` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Holds
+<details><summary><code>$client-&gt;scheduling-&gt;holds-&gt;create($request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Keeps a slot for a while (the event type's `hold_ttl_seconds`) so you can take payment, then confirm it. Answers with a `held` booking, which isn't charged and sends nothing.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->holds->create(
+    new CreateHoldRequest([
+        'idempotencyKey' => 'welcome-user-123',
+        'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+        'start' => '2027-01-04T15:00:00.000Z',
+        'attendee' => new SchedulingAttendeeInput([
+            'uid' => 'patient_77',
+            'timeZone' => 'UTC',
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$idempotencyKey:** `?string` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$start:** `string` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$durationMinutes:** `?int` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attendee:** `SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$guests:** `?array` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$answers:** `?array` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$location:** `?CreateHoldRequestLocation` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$metadata:** `?array` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;holds-&gt;confirm($id, $request) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns a hold into a booking. Always succeeds before the hold expires. Repeating it is safe.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->holds->confirm(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new ConfirmHoldRequest([
+        'ifStillFree' => true,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$ifStillFree:** `?bool` — After the hold expired, book anyway if nobody else took the slot. Default: refuse with `hold_expired`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;holds-&gt;release($id) -> ?SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives the slot back early.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->holds->release(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Series
+<details><summary><code>$client-&gt;scheduling-&gt;series-&gt;create($request) -> ?SchedulingSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books up to 52 occurrences, keeping the attendee's local time across DST changes. Each one is an ordinary booking that can move on its own, and a pool keeps one host throughout.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->series->create(
+    new CreateSeriesBody([
+        'idempotencyKey' => 'welcome-user-123',
+        'body' => new CreateSeriesRequest([
+            'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+            'start' => '2027-01-04T15:00:00.000Z',
+            'attendee' => new SchedulingAttendeeInput([
+                'uid' => 'patient_77',
+                'timeZone' => 'America/New_York',
+            ]),
+            'recurrence' => new CreateSeriesRequestRecurrence([
+                'frequency' => CreateSeriesRequestRecurrenceFrequency::Weekly->value,
+                'interval' => 1,
+                'count' => 12,
+            ]),
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$idempotencyKey:** `?string` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$request:** `CreateSeriesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;series-&gt;preview($request) -> ?SchedulingSeriesPreview</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Which occurrences would be free, without booking anything.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->series->preview(
+    new CreateSeriesRequest([
+        'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+        'start' => '2027-01-04T15:00:00.000Z',
+        'attendee' => new SchedulingAttendeeInput([
+            'uid' => 'patient_77',
+            'timeZone' => 'America/New_York',
+        ]),
+        'recurrence' => new CreateSeriesRequestRecurrence([
+            'frequency' => CreateSeriesRequestRecurrenceFrequency::Weekly->value,
+            'interval' => 1,
+            'count' => 12,
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$request:** `CreateSeriesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;series-&gt;cancel($id, $request) -> ?SchedulingCancelledSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Cancels the occurrences from `from_index` on, or all of them.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->series->cancel(
+    'series_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new CancelSeriesRequest([
+        'fromIndex' => 4,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The series' id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$fromIndex:** `?int` — Cancel this occurrence and those after it. Default: all of them.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Attendees
+<details><summary><code>$client-&gt;scheduling-&gt;attendees-&gt;erase($uid) -> ?SchedulingAttendeeErasure</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this person's details and answers from every booking now, and ends any booker session fixed to them. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->attendees->erase(
+    'patient_77',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$uid:** `string` — Your id for the attendee.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;attendees-&gt;eraseByEmail($request) -> ?SchedulingAttendeeErasureByEmail</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->attendees->eraseByEmail(
+    new EraseSchedulingAttendeeByEmailRequest([
+        'email' => 'sam@example.com',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$email:** `string` — The address to forget, an attendee's or a guest's.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Calendars
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;authorize($host, $request) -> ?SchedulingCalendarAuthorization</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->authorize(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new AuthorizeCalendarRequest([
+        'provider' => AuthorizeCalendarRequestProvider::Google->value,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$provider:** `string` — Whose consent page to open. CalDAV connects with a password instead.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$returnUrl:** `?string` — Where to send the browser afterwards, on one of the environment's allowed origins. `coss_calendar` says what happened: `connected`, `denied` or `invalid`.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;list($host) -> ?SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With each connection's calendars and which of them count.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->list(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;connect($host, $request) -> ?SchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+CalDAV (Apple and others) with an app password, or, in sandbox environments, a `simulated` calendar whose busy times you set yourself. Google and Microsoft use `authorize`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->connect(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new ConnectCalendarsRequest([
+        'body' => CreateCalendarConnectionRequest::caldav(new CreateCalendarConnectionRequestCaldav([
+            'url' => 'url',
+            'username' => 'username',
+            'password' => 'password',
+        ])),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$request:** `CreateCalendarConnectionRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;disconnect($host, $id) -> ?DeletedSchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Revokes coss.com's access and deletes every busy time read through it. One a calendar delegation manages is refused (`calendar_managed`).
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->disconnect(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    'calconn_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$id:** `string` — The connection's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;update($host, $calendarId, $request) -> ?SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether its busy times block slots, and whether bookings are written to it.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->update(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    'cal_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateCalendarRequest([
+        'readBusy' => true,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$calendarId:** `string` — The calendar's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$readBusy:** `?bool` — Whether this calendar's busy times block slots.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$writeTarget:** `?bool` — Bookings are written to one calendar; setting this moves it here.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendars-&gt;setSimulatedBusy($host, $request)</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sandbox environments only: test how bookings react to a busy calendar.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendars->setSimulatedBusy(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new SetSimulatedBusyRequest([
+        'intervals' => [
+            new SetSimulatedBusyRequestIntervalsItem([
+                'start' => '2027-01-04T15:00:00.000Z',
+                'end' => '2027-01-04T16:00:00.000Z',
+            ]),
+        ],
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$intervals:** `array` — The simulated calendar's busy times.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling CalendarDelegations
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;list() -> ?SchedulingCalendarDelegationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With how many hosts each has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->list();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;create($request) -> ?SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An admin authorizes once, and every host on the domain gets their calendar with no consent screen. It stays `pending`: authorize what it returns, then verify it. Credentials are never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->create(
+    CreateCalendarDelegationRequest::google(new CreateCalendarDelegationRequestGoogle([
+        'domain' => 'domain',
+        'serviceAccountKey' => 'service_account_key',
+    ])),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$request:** `CreateCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;get($id) -> ?SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its status, what to authorize, and how many hosts it has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->get(
+    'caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The delegation's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;delete($id) -> ?DeletedSchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its hosts lose these calendars within minutes. They stay bookable with no conflict check, and events already written stay on their calendars, out of reach of later moves or cancellations.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->delete(
+    'caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The delegation's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;update($id, $request) -> ?SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+New credentials are tried on the verified mailbox before they replace the old ones, and end an outage if they work.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->update(
+    'caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new UpdateCalendarDelegationRequest([
+        'matchHostEmail' => false,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$matchHostEmail:** `?bool` — Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$serviceAccountKey:** `?string` — A new key. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$clientSecret:** `?string` — A new client secret. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$secretExpiresAt:** `?DateTime` — When the Entra client secret expires. Owners and admins are warned 14 days before.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;calendarDelegations-&gt;verify($id, $request) -> ?SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. Google can take up to 24 hours to apply a new authorization, so a refusal may just need time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->calendarDelegations->verify(
+    'caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new VerifyCalendarDelegationRequest([
+        'account' => 'ana@example.com',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$account:** `string` — A real mailbox on the domain to try. In Microsoft 365, a user principal name.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Sessions
+<details><summary><code>$client-&gt;scheduling-&gt;sessions-&gt;createForHost($host, $request) -> ?SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->sessions->createForHost(
+    'host_01kd2m9a0b1c2d3e4f5g6h7j8m',
+    new CreateSchedulingHostSessionRequest([
+        'expiresIn' => 3600,
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$host:** `string` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$expiresIn:** `?int` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$readOnly:** `?bool` — The host can look but not change anything.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;sessions-&gt;createForBooker($request) -> ?SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets a browser book one event type, on coss.com's hosted page or your own UI, without your API key.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->sessions->createForBooker(
+    new CreateSchedulingBookerSessionRequest([
+        'eventType' => 'evtype_01kd2m9a0b1c2d3e4f5g6h7j8m',
+        'attendee' => new CreateSchedulingBookerSessionRequestAttendee([
+            'uid' => 'patient_77',
+            'name' => 'Sam Lee',
+            'timeZone' => 'UTC',
+        ]),
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$eventType:** `string` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$host:** `?string` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attributes:** `?array` — Only offer times, and book, among pool hosts matching all of these. The browser can't see or change them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$attendee:** `?CreateSchedulingBookerSessionRequestAttendee` — Who's booking, if you already know: the browser then can't change it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$expiresIn:** `?int` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;sessions-&gt;createForBooking($id) -> ?SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets an attendee reschedule or cancel this one booking, within the event type's cutoffs. Stops working when the booking's cancelled, or a day after it ends.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->sessions->createForBooking(
+    'book_01kd2m9a0b1c2d3e4f5g6h7j8m',
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$id:** `string` — The booking's id.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Settings
+<details><summary><code>$client-&gt;scheduling-&gt;settings-&gt;get() -> ?SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's scheduling settings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->settings->get();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;scheduling-&gt;settings-&gt;update($request) -> ?SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->scheduling->settings->update(
+    new UpdateSchedulingSettingsRequest([
+        'brandName' => 'Acme Health',
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$allowedOrigins:** `?array` — Sites allowed to embed coss.com's hosted pages and call the client API, as `https://host` origins.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$brandName:** `?string` — Your name on hosted pages and on emails sent from `email_from`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$accentColor:** `?string` — The accent color as `#RRGGBB`. `null` restores the default.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$logo:** `?UpdateSchedulingSettingsRequestLogo` — Your logo, a PNG or JPEG. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$emailFrom:** `?string` — Sender of booking emails, on a verified domain. `null`: coss.com's own address.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$smsFrom:** `?string` — Your approved number for SMS reminders, in E.164. `null`: no SMS is sent.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$calendarFailureMode:** `?string` — When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$notifications:** `?array` — Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$emailReplyTo:** `?string` — Where replies go, for emails from `email_from`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$reminders:** `?array` — What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before.
     
 </dd>
 </dl>
@@ -16152,6 +21022,20 @@ $client->sign->documents->upload(
 <details><summary><code>$client-&gt;sign-&gt;documents-&gt;get($id) -> ?SignDocument</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -16428,7 +21312,7 @@ $client->sign->requests->create(
 <dl>
 <dd>
 
-**$signers:** `array` 
+**$signers:** `array` — Who signs, and what each fills.
     
 </dd>
 </dl>
@@ -16483,6 +21367,20 @@ $client->sign->requests->create(
 <details><summary><code>$client-&gt;sign-&gt;requests-&gt;get($id) -> ?SignRequest</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -17024,7 +21922,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$allowedOrigins:** `?array` 
+**$allowedOrigins:** `?array` — Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
     
 </dd>
 </dl>
@@ -17032,7 +21930,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$displayName:** `?string` 
+**$displayName:** `?string` — The requester's name signers see. `null`: the organization's name.
     
 </dd>
 </dl>
@@ -17040,7 +21938,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$accentColor:** `?string` 
+**$accentColor:** `?string` — The signing page's accent color, as `#RRGGBB`. `null`: the default.
     
 </dd>
 </dl>
@@ -17048,7 +21946,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$theme:** `?string` 
+**$theme:** `?string` — The signing page's theme. `system` follows the signer's device.
     
 </dd>
 </dl>
@@ -17056,7 +21954,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$disclosure:** `?string` 
+**$disclosure:** `?string` — Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
     
 </dd>
 </dl>
@@ -17064,7 +21962,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$emailFrom:** `?string` 
+**$emailFrom:** `?string` — Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
     
 </dd>
 </dl>
@@ -17072,7 +21970,7 @@ $client->sign->settings->update(
 <dl>
 <dd>
 
-**$reminderIntervalDays:** `?int` 
+**$reminderIntervalDays:** `?int` — The default days between reminders for new requests. `null`: none.
     
 </dd>
 </dl>
@@ -17240,7 +22138,7 @@ $client->sign->templates->create(
 <dl>
 <dd>
 
-**$name:** `string` 
+**$name:** `string` — Your name for the template.
     
 </dd>
 </dl>
@@ -17264,7 +22162,7 @@ $client->sign->templates->create(
 <dl>
 <dd>
 
-**$signingOrder:** `?string` 
+**$signingOrder:** `?string` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -17272,7 +22170,7 @@ $client->sign->templates->create(
 <dl>
 <dd>
 
-**$documents:** `?array` 
+**$documents:** `?array` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -17303,6 +22201,20 @@ $client->sign->templates->create(
 <details><summary><code>$client-&gt;sign-&gt;templates-&gt;get($id) -> ?SignTemplate</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -17453,7 +22365,7 @@ $client->sign->templates->update(
 <dl>
 <dd>
 
-**$name:** `?string` 
+**$name:** `?string` — Your name for the template.
     
 </dd>
 </dl>
@@ -17477,7 +22389,7 @@ $client->sign->templates->update(
 <dl>
 <dd>
 
-**$signingOrder:** `?string` 
+**$signingOrder:** `?string` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -17485,7 +22397,7 @@ $client->sign->templates->update(
 <dl>
 <dd>
 
-**$documents:** `?array` 
+**$documents:** `?array` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -17600,7 +22512,7 @@ $client->sign->templates->createRequest(
 <dl>
 <dd>
 
-**$message:** `?string` 
+**$message:** `?string` — Default: the template's message.
     
 </dd>
 </dl>
@@ -17632,7 +22544,7 @@ $client->sign->templates->createRequest(
 <dl>
 <dd>
 
-**$expiresAt:** `?DateTime` 
+**$expiresAt:** `?DateTime` — When an unfinished request expires, at most 365 days ahead.
     
 </dd>
 </dl>
@@ -17648,7 +22560,7 @@ $client->sign->templates->createRequest(
 <dl>
 <dd>
 
-**$reminderIntervalDays:** `?int` 
+**$reminderIntervalDays:** `?int` — Days between reminders to email signers. Default: your Sign settings'. `null`: none.
     
 </dd>
 </dl>
@@ -17854,7 +22766,7 @@ $client->sms->suppressions->add(
 <dl>
 <dd>
 
-**$phoneNumber:** `string` 
+**$phoneNumber:** `string` — The number to suppress, in E.164.
     
 </dd>
 </dl>
@@ -17869,6 +22781,20 @@ $client->sms->suppressions->add(
 <details><summary><code>$client-&gt;sms-&gt;suppressions-&gt;check($request) -> ?SmsSuppressionCheck</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -17913,6 +22839,20 @@ $client->sms->suppressions->check(
 <details><summary><code>$client-&gt;sms-&gt;suppressions-&gt;get($id) -> ?SmsSuppression</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the SMS suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -18109,6 +23049,20 @@ $client->sms->received->list(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message received on a number of the organization and routed to the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -18177,6 +23131,157 @@ Every number of the organization, whether it can send live messages now (its car
 ```php
 $client->sms->numbers->list();
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Verify Settings
+<details><summary><code>$client-&gt;verify-&gt;settings-&gt;get() -> ?VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The API key's environment's settings, with defaults filled in: the name codes are sent for, code length, lifetime and attempts, the senders, and the countries SMS codes may go to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->verify->settings->get();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>$client-&gt;verify-&gt;settings-&gt;update($request) -> ?VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the fields given; the others keep their values. `sms_from` must be one of the organization's numbers, and a live key's `email_from` must be on one of its verified domains.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```php
+$client->verify->settings->update(
+    new UpdateVerifySettingsRequest([
+        'smsFrom' => '+14155550100',
+        'allowedCountries' => [
+            'CA',
+            'GB',
+            'US',
+        ],
+    ]),
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**$appName:** `?string` — The name codes are sent for; `null`: the project's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$codeLength:** `?int` — Digits in a code, 4-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$ttlSeconds:** `?int` — How long a code works, 60-1800 s.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$maxAttempts:** `?int` — Wrong codes before a verification fails, 1-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$smsFrom:** `?string` — One of the organization's numbers; `null`: coss.com's shared numbers.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$emailFrom:** `?string` — An address on one of the organization's verified domains (live keys); `null`: coss.com's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**$allowedCountries:** `?array` — ISO 3166 countries SMS codes may go to.
+    
 </dd>
 </dl>
 </dd>

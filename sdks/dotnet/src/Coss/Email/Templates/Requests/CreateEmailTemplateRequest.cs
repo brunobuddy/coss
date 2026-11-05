@@ -20,6 +20,9 @@ public record CreateEmailTemplateRequest
     [JsonPropertyName("alias")]
     public string? Alias { get; set; }
 
+    /// <summary>
+    /// Your note about it, shown in the dashboard.
+    /// </summary>
     [Optional]
     [JsonPropertyName("description")]
     public string? Description { get; set; }

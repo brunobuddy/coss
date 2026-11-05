@@ -13,14 +13,25 @@ from .broadcast_webhook_event_type import BroadcastWebhookEventType
 class BroadcastWebhookEvent(UniversalBaseModel):
     id: str
     object: BroadcastWebhookEventObject
-    type: BroadcastWebhookEventType
+    type: BroadcastWebhookEventType = pydantic.Field()
+    """
+    What happened to the broadcast.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
     """
 
-    created_at: dt.datetime
-    data: BroadcastWebhookEventData
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
+    data: BroadcastWebhookEventData = pydantic.Field()
+    """
+    The broadcast and how it fared.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

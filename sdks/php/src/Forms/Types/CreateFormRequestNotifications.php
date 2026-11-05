@@ -6,6 +6,9 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * Emails about accepted submissions. Only the fields given change.
+ */
 class CreateFormRequestNotifications extends JsonSerializableType
 {
     /**

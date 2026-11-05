@@ -37,11 +37,17 @@ public final class DmarcReportSummaryReporter {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The reporting organization.
+     */
     @JsonProperty("org_name")
     public String getOrgName() {
         return orgName;
     }
 
+    /**
+     * @return Its contact address.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email")
     public OptionalNullable<String> getEmail() {
@@ -87,6 +93,9 @@ public final class DmarcReportSummaryReporter {
     }
 
     public interface OrgNameStage {
+        /**
+         * <p>The reporting organization.</p>
+         */
         _FinalStage orgName(@NotNull String orgName);
 
         Builder from(DmarcReportSummaryReporter other);
@@ -99,6 +108,9 @@ public final class DmarcReportSummaryReporter {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Its contact address.</p>
+         */
         _FinalStage email(OptionalNullable<String> email);
 
         _FinalStage email(String email);
@@ -126,6 +138,10 @@ public final class DmarcReportSummaryReporter {
             return this;
         }
 
+        /**
+         * <p>The reporting organization.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("org_name")
         public _FinalStage orgName(@NotNull String orgName) {
@@ -133,6 +149,10 @@ public final class DmarcReportSummaryReporter {
             return this;
         }
 
+        /**
+         * <p>Its contact address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage email(Nullable<String> email) {
             if (email.isNull()) {
@@ -145,6 +165,10 @@ public final class DmarcReportSummaryReporter {
             return this;
         }
 
+        /**
+         * <p>Its contact address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage email(Optional<String> email) {
             if (email.isPresent()) {
@@ -155,12 +179,19 @@ public final class DmarcReportSummaryReporter {
             return this;
         }
 
+        /**
+         * <p>Its contact address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage email(String email) {
             this.email = OptionalNullable.of(email);
             return this;
         }
 
+        /**
+         * <p>Its contact address.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "email", nulls = Nulls.SKIP)
         public _FinalStage email(OptionalNullable<String> email) {

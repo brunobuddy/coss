@@ -86,6 +86,9 @@ public final class RiskEmailCheck {
         return object;
     }
 
+    /**
+     * @return The address checked.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
@@ -99,6 +102,9 @@ public final class RiskEmailCheck {
         return valid;
     }
 
+    /**
+     * @return Its domain. <code>null</code> when it isn't valid.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("domain")
     public OptionalNullable<String> getDomain() {
@@ -120,6 +126,9 @@ public final class RiskEmailCheck {
         return canonical;
     }
 
+    /**
+     * @return Whether its domain is a known burner service.
+     */
     @JsonProperty("disposable")
     public boolean getDisposable() {
         return disposable;
@@ -133,11 +142,17 @@ public final class RiskEmailCheck {
         return deliverability;
     }
 
+    /**
+     * @return Whether it's a role mailbox, like <code>info@</code>.
+     */
     @JsonProperty("role_account")
     public boolean getRoleAccount() {
         return roleAccount;
     }
 
+    /**
+     * @return Whether its domain is a free mailbox provider.
+     */
     @JsonProperty("free_provider")
     public boolean getFreeProvider() {
         return freeProvider;
@@ -258,6 +273,9 @@ public final class RiskEmailCheck {
     }
 
     public interface EmailStage {
+        /**
+         * <p>The address checked.</p>
+         */
         ValidStage email(@NotNull String email);
     }
 
@@ -269,6 +287,9 @@ public final class RiskEmailCheck {
     }
 
     public interface DisposableStage {
+        /**
+         * <p>Whether its domain is a known burner service.</p>
+         */
         DeliverabilityStage disposable(boolean disposable);
     }
 
@@ -280,10 +301,16 @@ public final class RiskEmailCheck {
     }
 
     public interface RoleAccountStage {
+        /**
+         * <p>Whether it's a role mailbox, like <code>info@</code>.</p>
+         */
         FreeProviderStage roleAccount(boolean roleAccount);
     }
 
     public interface FreeProviderStage {
+        /**
+         * <p>Whether its domain is a free mailbox provider.</p>
+         */
         _FinalStage freeProvider(boolean freeProvider);
     }
 
@@ -294,6 +321,9 @@ public final class RiskEmailCheck {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Its domain. <code>null</code> when it isn't valid.</p>
+         */
         _FinalStage domain(OptionalNullable<String> domain);
 
         _FinalStage domain(String domain);
@@ -408,6 +438,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>The address checked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public ValidStage email(@NotNull String email) {
@@ -426,6 +460,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Whether its domain is a known burner service.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("disposable")
         public DeliverabilityStage disposable(boolean disposable) {
@@ -444,6 +482,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Whether it's a role mailbox, like <code>info@</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("role_account")
         public FreeProviderStage roleAccount(boolean roleAccount) {
@@ -451,6 +493,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Whether its domain is a free mailbox provider.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("free_provider")
         public _FinalStage freeProvider(boolean freeProvider) {
@@ -643,6 +689,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Its domain. <code>null</code> when it isn't valid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage domain(Nullable<String> domain) {
             if (domain.isNull()) {
@@ -655,6 +705,10 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Its domain. <code>null</code> when it isn't valid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage domain(Optional<String> domain) {
             if (domain.isPresent()) {
@@ -665,12 +719,19 @@ public final class RiskEmailCheck {
             return this;
         }
 
+        /**
+         * <p>Its domain. <code>null</code> when it isn't valid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage domain(String domain) {
             this.domain = OptionalNullable.of(domain);
             return this;
         }
 
+        /**
+         * <p>Its domain. <code>null</code> when it isn't valid.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "domain", nulls = Nulls.SKIP)
         public _FinalStage domain(OptionalNullable<String> domain) {

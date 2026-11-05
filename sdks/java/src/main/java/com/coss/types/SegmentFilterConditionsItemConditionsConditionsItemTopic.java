@@ -34,11 +34,17 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemTopic {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether emails about the topic reach the contact.
+     */
     @JsonProperty("op")
     public SegmentFilterConditionsItemConditionsConditionsItemTopicOp getOp() {
         return op;
     }
 
+    /**
+     * @return The topic's key.
+     */
     @JsonProperty("topic")
     public String getTopic() {
         return topic;
@@ -75,12 +81,18 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemTopic {
     }
 
     public interface OpStage {
+        /**
+         * <p>Whether emails about the topic reach the contact.</p>
+         */
         TopicStage op(@NotNull SegmentFilterConditionsItemConditionsConditionsItemTopicOp op);
 
         Builder from(SegmentFilterConditionsItemConditionsConditionsItemTopic other);
     }
 
     public interface TopicStage {
+        /**
+         * <p>The topic's key.</p>
+         */
         _FinalStage topic(@NotNull String topic);
     }
 
@@ -110,6 +122,10 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemTopic {
             return this;
         }
 
+        /**
+         * <p>Whether emails about the topic reach the contact.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("op")
         public TopicStage op(@NotNull SegmentFilterConditionsItemConditionsConditionsItemTopicOp op) {
@@ -117,6 +133,10 @@ public final class SegmentFilterConditionsItemConditionsConditionsItemTopic {
             return this;
         }
 
+        /**
+         * <p>The topic's key.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("topic")
         public _FinalStage topic(@NotNull String topic) {

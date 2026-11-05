@@ -11,7 +11,11 @@ from .segment_filter_conditions_item_field_value import SegmentFilterConditionsI
 
 class SegmentFilterConditionsItemField(UniversalBaseModel):
     field: SegmentFilterConditionsItemFieldField
-    op: SegmentFilterConditionsItemFieldOp
+    op: SegmentFilterConditionsItemFieldOp = pydantic.Field()
+    """
+    `before` or `after` a time, or created `within_days` the last days.
+    """
+
     value: SegmentFilterConditionsItemFieldValue = pydantic.Field()
     """
     A timestamp for `before`/`after`, a number of days for `within_days`.

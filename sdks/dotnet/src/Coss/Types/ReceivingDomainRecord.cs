@@ -14,6 +14,9 @@ public record ReceivingDomainRecord : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The record's type.
+    /// </summary>
     [JsonPropertyName("type")]
     public required ReceivingDomainRecordType Type { get; set; }
 
@@ -29,6 +32,9 @@ public record ReceivingDomainRecord : IJsonOnDeserialized
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 
+    /// <summary>
+    /// The MX record's priority.
+    /// </summary>
     [JsonPropertyName("priority")]
     public required long Priority { get; set; }
 

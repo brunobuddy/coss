@@ -6,6 +6,15 @@
 import { LATEST_API_VERSION } from "@coss/versioning";
 import { z } from "zod";
 import { LOGO_MAX_BYTES } from "./branding.ts";
+import {
+  REMINDER_NAME_VARIABLES,
+  REMINDER_URL_VARIABLES,
+  REMINDER_VARIABLES,
+  reminderCopyProblem,
+  reminderKeyOf,
+} from "./reminder-copy.ts";
+
+export { reminderKeyOf };
 
 export const SCHEDULING_BOOKING_EVENT_TYPES = [
   "scheduling.booking.created",
@@ -18,6 +27,10 @@ export const SCHEDULING_BOOKING_EVENT_TYPES = [
   "scheduling.booking.external_conflict",
   "scheduling.booking.calendar_write_failed",
   "scheduling.booking.location_ready",
+  "scheduling.booking.reassigned",
+  "scheduling.booking.started",
+  "scheduling.booking.ended",
+  "scheduling.booking.reminder",
 ] as const;
 export const SCHEDULING_CALENDAR_EVENT_TYPES = [
   "scheduling.calendar.connected",
@@ -28,10 +41,21 @@ export const SCHEDULING_DELEGATION_EVENT_TYPES = [
   "scheduling.calendar_delegation.failing",
   "scheduling.calendar_delegation.restored",
 ] as const;
+export const SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES = [
+  "scheduling.out_of_office.created",
+  "scheduling.out_of_office.updated",
+  "scheduling.out_of_office.deleted",
+  "scheduling.out_of_office.started",
+  "scheduling.out_of_office.ended",
+] as const;
+export type OutOfOfficeWebhookEventType = (typeof SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES)[number];
+export const SCHEDULING_REASSIGNMENT_EVENT_TYPES = ["scheduling.reassignment.completed"] as const;
 export const SCHEDULING_WEBHOOK_EVENT_TYPES = [
   ...SCHEDULING_BOOKING_EVENT_TYPES,
   ...SCHEDULING_CALENDAR_EVENT_TYPES,
   ...SCHEDULING_DELEGATION_EVENT_TYPES,
+  ...SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES,
+  ...SCHEDULING_REASSIGNMENT_EVENT_TYPES,
 ] as const;
 export type SchedulingWebhookEventType = (typeof SCHEDULING_WEBHOOK_EVENT_TYPES)[number];
 
@@ -84,6 +108,7 @@ const HostUid = z
 
 export const HostStatus = z.enum(["active", "disabled"]);
 
+const E164 = z.string().regex(/^\+[1-9]\d{6,14}$/, "Use E.164.");
 /** A link attendees are given to open, so never a `javascript:` or other non-web address. */
 const HttpsUrl = z.url({ protocol: /^https$/, error: "Use an https:// link." }).max(2000);
 
@@ -132,6 +157,9 @@ export const CreateHostRequest = z
     email: z.email().max(320).optional().meta({
       description: "Where this host's notifications go. Not an identity, and need not be unique.",
     }),
+    phone: E164.optional().meta({
+      description: "Where this host's SMS reminders go, in E.164.",
+    }),
     calendar_account: z.email().max(320).nullable().optional().meta({
       description:
         "The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.",
@@ -170,6 +198,9 @@ export const UpdateHostRequest = z
       .nullable()
       .optional()
       .meta({ description: "Where this host's notifications go. `null` removes it." }),
+    phone: E164.nullable().optional().meta({
+      description: "Where this host's SMS reminders go, in E.164. `null` removes it.",
+    }),
     calendar_account: z.email().max(320).nullable().optional().meta({
       description:
         "Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.",
@@ -201,6 +232,7 @@ const HOST_EXAMPLE = {
   uid: "doctor_482",
   name: "Dr. Ana Reyes",
   email: "ana@example.com",
+  phone: null,
   calendar_account: null,
   time_zone: "America/New_York",
   locale: null,
@@ -224,6 +256,9 @@ export const HostObject = z
     email: z.string().nullable().meta({
       description:
         "Where this host's notifications go. `null` when none is set. Not an identity, and need not be unique.",
+    }),
+    phone: z.string().nullable().meta({
+      description: "Where this host's SMS reminders go, in E.164. `null` when none is set.",
     }),
     calendar_account: z.string().nullable().meta({
       description:
@@ -275,6 +310,260 @@ export const DeletedHost = deleted(
 export const PageQuery = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20),
   after: z.string().optional().meta({ description: "The last id of the previous page." }),
+});
+
+export const MAX_OUT_OF_OFFICE_DAYS = 731;
+export const MAX_OUT_OF_OFFICE_HOSTS = 500;
+
+export const OUT_OF_OFFICE_PRESET_REASONS = [
+  "unspecified",
+  "vacation",
+  "travel",
+  "sick",
+  "public_holiday",
+  "parental_leave",
+  "training",
+  "other",
+] as const;
+
+export const OUT_OF_OFFICE_REASON_LABELS: Record<
+  (typeof OUT_OF_OFFICE_PRESET_REASONS)[number],
+  string
+> = {
+  unspecified: "No reason given",
+  vacation: "Vacation",
+  travel: "Travel",
+  sick: "Sick",
+  public_holiday: "Public holiday",
+  parental_leave: "Parental leave",
+  training: "Training",
+  other: "Other",
+};
+
+const OutOfOfficeReasonKey = z
+  .string()
+  .regex(/^[a-z][a-z0-9_]{0,63}$/, "Use lower case letters, digits and underscores.")
+  .meta({
+    description:
+      "One of `unspecified`, `vacation`, `travel`, `sick`, `public_holiday`, `parental_leave`, `training` and `other`, or a key from the settings' `out_of_office_reasons`. Only people who manage this host see it: never bookers, webhooks or calendars.",
+    examples: ["vacation"],
+  });
+
+/** Either instants, for part of a day, or whole dates, ending with `end_date` itself. */
+const outOfOfficeWhen = {
+  start: Instant.optional(),
+  end: Instant.optional(),
+  start_date: LocalDate.optional().meta({
+    description: "The first whole day away. Use instead of `start` and `end`.",
+    examples: ["2027-08-02"],
+  }),
+  end_date: LocalDate.optional().meta({
+    description: "The last whole day away, which is included.",
+    examples: ["2027-08-13"],
+  }),
+  time_zone: TimeZone.optional().meta({
+    description: "What the dates mean in. Default: the host's zone when this is made.",
+  }),
+};
+
+const OutOfOfficeReassign = z
+  .strictObject({
+    to_host: z.string().optional().meta({ description: "Give them all to this host." }),
+    preferred_hosts: z.array(z.string()).max(20).optional().meta({
+      description: "Try these first, in order.",
+    }),
+    otherwise: z.enum(["auto", "leave"]).optional().meta({
+      description:
+        "After `preferred_hosts`: `auto` picks the fairest who's free (the default), `leave` keeps it where it is.",
+    }),
+  })
+  .meta({ id: "SchedulingOutOfOfficeReassign" });
+
+const outOfOfficeExisting = {
+  existing_bookings: z.enum(["leave", "reassign"]).optional().meta({
+    description:
+      "What happens to bookings already in the way. `leave` (the default) only reports them. `reassign` moves them, and any nobody can take stay where they are.",
+  }),
+  reassign: OutOfOfficeReassign.optional().meta({
+    description:
+      "With `existing_bookings: reassign`: who they go to. Default: the fairest who's free.",
+  }),
+};
+
+const outOfOfficeDelegates = z.array(z.string()).max(10).meta({
+  description:
+    "Who can be booked in this host's place during it, by id or uid, in the order to try them. They still have to fit how a booking's routed.",
+});
+
+const outOfOfficeDetails = {
+  delegates: outOfOfficeDelegates.optional(),
+  reason: OutOfOfficeReasonKey.optional(),
+  notes: z.string().max(2000).optional().meta({
+    description: "For people who manage this host. Encrypted, and never shown to a booker.",
+  }),
+  public_message: z
+    .string()
+    .max(300)
+    .optional()
+    .meta({
+      description: "Shown to bookers while this host is away. Can't contain a link.",
+      examples: ["Back on the 16th. Priya is seeing my patients until then."],
+    }),
+  show_on_calendar: z.boolean().optional().meta({
+    description: 'Put a private "Out of office" event on the host\'s calendar. Default: true.',
+  }),
+};
+
+export const CreateOutOfOfficeRequest = z
+  .strictObject({
+    host: z.string().optional().meta({ description: "One host, by id or uid." }),
+    hosts: z.array(z.string()).max(MAX_OUT_OF_OFFICE_HOSTS).optional().meta({
+      description: "Several hosts, by id or uid. Each gets an entry of their own.",
+    }),
+    host_filter: Attributes.optional().meta({
+      description:
+        "Every active host matching these attributes right now. A host added later isn't covered.",
+    }),
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+    ...outOfOfficeExisting,
+    external_id: z.string().min(1).max(255).optional().meta({
+      description: "Your own id for this entry, unique in the environment. Needs one host.",
+    }),
+  })
+  .meta({
+    id: "CreateSchedulingOutOfOfficeRequest",
+    examples: [
+      {
+        host: "doctor_482",
+        start_date: "2027-08-02",
+        end_date: "2027-08-13",
+        reason: "vacation",
+        public_message: "Back on the 16th.",
+      },
+    ],
+  });
+export type CreateOutOfOfficeRequestOutput = z.output<typeof CreateOutOfOfficeRequest>;
+
+/** What a host says about their own time: whose it is comes from their session. */
+/** A team page's: for its own people, and moving bookings is a run of its own. */
+export const ManagerOutOfOfficeRequest = z
+  .strictObject({
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+    hosts: z.array(z.string()).min(1).max(MAX_OUT_OF_OFFICE_HOSTS),
+  })
+  .meta({ id: "SchedulingManagerOutOfOfficeRequest" });
+
+export const HostOutOfOfficeRequest = z
+  .strictObject({ ...outOfOfficeWhen, ...outOfOfficeDetails })
+  .meta({ id: "SchedulingHostOutOfOfficeRequest" });
+
+export const PutOutOfOfficeRequest = z
+  .strictObject({
+    host: z.string().meta({ description: "The host, by id or uid." }),
+    ...outOfOfficeWhen,
+    ...outOfOfficeDetails,
+    ...outOfOfficeExisting,
+  })
+  .meta({
+    id: "PutSchedulingOutOfOfficeRequest",
+    examples: [
+      {
+        host: "doctor_482",
+        start_date: "2027-08-02",
+        end_date: "2027-08-13",
+        reason: "vacation",
+      },
+    ],
+  });
+export type PutOutOfOfficeRequestOutput = z.output<typeof PutOutOfOfficeRequest>;
+
+export const UpdateOutOfOfficeRequest = z
+  .strictObject({
+    ...outOfOfficeWhen,
+    reason: OutOfOfficeReasonKey.optional(),
+    notes: z.string().max(2000).nullable().optional(),
+    public_message: z.string().max(300).nullable().optional(),
+    show_on_calendar: z.boolean().optional(),
+    delegates: outOfOfficeDelegates.optional(),
+    ...outOfOfficeExisting,
+  })
+  .meta({
+    id: "UpdateSchedulingOutOfOfficeRequest",
+    examples: [{ end_date: "2027-08-20" }],
+  });
+export type UpdateOutOfOfficeRequestOutput = z.output<typeof UpdateOutOfOfficeRequest>;
+
+const OUT_OF_OFFICE_EXAMPLE = {
+  object: "scheduling.out_of_office" as const,
+  id: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-08-02T04:00:00.000Z",
+  end: "2027-08-14T04:00:00.000Z",
+  all_day: { start_date: "2027-08-02", end_date: "2027-08-13", time_zone: "America/New_York" },
+  reason: "vacation",
+  notes: null,
+  public_message: "Back on the 16th.",
+  show_on_calendar: true,
+  delegates: ["host_01kd2m9a0b1c2d3e4f5g6h7j8n"],
+  existing_bookings: "leave" as const,
+  external_id: null,
+  group: null,
+  source: "api" as const,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+export const OutOfOfficeObject = z
+  .object({
+    object: z.literal("scheduling.out_of_office"),
+    id: z.string(),
+    host: z.string(),
+    start: z.string(),
+    end: z.string(),
+    all_day: z
+      .object({ start_date: z.string(), end_date: z.string(), time_zone: z.string() })
+      .nullable()
+      .meta({ description: "How it was given, when it was as whole dates." }),
+    reason: z.string(),
+    notes: z.string().nullable(),
+    public_message: z.string().nullable(),
+    show_on_calendar: z.boolean(),
+    delegates: z.array(z.string()).meta({ description: "Who can be booked in their place." }),
+    existing_bookings: z.enum(["leave", "reassign"]),
+    external_id: z.string().nullable(),
+    group: z.string().nullable().meta({
+      description: "Shared by the entries one request made for several hosts.",
+    }),
+    source: z.enum(["api", "host", "manager", "dashboard", "holiday"]),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingOutOfOffice", examples: [OUT_OF_OFFICE_EXAMPLE] });
+export type OutOfOfficeObjectOutput = z.output<typeof OutOfOfficeObject>;
+
+export const OutOfOfficeList = listOf(
+  OutOfOfficeObject,
+  "SchedulingOutOfOfficeList",
+  OUT_OF_OFFICE_EXAMPLE,
+);
+
+export const DeletedOutOfOffice = deleted(
+  "scheduling.out_of_office",
+  "DeletedSchedulingOutOfOffice",
+  "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+);
+
+export const ListOutOfOfficeQuery = PageQuery.extend({
+  host: z.string().optional().meta({ description: "One host's entries, by id or uid." }),
+  start_after: Instant.optional().meta({ description: "Entries ending after this." }),
+  start_before: Instant.optional().meta({ description: "Entries starting before this." }),
+  group: z.string().optional().meta({ description: "The entries one request made." }),
+});
+
+export const ConflictsQuery = z.object({
+  limit: z.coerce.number().int().min(1).max(500).default(100),
 });
 
 const WeeklyRule = z
@@ -530,6 +819,295 @@ const EventTypeHostInput = z
   })
   .meta({ id: "SchedulingEventTypeHostInput" });
 
+export const REMINDER_ANCHORS = [
+  "start",
+  "end",
+  "confirmed",
+  "rescheduled",
+  "cancelled",
+  "declined",
+  "pending_approval",
+  "no_show",
+] as const;
+export const REMINDER_SENDS = [
+  "email_attendee",
+  "email_host",
+  "sms_attendee",
+  "sms_host",
+  "webhook",
+] as const;
+export const MAX_REMINDERS = 10;
+/** Without `email_from` these go out from coss.com's own address, at coss.com's cost. */
+export const MAX_REMINDER_EMAILS_FROM_COSS = 2;
+const MAX_BEFORE_MINUTES = 525600;
+// Inside the 90 days after which an attendee's details are erased.
+const MAX_AFTER_MINUTES = 60 * 24 * 60;
+const REMINDER_LOCATION_TYPES = [
+  "link",
+  "phone",
+  "in_person",
+  "google_meet",
+  "microsoft_teams",
+  "zoom",
+] as const;
+
+const SMS_VARIABLES = Object.keys(REMINDER_VARIABLES).filter(
+  (name) => !(REMINDER_NAME_VARIABLES as readonly string[]).includes(name),
+);
+const REMINDER_KEY = /^[a-z0-9_-]{1,64}$/;
+
+const ReminderButton = z
+  .strictObject({
+    label: z.string().min(1).max(40),
+    url: z
+      .string()
+      .min(1)
+      .max(500)
+      .meta({
+        description:
+          "https, on one of your verified domains (live environments). May use `{{booking_id}}` in its path or query.",
+        examples: ["https://example.com/feedback?booking={{booking_id}}"],
+      }),
+  })
+  .meta({ id: "SchedulingReminderButton" });
+
+const ReminderOnlyIf = z
+  .strictObject({
+    metadata: z.record(z.string().max(64), z.string().max(500)).nullable().optional().meta({
+      description: "The booking's metadata must have all of these.",
+    }),
+    location_types: z
+      .array(z.enum(REMINDER_LOCATION_TYPES))
+      .min(1)
+      .max(6)
+      .nullable()
+      .optional()
+      .meta({
+        description: "The booking's location must be one of these.",
+      }),
+  })
+  .meta({ id: "SchedulingReminderCondition" });
+
+/** Rules that hold whatever else is in the list. Who may send what is checked by `reminders.ts`. */
+const ReminderInput = z
+  .strictObject({
+    key: z.string().regex(REMINDER_KEY, "Use up to 64 of a-z, 0-9, _ and -.").optional().meta({
+      description:
+        "Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`.",
+    }),
+    anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment this is timed from." }),
+    before_minutes: z.number().int().min(0).max(MAX_BEFORE_MINUTES).nullable().optional().meta({
+      description: "How long before the anchor. Only for `start` and `end`.",
+    }),
+    after_minutes: z.number().int().min(0).max(MAX_AFTER_MINUTES).nullable().optional().meta({
+      description: "How long after the anchor, up to 60 days. Default for other anchors: 0.",
+    }),
+    send: z.array(z.enum(REMINDER_SENDS)).max(REMINDER_SENDS.length).optional().meta({
+      description: "Who hears about it. `webhook` fires `scheduling.booking.reminder`.",
+    }),
+    email_to: z.array(z.email().max(320)).max(5).optional().meta({
+      description:
+        "Fixed addresses to email as well: verified members of your organization, or addresses on your verified domains (live environments).",
+    }),
+    subject: z.string().min(1).max(200).nullable().optional().meta({
+      description: "Your own subject, with `{{variables}}`. Needs `email_from`.",
+    }),
+    message: z.string().min(1).max(2000).nullable().optional().meta({
+      description:
+        "Your own words in place of the standard first line, with `{{variables}}` and no links. The booking's details stay below it. Needs `email_from`.",
+    }),
+    sms_message: z.string().min(1).max(320).nullable().optional().meta({
+      description:
+        "Your own text, with `{{variables}}` other than names, and no links. `Reply STOP to opt out.` is always added.",
+    }),
+    button: ReminderButton.nullable().optional().meta({
+      description: "One button in the email. Needs `email_from`.",
+    }),
+    include_invite: z.boolean().optional().meta({
+      description: "Attach the calendar invitation to the emails.",
+    }),
+    send_if_late: z.boolean().optional().meta({
+      description:
+        "If it was booked after this reminder's moment, send it right away instead of skipping it, as long as the meeting is still ahead. Only for `before_minutes` on `start`.",
+    }),
+    skip_no_show: z.boolean().optional().meta({
+      description: "Don't send it once the booking is marked a no-show. Default: true on `end`.",
+    }),
+    only_if: ReminderOnlyIf.nullable().optional().meta({
+      description: "Only for bookings matching all of this, checked when it's due.",
+    }),
+  })
+  .superRefine((rule, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: "custom", path: [path], message });
+    const timed = rule.anchor === "start" || rule.anchor === "end";
+    const before = rule.before_minutes != null;
+    const after = rule.after_minutes != null;
+    if (before && after) {
+      issue("before_minutes", "Set `before_minutes` or `after_minutes`, not both.");
+    }
+    if (timed && !before && !after) {
+      issue("before_minutes", `\`${rule.anchor}\` needs \`before_minutes\` or \`after_minutes\`.`);
+    }
+    if (!timed && before) {
+      issue("before_minutes", `\`${rule.anchor}\` has already happened: use \`after_minutes\`.`);
+    }
+    const send = rule.send ?? [];
+    if (new Set(send).size !== send.length) issue("send", "List each one once.");
+    const emails =
+      send.some((item) => item.startsWith("email_")) || (rule.email_to?.length ?? 0) > 0;
+    if (send.length === 0 && !rule.email_to?.length) {
+      issue("send", "Choose who this goes to, with `send` or `email_to`.");
+    }
+    if (!emails) {
+      for (const field of ["subject", "message", "button", "include_invite"] as const) {
+        if (rule[field]) issue(field, `\`${field}\` needs an email in \`send\` or \`email_to\`.`);
+      }
+    }
+    if (rule.sms_message && !send.some((item) => item.startsWith("sms_"))) {
+      issue("sms_message", "`sms_message` needs an SMS in `send`.");
+    }
+    if (rule.send_if_late && !(rule.anchor === "start" && before)) {
+      issue("send_if_late", "Only a reminder before `start` can be late.");
+    }
+    const inviteAnchors = ["confirmed", "rescheduled", "cancelled", "declined"];
+    if (
+      rule.include_invite &&
+      !inviteAnchors.includes(rule.anchor) &&
+      !(rule.anchor === "start" && before)
+    ) {
+      issue("include_invite", "An invitation goes with a reminder before `start`, or with news.");
+    }
+    for (const field of ["subject", "message"] as const) {
+      const problem = rule[field] ? reminderCopyProblem(rule[field] as string) : null;
+      if (problem) issue(field, problem);
+    }
+    const smsProblem = rule.sms_message
+      ? reminderCopyProblem(rule.sms_message, SMS_VARIABLES)
+      : null;
+    if (smsProblem) issue("sms_message", smsProblem);
+    if (rule.button) {
+      const problem = reminderCopyProblem(rule.button.label);
+      if (problem) issue("button", problem);
+      const urlProblem = reminderCopyProblem(rule.button.url, REMINDER_URL_VARIABLES);
+      if (urlProblem) issue("button", urlProblem);
+      else if (!reminderUrlHost(rule.button.url))
+        issue(
+          "button",
+          "The button's URL must be https, with `{{booking_id}}` only after its host.",
+        );
+    }
+  })
+  .meta({ id: "SchedulingReminderInput" });
+export type ReminderInputOutput = z.output<typeof ReminderInput>;
+
+/**
+ * The host a button's URL points at, or `null` if it isn't a plain https URL. The host has to be the
+ * same whichever booking it's for, or what was verified isn't what gets emailed.
+ */
+export function reminderUrlHost(url: string): string | null {
+  try {
+    const [first, second] = ["x", "y"].map(
+      (value) => new URL(url.replace(/\{\{\s*booking_id\s*\}\}/g, value)),
+    ) as [URL, URL];
+    if (first.protocol !== "https:" || first.username || first.password) return null;
+    if (first.host !== second.host) return null;
+    return first.hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+export const Reminders = z
+  .array(ReminderInput)
+  .max(MAX_REMINDERS)
+  .superRefine((rules, ctx) => {
+    const seen = new Set<string>();
+    for (const [index, rule] of rules.entries()) {
+      const key = reminderKeyOf(rule);
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          path: [index, "key"],
+          message: `Two reminders are called "${key}". Give one a \`key\` of its own.`,
+        });
+      }
+      seen.add(key);
+    }
+  });
+
+const ReminderObject = z
+  .object({
+    key: z.string().meta({ description: "What webhooks and the booking call this reminder." }),
+    anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment this is timed from." }),
+    before_minutes: z.number().nullable().meta({
+      description: "How long before the anchor. `null` when it's after.",
+    }),
+    after_minutes: z.number().nullable().meta({
+      description: "How long after the anchor. `null` when it's before.",
+    }),
+    send: z.array(z.enum(REMINDER_SENDS)).meta({
+      description: "Who hears about it. `webhook` fires `scheduling.booking.reminder`.",
+    }),
+    email_to: z
+      .array(z.string())
+      .meta({ description: "Fixed addresses that are emailed as well." }),
+    subject: z.string().nullable().meta({
+      description: "Your own subject. `null`: the standard one.",
+    }),
+    message: z.string().nullable().meta({
+      description: "Your own words in the email. `null`: the standard ones.",
+    }),
+    sms_message: z.string().nullable().meta({
+      description: "Your own text. `null`: the standard one.",
+    }),
+    button: z
+      .object({
+        label: z.string().meta({ description: "What the button says." }),
+        url: z.string().meta({ description: "Where it goes." }),
+      })
+      .nullable()
+      .meta({ description: "One button in the email. `null`: none." }),
+    include_invite: z.boolean().meta({ description: "Whether the emails carry the invitation." }),
+    send_if_late: z.boolean().meta({
+      description:
+        "Whether it goes right away if booked after its moment, instead of being skipped.",
+    }),
+    skip_no_show: z.boolean().meta({
+      description: "Whether it's dropped once the booking is marked a no-show.",
+    }),
+    only_if: z
+      .object({
+        metadata: z.record(z.string(), z.string()).nullable().meta({
+          description: "The booking's metadata must have all of these. `null`: any.",
+        }),
+        location_types: z.array(z.string()).nullable().meta({
+          description: "The booking's location must be one of these. `null`: any.",
+        }),
+      })
+      .nullable()
+      .meta({ description: "Only for bookings matching all of this. `null`: every booking." }),
+  })
+  .meta({ id: "SchedulingReminder" });
+export type ReminderObjectOutput = z.output<typeof ReminderObject>;
+
+const NotificationPolicy = z.record(
+  z.string().max(64),
+  z.strictObject({
+    email_attendee: z.boolean().optional(),
+    email_host: z.boolean().optional(),
+    sms_attendee: z.boolean().optional(),
+  }),
+);
+const NotificationPolicyOutput = z.record(
+  z.string(),
+  z.object({
+    email_attendee: z.boolean().optional(),
+    email_host: z.boolean().optional(),
+    sms_attendee: z.boolean().optional(),
+  }),
+);
+
 const eventTypeFields = {
   description: z.string().max(2000).nullable().optional().meta({
     description:
@@ -586,6 +1164,9 @@ const eventTypeFields = {
     description:
       "Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.",
   }),
+  reassignment_enabled: z.boolean().optional().meta({
+    description: "Whether bookings of this event type can go to another host. Default: true.",
+  }),
   approval_ttl_minutes: z.number().int().min(5).max(43200).optional().meta({
     description:
       "How long a booking can wait for approval before it's declined, in minutes. Default: 1440.",
@@ -627,6 +1208,13 @@ const eventTypeFields = {
   }),
   host_filter: Attributes.nullable().optional().meta({
     description: "Pool members also include active hosts matching all of these attributes.",
+  }),
+  notifications: NotificationPolicy.nullable().optional().meta({
+    description: "Per event, overriding your settings for this event type.",
+  }),
+  reminders: Reminders.nullable().optional().meta({
+    description:
+      "Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.",
   }),
   metadata: Metadata.optional().meta({ description: "Your own key-value pairs." }),
 };
@@ -704,6 +1292,7 @@ const EVENT_TYPE_EXAMPLE = {
   limits: [],
   capacity: null,
   requires_approval: false,
+  reassignment_enabled: true,
   approval_ttl_minutes: 1440,
   hold_ttl_seconds: 600,
   cancel_notice_minutes: 0,
@@ -714,6 +1303,8 @@ const EVENT_TYPE_EXAMPLE = {
   questions: [],
   locations: [],
   host_filter: null,
+  notifications: null,
+  reminders: null,
   hosts: [
     {
       host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
@@ -778,6 +1369,9 @@ export const EventTypeObject = z
       description:
         "Whether bookings start as `pending_approval`, holding the time until approved or declined.",
     }),
+    reassignment_enabled: z.boolean().meta({
+      description: "Whether bookings of this event type can go to another host.",
+    }),
     approval_ttl_minutes: z.number().meta({
       description: "How long a booking can wait for approval before it's declined, in minutes.",
     }),
@@ -812,6 +1406,13 @@ export const EventTypeObject = z
         description:
           "Pool members also include active hosts matching all of these attributes. `null`: only `hosts`.",
       }),
+    notifications: NotificationPolicyOutput.nullable().meta({
+      description: "Per event, overriding your settings for this event type. `null`: only those.",
+    }),
+    reminders: z.array(ReminderObject).nullable().meta({
+      description:
+        "What goes out around a booking, in place of your settings' list. `null` inherits it; an empty list means none.",
+    }),
     hosts: z
       .array(
         z.object({
@@ -889,7 +1490,7 @@ export const ExplainSlotQuery = z.object({
 });
 
 const SLOT_REASONS =
-  "`not_on_grid`, `too_soon`, `outside_booking_window`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`";
+  "`not_on_grid`, `too_soon`, `outside_booking_window`, `out_of_office`, `outside_coverage`, `calendar_unverified`, `outside_availability`, `host_busy`, `already_claimed`, `limit_reached` or `session_full`";
 
 export const SlotExplanation = z
   .object({
@@ -1245,6 +1846,16 @@ export const SettingsObject = z
     sms_from: z.string().nullable().meta({
       description: "Your approved number for SMS reminders. Without one, no SMS is sent.",
     }),
+    name_host_in_attendee_emails: z.boolean().meta({
+      description: "Name the new host when telling an attendee their booking has one.",
+    }),
+    host_reassignment: z.enum(["off", "eligible"]).meta({
+      description:
+        "Whether hosts can give their own bookings to someone else from their page. `eligible` lets them, to anyone free who takes that event type.",
+    }),
+    out_of_office_reasons: z.array(z.object({ key: z.string(), label: z.string() })).meta({
+      description: "Reasons of your own for time away, on top of the preset ones.",
+    }),
     calendar_failure_mode: z.enum(["hide", "last_known"]).meta({
       description:
         "When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.",
@@ -1269,6 +1880,11 @@ export const SettingsObject = z
       )
       .nullable()
       .meta({ description: "Per event, overriding the defaults." }),
+    email_reply_to: z.string().nullable(),
+    reminders: z.array(ReminderObject).nullable().meta({
+      description:
+        "What goes out around a booking, unless an event type has its own. `null`: a reminder a day before, on the channels `notifications.reminder` chooses.",
+    }),
   })
   .meta({
     id: "SchedulingSettings",
@@ -1281,8 +1897,13 @@ export const SettingsObject = z
         logo: null,
         email_from: "appointments@example.com",
         sms_from: null,
+        name_host_in_attendee_emails: false,
+        host_reassignment: "off",
+        out_of_office_reasons: [],
         calendar_failure_mode: "hide",
         notifications: { reminder: { sms_attendee: true } },
+        email_reply_to: null,
+        reminders: null,
       },
     ],
   });
@@ -1330,6 +1951,26 @@ export const UpdateSettingsRequest = z
       description:
         "When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.",
     }),
+    name_host_in_attendee_emails: z.boolean().optional().meta({
+      description: "Name the new host when telling an attendee their booking has one.",
+    }),
+    host_reassignment: z.enum(["off", "eligible"]).optional().meta({
+      description:
+        "Whether hosts can give their own bookings to someone else from their page. `eligible` lets them, to anyone free who takes that event type.",
+    }),
+    out_of_office_reasons: z
+      .array(
+        z.strictObject({
+          key: OutOfOfficeReasonKey,
+          label: z.string().min(1).max(60),
+        }),
+      )
+      .max(50)
+      .nullable()
+      .optional()
+      .meta({
+        description: "Reasons of your own, on top of the preset ones. Hosts and managers see them.",
+      }),
     notifications: z
       .record(
         z.string().max(64),
@@ -1354,9 +1995,68 @@ export const UpdateSettingsRequest = z
         description:
           "Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.",
       }),
+    email_reply_to: z.email().max(320).nullable().optional().meta({
+      description: "Where replies go, for emails from `email_from`.",
+    }),
+    reminders: Reminders.nullable().optional().meta({
+      description:
+        "What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before.",
+    }),
   })
   .meta({ id: "UpdateSchedulingSettingsRequest", examples: [{ brand_name: "Acme Health" }] });
 export type UpdateSettingsRequestOutput = z.output<typeof UpdateSettingsRequest>;
+
+export const BookingNotificationObject = z
+  .object({
+    object: z.literal("scheduling.booking_notification"),
+    id: z.string(),
+    kind: z.string().meta({
+      description:
+        "`reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`.",
+    }),
+    reminder_key: z.string().nullable(),
+    channel: z.enum(["email", "sms", "webhook"]),
+    recipient: z.enum(["attendee", "host", "endpoint", "address"]),
+    due_at: z.string(),
+    finished_at: z.string().nullable(),
+    outcome: z.string().nullable().meta({
+      description:
+        "`null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`, `no_sender`, `stale`, `superseded`, `failed`.",
+    }),
+  })
+  .meta({
+    id: "SchedulingBookingNotification",
+    examples: [
+      {
+        object: "scheduling.booking_notification",
+        id: "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        kind: "reminder",
+        reminder_key: "start-1440",
+        channel: "email",
+        recipient: "attendee",
+        due_at: "2027-01-03T15:00:00.000Z",
+        finished_at: null,
+        outcome: null,
+      },
+    ],
+  });
+export type BookingNotificationObjectOutput = z.output<typeof BookingNotificationObject>;
+
+export const BookingNotificationList = listOf(
+  BookingNotificationObject,
+  "SchedulingBookingNotificationList",
+  {
+    object: "scheduling.booking_notification" as const,
+    id: "sntf_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    kind: "reminder",
+    reminder_key: "start-1440",
+    channel: "email" as const,
+    recipient: "attendee" as const,
+    due_at: "2027-01-03T15:00:00.000Z",
+    finished_at: null,
+    outcome: null,
+  },
+);
 
 export const ErasedAttendee = z
   .object({
@@ -1428,6 +2128,7 @@ const BOOKING_ACTOR_KINDS = [
   "host_session",
   "booker_session",
   "manage_session",
+  "manager_session",
   "system",
 ] as const;
 
@@ -1585,6 +2286,517 @@ export const BookingEventList = listOf(BookingEventObject, "SchedulingBookingEve
 
 export const ListBookingEventsQuery = PageQuery;
 
+export const REASSIGNMENT_REASONS = [
+  "host_unavailable",
+  "out_of_office",
+  "workload",
+  "customer_request",
+  "offboarding",
+  "other",
+] as const;
+
+export const REASSIGNMENT_REASON_LABELS: Record<(typeof REASSIGNMENT_REASONS)[number], string> = {
+  host_unavailable: "Host unavailable",
+  out_of_office: "Out of office",
+  workload: "Balancing workload",
+  customer_request: "Customer asked",
+  offboarding: "Host leaving",
+  other: "Other",
+};
+
+export const REASSIGNMENT_OVERRIDES = [
+  "any_host",
+  "out_of_office",
+  "outside_availability",
+  "host_busy",
+  "limit_reached",
+  "calendar_unverified",
+] as const;
+
+export const ReassignBookingRequest = z
+  .strictObject({
+    changes: z
+      .array(
+        z.strictObject({
+          from_host: z.string().optional().meta({
+            description: "The host leaving, by id or uid. Needed when it could be several.",
+          }),
+          to_host: z.string().optional().meta({
+            description: "The host taking over, by id or uid. Or set `auto`.",
+          }),
+          auto: z.boolean().optional().meta({
+            description:
+              "Let coss.com pick, as a pool would: the fairest who's free and fits what the booking was routed with.",
+          }),
+          preferred_hosts: z.array(z.string()).max(20).optional().meta({
+            description: "With `auto`: try these first, in order.",
+          }),
+        }),
+      )
+      .min(1)
+      .max(10)
+      .meta({ description: "A session or a one-on-one has one. A collective can change several." }),
+    reason_code: z.enum(REASSIGNMENT_REASONS),
+    note: z.string().max(500).optional().meta({
+      description:
+        "Why, in your words: required with an override of someone's availability. Encrypted, and only in the booking's history.",
+    }),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional().meta({
+      description:
+        "Go ahead anyway: `any_host` for someone who doesn't take this event type, and the rest for what a candidate's `reason` said. A host who already has something at this time can never be overridden.",
+    }),
+    notify: z
+      .strictObject({
+        attendee: z.boolean().optional().meta({ description: "Tell the attendee. Default: true." }),
+      })
+      .optional(),
+  })
+  .meta({
+    id: "ReassignSchedulingBookingRequest",
+    examples: [
+      {
+        changes: [{ to_host: "doctor_518" }],
+        reason_code: "out_of_office",
+      },
+    ],
+  });
+export type ReassignBookingRequestOutput = z.output<typeof ReassignBookingRequest>;
+
+const REASSIGNMENT_NOTIFY = z
+  .strictObject({
+    attendees: z.boolean().optional().meta({ description: "Tell attendees. Default: true." }),
+    hosts: z.enum(["digest", "each", "none"]).optional().meta({
+      description: "`digest` (the default) sends each host one email for the run.",
+    }),
+  })
+  .optional();
+
+const REASSIGNMENT_SELECTION = z
+  .strictObject({
+    host: z.string().optional().meta({ description: "This host's bookings, by id or uid." }),
+    out_of_office: z.string().optional().meta({
+      description: "The bookings that fall in this entry.",
+    }),
+    booking_ids: z.array(z.string()).max(5000).optional(),
+    series: z.string().optional().meta({ description: "A series' occurrences still to come." }),
+    start_after: Instant.optional(),
+    start_before: Instant.optional(),
+    event_types: z.array(z.string()).max(100).optional(),
+    external_conflict: z.boolean().optional().meta({
+      description: "Only those with something else on the host's calendar at that time.",
+    }),
+  })
+  .meta({ id: "SchedulingReassignmentSelection" });
+
+const REASSIGNMENT_STRATEGY = z
+  .strictObject({
+    to_host: z.string().optional().meta({ description: "Give them all to this host." }),
+    preferred_hosts: z.array(z.string()).max(20).optional().meta({
+      description: "Try these first, in order.",
+    }),
+    otherwise: z.enum(["auto", "leave"]).optional().meta({
+      description:
+        "After `preferred_hosts`: `auto` picks the fairest who's free, `leave` keeps it where it is.",
+    }),
+    assignments: z
+      .array(
+        z.strictObject({
+          booking: z.string(),
+          to_host: z.string(),
+          from_host: z.string().optional(),
+        }),
+      )
+      .max(5000)
+      .optional()
+      .meta({ description: "Who each goes to: a preview, with your changes." }),
+  })
+  .meta({ id: "SchedulingReassignmentStrategy" });
+
+export const PreviewReassignmentRequest = z
+  .strictObject({
+    selection: REASSIGNMENT_SELECTION,
+    strategy: REASSIGNMENT_STRATEGY.default({}),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+  })
+  .meta({
+    id: "PreviewSchedulingReassignmentRequest",
+    examples: [
+      {
+        selection: { host: "doctor_482", start_before: "2027-08-14T00:00:00.000Z" },
+        strategy: { preferred_hosts: ["doctor_518"] },
+      },
+    ],
+  });
+export type PreviewReassignmentRequestOutput = z.output<typeof PreviewReassignmentRequest>;
+
+export const CreateReassignmentRequest = z
+  .strictObject({
+    selection: REASSIGNMENT_SELECTION,
+    strategy: REASSIGNMENT_STRATEGY.default({}),
+    reason_code: z.enum(REASSIGNMENT_REASONS),
+    note: z.string().max(500).optional().meta({
+      description: "Why, in your words: required with an override of someone's availability.",
+    }),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+    notify: REASSIGNMENT_NOTIFY,
+  })
+  .meta({
+    id: "CreateSchedulingReassignmentRequest",
+    examples: [
+      {
+        selection: { out_of_office: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m" },
+        strategy: { preferred_hosts: ["doctor_518"] },
+        reason_code: "out_of_office",
+      },
+    ],
+  });
+export type CreateReassignmentRequestOutput = z.output<typeof CreateReassignmentRequest>;
+
+export const UndoReassignmentRequest = z
+  .strictObject({
+    reason_code: z.enum(REASSIGNMENT_REASONS).optional(),
+    note: z.string().max(500).optional(),
+    overrides: z.array(z.enum(REASSIGNMENT_OVERRIDES)).max(6).optional(),
+    notify: REASSIGNMENT_NOTIFY,
+  })
+  .meta({ id: "UndoSchedulingReassignmentRequest", examples: [{ reason_code: "other" }] });
+export type UndoReassignmentRequestOutput = z.output<typeof UndoReassignmentRequest>;
+
+const REASSIGNMENT_COUNTS = {
+  total: 12,
+  pending: 0,
+  reassigned: 11,
+  skipped: 0,
+  no_candidate: 1,
+  failed: 0,
+  cancelled: 0,
+};
+
+const ReassignmentCounts = z.object({
+  total: z.number(),
+  pending: z.number(),
+  reassigned: z.number(),
+  skipped: z.number().meta({ description: "They'd moved on since it was selected." }),
+  no_candidate: z.number().meta({ description: "Nobody could take them: they stayed." }),
+  failed: z.number(),
+  cancelled: z.number(),
+});
+
+const REASSIGNMENT_EXAMPLE = {
+  object: "scheduling.reassignment" as const,
+  id: "reasn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  status: "completed" as const,
+  reason_code: "out_of_office" as const,
+  out_of_office: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  undo_of: null,
+  counts: REASSIGNMENT_COUNTS,
+  created_at: "2027-01-01T10:00:00.000Z",
+  started_at: "2027-01-01T10:00:01.000Z",
+  finished_at: "2027-01-01T10:00:09.000Z",
+};
+
+export const ReassignmentObject = z
+  .object({
+    object: z.literal("scheduling.reassignment"),
+    id: z.string(),
+    status: z.enum(["pending", "running", "completed", "cancelled"]),
+    reason_code: z.enum(REASSIGNMENT_REASONS),
+    out_of_office: z.string().nullable(),
+    undo_of: z.string().nullable(),
+    counts: ReassignmentCounts,
+    created_at: z.string(),
+    started_at: z.string().nullable(),
+    finished_at: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingReassignment", examples: [REASSIGNMENT_EXAMPLE] });
+export type ReassignmentObjectOutput = z.output<typeof ReassignmentObject>;
+
+export const ReassignmentList = listOf(
+  ReassignmentObject,
+  "SchedulingReassignmentList",
+  REASSIGNMENT_EXAMPLE,
+);
+
+const REASSIGNMENT_ITEM_EXAMPLE = {
+  object: "scheduling.reassignment_item" as const,
+  id: "reasi_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  from_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  to_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8n",
+  outcome: "reassigned" as const,
+  error_code: null,
+};
+
+export const ReassignmentItemObject = z
+  .object({
+    object: z.literal("scheduling.reassignment_item"),
+    id: z.string(),
+    booking: z.string(),
+    from_host: z.string().nullable(),
+    to_host: z.string().nullable(),
+    outcome: z.enum([
+      "pending",
+      "reassigned",
+      "skipped_changed",
+      "no_candidate",
+      "failed",
+      "cancelled",
+    ]),
+    error_code: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingReassignmentItem", examples: [REASSIGNMENT_ITEM_EXAMPLE] });
+export type ReassignmentItemObjectOutput = z.output<typeof ReassignmentItemObject>;
+
+export const ReassignmentItemList = listOf(
+  ReassignmentItemObject,
+  "SchedulingReassignmentItemList",
+  REASSIGNMENT_ITEM_EXAMPLE,
+);
+
+export const ReassignmentPreview = z
+  .object({
+    object: z.literal("scheduling.reassignment_preview"),
+    items: z.array(
+      z.object({
+        booking: z.string(),
+        event_type: z.string(),
+        title: z.string(),
+        status: z.enum(BOOKING_STATUSES),
+        start: z.string(),
+        end: z.string(),
+        series: z.string().nullable(),
+        group_session: z.string().nullable(),
+        from_host: z.string().nullable(),
+        to_host: z.string().nullable().meta({ description: "Null when nobody could take it." }),
+        reason: z.string().nullable().meta({ description: "Why it would stay where it is." }),
+      }),
+    ),
+    truncated: z.boolean().meta({ description: "There are more than a preview covers." }),
+  })
+  .meta({
+    id: "SchedulingReassignmentPreview",
+    examples: [
+      {
+        object: "scheduling.reassignment_preview",
+        items: [
+          {
+            booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            title: "Consultation",
+            status: "confirmed",
+            start: "2027-08-03T15:00:00.000Z",
+            end: "2027-08-03T15:30:00.000Z",
+            series: null,
+            group_session: null,
+            from_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            to_host: "host_01kd2m9a0b1c2d3e4f5g6h7j8n",
+            reason: null,
+          },
+        ],
+        truncated: false,
+      },
+    ],
+  });
+export type ReassignmentPreviewOutput = z.output<typeof ReassignmentPreview>;
+
+const HOLIDAY_CALENDAR_EXAMPLE = {
+  object: "scheduling.holiday_calendar" as const,
+  id: "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  name: "UK team",
+  source: "country" as const,
+  country: "GB",
+  hosts: null,
+  host_filter: { team: "london" },
+  regions: ["England"],
+  delegates: [],
+  existing_bookings: "leave" as const,
+  last_read_at: "2027-01-01T10:00:00.000Z",
+  last_error: null,
+  created_at: "2027-01-01T10:00:00.000Z",
+  updated_at: "2027-01-01T10:00:00.000Z",
+};
+
+const holidayWho = {
+  hosts: z.array(z.string()).max(1000).optional().meta({
+    description: "These hosts, by id or uid.",
+  }),
+  host_filter: z
+    .record(z.string(), z.union([z.string(), z.array(z.string())]))
+    .optional()
+    .meta({ description: "Everyone matching these attributes, asked again at every sync." }),
+  regions: z.array(z.string().min(1).max(100)).max(50).optional().meta({
+    description:
+      "Which regional holidays apply, matched against how the calendar names them, such as `England`. Without this, all of them do; empty, only nationwide ones.",
+  }),
+  delegates: z.array(z.string()).max(10).optional().meta({
+    description: "Who can be booked in their place on those days, by id or uid, in order.",
+  }),
+  existing_bookings: z.enum(["leave", "reassign"]).optional().meta({
+    description:
+      "What happens to bookings already on a holiday. `leave` (the default) only reports them. `reassign` moves them.",
+  }),
+};
+
+export const CreateHolidayCalendarRequest = z
+  .strictObject({
+    name: z.string().min(1).max(200),
+    country: z.string().optional().meta({
+      description: "A code from the list of holiday calendars, such as `GB`.",
+    }),
+    ics_url: z.string().url().max(2000).optional().meta({
+      description: "Your own feed, https or webcal, read in live environments. Stored encrypted.",
+    }),
+    ...holidayWho,
+  })
+  .meta({
+    id: "CreateSchedulingHolidayCalendarRequest",
+    examples: [{ name: "UK team", country: "GB", host_filter: { team: "london" } }],
+  });
+export type CreateHolidayCalendarRequestOutput = z.output<typeof CreateHolidayCalendarRequest>;
+
+export const UpdateHolidayCalendarRequest = z
+  .strictObject({ name: z.string().min(1).max(200).optional(), ...holidayWho })
+  .meta({
+    id: "UpdateSchedulingHolidayCalendarRequest",
+    examples: [{ host_filter: { team: "london" } }],
+  });
+export type UpdateHolidayCalendarRequestOutput = z.output<typeof UpdateHolidayCalendarRequest>;
+
+export const HolidayCalendarObject = z
+  .object({
+    object: z.literal("scheduling.holiday_calendar"),
+    id: z.string(),
+    name: z.string(),
+    source: z.enum(["country", "ics"]),
+    country: z.string().nullable(),
+    hosts: z.array(z.string()).nullable(),
+    host_filter: z.record(z.string(), z.union([z.string(), z.array(z.string())])).nullable(),
+    regions: z.array(z.string()).nullable(),
+    delegates: z.array(z.string()),
+    existing_bookings: z.enum(["leave", "reassign"]),
+    last_read_at: z.string().nullable(),
+    last_error: z.string().nullable().meta({ description: "Why its feed couldn't be read." }),
+    created_at: z.string(),
+    updated_at: z.string(),
+  })
+  .meta({ id: "SchedulingHolidayCalendar", examples: [HOLIDAY_CALENDAR_EXAMPLE] });
+export type HolidayCalendarObjectOutput = z.output<typeof HolidayCalendarObject>;
+
+export const HolidayCalendarList = listOf(
+  HolidayCalendarObject,
+  "SchedulingHolidayCalendarList",
+  HOLIDAY_CALENDAR_EXAMPLE,
+);
+
+export const DeletedHolidayCalendar = z.object({ id: z.string(), deleted: z.literal(true) }).meta({
+  id: "DeletedSchedulingHolidayCalendar",
+  examples: [{ id: "hcal_01kd2m9a0b1c2d3e4f5g6h7j8m", deleted: true }],
+});
+
+export const HolidayList = z
+  .object({
+    object: z.literal("list"),
+    data: z.array(z.object({ date: z.string(), name: z.string(), region: z.string().nullable() })),
+    has_more: z.boolean(),
+  })
+  .meta({
+    id: "SchedulingHolidayList",
+    examples: [
+      {
+        object: "list",
+        data: [{ date: "2027-12-25", name: "Christmas Day", region: null }],
+        has_more: false,
+      },
+    ],
+  });
+
+export const ReassignCandidatesQuery = z.object({
+  from_host: z.string().optional().meta({
+    description: "The host who'd leave, when it could be several.",
+  }),
+});
+
+const REASSIGN_CANDIDATE_EXAMPLE = {
+  object: "scheduling.reassign_candidate" as const,
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  uid: "doctor_518",
+  name: "Dr. Priya Raman",
+  member: true,
+  available: true,
+  reason: null,
+  reasons: [],
+  load: 4,
+  rank: 1,
+  meeting_provider_missing: false,
+};
+
+export const ReassignCandidate = z
+  .object({
+    object: z.literal("scheduling.reassign_candidate"),
+    host: z.string(),
+    uid: z.string().nullable(),
+    name: z.string(),
+    member: z.boolean().meta({
+      description:
+        "Takes this event type, and fits what the booking was routed with. Otherwise it needs `any_host`.",
+    }),
+    available: z.boolean(),
+    reason: z.string().nullable().meta({
+      description: "Why they aren't available, the first of `reasons`.",
+    }),
+    reasons: z.array(z.string()).meta({
+      description:
+        "Everything in the way, each needing its override. `already_claimed` can't be overridden.",
+    }),
+    load: z.number().meta({ description: "Their live bookings in the week from this one." }),
+    rank: z.number().nullable().meta({
+      description: "Their place in who a pool would pick next, from 1. Null for a non-member.",
+    }),
+    meeting_provider_missing: z.boolean().meta({
+      description: "They haven't connected what this booking's meeting needs, so it'd have none.",
+    }),
+  })
+  .meta({ id: "SchedulingReassignCandidate", examples: [REASSIGN_CANDIDATE_EXAMPLE] });
+
+export const ReassignCandidateList = listOf(
+  ReassignCandidate,
+  "SchedulingReassignCandidateList",
+  REASSIGN_CANDIDATE_EXAMPLE,
+);
+
+const OUT_OF_OFFICE_CONFLICT_EXAMPLE = {
+  object: "scheduling.out_of_office_conflict" as const,
+  booking: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  title: "Consultation",
+  status: "confirmed" as const,
+  start: "2027-08-03T15:00:00.000Z",
+  end: "2027-08-03T15:30:00.000Z",
+  series: null,
+  group_session: null,
+};
+
+export const OutOfOfficeConflict = z
+  .object({
+    object: z.literal("scheduling.out_of_office_conflict"),
+    booking: z.string(),
+    event_type: z.string(),
+    title: z.string(),
+    status: z.enum(BOOKING_STATUSES),
+    start: z.string(),
+    end: z.string(),
+    series: z.string().nullable(),
+    group_session: z.string().nullable(),
+  })
+  .meta({ id: "SchedulingOutOfOfficeConflict", examples: [OUT_OF_OFFICE_CONFLICT_EXAMPLE] });
+export type OutOfOfficeConflictOutput = z.output<typeof OutOfOfficeConflict>;
+
+export const OutOfOfficeConflictList = listOf(
+  OutOfOfficeConflict,
+  "SchedulingOutOfOfficeConflictList",
+  OUT_OF_OFFICE_CONFLICT_EXAMPLE,
+);
+
 export const ListBookingsQuery = PageQuery.extend({
   host: z.string().optional(),
   event_type: z.string().optional(),
@@ -1614,6 +2826,26 @@ export const SchedulingBookingWebhookData = z
       .string()
       .optional()
       .meta({ description: "`scheduling.booking.rescheduled`: when it used to start." }),
+    previous_host_ids: z.array(z.string()).optional().meta({
+      description: "On `scheduling.booking.reassigned`: who had it before.",
+    }),
+    reassignment_id: z.string().optional().meta({
+      description: "On `scheduling.booking.reassigned`: the bulk reassignment it was part of.",
+    }),
+    reminder: z
+      .object({
+        key: z.string().meta({ description: "Which reminder this is." }),
+        anchor: z.enum(REMINDER_ANCHORS).meta({ description: "The moment it's timed from." }),
+        before_minutes: z.number().nullable().meta({
+          description: "How long before the anchor. `null` when it's after.",
+        }),
+        after_minutes: z.number().nullable().meta({
+          description: "How long after the anchor. `null` when it's before.",
+        }),
+        scheduled_for: z.string().meta({ description: "When it was due." }),
+      })
+      .optional()
+      .meta({ description: "`scheduling.booking.reminder`: which reminder this is." }),
     occurred_at: z.string().meta({ description: "When this happened." }),
   })
   .meta({
@@ -1670,6 +2902,72 @@ export type StoredSchedulingCalendarWebhookEvent = Omit<
   z.output<typeof SchedulingCalendarWebhookEvent>,
   "api_version"
 >;
+
+export const SchedulingOutOfOfficeWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_OUT_OF_OFFICE_EVENT_TYPES),
+    data: z.object({
+      out_of_office_id: z.string(),
+      host_id: z.string(),
+      start: z.string(),
+      end: z.string(),
+      group: z.string().nullable(),
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingOutOfOfficeWebhookEvent",
+    examples: [
+      {
+        id: "evt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.out_of_office.created",
+        api_version: LATEST_API_VERSION,
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          out_of_office_id: "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          host_id: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          start: "2027-08-02T04:00:00.000Z",
+          end: "2027-08-14T04:00:00.000Z",
+          group: null,
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
+
+export const SchedulingReassignmentWebhookEvent = z
+  .object({
+    ...webhookEnvelope,
+    type: z.enum(SCHEDULING_REASSIGNMENT_EVENT_TYPES),
+    data: z.object({
+      reassignment_id: z.string(),
+      status: z.enum(["completed", "cancelled"]),
+      out_of_office_id: z.string().nullable(),
+      counts: ReassignmentCounts,
+      occurred_at: z.string(),
+    }),
+  })
+  .meta({
+    id: "SchedulingReassignmentWebhookEvent",
+    examples: [
+      {
+        id: "evt_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        object: "event",
+        type: "scheduling.reassignment.completed",
+        api_version: LATEST_API_VERSION,
+        created_at: "2027-01-01T10:00:00.000Z",
+        data: {
+          reassignment_id: "reasn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+          status: "completed",
+          out_of_office_id: null,
+          counts: REASSIGNMENT_COUNTS,
+          occurred_at: "2027-01-01T10:00:00.000Z",
+        },
+      },
+    ],
+  });
 
 export const SchedulingCalendarWebhookEvent = z
   .object({

@@ -22,7 +22,11 @@ class ReceivedEmailSummary(UniversalBaseModel):
     `received`, or `blocked` when the message carried a virus: then only its envelope and verdicts are kept, never its content.
     """
 
-    blocked_reason: typing.Optional[ReceivedEmailSummaryBlockedReason] = None
+    blocked_reason: typing.Optional[ReceivedEmailSummaryBlockedReason] = pydantic.Field(default=None)
+    """
+    Why it's `blocked`. `null`: it isn't.
+    """
+
     mail_from: str = pydantic.Field()
     """
     The envelope sender (`MAIL FROM`); empty for bounces.
@@ -52,13 +56,21 @@ class ReceivedEmailSummary(UniversalBaseModel):
     The `Cc` header's addresses.
     """
 
-    subject: typing.Optional[str] = None
+    subject: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The `Subject` header. `null`: none.
+    """
+
     message_id: typing.Optional[str] = pydantic.Field(default=None)
     """
     The `Message-ID` header.
     """
 
-    attachments: typing.List[ReceivedEmailAttachment]
+    attachments: typing.List[ReceivedEmailAttachment] = pydantic.Field()
+    """
+    Its attachments, without their bytes.
+    """
+
     size: int = pydantic.Field()
     """
     Size of the raw message in bytes.
@@ -75,7 +87,10 @@ class ReceivedEmailSummary(UniversalBaseModel):
     Whether it was received by a sandbox environment.
     """
 
-    received_at: dt.datetime
+    received_at: dt.datetime = pydantic.Field()
+    """
+    When it arrived.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

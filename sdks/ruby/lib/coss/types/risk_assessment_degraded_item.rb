@@ -12,6 +12,7 @@ module Coss
       CAPTCHA = "captcha"
       CONTENT = "content"
       IP_PRIVACY = "ip_privacy"
+      USAGE_LIMIT = "usage_limit"
     end
   end
 end

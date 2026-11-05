@@ -7,6 +7,9 @@ namespace Coss.Email;
 [Serializable]
 public record CreateSegmentRequest
 {
+    /// <summary>
+    /// Your name for the segment, unique in the environment.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

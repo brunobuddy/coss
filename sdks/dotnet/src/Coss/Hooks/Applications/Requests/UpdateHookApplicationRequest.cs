@@ -12,6 +12,9 @@ public record UpdateHookApplicationRequest
     [JsonIgnore]
     public required string Application { get; set; }
 
+    /// <summary>
+    /// Shown to the application's users in the portal.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }

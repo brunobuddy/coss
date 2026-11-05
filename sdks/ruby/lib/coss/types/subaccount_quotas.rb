@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Its own sending limits.
     class SubaccountQuotas < Internal::Types::Model
       field :recipients_per_day, -> { Integer }, optional: false, nullable: true
 

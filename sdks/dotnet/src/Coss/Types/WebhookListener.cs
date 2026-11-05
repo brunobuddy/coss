@@ -29,6 +29,9 @@ public record WebhookListener : IJsonOnDeserialized
     [JsonPropertyName("event_types")]
     public IEnumerable<string> EventTypes { get; set; } = new List<string>();
 
+    /// <summary>
+    /// Your note about it, such as the machine it's on. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }

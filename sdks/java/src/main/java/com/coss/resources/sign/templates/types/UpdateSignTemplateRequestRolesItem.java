@@ -32,7 +32,7 @@ public final class UpdateSignTemplateRequestRolesItem {
     }
 
     /**
-     * @return The role's key, e.g. <code>client</code>.
+     * @return The role's id within the template, used by fields and signers.
      */
     @JsonProperty("key")
     public String getKey() {
@@ -79,7 +79,7 @@ public final class UpdateSignTemplateRequestRolesItem {
 
     public interface KeyStage {
         /**
-         * <p>The role's key, e.g. <code>client</code>.</p>
+         * <p>The role's id within the template, used by fields and signers.</p>
          */
         NameStage key(@NotNull String key);
 
@@ -120,7 +120,7 @@ public final class UpdateSignTemplateRequestRolesItem {
         }
 
         /**
-         * <p>The role's key, e.g. <code>client</code>.</p>
+         * <p>The role's id within the template, used by fields and signers.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override

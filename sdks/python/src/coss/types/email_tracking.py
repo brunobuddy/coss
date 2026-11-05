@@ -27,12 +27,35 @@ class EmailTracking(UniversalBaseModel):
     Whether the email carries one-click unsubscribe headers (RFC 8058).
     """
 
-    open_count: int
-    first_opened_at: typing.Optional[dt.datetime] = None
-    last_opened_at: typing.Optional[dt.datetime] = None
-    click_count: int
-    first_clicked_at: typing.Optional[dt.datetime] = None
-    last_clicked_at: typing.Optional[dt.datetime] = None
+    open_count: int = pydantic.Field()
+    """
+    Times opened. Mail clients that prefetch images inflate it.
+    """
+
+    first_opened_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was first opened. `null`: not yet.
+    """
+
+    last_opened_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was last opened. `null`: not yet.
+    """
+
+    click_count: int = pydantic.Field()
+    """
+    Link clicks. Link scanners inflate it.
+    """
+
+    first_clicked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When a link was first clicked. `null`: not yet.
+    """
+
+    last_clicked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When a link was last clicked. `null`: not yet.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

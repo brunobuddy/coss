@@ -37,7 +37,7 @@ const MANAGE_GRACE_MS = 86_400_000;
 
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex");
 
-const PATH_OF: Record<SessionKind, string> = { host: "h", booker: "b", manage: "m" };
+const PATH_OF: Record<SessionKind, string> = { host: "h", booker: "b", manage: "m", manager: "t" };
 
 export function schedulingSessionUrl(
   publicUrl: string,
@@ -47,6 +47,8 @@ export function schedulingSessionUrl(
 ): string {
   return `${withoutTrailingSlashes(publicUrl)}/${PATH_OF[kind]}/${sessionId}#${token}`;
 }
+
+const HOUR_SECONDS = 3600;
 
 type Created = { id: string; token: string; url: string | null; expiresAt: Date };
 
@@ -59,6 +61,8 @@ type MintInput = {
   encryptedAttendee?: string | null;
   encryptedAttributes?: string | null;
   attendeeUid?: string | null;
+  managerHostIds?: string[] | null;
+  managerHostFilter?: Record<string, string | string[]> | null;
   attendeeEmailHmac?: string | null;
   readOnly?: boolean;
   apiKeyId?: string | null;
@@ -83,6 +87,8 @@ async function mint(input: MintInput): Promise<Created> {
     encryptedAttendee: input.encryptedAttendee ?? null,
     encryptedAttributes: input.encryptedAttributes ?? null,
     attendeeUid: input.attendeeUid ?? null,
+    managerHostIds: input.managerHostIds ?? null,
+    managerHostFilter: input.managerHostFilter ?? null,
     attendeeEmailHmac: input.attendeeEmailHmac ?? null,
     readOnly: input.readOnly ?? false,
     apiKeyId: input.apiKeyId ?? null,
@@ -105,6 +111,74 @@ function expiry(now: Date, seconds: number | undefined, fallback: number): Date 
     });
   }
   return new Date(now.getTime() + value * 1000);
+}
+
+/**
+ * A team page: time off and cover for the hosts named, or those matching a filter whenever it's
+ * asked. An empty scope is refused here: `{}` matches everyone, and it should never mean that.
+ */
+export async function createManagerSession(
+  env: SchedulingEnvironment,
+  input: {
+    plans?: PlanGate | undefined;
+    hosts?: readonly string[] | undefined;
+    hostFilter?: Record<string, string | string[]> | undefined;
+    expiresIn?: number | undefined;
+    readOnly?: boolean | undefined;
+    apiKeyId?: string | null;
+    createdByUserId?: string | null;
+    publicUrl: string | null;
+    now?: Date;
+  },
+): Promise<Created> {
+  const refused = (message: string, param: string) =>
+    new SchedulingError("invalid_session", message, { param });
+  if (Boolean(input.hosts) === Boolean(input.hostFilter)) {
+    throw refused("Give one of `hosts` and `host_filter`.", "hosts");
+  }
+  if (input.hostFilter && Object.keys(input.hostFilter).length === 0) {
+    throw refused("`host_filter` is empty, which would mean every host.", "host_filter");
+  }
+  if (input.hosts?.length === 0) throw refused("`hosts` is empty.", "hosts");
+  await requireLiveFeature(env, input.plans, "schedulingHostPortal");
+  const ids: string[] = [];
+  for (const ref of input.hosts ?? []) {
+    const host = await resolveHost(db, env, ref);
+    if (!ids.includes(host.id)) ids.push(host.id);
+  }
+  return mint({
+    env,
+    kind: "manager",
+    managerHostIds: input.hosts ? ids : null,
+    managerHostFilter: input.hostFilter ?? null,
+    readOnly: input.readOnly ?? false,
+    apiKeyId: input.apiKeyId ?? null,
+    createdByUserId: input.createdByUserId ?? null,
+    expiresAt: expiry(input.now ?? new Date(), input.expiresIn, HOST_DEFAULT_SECONDS),
+    publicUrl: input.publicUrl,
+  });
+}
+
+/**
+ * The team page, for a dashboard member, who can change any of this environment's hosts anyway. `{}`
+ * is every host, which is why nothing else can mint it, and it means nobody without a member behind
+ * it (`managedHosts`). What needs to know who's free runs in the API, which that page calls.
+ */
+export async function createDashboardSession(
+  env: SchedulingEnvironment,
+  input: { createdByUserId: string; publicUrl: string | null; now?: Date },
+): Promise<Created> {
+  return mint({
+    env,
+    kind: "manager",
+    managerHostIds: null,
+    managerHostFilter: {},
+    readOnly: false,
+    apiKeyId: null,
+    createdByUserId: input.createdByUserId,
+    expiresAt: expiry(input.now ?? new Date(), HOUR_SECONDS, HOUR_SECONDS),
+    publicUrl: input.publicUrl,
+  });
 }
 
 /** A host's portal: their own schedules, calendars and bookings. */
@@ -242,6 +316,9 @@ export type AuthenticatedSession = {
 const refused = () =>
   new SchedulingError("not_found", "This link has expired or isn't valid any more.");
 
+/** What a session that's over is told: nothing about why. */
+export const schedulingSessionRefused = refused;
+
 /**
  * System-level: the token finds the session. Every failure looks the same, so nothing says whether
  * a session ever existed. A deleted organization's sessions are refused along with it.
@@ -306,6 +383,7 @@ export function sessionActor(session: SessionRow): BookingActor {
   if (session.createdByUserId) return { kind: "user", id: session.createdByUserId };
   if (session.kind === "host") return { kind: "host_session", id: session.id };
   if (session.kind === "booker") return { kind: "booker_session", id: session.id };
+  if (session.kind === "manager") return { kind: "manager_session", id: session.id };
   return { kind: "manage_session", id: session.id };
 }
 

@@ -11,6 +11,9 @@ public record VerificationSend : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// `sms` or `email`.
+    /// </summary>
     [JsonPropertyName("channel")]
     public required VerificationSendChannel Channel { get; set; }
 

@@ -98,11 +98,17 @@ public final class SignEvent {
         return sequence;
     }
 
+    /**
+     * @return What happened. <code>created</code>, <code>sent</code>, <code>canceled</code> and <code>expired</code> concern the request; <code>notified</code>, <code>reminded</code>, <code>viewed</code>, <code>consented</code>, <code>signed</code> and <code>declined</code> a signer; <code>completed</code> is the last signature and <code>sealed</code> the sealed document being ready.
+     */
     @JsonProperty("type")
     public SignEventType getType() {
         return type;
     }
 
+    /**
+     * @return The id of the signer it concerns. <code>null</code>: the whole request.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("signer_id")
     public OptionalNullable<String> getSignerId() {
@@ -120,6 +126,9 @@ public final class SignEvent {
         return actor;
     }
 
+    /**
+     * @return The address the action came from. <code>null</code>: unknown, or coss.com acted.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip_address")
     public OptionalNullable<String> getIpAddress() {
@@ -129,6 +138,9 @@ public final class SignEvent {
         return ipAddress;
     }
 
+    /**
+     * @return The client's <code>User-Agent</code>. <code>null</code>: unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -138,16 +150,25 @@ public final class SignEvent {
         return userAgent;
     }
 
+    /**
+     * @return What this event recorded, depending on its type.
+     */
     @JsonProperty("details")
     public SignEventDetails getDetails() {
         return details;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
     }
 
+    /**
+     * @return The previous event's <code>hash</code>. <code>null</code> on the first event.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("previous_hash")
     public OptionalNullable<String> getPreviousHash() {
@@ -259,6 +280,9 @@ public final class SignEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened. <code>created</code>, <code>sent</code>, <code>canceled</code> and <code>expired</code> concern the request; <code>notified</code>, <code>reminded</code>, <code>viewed</code>, <code>consented</code>, <code>signed</code> and <code>declined</code> a signer; <code>completed</code> is the last signature and <code>sealed</code> the sealed document being ready.</p>
+         */
         ActorStage type(@NotNull SignEventType type);
     }
 
@@ -270,10 +294,16 @@ public final class SignEvent {
     }
 
     public interface DetailsStage {
+        /**
+         * <p>What this event recorded, depending on its type.</p>
+         */
         OccurredAtStage details(@NotNull SignEventDetails details);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         HashStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -291,6 +321,9 @@ public final class SignEvent {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The id of the signer it concerns. <code>null</code>: the whole request.</p>
+         */
         _FinalStage signerId(OptionalNullable<String> signerId);
 
         _FinalStage signerId(String signerId);
@@ -299,6 +332,9 @@ public final class SignEvent {
 
         _FinalStage signerId(Nullable<String> signerId);
 
+        /**
+         * <p>The address the action came from. <code>null</code>: unknown, or coss.com acted.</p>
+         */
         _FinalStage ipAddress(OptionalNullable<String> ipAddress);
 
         _FinalStage ipAddress(String ipAddress);
@@ -307,6 +343,9 @@ public final class SignEvent {
 
         _FinalStage ipAddress(Nullable<String> ipAddress);
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         */
         _FinalStage userAgent(OptionalNullable<String> userAgent);
 
         _FinalStage userAgent(String userAgent);
@@ -315,6 +354,9 @@ public final class SignEvent {
 
         _FinalStage userAgent(Nullable<String> userAgent);
 
+        /**
+         * <p>The previous event's <code>hash</code>. <code>null</code> on the first event.</p>
+         */
         _FinalStage previousHash(OptionalNullable<String> previousHash);
 
         _FinalStage previousHash(String previousHash);
@@ -406,6 +448,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>What happened. <code>created</code>, <code>sent</code>, <code>canceled</code> and <code>expired</code> concern the request; <code>notified</code>, <code>reminded</code>, <code>viewed</code>, <code>consented</code>, <code>signed</code> and <code>declined</code> a signer; <code>completed</code> is the last signature and <code>sealed</code> the sealed document being ready.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ActorStage type(@NotNull SignEventType type) {
@@ -424,6 +470,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>What this event recorded, depending on its type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("details")
         public OccurredAtStage details(@NotNull SignEventDetails details) {
@@ -431,6 +481,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public HashStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -449,6 +503,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The previous event's <code>hash</code>. <code>null</code> on the first event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previousHash(Nullable<String> previousHash) {
             if (previousHash.isNull()) {
@@ -461,6 +519,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The previous event's <code>hash</code>. <code>null</code> on the first event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previousHash(Optional<String> previousHash) {
             if (previousHash.isPresent()) {
@@ -471,12 +533,19 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The previous event's <code>hash</code>. <code>null</code> on the first event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previousHash(String previousHash) {
             this.previousHash = OptionalNullable.of(previousHash);
             return this;
         }
 
+        /**
+         * <p>The previous event's <code>hash</code>. <code>null</code> on the first event.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "previous_hash", nulls = Nulls.SKIP)
         public _FinalStage previousHash(OptionalNullable<String> previousHash) {
@@ -484,6 +553,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Nullable<String> userAgent) {
             if (userAgent.isNull()) {
@@ -496,6 +569,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Optional<String> userAgent) {
             if (userAgent.isPresent()) {
@@ -506,12 +583,19 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(String userAgent) {
             this.userAgent = OptionalNullable.of(userAgent);
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public _FinalStage userAgent(OptionalNullable<String> userAgent) {
@@ -519,6 +603,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The address the action came from. <code>null</code>: unknown, or coss.com acted.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ipAddress(Nullable<String> ipAddress) {
             if (ipAddress.isNull()) {
@@ -531,6 +619,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The address the action came from. <code>null</code>: unknown, or coss.com acted.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ipAddress(Optional<String> ipAddress) {
             if (ipAddress.isPresent()) {
@@ -541,12 +633,19 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The address the action came from. <code>null</code>: unknown, or coss.com acted.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ipAddress(String ipAddress) {
             this.ipAddress = OptionalNullable.of(ipAddress);
             return this;
         }
 
+        /**
+         * <p>The address the action came from. <code>null</code>: unknown, or coss.com acted.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "ip_address", nulls = Nulls.SKIP)
         public _FinalStage ipAddress(OptionalNullable<String> ipAddress) {
@@ -554,6 +653,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The id of the signer it concerns. <code>null</code>: the whole request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signerId(Nullable<String> signerId) {
             if (signerId.isNull()) {
@@ -566,6 +669,10 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The id of the signer it concerns. <code>null</code>: the whole request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signerId(Optional<String> signerId) {
             if (signerId.isPresent()) {
@@ -576,12 +683,19 @@ public final class SignEvent {
             return this;
         }
 
+        /**
+         * <p>The id of the signer it concerns. <code>null</code>: the whole request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage signerId(String signerId) {
             this.signerId = OptionalNullable.of(signerId);
             return this;
         }
 
+        /**
+         * <p>The id of the signer it concerns. <code>null</code>: the whole request.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "signer_id", nulls = Nulls.SKIP)
         public _FinalStage signerId(OptionalNullable<String> signerId) {

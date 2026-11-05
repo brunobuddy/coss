@@ -24,6 +24,8 @@ public class ListTest : BaseMockServerTest
                     "api",
                     "api"
                   ],
+                  "format": "ndjson",
+                  "auth_header_name": "auth_header_name",
                   "enabled": true,
                   "disabled_reason": "manual",
                   "disabled_at": "2024-01-15T09:30:00.000Z",
@@ -39,6 +41,8 @@ public class ListTest : BaseMockServerTest
                     "api",
                     "api"
                   ],
+                  "format": "ndjson",
+                  "auth_header_name": "auth_header_name",
                   "enabled": true,
                   "disabled_reason": "manual",
                   "disabled_at": "2024-01-15T09:30:00.000Z",
@@ -79,6 +83,8 @@ public class ListTest : BaseMockServerTest
                     "api",
                     "email"
                   ],
+                  "format": "ndjson",
+                  "auth_header_name": null,
                   "enabled": true,
                   "disabled_reason": null,
                   "disabled_at": null,

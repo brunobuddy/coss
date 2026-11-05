@@ -59,16 +59,25 @@ public final class UpdateRiskSettingsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Scores at or above it are <code>review</code>.
+     */
     @JsonProperty("review_threshold")
     public Optional<Double> getReviewThreshold() {
         return reviewThreshold;
     }
 
+    /**
+     * @return Scores at or above it are <code>block</code>.
+     */
     @JsonProperty("block_threshold")
     public Optional<Double> getBlockThreshold() {
         return blockThreshold;
     }
 
+    /**
+     * @return Reasons that never fire in this environment. Replaces the list.
+     */
     @JsonProperty("disabled_reasons")
     public Optional<List<UpdateRiskSettingsRequestDisabledReasonsItem>> getDisabledReasons() {
         return disabledReasons;
@@ -177,6 +186,9 @@ public final class UpdateRiskSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Scores at or above it are <code>review</code>.</p>
+         */
         @JsonSetter(value = "review_threshold", nulls = Nulls.SKIP)
         public Builder reviewThreshold(Optional<Double> reviewThreshold) {
             this.reviewThreshold = reviewThreshold;
@@ -188,6 +200,9 @@ public final class UpdateRiskSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Scores at or above it are <code>block</code>.</p>
+         */
         @JsonSetter(value = "block_threshold", nulls = Nulls.SKIP)
         public Builder blockThreshold(Optional<Double> blockThreshold) {
             this.blockThreshold = blockThreshold;
@@ -199,6 +214,9 @@ public final class UpdateRiskSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Reasons that never fire in this environment. Replaces the list.</p>
+         */
         @JsonSetter(value = "disabled_reasons", nulls = Nulls.SKIP)
         public Builder disabledReasons(Optional<List<UpdateRiskSettingsRequestDisabledReasonsItem>> disabledReasons) {
             this.disabledReasons = disabledReasons;

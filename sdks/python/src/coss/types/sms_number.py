@@ -14,10 +14,26 @@ from .sms_number_status import SmsNumberStatus
 class SmsNumber(UniversalBaseModel):
     object: SmsNumberObject
     id: str
-    phone_number: str
-    kind: SmsNumberKind
-    country: str
-    status: SmsNumberStatus
+    phone_number: str = pydantic.Field()
+    """
+    The number, in E.164.
+    """
+
+    kind: SmsNumberKind = pydantic.Field()
+    """
+    `local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).
+    """
+
+    country: str = pydantic.Field()
+    """
+    Its country (ISO 3166-1 alpha-2).
+    """
+
+    status: SmsNumberStatus = pydantic.Field()
+    """
+    `pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.
+    """
+
     registration_status: typing.Optional[SmsNumberRegistrationStatus] = pydantic.Field(default=None)
     """
     Its carrier registration's status; live sends need `approved`.

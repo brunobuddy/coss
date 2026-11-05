@@ -22,7 +22,7 @@ class Audience extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Your name for the list, unique in the environment.
      */
     #[JsonProperty('name')]
     public string $name;

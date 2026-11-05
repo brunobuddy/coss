@@ -7,8 +7,19 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class DmarcReportSummaryReporter(UniversalBaseModel):
-    org_name: str
-    email: typing.Optional[str] = None
+    """
+    Who sent the report.
+    """
+
+    org_name: str = pydantic.Field()
+    """
+    The reporting organization.
+    """
+
+    email: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Its contact address.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

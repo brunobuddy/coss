@@ -178,16 +178,25 @@ public final class InboxMessage {
         return from;
     }
 
+    /**
+     * @return Addresses in the <code>To</code> header.
+     */
     @JsonProperty("to")
     public List<String> getTo() {
         return to;
     }
 
+    /**
+     * @return Addresses in the <code>Cc</code> header.
+     */
     @JsonProperty("cc")
     public List<String> getCc() {
         return cc;
     }
 
+    /**
+     * @return The subject. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("subject")
     public OptionalNullable<String> getSubject() {
@@ -257,6 +266,9 @@ public final class InboxMessage {
         return createdAt;
     }
 
+    /**
+     * @return Addresses in the <code>Reply-To</code> header.
+     */
     @JsonProperty("reply_to")
     public List<String> getReplyTo() {
         return replyTo;
@@ -274,6 +286,9 @@ public final class InboxMessage {
         return messageId;
     }
 
+    /**
+     * @return The message it answers, by <code>Message-ID</code>. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("in_reply_to")
     public OptionalNullable<String> getInReplyTo() {
@@ -283,11 +298,17 @@ public final class InboxMessage {
         return inReplyTo;
     }
 
+    /**
+     * @return The <code>Message-ID</code>s of the conversation so far.
+     */
     @JsonProperty("references")
     public List<String> getReferences() {
         return references;
     }
 
+    /**
+     * @return The plain text part. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("text")
     public OptionalNullable<String> getText() {
@@ -536,18 +557,27 @@ public final class InboxMessage {
 
         _FinalStage from(Nullable<String> from);
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         */
         _FinalStage to(List<String> to);
 
         _FinalStage addTo(String to);
 
         _FinalStage addAllTo(List<String> to);
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         */
         _FinalStage cc(List<String> cc);
 
         _FinalStage addCc(String cc);
 
         _FinalStage addAllCc(List<String> cc);
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         */
         _FinalStage subject(OptionalNullable<String> subject);
 
         _FinalStage subject(String subject);
@@ -598,6 +628,9 @@ public final class InboxMessage {
 
         _FinalStage emailId(Nullable<String> emailId);
 
+        /**
+         * <p>Addresses in the <code>Reply-To</code> header.</p>
+         */
         _FinalStage replyTo(List<String> replyTo);
 
         _FinalStage addReplyTo(String replyTo);
@@ -615,6 +648,9 @@ public final class InboxMessage {
 
         _FinalStage messageId(Nullable<String> messageId);
 
+        /**
+         * <p>The message it answers, by <code>Message-ID</code>. <code>null</code>: none.</p>
+         */
         _FinalStage inReplyTo(OptionalNullable<String> inReplyTo);
 
         _FinalStage inReplyTo(String inReplyTo);
@@ -623,12 +659,18 @@ public final class InboxMessage {
 
         _FinalStage inReplyTo(Nullable<String> inReplyTo);
 
+        /**
+         * <p>The <code>Message-ID</code>s of the conversation so far.</p>
+         */
         _FinalStage references(List<String> references);
 
         _FinalStage addReferences(String references);
 
         _FinalStage addAllReferences(List<String> references);
 
+        /**
+         * <p>The plain text part. <code>null</code>: none.</p>
+         */
         _FinalStage text(OptionalNullable<String> text);
 
         _FinalStage text(String text);
@@ -937,6 +979,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Nullable<String> text) {
             if (text.isNull()) {
@@ -949,6 +995,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Optional<String> text) {
             if (text.isPresent()) {
@@ -959,12 +1009,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(String text) {
             this.text = OptionalNullable.of(text);
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public _FinalStage text(OptionalNullable<String> text) {
@@ -972,6 +1029,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The <code>Message-ID</code>s of the conversation so far.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReferences(List<String> references) {
             if (references != null) {
@@ -980,12 +1041,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The <code>Message-ID</code>s of the conversation so far.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReferences(String references) {
             this.references.add(references);
             return this;
         }
 
+        /**
+         * <p>The <code>Message-ID</code>s of the conversation so far.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "references", nulls = Nulls.SKIP)
         public _FinalStage references(List<String> references) {
@@ -996,6 +1064,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The message it answers, by <code>Message-ID</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage inReplyTo(Nullable<String> inReplyTo) {
             if (inReplyTo.isNull()) {
@@ -1008,6 +1080,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The message it answers, by <code>Message-ID</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage inReplyTo(Optional<String> inReplyTo) {
             if (inReplyTo.isPresent()) {
@@ -1018,12 +1094,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The message it answers, by <code>Message-ID</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage inReplyTo(String inReplyTo) {
             this.inReplyTo = OptionalNullable.of(inReplyTo);
             return this;
         }
 
+        /**
+         * <p>The message it answers, by <code>Message-ID</code>. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "in_reply_to", nulls = Nulls.SKIP)
         public _FinalStage inReplyTo(OptionalNullable<String> inReplyTo) {
@@ -1081,6 +1164,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Reply-To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReplyTo(List<String> replyTo) {
             if (replyTo != null) {
@@ -1089,12 +1176,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Reply-To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReplyTo(String replyTo) {
             this.replyTo.add(replyTo);
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Reply-To</code> header.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public _FinalStage replyTo(List<String> replyTo) {
@@ -1290,6 +1384,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Nullable<String> subject) {
             if (subject.isNull()) {
@@ -1302,6 +1400,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Optional<String> subject) {
             if (subject.isPresent()) {
@@ -1312,12 +1414,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(String subject) {
             this.subject = OptionalNullable.of(subject);
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "subject", nulls = Nulls.SKIP)
         public _FinalStage subject(OptionalNullable<String> subject) {
@@ -1325,6 +1434,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllCc(List<String> cc) {
             if (cc != null) {
@@ -1333,12 +1446,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addCc(String cc) {
             this.cc.add(cc);
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public _FinalStage cc(List<String> cc) {
@@ -1349,6 +1469,10 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTo(List<String> to) {
             if (to != null) {
@@ -1357,12 +1481,19 @@ public final class InboxMessage {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTo(String to) {
             this.to.add(to);
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "to", nulls = Nulls.SKIP)
         public _FinalStage to(List<String> to) {

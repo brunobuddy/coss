@@ -26,6 +26,10 @@ export type SchedulingDeps = {
   publicUrl?: string | null | undefined;
   /** Screens text that lands in emails, when it's set up (live only). */
   screenSetup?: SetupScreening | undefined;
+  /** Whether an address is on a domain the organization verified: `email`'s, injected. */
+  verifiedAddress?:
+    | ((input: { organizationId: string; address: string }) => Promise<boolean>)
+    | undefined;
   /** The clock, for tests. */
   now?: () => Date;
 };

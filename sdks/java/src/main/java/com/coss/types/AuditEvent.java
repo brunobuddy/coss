@@ -153,6 +153,9 @@ public final class AuditEvent {
         return targetType;
     }
 
+    /**
+     * @return The id of what it acted on. <code>null</code>: nothing in particular.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("target_id")
     public OptionalNullable<String> getTargetId() {
@@ -206,6 +209,9 @@ public final class AuditEvent {
         return metadata;
     }
 
+    /**
+     * @return The actor's address. <code>null</code>: unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("client_ip")
     public OptionalNullable<String> getClientIp() {
@@ -215,6 +221,9 @@ public final class AuditEvent {
         return clientIp;
     }
 
+    /**
+     * @return The actor's <code>User-Agent</code>. <code>null</code>: unknown.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -391,6 +400,9 @@ public final class AuditEvent {
 
         _FinalStage targetType(Nullable<String> targetType);
 
+        /**
+         * <p>The id of what it acted on. <code>null</code>: nothing in particular.</p>
+         */
         _FinalStage targetId(OptionalNullable<String> targetId);
 
         _FinalStage targetId(String targetId);
@@ -441,6 +453,9 @@ public final class AuditEvent {
 
         _FinalStage metadata(String key, Object value);
 
+        /**
+         * <p>The actor's address. <code>null</code>: unknown.</p>
+         */
         _FinalStage clientIp(OptionalNullable<String> clientIp);
 
         _FinalStage clientIp(String clientIp);
@@ -449,6 +464,9 @@ public final class AuditEvent {
 
         _FinalStage clientIp(Nullable<String> clientIp);
 
+        /**
+         * <p>The actor's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         */
         _FinalStage userAgent(OptionalNullable<String> userAgent);
 
         _FinalStage userAgent(String userAgent);
@@ -566,6 +584,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Nullable<String> userAgent) {
             if (userAgent.isNull()) {
@@ -578,6 +600,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Optional<String> userAgent) {
             if (userAgent.isPresent()) {
@@ -588,12 +614,19 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(String userAgent) {
             this.userAgent = OptionalNullable.of(userAgent);
             return this;
         }
 
+        /**
+         * <p>The actor's <code>User-Agent</code>. <code>null</code>: unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public _FinalStage userAgent(OptionalNullable<String> userAgent) {
@@ -601,6 +634,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's address. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(Nullable<String> clientIp) {
             if (clientIp.isNull()) {
@@ -613,6 +650,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's address. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(Optional<String> clientIp) {
             if (clientIp.isPresent()) {
@@ -623,12 +664,19 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The actor's address. <code>null</code>: unknown.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(String clientIp) {
             this.clientIp = OptionalNullable.of(clientIp);
             return this;
         }
 
+        /**
+         * <p>The actor's address. <code>null</code>: unknown.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "client_ip", nulls = Nulls.SKIP)
         public _FinalStage clientIp(OptionalNullable<String> clientIp) {
@@ -821,6 +869,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The id of what it acted on. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage targetId(Nullable<String> targetId) {
             if (targetId.isNull()) {
@@ -833,6 +885,10 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The id of what it acted on. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage targetId(Optional<String> targetId) {
             if (targetId.isPresent()) {
@@ -843,12 +899,19 @@ public final class AuditEvent {
             return this;
         }
 
+        /**
+         * <p>The id of what it acted on. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage targetId(String targetId) {
             this.targetId = OptionalNullable.of(targetId);
             return this;
         }
 
+        /**
+         * <p>The id of what it acted on. <code>null</code>: nothing in particular.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "target_id", nulls = Nulls.SKIP)
         public _FinalStage targetId(OptionalNullable<String> targetId) {

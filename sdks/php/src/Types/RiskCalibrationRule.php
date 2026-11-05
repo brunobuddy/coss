@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class RiskCalibrationRule extends JsonSerializableType
 {
     /**
-     * @var string $rule
+     * @var string $rule The rule's id.
      */
     #[JsonProperty('rule')]
     public string $rule;
 
     /**
-     * @var string $name
+     * @var string $name The rule's name.
      */
     #[JsonProperty('name')]
     public string $name;

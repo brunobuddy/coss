@@ -5,10 +5,13 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * How the captcha went. `null` when no captcha applies.
+ */
 class RiskCaptchaSignals extends JsonSerializableType
 {
     /**
-     * @var bool $provided
+     * @var bool $provided Whether the request carried a token.
      */
     #[JsonProperty('provided')]
     public bool $provided;

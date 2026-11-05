@@ -49,6 +49,9 @@ public final class TrackingDomainRecord {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The record's type.
+     */
     @JsonProperty("type")
     public TrackingDomainRecordType getType() {
         return type;
@@ -120,6 +123,9 @@ public final class TrackingDomainRecord {
     }
 
     public interface TypeStage {
+        /**
+         * <p>The record's type.</p>
+         */
         NameStage type(@NotNull TrackingDomainRecordType type);
 
         Builder from(TrackingDomainRecord other);
@@ -190,6 +196,10 @@ public final class TrackingDomainRecord {
             return this;
         }
 
+        /**
+         * <p>The record's type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public NameStage type(@NotNull TrackingDomainRecordType type) {

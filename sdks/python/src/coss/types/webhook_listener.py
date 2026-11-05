@@ -21,7 +21,11 @@ class WebhookListener(UniversalBaseModel):
     Event types the listener receives. An empty array means every event type.
     """
 
-    description: typing.Optional[str] = None
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your note about it, such as the machine it's on. `null`: none.
+    """
+
     expires_at: dt.datetime = pydantic.Field()
     """
     When the listener closes unless it is polled again; every poll moves it 10 minutes ahead.

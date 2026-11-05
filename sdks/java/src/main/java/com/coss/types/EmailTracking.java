@@ -91,11 +91,17 @@ public final class EmailTracking {
         return unsubscribe;
     }
 
+    /**
+     * @return Times opened. Mail clients that prefetch images inflate it.
+     */
     @JsonProperty("open_count")
     public long getOpenCount() {
         return openCount;
     }
 
+    /**
+     * @return When it was first opened. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_opened_at")
     public OptionalNullable<OffsetDateTime> getFirstOpenedAt() {
@@ -105,6 +111,9 @@ public final class EmailTracking {
         return firstOpenedAt;
     }
 
+    /**
+     * @return When it was last opened. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_opened_at")
     public OptionalNullable<OffsetDateTime> getLastOpenedAt() {
@@ -114,11 +123,17 @@ public final class EmailTracking {
         return lastOpenedAt;
     }
 
+    /**
+     * @return Link clicks. Link scanners inflate it.
+     */
     @JsonProperty("click_count")
     public long getClickCount() {
         return clickCount;
     }
 
+    /**
+     * @return When a link was first clicked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_clicked_at")
     public OptionalNullable<OffsetDateTime> getFirstClickedAt() {
@@ -128,6 +143,9 @@ public final class EmailTracking {
         return firstClickedAt;
     }
 
+    /**
+     * @return When a link was last clicked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_clicked_at")
     public OptionalNullable<OffsetDateTime> getLastClickedAt() {
@@ -231,10 +249,16 @@ public final class EmailTracking {
     }
 
     public interface OpenCountStage {
+        /**
+         * <p>Times opened. Mail clients that prefetch images inflate it.</p>
+         */
         ClickCountStage openCount(long openCount);
     }
 
     public interface ClickCountStage {
+        /**
+         * <p>Link clicks. Link scanners inflate it.</p>
+         */
         _FinalStage clickCount(long clickCount);
     }
 
@@ -245,6 +269,9 @@ public final class EmailTracking {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When it was first opened. <code>null</code>: not yet.</p>
+         */
         _FinalStage firstOpenedAt(OptionalNullable<OffsetDateTime> firstOpenedAt);
 
         _FinalStage firstOpenedAt(OffsetDateTime firstOpenedAt);
@@ -253,6 +280,9 @@ public final class EmailTracking {
 
         _FinalStage firstOpenedAt(Nullable<OffsetDateTime> firstOpenedAt);
 
+        /**
+         * <p>When it was last opened. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastOpenedAt(OptionalNullable<OffsetDateTime> lastOpenedAt);
 
         _FinalStage lastOpenedAt(OffsetDateTime lastOpenedAt);
@@ -261,6 +291,9 @@ public final class EmailTracking {
 
         _FinalStage lastOpenedAt(Nullable<OffsetDateTime> lastOpenedAt);
 
+        /**
+         * <p>When a link was first clicked. <code>null</code>: not yet.</p>
+         */
         _FinalStage firstClickedAt(OptionalNullable<OffsetDateTime> firstClickedAt);
 
         _FinalStage firstClickedAt(OffsetDateTime firstClickedAt);
@@ -269,6 +302,9 @@ public final class EmailTracking {
 
         _FinalStage firstClickedAt(Nullable<OffsetDateTime> firstClickedAt);
 
+        /**
+         * <p>When a link was last clicked. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastClickedAt(OptionalNullable<OffsetDateTime> lastClickedAt);
 
         _FinalStage lastClickedAt(OffsetDateTime lastClickedAt);
@@ -351,6 +387,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>Times opened. Mail clients that prefetch images inflate it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("open_count")
         public ClickCountStage openCount(long openCount) {
@@ -358,6 +398,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>Link clicks. Link scanners inflate it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("click_count")
         public _FinalStage clickCount(long clickCount) {
@@ -365,6 +409,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(Nullable<OffsetDateTime> lastClickedAt) {
             if (lastClickedAt.isNull()) {
@@ -377,6 +425,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(Optional<OffsetDateTime> lastClickedAt) {
             if (lastClickedAt.isPresent()) {
@@ -387,12 +439,19 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was last clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastClickedAt(OffsetDateTime lastClickedAt) {
             this.lastClickedAt = OptionalNullable.of(lastClickedAt);
             return this;
         }
 
+        /**
+         * <p>When a link was last clicked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_clicked_at", nulls = Nulls.SKIP)
         public _FinalStage lastClickedAt(OptionalNullable<OffsetDateTime> lastClickedAt) {
@@ -400,6 +459,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(Nullable<OffsetDateTime> firstClickedAt) {
             if (firstClickedAt.isNull()) {
@@ -412,6 +475,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(Optional<OffsetDateTime> firstClickedAt) {
             if (firstClickedAt.isPresent()) {
@@ -422,12 +489,19 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When a link was first clicked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstClickedAt(OffsetDateTime firstClickedAt) {
             this.firstClickedAt = OptionalNullable.of(firstClickedAt);
             return this;
         }
 
+        /**
+         * <p>When a link was first clicked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_clicked_at", nulls = Nulls.SKIP)
         public _FinalStage firstClickedAt(OptionalNullable<OffsetDateTime> firstClickedAt) {
@@ -435,6 +509,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was last opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastOpenedAt(Nullable<OffsetDateTime> lastOpenedAt) {
             if (lastOpenedAt.isNull()) {
@@ -447,6 +525,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was last opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastOpenedAt(Optional<OffsetDateTime> lastOpenedAt) {
             if (lastOpenedAt.isPresent()) {
@@ -457,12 +539,19 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was last opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastOpenedAt(OffsetDateTime lastOpenedAt) {
             this.lastOpenedAt = OptionalNullable.of(lastOpenedAt);
             return this;
         }
 
+        /**
+         * <p>When it was last opened. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_opened_at", nulls = Nulls.SKIP)
         public _FinalStage lastOpenedAt(OptionalNullable<OffsetDateTime> lastOpenedAt) {
@@ -470,6 +559,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was first opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstOpenedAt(Nullable<OffsetDateTime> firstOpenedAt) {
             if (firstOpenedAt.isNull()) {
@@ -482,6 +575,10 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was first opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstOpenedAt(Optional<OffsetDateTime> firstOpenedAt) {
             if (firstOpenedAt.isPresent()) {
@@ -492,12 +589,19 @@ public final class EmailTracking {
             return this;
         }
 
+        /**
+         * <p>When it was first opened. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstOpenedAt(OffsetDateTime firstOpenedAt) {
             this.firstOpenedAt = OptionalNullable.of(firstOpenedAt);
             return this;
         }
 
+        /**
+         * <p>When it was first opened. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_opened_at", nulls = Nulls.SKIP)
         public _FinalStage firstOpenedAt(OptionalNullable<OffsetDateTime> firstOpenedAt) {

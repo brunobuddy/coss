@@ -72,18 +72,30 @@ public class DocumentsClient {
         return this.rawClient.upload(request, requestOptions).body();
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public SignDocument get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public SignDocument get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public SignDocument get(String id, GetDocumentsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public SignDocument get(String id, GetDocumentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

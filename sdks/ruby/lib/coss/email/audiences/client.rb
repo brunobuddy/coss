@@ -54,6 +54,9 @@ module Coss
           end
         end
 
+        # Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its
+        # members with `POST /v1/audiences/{id}/contacts`.
+        #
         # @param request_options [Hash]
         # @param params [Coss::Email::Audiences::Types::CreateAudienceRequest]
         # @option request_options [String] :base_url
@@ -92,6 +95,8 @@ module Coss
           end
         end
 
+        # One audience of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -164,6 +169,8 @@ module Coss
           end
         end
 
+        # Renames an audience. Its members stay.
+        #
         # @param request_options [Hash]
         # @param params [Coss::Email::Audiences::Types::UpdateAudienceRequest]
         # @option request_options [String] :base_url
@@ -299,6 +306,8 @@ module Coss
           end
         end
 
+        # Takes a contact out of the audience. The contact itself stays.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

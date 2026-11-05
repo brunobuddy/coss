@@ -389,6 +389,9 @@ public partial class ReceivedClient : IReceivedClient
         );
     }
 
+    /// <summary>
+    /// One message received on a number of the organization and routed to the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Sms.Received.GetAsync(
     ///     new Coss.Sms_.GetReceivedRequest { Id = "smsin_01k7c8m4q2f3e9v6t5r1n0p8yz" }

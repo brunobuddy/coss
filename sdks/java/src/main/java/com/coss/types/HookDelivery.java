@@ -90,16 +90,25 @@ public final class HookDelivery {
         return id;
     }
 
+    /**
+     * @return The id of the application.
+     */
     @JsonProperty("application_id")
     public String getApplicationId() {
         return applicationId;
     }
 
+    /**
+     * @return The id of the message being delivered.
+     */
     @JsonProperty("message_id")
     public String getMessageId() {
         return messageId;
     }
 
+    /**
+     * @return The id of the endpoint it's delivered to.
+     */
     @JsonProperty("endpoint_id")
     public String getEndpointId() {
         return endpointId;
@@ -113,11 +122,17 @@ public final class HookDelivery {
         return status;
     }
 
+    /**
+     * @return How many attempts were made so far.
+     */
     @JsonProperty("attempt_count")
     public long getAttemptCount() {
         return attemptCount;
     }
 
+    /**
+     * @return When the next attempt runs. <code>null</code>: none is due, because it finished.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("next_attempt_at")
     public OptionalNullable<OffsetDateTime> getNextAttemptAt() {
@@ -127,6 +142,9 @@ public final class HookDelivery {
         return nextAttemptAt;
     }
 
+    /**
+     * @return The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_status_code")
     public OptionalNullable<Long> getLastStatusCode() {
@@ -136,6 +154,9 @@ public final class HookDelivery {
         return lastStatusCode;
     }
 
+    /**
+     * @return Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_error")
     public OptionalNullable<String> getLastError() {
@@ -150,6 +171,9 @@ public final class HookDelivery {
         return createdAt;
     }
 
+    /**
+     * @return When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("finished_at")
     public OptionalNullable<OffsetDateTime> getFinishedAt() {
@@ -246,14 +270,23 @@ public final class HookDelivery {
     }
 
     public interface ApplicationIdStage {
+        /**
+         * <p>The id of the application.</p>
+         */
         MessageIdStage applicationId(@NotNull String applicationId);
     }
 
     public interface MessageIdStage {
+        /**
+         * <p>The id of the message being delivered.</p>
+         */
         EndpointIdStage messageId(@NotNull String messageId);
     }
 
     public interface EndpointIdStage {
+        /**
+         * <p>The id of the endpoint it's delivered to.</p>
+         */
         StatusStage endpointId(@NotNull String endpointId);
     }
 
@@ -265,6 +298,9 @@ public final class HookDelivery {
     }
 
     public interface AttemptCountStage {
+        /**
+         * <p>How many attempts were made so far.</p>
+         */
         CreatedAtStage attemptCount(long attemptCount);
     }
 
@@ -279,6 +315,9 @@ public final class HookDelivery {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When the next attempt runs. <code>null</code>: none is due, because it finished.</p>
+         */
         _FinalStage nextAttemptAt(OptionalNullable<OffsetDateTime> nextAttemptAt);
 
         _FinalStage nextAttemptAt(OffsetDateTime nextAttemptAt);
@@ -287,6 +326,9 @@ public final class HookDelivery {
 
         _FinalStage nextAttemptAt(Nullable<OffsetDateTime> nextAttemptAt);
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode);
 
         _FinalStage lastStatusCode(Long lastStatusCode);
@@ -295,6 +337,9 @@ public final class HookDelivery {
 
         _FinalStage lastStatusCode(Nullable<Long> lastStatusCode);
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         _FinalStage lastError(OptionalNullable<String> lastError);
 
         _FinalStage lastError(String lastError);
@@ -303,6 +348,9 @@ public final class HookDelivery {
 
         _FinalStage lastError(Nullable<String> lastError);
 
+        /**
+         * <p>When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.</p>
+         */
         _FinalStage finishedAt(OptionalNullable<OffsetDateTime> finishedAt);
 
         _FinalStage finishedAt(OffsetDateTime finishedAt);
@@ -383,6 +431,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The id of the application.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("application_id")
         public MessageIdStage applicationId(@NotNull String applicationId) {
@@ -390,6 +442,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The id of the message being delivered.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message_id")
         public EndpointIdStage messageId(@NotNull String messageId) {
@@ -397,6 +453,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The id of the endpoint it's delivered to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("endpoint_id")
         public StatusStage endpointId(@NotNull String endpointId) {
@@ -415,6 +475,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>How many attempts were made so far.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("attempt_count")
         public CreatedAtStage attemptCount(long attemptCount) {
@@ -429,6 +493,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finishedAt(Nullable<OffsetDateTime> finishedAt) {
             if (finishedAt.isNull()) {
@@ -441,6 +509,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finishedAt(Optional<OffsetDateTime> finishedAt) {
             if (finishedAt.isPresent()) {
@@ -451,12 +523,19 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finishedAt(OffsetDateTime finishedAt) {
             this.finishedAt = OptionalNullable.of(finishedAt);
             return this;
         }
 
+        /**
+         * <p>When it <code>succeeded</code> or <code>failed</code>. <code>null</code>: still <code>pending</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "finished_at", nulls = Nulls.SKIP)
         public _FinalStage finishedAt(OptionalNullable<OffsetDateTime> finishedAt) {
@@ -464,6 +543,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Nullable<String> lastError) {
             if (lastError.isNull()) {
@@ -476,6 +559,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Optional<String> lastError) {
             if (lastError.isPresent()) {
@@ -486,12 +573,19 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(String lastError) {
             this.lastError = OptionalNullable.of(lastError);
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_error", nulls = Nulls.SKIP)
         public _FinalStage lastError(OptionalNullable<String> lastError) {
@@ -499,6 +593,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Nullable<Long> lastStatusCode) {
             if (lastStatusCode.isNull()) {
@@ -511,6 +609,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Optional<Long> lastStatusCode) {
             if (lastStatusCode.isPresent()) {
@@ -521,12 +623,19 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Long lastStatusCode) {
             this.lastStatusCode = OptionalNullable.of(lastStatusCode);
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_status_code", nulls = Nulls.SKIP)
         public _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode) {
@@ -534,6 +643,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When the next attempt runs. <code>null</code>: none is due, because it finished.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage nextAttemptAt(Nullable<OffsetDateTime> nextAttemptAt) {
             if (nextAttemptAt.isNull()) {
@@ -546,6 +659,10 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When the next attempt runs. <code>null</code>: none is due, because it finished.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage nextAttemptAt(Optional<OffsetDateTime> nextAttemptAt) {
             if (nextAttemptAt.isPresent()) {
@@ -556,12 +673,19 @@ public final class HookDelivery {
             return this;
         }
 
+        /**
+         * <p>When the next attempt runs. <code>null</code>: none is due, because it finished.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage nextAttemptAt(OffsetDateTime nextAttemptAt) {
             this.nextAttemptAt = OptionalNullable.of(nextAttemptAt);
             return this;
         }
 
+        /**
+         * <p>When the next attempt runs. <code>null</code>: none is due, because it finished.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "next_attempt_at", nulls = Nulls.SKIP)
         public _FinalStage nextAttemptAt(OptionalNullable<OffsetDateTime> nextAttemptAt) {

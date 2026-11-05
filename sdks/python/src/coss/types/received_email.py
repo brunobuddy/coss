@@ -23,7 +23,11 @@ class ReceivedEmail(UniversalBaseModel):
     `received`, or `blocked` when the message carried a virus: then only its envelope and verdicts are kept, never its content.
     """
 
-    blocked_reason: typing.Optional[ReceivedEmailBlockedReason] = None
+    blocked_reason: typing.Optional[ReceivedEmailBlockedReason] = pydantic.Field(default=None)
+    """
+    Why it's `blocked`. `null`: it isn't.
+    """
+
     mail_from: str = pydantic.Field()
     """
     The envelope sender (`MAIL FROM`); empty for bounces.
@@ -53,13 +57,21 @@ class ReceivedEmail(UniversalBaseModel):
     The `Cc` header's addresses.
     """
 
-    subject: typing.Optional[str] = None
+    subject: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The `Subject` header. `null`: none.
+    """
+
     message_id: typing.Optional[str] = pydantic.Field(default=None)
     """
     The `Message-ID` header.
     """
 
-    attachments: typing.List[ReceivedEmailAttachment]
+    attachments: typing.List[ReceivedEmailAttachment] = pydantic.Field()
+    """
+    Its attachments, without their bytes.
+    """
+
     size: int = pydantic.Field()
     """
     Size of the raw message in bytes.
@@ -76,9 +88,21 @@ class ReceivedEmail(UniversalBaseModel):
     Whether it was received by a sandbox environment.
     """
 
-    received_at: dt.datetime
-    reply_to: typing.List[str]
-    in_reply_to: typing.Optional[str] = None
+    received_at: dt.datetime = pydantic.Field()
+    """
+    When it arrived.
+    """
+
+    reply_to: typing.List[str] = pydantic.Field()
+    """
+    The `Reply-To` header's addresses.
+    """
+
+    in_reply_to: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The `In-Reply-To` header. `null`: none.
+    """
+
     references: typing.List[str] = pydantic.Field()
     """
     Message ids of the `References` header.
@@ -94,8 +118,16 @@ class ReceivedEmail(UniversalBaseModel):
     Every header in message order (duplicates included).
     """
 
-    text: typing.Optional[str] = None
-    html: typing.Optional[str] = None
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The plain text body. `null`: none, or it's `blocked`.
+    """
+
+    html: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The HTML body. `null`: none, or it's `blocked`.
+    """
+
     truncated: bool = pydantic.Field()
     """
     Whether `text`, `html` or `headers` were shortened (2 MB per body, 64 KB of headers). The raw message always has all of it.

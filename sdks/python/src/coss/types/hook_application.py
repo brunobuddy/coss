@@ -16,8 +16,16 @@ class HookApplication(UniversalBaseModel):
     Your own id for it (e.g. your customer's id), unique in the environment. Every path that takes an application accepts its `id` or its `uid`.
     """
 
-    name: str
-    metadata: typing.Dict[str, str]
+    name: str = pydantic.Field()
+    """
+    Shown to the application's users in the portal.
+    """
+
+    metadata: typing.Dict[str, str] = pydantic.Field()
+    """
+    Your own key-value pairs.
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

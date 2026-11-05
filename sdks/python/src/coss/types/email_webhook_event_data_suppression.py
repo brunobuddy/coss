@@ -12,8 +12,16 @@ class EmailWebhookEventDataSuppression(UniversalBaseModel):
     Only for `email.suppressed`: the entry that matched the recipient.
     """
 
-    id: str
-    scope: str
+    id: str = pydantic.Field()
+    """
+    The suppression's id.
+    """
+
+    scope: str = pydantic.Field()
+    """
+    What it covers: every email, every marketing email, or one category.
+    """
+
     reason: EmailWebhookEventDataSuppressionReason = pydantic.Field()
     """
     `bounce`: added after a permanent bounce. `complaint`: added after a spam complaint. `manual`: added one by one through the API or dashboard. `import`: added by a bulk import. `unsubscribe`: added by the recipient's one-click unsubscribe, scoped to the email's category.

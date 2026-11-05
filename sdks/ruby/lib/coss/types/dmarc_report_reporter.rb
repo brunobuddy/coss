@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Who sent the report.
     class DmarcReportReporter < Internal::Types::Model
       field :org_name, -> { String }, optional: false, nullable: false
 

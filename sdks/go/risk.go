@@ -497,14 +497,17 @@ var (
 
 // Feedback against the reasons and rules that fired, over the last 90 days. Feedback you give mostly on reviews and blocks over-represents those: read precision as a guide, not a measurement.
 type RiskCalibration struct {
-	Object     RiskCalibrationObject `json:"object" url:"object"`
-	WindowDays int64                 `json:"window_days" url:"window_days"`
+	Object RiskCalibrationObject `json:"object" url:"object"`
+	// How many days back it looks.
+	WindowDays int64 `json:"window_days" url:"window_days"`
 	// Assessments in the window.
 	Assessments int64 `json:"assessments" url:"assessments"`
 	// Of those, with feedback.
-	Labeled int64                    `json:"labeled" url:"labeled"`
+	Labeled int64 `json:"labeled" url:"labeled"`
+	// How each reason did against your feedback.
 	Reasons []*RiskCalibrationReason `json:"reasons" url:"reasons"`
-	Rules   []*RiskCalibrationRule   `json:"rules" url:"rules"`
+	// How each rule did against your feedback.
+	Rules []*RiskCalibrationRule `json:"rules" url:"rules"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -692,6 +695,7 @@ var riskCalibrationReasonNullableFields = map[string]*big.Int{
 }
 
 type RiskCalibrationReason struct {
+	// The reason's code.
 	Code RiskCalibrationReasonCode `json:"code" url:"code"`
 	// Assessments it fired in.
 	Fired int64 `json:"fired" url:"fired"`
@@ -700,8 +704,9 @@ type RiskCalibrationReason struct {
 	// With feedback `legitimate`.
 	Legitimate int64 `json:"legitimate" url:"legitimate"`
 	// `fraud / (fraud + legitimate)`: how often it was right when you told coss.com. `null` without feedback.
-	Precision     *float64 `json:"precision,omitempty" url:"precision,omitempty"`
-	DefaultWeight float64  `json:"default_weight" url:"default_weight"`
+	Precision *float64 `json:"precision,omitempty" url:"precision,omitempty"`
+	// Its weight unless this environment changes it.
+	DefaultWeight float64 `json:"default_weight" url:"default_weight"`
 	// Its weight in this environment now.
 	Weight float64 `json:"weight" url:"weight"`
 	// The weight feedback supports: its precision, pulled toward the default while there is little feedback. `null` below 20 assessments with feedback.
@@ -891,6 +896,7 @@ func (r *RiskCalibrationReason) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The reason's code.
 type RiskCalibrationReasonCode string
 
 const (
@@ -1063,7 +1069,9 @@ var riskCalibrationRuleNullableFields = map[string]*big.Int{
 }
 
 type RiskCalibrationRule struct {
+	// The rule's id.
 	Rule string `json:"rule" url:"rule"`
+	// The rule's name.
 	Name string `json:"name" url:"name"`
 	// Assessments it decided.
 	Matched int64 `json:"matched" url:"matched"`
@@ -1699,17 +1707,22 @@ var riskEmailCheckNullableFields = map[string]*big.Int{
 
 type RiskEmailCheck struct {
 	Object RiskEmailCheckObject `json:"object" url:"object"`
-	Email  string               `json:"email" url:"email"`
+	// The address checked.
+	Email string `json:"email" url:"email"`
 	// Syntactically valid (the rest assumes it is).
-	Valid  bool    `json:"valid" url:"valid"`
+	Valid bool `json:"valid" url:"valid"`
+	// Its domain. `null` when it isn't valid.
 	Domain *string `json:"domain,omitempty" url:"domain,omitempty"`
 	// The mailbox with the provider's aliasing folded (dots and `+tags` at Gmail…): two addresses with the same canonical form reach one inbox.
-	Canonical  *string `json:"canonical,omitempty" url:"canonical,omitempty"`
-	Disposable bool    `json:"disposable" url:"disposable"`
+	Canonical *string `json:"canonical,omitempty" url:"canonical,omitempty"`
+	// Whether its domain is a known burner service.
+	Disposable bool `json:"disposable" url:"disposable"`
 	// From DNS (MX, A, AAAA). `unknown` when the lookup failed or timed out.
 	Deliverability RiskEmailCheckDeliverability `json:"deliverability" url:"deliverability"`
-	RoleAccount    bool                         `json:"role_account" url:"role_account"`
-	FreeProvider   bool                         `json:"free_provider" url:"free_provider"`
+	// Whether it's a role mailbox, like `info@`.
+	RoleAccount bool `json:"role_account" url:"role_account"`
+	// Whether its domain is a free mailbox provider.
+	FreeProvider bool `json:"free_provider" url:"free_provider"`
 	// The likely intended domain when this one looks like a typo of a popular one.
 	Suggestion *string `json:"suggestion,omitempty" url:"suggestion,omitempty"`
 	// Days since the domain was registered (RDAP); `null` when unknown or not looked up (free providers, disposable domains).
@@ -2051,20 +2064,28 @@ var riskIPCheckNullableFields = map[string]*big.Int{
 }
 
 type RiskIPCheck struct {
-	Version         float64                 `json:"version" url:"version"`
-	Private         bool                    `json:"private" url:"private"`
-	Tor             bool                    `json:"tor" url:"tor"`
-	Hosting         bool                    `json:"hosting" url:"hosting"`
-	HostingProvider *string                 `json:"hosting_provider,omitempty" url:"hosting_provider,omitempty"`
-	HostingKind     *RiskIPCheckHostingKind `json:"hosting_kind,omitempty" url:"hosting_kind,omitempty"`
-	Asn             *int64                  `json:"asn,omitempty" url:"asn,omitempty"`
-	AsName          *string                 `json:"as_name,omitempty" url:"as_name,omitempty"`
+	Version float64 `json:"version" url:"version"`
+	// Whether it's a private or reserved address.
+	Private bool `json:"private" url:"private"`
+	// Whether it's a Tor exit.
+	Tor bool `json:"tor" url:"tor"`
+	// Whether it's in a cloud, hosting or VPN network.
+	Hosting bool `json:"hosting" url:"hosting"`
+	// That network's operator. `null` when it isn't one.
+	HostingProvider *string `json:"hosting_provider,omitempty" url:"hosting_provider,omitempty"`
+	// `cloud`, `hosting` or `vpn`. `null` when it isn't one.
+	HostingKind *RiskIPCheckHostingKind `json:"hosting_kind,omitempty" url:"hosting_kind,omitempty"`
+	// The network's autonomous system number. `null` when unknown.
+	Asn *int64 `json:"asn,omitempty" url:"asn,omitempty"`
+	// The network's name. `null` when unknown.
+	AsName *string `json:"as_name,omitempty" url:"as_name,omitempty"`
 	// ISO 3166-1 alpha-2.
 	Country *string `json:"country,omitempty" url:"country,omitempty"`
 	// From coss.com's IP privacy data provider (VPNs, proxies, relays). `null` when it isn't available or was not asked (private addresses).
 	Privacy *RiskIPPrivacy    `json:"privacy,omitempty" url:"privacy,omitempty"`
 	Object  RiskIPCheckObject `json:"object" url:"object"`
-	IP      string            `json:"ip" url:"ip"`
+	// The address checked.
+	IP string `json:"ip" url:"ip"`
 	// `ip_data` when some IP data (Tor exits, cloud ranges, networks and countries) is unavailable at the moment; `ip_privacy` when the privacy data provider failed or timed out.
 	Degraded []RiskIPCheckDegradedItem `json:"degraded" url:"degraded"`
 
@@ -2344,6 +2365,7 @@ func (r RiskIPCheckDegradedItem) Ptr() *RiskIPCheckDegradedItem {
 	return &r
 }
 
+// `cloud`, `hosting` or `vpn`. `null` when it isn't one.
 type RiskIPCheckHostingKind string
 
 const (
@@ -2406,7 +2428,8 @@ var riskLimitNullableFields = map[string]*big.Int{
 
 type RiskLimit struct {
 	Object RiskLimitObject `json:"object" url:"object"`
-	Bucket string          `json:"bucket" url:"bucket"`
+	// The bucket's name.
+	Bucket string `json:"bucket" url:"bucket"`
 	// Whether to let the request through. Denied requests take no tokens.
 	Allowed bool `json:"allowed" url:"allowed"`
 	// The bucket's size (`burst`).

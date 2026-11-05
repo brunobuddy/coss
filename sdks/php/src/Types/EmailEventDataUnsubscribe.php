@@ -11,13 +11,13 @@ use Coss\Core\Json\JsonProperty;
 class EmailEventDataUnsubscribe extends JsonSerializableType
 {
     /**
-     * @var ?string $contactId
+     * @var ?string $contactId The contact who unsubscribed. `null`: none.
      */
     #[JsonProperty('contact_id')]
     public ?string $contactId;
 
     /**
-     * @var ?string $topic
+     * @var ?string $topic The topic they left. `null`: marketing altogether.
      */
     #[JsonProperty('topic')]
     public ?string $topic;

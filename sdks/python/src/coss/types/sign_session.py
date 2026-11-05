@@ -11,8 +11,16 @@ from .sign_session_object import SignSessionObject
 class SignSession(UniversalBaseModel):
     object: SignSessionObject
     id: str
-    request_id: str
-    signer_id: str
+    request_id: str = pydantic.Field()
+    """
+    The signature request's id.
+    """
+
+    signer_id: str = pydantic.Field()
+    """
+    The signer's id.
+    """
+
     url: str = pydantic.Field()
     """
     The signing page: embed it in an iframe (from an allowed origin, with `coss/sign`'s `mountSigning`) or redirect to it. The token is in the URL fragment, so it never reaches a server log: show it only to that signer.
@@ -23,7 +31,10 @@ class SignSession(UniversalBaseModel):
     The secret part of `url`, shown only here.
     """
 
-    expires_at: dt.datetime
+    expires_at: dt.datetime = pydantic.Field()
+    """
+    When the link stops working.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

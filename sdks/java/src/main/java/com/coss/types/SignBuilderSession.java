@@ -61,6 +61,9 @@ public final class SignBuilderSession {
         return id;
     }
 
+    /**
+     * @return The id of the template it edits.
+     */
     @JsonProperty("template_id")
     public String getTemplateId() {
         return templateId;
@@ -82,6 +85,9 @@ public final class SignBuilderSession {
         return token;
     }
 
+    /**
+     * @return When the link stops working.
+     */
     @JsonProperty("expires_at")
     public OffsetDateTime getExpiresAt() {
         return expiresAt;
@@ -132,6 +138,9 @@ public final class SignBuilderSession {
     }
 
     public interface TemplateIdStage {
+        /**
+         * <p>The id of the template it edits.</p>
+         */
         UrlStage templateId(@NotNull String templateId);
     }
 
@@ -150,6 +159,9 @@ public final class SignBuilderSession {
     }
 
     public interface ExpiresAtStage {
+        /**
+         * <p>When the link stops working.</p>
+         */
         _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt);
     }
 
@@ -206,6 +218,10 @@ public final class SignBuilderSession {
             return this;
         }
 
+        /**
+         * <p>The id of the template it edits.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("template_id")
         public UrlStage templateId(@NotNull String templateId) {
@@ -235,6 +251,10 @@ public final class SignBuilderSession {
             return this;
         }
 
+        /**
+         * <p>When the link stops working.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("expires_at")
         public _FinalStage expiresAt(@NotNull OffsetDateTime expiresAt) {

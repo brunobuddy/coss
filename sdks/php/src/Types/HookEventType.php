@@ -17,25 +17,25 @@ class HookEventType extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $name
+     * @var string $name The type's name, which messages send as `event_type`.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description What this event means, shown to your users. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var ?array<string, mixed> $schema
+     * @var ?array<string, mixed> $schema A JSON Schema of the payload, shown to your users (not enforced). `null`: none.
      */
     #[JsonProperty('schema'), ArrayType(['string' => 'mixed'])]
     public ?array $schema;
 
     /**
-     * @var array<array<string, mixed>> $examples
+     * @var array<array<string, mixed>> $examples Sample payloads, shown to your users. Test sends use the first.
      */
     #[JsonProperty('examples'), ArrayType([['string' => 'mixed']])]
     public array $examples;

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What the address says. `null` on an assessment with no IP.
     class RiskIPSignals < Internal::Types::Model
       field :version, -> { Integer }, optional: false, nullable: false
 

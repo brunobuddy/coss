@@ -64,6 +64,9 @@ public final class RenderedEmailTemplate {
         return object;
     }
 
+    /**
+     * @return The template's id.
+     */
     @JsonProperty("template_id")
     public String getTemplateId() {
         return templateId;
@@ -89,11 +92,17 @@ public final class RenderedEmailTemplate {
         return locale;
     }
 
+    /**
+     * @return The rendered subject.
+     */
     @JsonProperty("subject")
     public String getSubject() {
         return subject;
     }
 
+    /**
+     * @return The rendered HTML. <code>null</code>: the template has none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("html")
     public OptionalNullable<String> getHtml() {
@@ -103,6 +112,9 @@ public final class RenderedEmailTemplate {
         return html;
     }
 
+    /**
+     * @return The rendered plain text. <code>null</code>: the template has none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("text")
     public OptionalNullable<String> getText() {
@@ -173,6 +185,9 @@ public final class RenderedEmailTemplate {
     }
 
     public interface TemplateIdStage {
+        /**
+         * <p>The template's id.</p>
+         */
         LocaleStage templateId(@NotNull String templateId);
     }
 
@@ -184,6 +199,9 @@ public final class RenderedEmailTemplate {
     }
 
     public interface SubjectStage {
+        /**
+         * <p>The rendered subject.</p>
+         */
         _FinalStage subject(@NotNull String subject);
     }
 
@@ -205,6 +223,9 @@ public final class RenderedEmailTemplate {
 
         _FinalStage version(Nullable<Long> version);
 
+        /**
+         * <p>The rendered HTML. <code>null</code>: the template has none.</p>
+         */
         _FinalStage html(OptionalNullable<String> html);
 
         _FinalStage html(String html);
@@ -213,6 +234,9 @@ public final class RenderedEmailTemplate {
 
         _FinalStage html(Nullable<String> html);
 
+        /**
+         * <p>The rendered plain text. <code>null</code>: the template has none.</p>
+         */
         _FinalStage text(OptionalNullable<String> text);
 
         _FinalStage text(String text);
@@ -262,6 +286,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The template's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("template_id")
         public LocaleStage templateId(@NotNull String templateId) {
@@ -280,6 +308,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered subject.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subject")
         public _FinalStage subject(@NotNull String subject) {
@@ -287,6 +319,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered plain text. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Nullable<String> text) {
             if (text.isNull()) {
@@ -299,6 +335,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered plain text. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Optional<String> text) {
             if (text.isPresent()) {
@@ -309,12 +349,19 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered plain text. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(String text) {
             this.text = OptionalNullable.of(text);
             return this;
         }
 
+        /**
+         * <p>The rendered plain text. <code>null</code>: the template has none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public _FinalStage text(OptionalNullable<String> text) {
@@ -322,6 +369,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered HTML. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Nullable<String> html) {
             if (html.isNull()) {
@@ -334,6 +385,10 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered HTML. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Optional<String> html) {
             if (html.isPresent()) {
@@ -344,12 +399,19 @@ public final class RenderedEmailTemplate {
             return this;
         }
 
+        /**
+         * <p>The rendered HTML. <code>null</code>: the template has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(String html) {
             this.html = OptionalNullable.of(html);
             return this;
         }
 
+        /**
+         * <p>The rendered HTML. <code>null</code>: the template has none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "html", nulls = Nulls.SKIP)
         public _FinalStage html(OptionalNullable<String> html) {

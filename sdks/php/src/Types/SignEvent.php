@@ -28,13 +28,13 @@ class SignEvent extends JsonSerializableType
     public int $sequence;
 
     /**
-     * @var value-of<SignEventType> $type
+     * @var value-of<SignEventType> $type What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?string $signerId
+     * @var ?string $signerId The id of the signer it concerns. `null`: the whole request.
      */
     #[JsonProperty('signer_id')]
     public ?string $signerId;
@@ -46,31 +46,31 @@ class SignEvent extends JsonSerializableType
     public string $actor;
 
     /**
-     * @var ?string $ipAddress
+     * @var ?string $ipAddress The address the action came from. `null`: unknown, or coss.com acted.
      */
     #[JsonProperty('ip_address')]
     public ?string $ipAddress;
 
     /**
-     * @var ?string $userAgent
+     * @var ?string $userAgent The client's `User-Agent`. `null`: unknown.
      */
     #[JsonProperty('user_agent')]
     public ?string $userAgent;
 
     /**
-     * @var SignEventDetails $details
+     * @var SignEventDetails $details What this event recorded, depending on its type.
      */
     #[JsonProperty('details')]
     public SignEventDetails $details;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;
 
     /**
-     * @var ?string $previousHash
+     * @var ?string $previousHash The previous event's `hash`. `null` on the first event.
      */
     #[JsonProperty('previous_hash')]
     public ?string $previousHash;

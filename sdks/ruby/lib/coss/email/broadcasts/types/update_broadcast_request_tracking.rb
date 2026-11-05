@@ -4,6 +4,7 @@ module Coss
   module Email
     module Broadcasts
       module Types
+        # Which opens and clicks are tracked.
         class UpdateBroadcastRequestTracking < Internal::Types::Model
           field :opens, -> { Internal::Types::Boolean }, optional: true, nullable: false
 

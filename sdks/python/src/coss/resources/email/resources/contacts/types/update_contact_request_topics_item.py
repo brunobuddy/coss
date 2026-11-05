@@ -13,7 +13,10 @@ class UpdateContactRequestTopicsItem(UniversalBaseModel):
     The topic's key.
     """
 
-    status: UpdateContactRequestTopicsItemStatus
+    status: UpdateContactRequestTopicsItemStatus = pydantic.Field()
+    """
+    `opted_in` or `opted_out` of the topic.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

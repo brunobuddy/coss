@@ -29,13 +29,13 @@ class Subaccount extends JsonSerializableType
     public ?string $uid;
 
     /**
-     * @var string $name
+     * @var string $name Your name for it.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var array<string, string> $metadata
+     * @var array<string, string> $metadata Your own key-value pairs.
      */
     #[JsonProperty('metadata'), ArrayType(['string' => 'string'])]
     public array $metadata;

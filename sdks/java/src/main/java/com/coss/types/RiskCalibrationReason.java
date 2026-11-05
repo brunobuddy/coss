@@ -63,6 +63,9 @@ public final class RiskCalibrationReason {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The reason's code.
+     */
     @JsonProperty("code")
     public RiskCalibrationReasonCode getCode() {
         return code;
@@ -104,6 +107,9 @@ public final class RiskCalibrationReason {
         return precision;
     }
 
+    /**
+     * @return Its weight unless this environment changes it.
+     */
     @JsonProperty("default_weight")
     public double getDefaultWeight() {
         return defaultWeight;
@@ -186,6 +192,9 @@ public final class RiskCalibrationReason {
     }
 
     public interface CodeStage {
+        /**
+         * <p>The reason's code.</p>
+         */
         FiredStage code(@NotNull RiskCalibrationReasonCode code);
 
         Builder from(RiskCalibrationReason other);
@@ -213,6 +222,9 @@ public final class RiskCalibrationReason {
     }
 
     public interface DefaultWeightStage {
+        /**
+         * <p>Its weight unless this environment changes it.</p>
+         */
         WeightStage defaultWeight(double defaultWeight);
     }
 
@@ -296,6 +308,10 @@ public final class RiskCalibrationReason {
             return this;
         }
 
+        /**
+         * <p>The reason's code.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("code")
         public FiredStage code(@NotNull RiskCalibrationReasonCode code) {
@@ -336,6 +352,10 @@ public final class RiskCalibrationReason {
             return this;
         }
 
+        /**
+         * <p>Its weight unless this environment changes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("default_weight")
         public WeightStage defaultWeight(double defaultWeight) {

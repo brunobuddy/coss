@@ -83,11 +83,17 @@ public final class RiskReason {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The reason's code, listed under Risk's reasons in the docs.
+     */
     @JsonProperty("code")
     public RiskReasonCode getCode() {
         return code;
     }
 
+    /**
+     * @return What it means, in words. May change.
+     */
     @JsonProperty("message")
     public String getMessage() {
         return message;
@@ -109,6 +115,9 @@ public final class RiskReason {
         return threshold;
     }
 
+    /**
+     * @return <code>velocity.*</code>: the window it's counted over.
+     */
     @JsonProperty("window")
     public Optional<RiskReasonWindow> getWindow() {
         return window;
@@ -243,12 +252,18 @@ public final class RiskReason {
     }
 
     public interface CodeStage {
+        /**
+         * <p>The reason's code, listed under Risk's reasons in the docs.</p>
+         */
         MessageStage code(@NotNull RiskReasonCode code);
 
         Builder from(RiskReason other);
     }
 
     public interface MessageStage {
+        /**
+         * <p>What it means, in words. May change.</p>
+         */
         _FinalStage message(@NotNull String message);
     }
 
@@ -273,6 +288,9 @@ public final class RiskReason {
 
         _FinalStage threshold(Double threshold);
 
+        /**
+         * <p><code>velocity.*</code>: the window it's counted over.</p>
+         */
         _FinalStage window(Optional<RiskReasonWindow> window);
 
         _FinalStage window(RiskReasonWindow window);
@@ -389,6 +407,10 @@ public final class RiskReason {
             return this;
         }
 
+        /**
+         * <p>The reason's code, listed under Risk's reasons in the docs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("code")
         public MessageStage code(@NotNull RiskReasonCode code) {
@@ -396,6 +418,10 @@ public final class RiskReason {
             return this;
         }
 
+        /**
+         * <p>What it means, in words. May change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message")
         public _FinalStage message(@NotNull String message) {
@@ -593,12 +619,19 @@ public final class RiskReason {
             return this;
         }
 
+        /**
+         * <p><code>velocity.*</code>: the window it's counted over.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage window(RiskReasonWindow window) {
             this.window = Optional.ofNullable(window);
             return this;
         }
 
+        /**
+         * <p><code>velocity.*</code>: the window it's counted over.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "window", nulls = Nulls.SKIP)
         public _FinalStage window(Optional<RiskReasonWindow> window) {

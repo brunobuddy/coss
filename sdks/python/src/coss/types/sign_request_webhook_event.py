@@ -17,14 +17,25 @@ class SignRequestWebhookEvent(UniversalBaseModel):
     """
 
     object: SignRequestWebhookEventObject
-    type: SignRequestWebhookEventType
+    type: SignRequestWebhookEventType = pydantic.Field()
+    """
+    `sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version the payload is rendered in (your endpoint's version).
     """
 
-    created_at: dt.datetime
-    data: SignRequestWebhookEventData
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
+    data: SignRequestWebhookEventData = pydantic.Field()
+    """
+    The request. Never documents or field values.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

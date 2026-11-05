@@ -15,19 +15,51 @@ from .sign_template_signing_order import SignTemplateSigningOrder
 class SignTemplate(UniversalBaseModel):
     object: SignTemplateObject
     id: str
-    name: str
-    title: typing.Optional[str] = None
-    message: typing.Optional[str] = None
-    signing_order: SignTemplateSigningOrder
-    documents: typing.List[SignTemplateDocumentsItem]
-    roles: typing.List[SignTemplateRolesItem]
-    fields: typing.List[SignTemplateFieldsItem]
+    name: str = pydantic.Field()
+    """
+    Your name for the template.
+    """
+
+    title: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Requests' title. `null`: the template's name.
+    """
+
+    message: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Requests' message to signers. `null`: none.
+    """
+
+    signing_order: SignTemplateSigningOrder = pydantic.Field()
+    """
+    Its requests' order, unless one sets its own.
+    """
+
+    documents: typing.List[SignTemplateDocumentsItem] = pydantic.Field()
+    """
+    The documents its requests use, in order.
+    """
+
+    roles: typing.List[SignTemplateRolesItem] = pydantic.Field()
+    """
+    Who signs: each request names one signer per role.
+    """
+
+    fields: typing.List[SignTemplateFieldsItem] = pydantic.Field()
+    """
+    Each role's fields.
+    """
+
     ready: bool = pydantic.Field()
     """
     It has documents and every role has a `signature` field, so requests can be made from it.
     """
 
-    sandbox: bool
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

@@ -22,7 +22,7 @@ class RiskWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<RiskWebhookEventType> $type
+     * @var value-of<RiskWebhookEventType> $type What happened to the assessment.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -40,7 +40,7 @@ class RiskWebhookEvent extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var RiskWebhookEventData $data
+     * @var RiskWebhookEventData $data The assessment, without its signals.
      */
     #[JsonProperty('data')]
     public RiskWebhookEventData $data;

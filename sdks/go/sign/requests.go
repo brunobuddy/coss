@@ -89,7 +89,8 @@ type CreateSignRequestRequest struct {
 	Message *string `json:"message,omitempty" url:"-"`
 	// Uploaded documents by id, or PDFs inline (base64).
 	Documents []*CreateSignRequestRequestDocumentsItem `json:"documents" url:"-"`
-	Signers   []*CreateSignRequestRequestSignersItem   `json:"signers" url:"-"`
+	// Who signs, and what each fills.
+	Signers []*CreateSignRequestRequestSignersItem `json:"signers" url:"-"`
 	// `parallel` (default): everyone at once. `sequential`: in each signer's `order`.
 	SigningOrder *CreateSignRequestRequestSigningOrder `json:"signing_order,omitempty" url:"-"`
 	// When unsigned requests expire (at most 365 days ahead).
@@ -696,7 +697,9 @@ var (
 )
 
 type CreateSignRequestRequestSignersItem struct {
-	Name  string `json:"name" url:"name"`
+	// Shown on the signing page and on the certificate.
+	Name string `json:"name" url:"name"`
+	// Where a `delivery: email` signer gets their link. Unique within a request.
 	Email string `json:"email" url:"email"`
 	// `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page (create a session) and vouches for who the signer is.
 	Delivery *CreateSignRequestRequestSignersItemDelivery `json:"delivery,omitempty" url:"delivery,omitempty"`

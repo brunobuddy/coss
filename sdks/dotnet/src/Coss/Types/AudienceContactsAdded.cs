@@ -14,9 +14,15 @@ public record AudienceContactsAdded : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required AudienceContactsAddedObject Object { get; set; }
 
+    /// <summary>
+    /// Contacts newly added.
+    /// </summary>
     [JsonPropertyName("added")]
     public required long Added { get; set; }
 
+    /// <summary>
+    /// Contacts that were already members.
+    /// </summary>
     [JsonPropertyName("existing")]
     public required long Existing { get; set; }
 

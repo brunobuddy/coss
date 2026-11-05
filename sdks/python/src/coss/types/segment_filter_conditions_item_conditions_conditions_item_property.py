@@ -13,8 +13,16 @@ from .segment_filter_conditions_item_conditions_conditions_item_property_value i
 
 
 class SegmentFilterConditionsItemConditionsConditionsItemProperty(UniversalBaseModel):
-    key: str
-    op: SegmentFilterConditionsItemConditionsConditionsItemPropertyOp
+    key: str = pydantic.Field()
+    """
+    The custom property to test.
+    """
+
+    op: SegmentFilterConditionsItemConditionsConditionsItemPropertyOp = pydantic.Field()
+    """
+    How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+    """
+
     value: typing.Optional[SegmentFilterConditionsItemConditionsConditionsItemPropertyValue] = pydantic.Field(
         default=None
     )

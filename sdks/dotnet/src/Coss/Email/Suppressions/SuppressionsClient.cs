@@ -1455,6 +1455,9 @@ public partial class SuppressionsClient : ISuppressionsClient
         );
     }
 
+    /// <summary>
+    /// One entry of the suppression list of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Suppressions.GetAsync(
     ///     new Coss.Email.GetSuppressionsRequest { Id = "sup_01k7c8m4q2f3e9v6t5r1n0p8yz" }

@@ -95,6 +95,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One contact property of the API key's environment: its key, type and fallback.
+//
 // Example:
 //
 //	request := &contacts.GetPropertiesRequest{
@@ -147,6 +149,8 @@ func (c *Client) Remove(
 	return response.Body, nil
 }
 
+// Changes the value used when a contact has none for this property. Its key and type can't change.
+//
 // Example:
 //
 //	request := &contacts.UpdateContactPropertyRequest{

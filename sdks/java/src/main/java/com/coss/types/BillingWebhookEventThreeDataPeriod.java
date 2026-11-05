@@ -33,11 +33,17 @@ public final class BillingWebhookEventThreeDataPeriod {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return When the period starts (inclusive).
+     */
     @JsonProperty("start")
     public OffsetDateTime getStart() {
         return start;
     }
 
+    /**
+     * @return When the period ends (exclusive).
+     */
     @JsonProperty("end")
     public OffsetDateTime getEnd() {
         return end;
@@ -74,12 +80,18 @@ public final class BillingWebhookEventThreeDataPeriod {
     }
 
     public interface StartStage {
+        /**
+         * <p>When the period starts (inclusive).</p>
+         */
         EndStage start(@NotNull OffsetDateTime start);
 
         Builder from(BillingWebhookEventThreeDataPeriod other);
     }
 
     public interface EndStage {
+        /**
+         * <p>When the period ends (exclusive).</p>
+         */
         _FinalStage end(@NotNull OffsetDateTime end);
     }
 
@@ -109,6 +121,10 @@ public final class BillingWebhookEventThreeDataPeriod {
             return this;
         }
 
+        /**
+         * <p>When the period starts (inclusive).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("start")
         public EndStage start(@NotNull OffsetDateTime start) {
@@ -116,6 +132,10 @@ public final class BillingWebhookEventThreeDataPeriod {
             return this;
         }
 
+        /**
+         * <p>When the period ends (exclusive).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("end")
         public _FinalStage end(@NotNull OffsetDateTime end) {

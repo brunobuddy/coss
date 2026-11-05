@@ -27,8 +27,15 @@ class FormSubmissionWebhookEvent(UniversalBaseModel):
     The API version the payload is rendered in (your endpoint's version).
     """
 
-    created_at: dt.datetime
-    data: FormSubmissionWebhookEventData
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
+    data: FormSubmissionWebhookEventData = pydantic.Field()
+    """
+    The submission.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

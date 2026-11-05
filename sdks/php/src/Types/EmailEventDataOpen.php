@@ -11,7 +11,7 @@ use Coss\Core\Json\JsonProperty;
 class EmailEventDataOpen extends JsonSerializableType
 {
     /**
-     * @var ?string $userAgent
+     * @var ?string $userAgent The client's `User-Agent`. `null`: not sent.
      */
     #[JsonProperty('user_agent')]
     public ?string $userAgent;

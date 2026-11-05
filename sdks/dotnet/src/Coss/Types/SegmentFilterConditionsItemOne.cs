@@ -14,9 +14,15 @@ public record SegmentFilterConditionsItemOne : IJsonOnDeserialized
     [JsonPropertyName("field")]
     public required SegmentFilterConditionsItemOneField Field { get; set; }
 
+    /// <summary>
+    /// How to compare the contact's address.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemOneOp Op { get; set; }
 
+    /// <summary>
+    /// What to compare it with.
+    /// </summary>
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 

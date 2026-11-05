@@ -52,6 +52,9 @@ public final class UpdateSubaccountRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for it.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -158,6 +161,9 @@ public final class UpdateSubaccountRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for it.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;

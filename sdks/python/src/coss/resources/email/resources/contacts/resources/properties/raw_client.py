@@ -157,10 +157,13 @@ class RawPropertiesClient:
         Parameters
         ----------
         key : str
+            How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
 
         type : CreateContactPropertyRequestType
+            What values it takes. `date` values are ISO 8601 strings. Can't change.
 
         fallback : typing.Optional[CreateContactPropertyRequestFallback]
+            Used in templates for contacts without a value.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -312,6 +315,8 @@ class RawPropertiesClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[ContactProperty]:
         """
+        One contact property of the API key's environment: its key, type and fallback.
+
         Parameters
         ----------
         id : str
@@ -565,12 +570,15 @@ class RawPropertiesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[ContactProperty]:
         """
+        Changes the value used when a contact has none for this property. Its key and type can't change.
+
         Parameters
         ----------
         id : str
             The property's id.
 
         fallback : typing.Optional[UpdateContactPropertyRequestFallback]
+            Used in templates for contacts without a value. `null` removes it.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -850,10 +858,13 @@ class AsyncRawPropertiesClient:
         Parameters
         ----------
         key : str
+            How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
 
         type : CreateContactPropertyRequestType
+            What values it takes. `date` values are ISO 8601 strings. Can't change.
 
         fallback : typing.Optional[CreateContactPropertyRequestFallback]
+            Used in templates for contacts without a value.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1007,6 +1018,8 @@ class AsyncRawPropertiesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[ContactProperty]:
         """
+        One contact property of the API key's environment: its key, type and fallback.
+
         Parameters
         ----------
         id : str
@@ -1260,12 +1273,15 @@ class AsyncRawPropertiesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[ContactProperty]:
         """
+        Changes the value used when a contact has none for this property. Its key and type can't change.
+
         Parameters
         ----------
         id : str
             The property's id.
 
         fallback : typing.Optional[UpdateContactPropertyRequestFallback]
+            Used in templates for contacts without a value. `null` removes it.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

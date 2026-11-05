@@ -1721,6 +1721,20 @@ await client.Sms.SendAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message sent from the API key's environment, with its current status.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2049,6 +2063,20 @@ await client.Verify.CheckAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A verification's status and destination. Its code is never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2261,6 +2289,20 @@ await client.Forms.CreateAsync(
 <details><summary><code>client.Forms.<a href="/src/Coss/Forms/FormsClient.cs">GetAsync</a>(GetFormsRequest { ... }) -> WithRawResponseTask&lt;Form&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -2512,6 +2554,20 @@ await client.Logs.ListAsync(new ListLogsRequest());
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One line of the API key's environment log.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2606,6 +2662,20 @@ await client.AuditEvents.ListAsync(new ListAuditEventsRequest());
 <details><summary><code>client.AuditEvents.<a href="/src/Coss/AuditEvents/AuditEventsClient.cs">GetAsync</a>(GetAuditEventsRequest { ... }) -> WithRawResponseTask&lt;AuditEvent&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One event of the organization's audit log.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -2791,7 +2861,7 @@ await client.LogDrains.ListAsync();
 <dl>
 <dd>
 
-Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 </dd>
 </dl>
 </dd>
@@ -2964,7 +3034,7 @@ await client.LogDrains.DeleteAsync(
 <dl>
 <dd>
 
-Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 </dd>
 </dl>
 </dd>
@@ -3127,6 +3197,20 @@ await client.Inboxes.CreateAsync(
 <details><summary><code>client.Inboxes.<a href="/src/Coss/Inboxes/InboxesClient.cs">GetAsync</a>(GetInboxesRequest { ... }) -> WithRawResponseTask&lt;Inbox&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One inbox of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -3295,7 +3379,7 @@ await client.Inboxes.UpdateAsync(
 <dl>
 <dd>
 
-Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
+Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans include some every month) unless they end in `block`. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
 </dd>
 </dl>
 </dd>
@@ -3619,7 +3703,7 @@ await client.Risk.CheckPhoneAsync(new RiskPhoneCheckRequest { Phone = "+14155550
 <dl>
 <dd>
 
-Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
+Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (`risk.content_checks`; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
 </dd>
 </dl>
 </dd>
@@ -5205,6 +5289,20 @@ await client.Email.Suppressions.ExportAsync(new ExportSuppressionsRequest());
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -6427,6 +6525,20 @@ await client.Email.Contacts.ExportAsync(new ExportContactsRequest());
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -6830,6 +6942,20 @@ await client.Email.Broadcasts.CreateAsync(
 <details><summary><code>client.Email.Broadcasts.<a href="/src/Coss/Email/Broadcasts/BroadcastsClient.cs">GetAsync</a>(GetBroadcastsRequest { ... }) -> WithRawResponseTask&lt;Broadcast&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One broadcast of the API key's environment, with its status and stats.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -7388,6 +7514,20 @@ await client.Email.Audiences.ListAsync(new ListAudiencesRequest());
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -7427,6 +7567,20 @@ await client.Email.Audiences.CreateAsync(new CreateAudienceRequest { Name = "Bet
 <details><summary><code>client.Email.Audiences.<a href="/src/Coss/Email/Audiences/AudiencesClient.cs">GetAsync</a>(GetAudiencesRequest { ... }) -> WithRawResponseTask&lt;Audience&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One audience of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -7525,6 +7679,20 @@ await client.Email.Audiences.RemoveAsync(
 <details><summary><code>client.Email.Audiences.<a href="/src/Coss/Email/Audiences/AudiencesClient.cs">UpdateAsync</a>(UpdateAudienceRequest { ... }) -> WithRawResponseTask&lt;Audience&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Renames an audience. Its members stay.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -7683,6 +7851,20 @@ await client.Email.Audiences.AddContactsAsync(
 <details><summary><code>client.Email.Audiences.<a href="/src/Coss/Email/Audiences/AudiencesClient.cs">RemoveContactAsync</a>(RemoveContactAudiencesRequest { ... }) -> WithRawResponseTask&lt;RemoveContactAudiencesResponse&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes a contact out of the audience. The contact itself stays.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -7895,6 +8077,20 @@ await client.Email.Segments.CreateAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One segment of the API key's environment, with its filter.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -7937,6 +8133,20 @@ await client.Email.Segments.GetAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a segment. The contacts it matched stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -7978,6 +8188,20 @@ await client.Email.Segments.RemoveAsync(
 <details><summary><code>client.Email.Segments.<a href="/src/Coss/Email/Segments/SegmentsClient.cs">UpdateAsync</a>(UpdateSegmentRequest { ... }) -> WithRawResponseTask&lt;Segment&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a segment's name or filter. Only the fields given change.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -8196,6 +8420,20 @@ await client.Email.Topics.CreateAsync(
 <details><summary><code>client.Email.Topics.<a href="/src/Coss/Email/Topics/TopicsClient.cs">GetAsync</a>(GetTopicsRequest { ... }) -> WithRawResponseTask&lt;Topic&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One topic of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -8871,6 +9109,20 @@ await client.Email.Contacts.Properties.CreateAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact property of the API key's environment: its key, type and fallback.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -8968,6 +9220,20 @@ await client.Email.Contacts.Properties.RemoveAsync(
 <details><summary><code>client.Email.Contacts.Properties.<a href="/src/Coss/Email/Contacts/Properties/PropertiesClient.cs">UpdateAsync</a>(UpdateContactPropertyRequest { ... }) -> WithRawResponseTask&lt;ContactProperty&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the value used when a contact has none for this property. Its key and type can't change.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -9241,6 +9507,20 @@ await client.Forms.Submissions.ListAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One submission of the form, with its data, files and Risk's assessment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -9492,7 +9772,7 @@ The environment's event types by name; archived ones only with `include_archived
 <dd>
 
 ```csharp
-await client.Hooks.EventTypes.ListAsync(new ListEventTypesRequest());
+await client.Hooks.EventTypes.ListAsync(new Coss.Hooks.ListEventTypesRequest());
 ```
 </dd>
 </dl>
@@ -9615,7 +9895,9 @@ An event type of the API key's environment, archived or not.
 <dd>
 
 ```csharp
-await client.Hooks.EventTypes.GetAsync(new GetEventTypesRequest { Name = "invoice.paid" });
+await client.Hooks.EventTypes.GetAsync(
+    new Coss.Hooks.GetEventTypesRequest { Name = "invoice.paid" }
+);
 ```
 </dd>
 </dl>
@@ -10766,7 +11048,7 @@ await client.Hooks.Messages.ListAsync(
 <dl>
 <dd>
 
-Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 </dd>
 </dl>
 </dd>
@@ -11672,7 +11954,7 @@ await client.Inboxes.Messages.ReplyAsync(
 <dl>
 <dd>
 
-The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 </dd>
 </dl>
 </dd>
@@ -12008,6 +12290,20 @@ await client.Risk.Lists.AddAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One allow or block list entry of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12047,6 +12343,20 @@ await client.Risk.Lists.GetAsync(new GetListsRequest { Id = "rskle_01k7c8m4q2f3e
 <details><summary><code>client.Risk.Lists.<a href="/src/Coss/Risk/Lists/ListsClient.cs">RemoveAsync</a>(RemoveListsRequest { ... }) -> WithRawResponseTask&lt;DeletedRiskListEntry&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes an entry from its list. Later assessments no longer see it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12366,6 +12676,20 @@ await client.Risk.Rules.CreateAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One rule of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12405,6 +12729,20 @@ await client.Risk.Rules.GetAsync(new GetRulesRequest { Id = "rskrule_01k7c8m4q2f
 <details><summary><code>client.Risk.Rules.<a href="/src/Coss/Risk/Rules/RulesClient.cs">DeleteAsync</a>(DeleteRulesRequest { ... }) -> WithRawResponseTask&lt;DeletedRiskRule&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a rule. Later assessments no longer apply it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12605,6 +12943,20 @@ await client.Risk.LimitBuckets.CreateAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12760,6 +13112,3206 @@ await client.Risk.LimitBuckets.UpdateAsync(
 </dl>
 </details>
 
+## Scheduling Hosts
+<details><summary><code>client.Scheduling.Hosts.<a href="/src/Coss/Scheduling/Hosts/HostsClient.cs">ListAsync</a>(ListHostsRequest { ... }) -> WithRawResponseTask&lt;SchedulingHostList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's hosts, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Hosts.ListAsync(new ListHostsRequest());
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListHostsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Hosts.<a href="/src/Coss/Scheduling/Hosts/HostsClient.cs">CreateAsync</a>(CreateHostRequest { ... }) -> WithRawResponseTask&lt;SchedulingHost&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A person who can be booked: one of your users, such as a doctor or a tutor.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Hosts.CreateAsync(
+    new CreateHostRequest
+    {
+        Uid = "doctor_482",
+        Name = "Dr. Ana Reyes",
+        Email = "ana@example.com",
+        TimeZone = "America/New_York",
+        Attributes = new Dictionary<string, OneOf<string, IEnumerable<string>>>()
+        {
+            {
+                "licensed_in",
+                new List<string>() { "NY", "NJ" }
+            },
+        },
+        Locations = new List<SchedulingHostLocation>()
+        {
+            new SchedulingHostLocation(
+                new SchedulingHostLocation.InPerson(
+                    new SchedulingHostLocationInPerson { Address = "12 Main St, New York, NY" }
+                )
+            ),
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateHostRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Hosts.<a href="/src/Coss/Scheduling/Hosts/HostsClient.cs">GetAsync</a>(GetHostsRequest { ... }) -> WithRawResponseTask&lt;SchedulingHost&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Hosts.GetAsync(
+    new GetHostsRequest { Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetHostsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Hosts.<a href="/src/Coss/Scheduling/Hosts/HostsClient.cs">RemoveAsync</a>(RemoveHostsRequest { ... }) -> WithRawResponseTask&lt;DeletedSchedulingHost&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes the host and its schedules and calendars. Refused while bookings are still to come (`host_has_live_bookings`): cancel them, or set the host's status to `disabled`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Hosts.RemoveAsync(
+    new RemoveHostsRequest { Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RemoveHostsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Hosts.<a href="/src/Coss/Scheduling/Hosts/HostsClient.cs">UpdateAsync</a>(UpdateHostRequest { ... }) -> WithRawResponseTask&lt;SchedulingHost&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. A `disabled` host keeps its bookings but gets no new ones.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Hosts.UpdateAsync(
+    new UpdateHostRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Status = UpdateHostRequestStatus.Disabled,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateHostRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Schedules
+<details><summary><code>client.Scheduling.Schedules.<a href="/src/Coss/Scheduling/Schedules/SchedulesClient.cs">ListAsync</a>(ListSchedulesRequest { ... }) -> WithRawResponseTask&lt;SchedulingScheduleList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+All of the host's schedules, oldest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Schedules.ListAsync(
+    new ListSchedulesRequest { Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListSchedulesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Schedules.<a href="/src/Coss/Scheduling/Schedules/SchedulesClient.cs">CreateAsync</a>(CreateSchedulesRequest { ... }) -> WithRawResponseTask&lt;SchedulingSchedule&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host's weekly hours and date overrides, in local time. The first one is the host's default.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Schedules.CreateAsync(
+    new CreateSchedulesRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Body = new UpsertScheduleRequest
+        {
+            Name = "Clinic hours",
+            Rules = new List<SchedulingWeeklyRule>()
+            {
+                new SchedulingWeeklyRule
+                {
+                    Days = new List<int>() { 1, 2, 3, 4, 5 },
+                    Start = "09:00",
+                    End = "17:00",
+                },
+            },
+            Overrides = new List<SchedulingScheduleOverride>()
+            {
+                new SchedulingScheduleOverride
+                {
+                    Date = "2027-12-24",
+                    Ranges = new List<SchedulingScheduleOverrideRangesItem>()
+                    {
+                        new SchedulingScheduleOverrideRangesItem { Start = "start", End = "end" },
+                    },
+                },
+            },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSchedulesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Schedules.<a href="/src/Coss/Scheduling/Schedules/SchedulesClient.cs">GetAsync</a>(GetSchedulesRequest { ... }) -> WithRawResponseTask&lt;SchedulingSchedule&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the host's schedules.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Schedules.GetAsync(
+    new GetSchedulesRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        ScheduleId = "sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetSchedulesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Schedules.<a href="/src/Coss/Scheduling/Schedules/SchedulesClient.cs">UpdateAsync</a>(UpdateSchedulesRequest { ... }) -> WithRawResponseTask&lt;SchedulingSchedule&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces its weekly rules, and its overrides when given. Existing bookings stay: a schedule only decides what's offered next.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Schedules.UpdateAsync(
+    new UpdateSchedulesRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        ScheduleId = "sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Body = new UpsertScheduleRequest
+        {
+            Name = "Clinic hours",
+            Rules = new List<SchedulingWeeklyRule>()
+            {
+                new SchedulingWeeklyRule
+                {
+                    Days = new List<int>() { 1, 2, 3, 4, 5 },
+                    Start = "09:00",
+                    End = "17:00",
+                },
+            },
+            Overrides = new List<SchedulingScheduleOverride>()
+            {
+                new SchedulingScheduleOverride
+                {
+                    Date = "2027-12-24",
+                    Ranges = new List<SchedulingScheduleOverrideRangesItem>()
+                    {
+                        new SchedulingScheduleOverrideRangesItem { Start = "start", End = "end" },
+                    },
+                },
+            },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateSchedulesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Schedules.<a href="/src/Coss/Scheduling/Schedules/SchedulesClient.cs">RemoveAsync</a>(RemoveSchedulesRequest { ... }) -> WithRawResponseTask&lt;DeletedSchedulingSchedule&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refused for the host's default schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Schedules.RemoveAsync(
+    new RemoveSchedulesRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        ScheduleId = "sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RemoveSchedulesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling EventTypes
+<details><summary><code>client.Scheduling.EventTypes.<a href="/src/Coss/Scheduling/EventTypes/EventTypesClient.cs">ListAsync</a>(ListEventTypesRequest { ... }) -> WithRawResponseTask&lt;SchedulingEventTypeList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's event types, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.EventTypes.ListAsync(new Coss.Scheduling.ListEventTypesRequest());
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListEventTypesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.EventTypes.<a href="/src/Coss/Scheduling/EventTypes/EventTypesClient.cs">CreateAsync</a>(CreateEventTypeRequest { ... }) -> WithRawResponseTask&lt;SchedulingEventType&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What can be booked: `one_on_one` with one host, `pool` for any free host, `collective` when every required host must be free, or `group` for a session with seats.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.EventTypes.CreateAsync(
+    new CreateEventTypeRequest
+    {
+        Kind = CreateEventTypeRequestKind.OneOnOne,
+        Title = "Initial consultation",
+        DurationMinutes = 30,
+        BufferAfterMinutes = 10,
+        MinNoticeMinutes = 120,
+        Hosts = new List<SchedulingEventTypeHostInput>()
+        {
+            new SchedulingEventTypeHostInput { Host = "doctor_482" },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateEventTypeRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.EventTypes.<a href="/src/Coss/Scheduling/EventTypes/EventTypesClient.cs">GetAsync</a>(GetEventTypesRequest { ... }) -> WithRawResponseTask&lt;SchedulingEventType&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An event type by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.EventTypes.GetAsync(
+    new Coss.Scheduling.GetEventTypesRequest { EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetEventTypesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.EventTypes.<a href="/src/Coss/Scheduling/EventTypes/EventTypesClient.cs">UpdateAsync</a>(UpdateEventTypeRequest { ... }) -> WithRawResponseTask&lt;SchedulingEventType&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. Existing bookings keep what they were booked with. Set `status` to `archived` to stop new bookings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.EventTypes.UpdateAsync(
+    new UpdateEventTypeRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        MinNoticeMinutes = 240,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateEventTypeRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Slots
+<details><summary><code>client.Scheduling.Slots.<a href="/src/Coss/Scheduling/Slots/SlotsClient.cs">ListAsync</a>(ListSlotsRequest { ... }) -> WithRawResponseTask&lt;SchedulingSlotList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Starts an attendee can book between `start` and `end` (at most 62 days), as UTC instants to show in their own time zone. A host whose calendar can't be read isn't offered.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Slots.ListAsync(
+    new ListSlotsRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T15:00:00.000Z",
+        End = "2027-01-04T15:00:00.000Z",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListSlotsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Slots.<a href="/src/Coss/Scheduling/Slots/SlotsClient.cs">ExplainAsync</a>(ExplainSlotsRequest { ... }) -> WithRawResponseTask&lt;SchedulingSlotExplanation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Why one start can or can't be booked right now, host by host, decided the same way a booking is. For support and debugging: it says when a host is busy, so don't show it to attendees.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Slots.ExplainAsync(
+    new ExplainSlotsRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T15:00:00.000Z",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ExplainSlotsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Availability
+<details><summary><code>client.Scheduling.Availability.<a href="/src/Coss/Scheduling/Availability/AvailabilityClient.cs">SearchAsync</a>(AvailabilitySearchRequest { ... }) -> WithRawResponseTask&lt;SchedulingAvailabilitySearchResult&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+For "who's free" pages: each matching host's soonest slots, soonest first, across up to 500 hosts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Availability.SearchAsync(
+    new AvailabilitySearchRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T00:00:00.000Z",
+        End = "2027-01-18T00:00:00.000Z",
+        Attributes = new Dictionary<string, OneOf<string, IEnumerable<string>>>()
+        {
+            { "licensed_in", "CA" },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `AvailabilitySearchRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Bookings
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">ListAsync</a>(ListBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBookingList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's bookings, newest first. Answers aren't included.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.ListAsync(
+    new ListBookingsRequest
+    {
+        StartAfter = "2027-01-04T15:00:00.000Z",
+        StartBefore = "2027-01-04T15:00:00.000Z",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">CreateAsync</a>(CreateBookingRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books a slot, or joins a group session. Without a `host`, a pool chooses fairly among those free. An event type that requires approval answers with a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.CreateAsync(
+    new CreateBookingRequest
+    {
+        IdempotencyKey = "welcome-user-123",
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T15:00:00.000Z",
+        Attendee = new SchedulingAttendeeInput
+        {
+            Uid = "patient_77",
+            Name = "Sam Lee",
+            Email = "sam@example.com",
+            TimeZone = "UTC",
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateBookingRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">GetAsync</a>(GetBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A booking with its attendees and their answers.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.GetAsync(
+    new GetBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">RescheduleAsync</a>(RescheduleBookingRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves it to a new time, keeping its id. The old time stays booked if the new one isn't free.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.RescheduleAsync(
+    new RescheduleBookingRequest
+    {
+        Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-05T15:00:00.000Z",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `RescheduleBookingRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">CancelAsync</a>(CancelSchedulingBookingRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Frees the time and removes the calendar event. A cancelled booking stays charged.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.CancelAsync(
+    new CancelSchedulingBookingRequest
+    {
+        Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Reason = "Feeling better",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CancelSchedulingBookingRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">EventsAsync</a>(EventsBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBookingEventList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's happened to a booking, oldest first, and who did it. There's no personal data in here.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.EventsAsync(
+    new EventsBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `EventsBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">ApproveAsync</a>(ApproveBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Confirms a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.ApproveAsync(
+    new ApproveBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ApproveBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">DeclineAsync</a>(DeclineBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refuses a `pending_approval` booking and frees the time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.DeclineAsync(
+    new DeclineBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `DeclineBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">NotificationsAsync</a>(NotificationsBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBookingNotificationList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.NotificationsAsync(
+    new NotificationsBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `NotificationsBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">MarkNoShowAsync</a>(MarkNoShowBookingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Records that the attendee didn't come, once the booking has started.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.MarkNoShowAsync(
+    new MarkNoShowBookingsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `MarkNoShowBookingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Bookings.<a href="/src/Coss/Scheduling/Bookings/BookingsClient.cs">UpdateLocationAsync</a>(UpdateBookingLocationRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Where it happens, such as the meeting link you made after the `scheduling.booking.confirmed` webhook.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Bookings.UpdateLocationAsync(
+    new UpdateBookingLocationRequest
+    {
+        Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Location = new SchedulingLocation(
+            new SchedulingLocation.Link(
+                new SchedulingLocationLink { Url = "https://meet.example.com/abc" }
+            )
+        ),
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateBookingLocationRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Holds
+<details><summary><code>client.Scheduling.Holds.<a href="/src/Coss/Scheduling/Holds/HoldsClient.cs">CreateAsync</a>(CreateHoldRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Keeps a slot for a while (the event type's `hold_ttl_seconds`) so you can take payment, then confirm it. Answers with a `held` booking, which isn't charged and sends nothing.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Holds.CreateAsync(
+    new CreateHoldRequest
+    {
+        IdempotencyKey = "welcome-user-123",
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T15:00:00.000Z",
+        Attendee = new SchedulingAttendeeInput { Uid = "patient_77", TimeZone = "UTC" },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateHoldRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Holds.<a href="/src/Coss/Scheduling/Holds/HoldsClient.cs">ConfirmAsync</a>(ConfirmHoldRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns a hold into a booking. Always succeeds before the hold expires. Repeating it is safe.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Holds.ConfirmAsync(
+    new ConfirmHoldRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m", IfStillFree = true }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ConfirmHoldRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Holds.<a href="/src/Coss/Scheduling/Holds/HoldsClient.cs">ReleaseAsync</a>(ReleaseHoldsRequest { ... }) -> WithRawResponseTask&lt;SchedulingBooking&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives the slot back early.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Holds.ReleaseAsync(
+    new ReleaseHoldsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ReleaseHoldsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Series
+<details><summary><code>client.Scheduling.Series.<a href="/src/Coss/Scheduling/Series/SeriesClient.cs">CreateAsync</a>(CreateSeriesBody { ... }) -> WithRawResponseTask&lt;SchedulingSeries&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books up to 52 occurrences, keeping the attendee's local time across DST changes. Each one is an ordinary booking that can move on its own, and a pool keeps one host throughout.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Series.CreateAsync(
+    new CreateSeriesBody
+    {
+        IdempotencyKey = "welcome-user-123",
+        Body = new CreateSeriesRequest
+        {
+            EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+            Start = "2027-01-04T15:00:00.000Z",
+            Attendee = new SchedulingAttendeeInput
+            {
+                Uid = "patient_77",
+                TimeZone = "America/New_York",
+            },
+            Recurrence = new CreateSeriesRequestRecurrence
+            {
+                Frequency = CreateSeriesRequestRecurrenceFrequency.Weekly,
+                Interval = 1,
+                Count = 12,
+            },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSeriesBody` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Series.<a href="/src/Coss/Scheduling/Series/SeriesClient.cs">PreviewAsync</a>(CreateSeriesRequest { ... }) -> WithRawResponseTask&lt;SchedulingSeriesPreview&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Which occurrences would be free, without booking anything.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Series.PreviewAsync(
+    new CreateSeriesRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Start = "2027-01-04T15:00:00.000Z",
+        Attendee = new SchedulingAttendeeInput
+        {
+            Uid = "patient_77",
+            TimeZone = "America/New_York",
+        },
+        Recurrence = new CreateSeriesRequestRecurrence
+        {
+            Frequency = CreateSeriesRequestRecurrenceFrequency.Weekly,
+            Interval = 1,
+            Count = 12,
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSeriesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Series.<a href="/src/Coss/Scheduling/Series/SeriesClient.cs">CancelAsync</a>(CancelSeriesRequest { ... }) -> WithRawResponseTask&lt;SchedulingCancelledSeries&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Cancels the occurrences from `from_index` on, or all of them.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Series.CancelAsync(
+    new CancelSeriesRequest { Id = "series_01kd2m9a0b1c2d3e4f5g6h7j8m", FromIndex = 4 }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CancelSeriesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Attendees
+<details><summary><code>client.Scheduling.Attendees.<a href="/src/Coss/Scheduling/Attendees/AttendeesClient.cs">EraseAsync</a>(EraseAttendeesRequest { ... }) -> WithRawResponseTask&lt;SchedulingAttendeeErasure&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this person's details and answers from every booking now, and ends any booker session fixed to them. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Attendees.EraseAsync(new EraseAttendeesRequest { Uid = "patient_77" });
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `EraseAttendeesRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Attendees.<a href="/src/Coss/Scheduling/Attendees/AttendeesClient.cs">EraseByEmailAsync</a>(EraseSchedulingAttendeeByEmailRequest { ... }) -> WithRawResponseTask&lt;SchedulingAttendeeErasureByEmail&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Attendees.EraseByEmailAsync(
+    new EraseSchedulingAttendeeByEmailRequest { Email = "sam@example.com" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `EraseSchedulingAttendeeByEmailRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Calendars
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">AuthorizeAsync</a>(AuthorizeCalendarRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarAuthorization&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.AuthorizeAsync(
+    new AuthorizeCalendarRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Provider = AuthorizeCalendarRequestProvider.Google,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `AuthorizeCalendarRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">ListAsync</a>(ListCalendarsRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarConnectionList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With each connection's calendars and which of them count.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.ListAsync(
+    new ListCalendarsRequest { Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ListCalendarsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">ConnectAsync</a>(ConnectCalendarsRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarConnection&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+CalDAV (Apple and others) with an app password, or, in sandbox environments, a `simulated` calendar whose busy times you set yourself. Google and Microsoft use `authorize`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.ConnectAsync(
+    new ConnectCalendarsRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Body = new CreateCalendarConnectionRequest(
+            new CreateCalendarConnectionRequest.Caldav(
+                new CreateCalendarConnectionRequestCaldav
+                {
+                    Url = "url",
+                    Username = "username",
+                    Password = "password",
+                }
+            )
+        ),
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `ConnectCalendarsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">DisconnectAsync</a>(DisconnectCalendarsRequest { ... }) -> WithRawResponseTask&lt;DeletedSchedulingCalendarConnection&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Revokes coss.com's access and deletes every busy time read through it. One a calendar delegation manages is refused (`calendar_managed`).
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.DisconnectAsync(
+    new DisconnectCalendarsRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Id = "calconn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `DisconnectCalendarsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">UpdateAsync</a>(UpdateCalendarRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarConnectionList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether its busy times block slots, and whether bookings are written to it.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.UpdateAsync(
+    new UpdateCalendarRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        CalendarId = "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        ReadBusy = true,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateCalendarRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Calendars.<a href="/src/Coss/Scheduling/Calendars/CalendarsClient.cs">SetSimulatedBusyAsync</a>(SetSimulatedBusyRequest { ... }) -> WithRawResponseTask</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sandbox environments only: test how bookings react to a busy calendar.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Calendars.SetSimulatedBusyAsync(
+    new SetSimulatedBusyRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Intervals = new List<SetSimulatedBusyRequestIntervalsItem>()
+        {
+            new SetSimulatedBusyRequestIntervalsItem
+            {
+                Start = "2027-01-04T15:00:00.000Z",
+                End = "2027-01-04T16:00:00.000Z",
+            },
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `SetSimulatedBusyRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling CalendarDelegations
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">ListAsync</a>() -> WithRawResponseTask&lt;SchedulingCalendarDelegationList&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With how many hosts each has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.ListAsync();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">CreateAsync</a>(CreateCalendarDelegationRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarDelegation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An admin authorizes once, and every host on the domain gets their calendar with no consent screen. It stays `pending`: authorize what it returns, then verify it. Credentials are never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.CreateAsync(
+    new CreateCalendarDelegationRequest(
+        new CreateCalendarDelegationRequest.Google(
+            new CreateCalendarDelegationRequestGoogle
+            {
+                Domain = "domain",
+                ServiceAccountKey = "service_account_key",
+            }
+        )
+    )
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">GetAsync</a>(GetCalendarDelegationsRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarDelegation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its status, what to authorize, and how many hosts it has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.GetAsync(
+    new GetCalendarDelegationsRequest { Id = "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `GetCalendarDelegationsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">DeleteAsync</a>(DeleteCalendarDelegationsRequest { ... }) -> WithRawResponseTask&lt;DeletedSchedulingCalendarDelegation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its hosts lose these calendars within minutes. They stay bookable with no conflict check, and events already written stay on their calendars, out of reach of later moves or cancellations.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.DeleteAsync(
+    new DeleteCalendarDelegationsRequest { Id = "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `DeleteCalendarDelegationsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">UpdateAsync</a>(UpdateCalendarDelegationRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarDelegation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+New credentials are tried on the verified mailbox before they replace the old ones, and end an outage if they work.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.UpdateAsync(
+    new UpdateCalendarDelegationRequest
+    {
+        Id = "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        MatchHostEmail = false,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.CalendarDelegations.<a href="/src/Coss/Scheduling/CalendarDelegations/CalendarDelegationsClient.cs">VerifyAsync</a>(VerifyCalendarDelegationRequest { ... }) -> WithRawResponseTask&lt;SchedulingCalendarDelegation&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. Google can take up to 24 hours to apply a new authorization, so a refusal may just need time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.CalendarDelegations.VerifyAsync(
+    new VerifyCalendarDelegationRequest
+    {
+        Id = "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Account = "ana@example.com",
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `VerifyCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Sessions
+<details><summary><code>client.Scheduling.Sessions.<a href="/src/Coss/Scheduling/Sessions/SessionsClient.cs">CreateForHostAsync</a>(CreateSchedulingHostSessionRequest { ... }) -> WithRawResponseTask&lt;SchedulingSession&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Sessions.CreateForHostAsync(
+    new CreateSchedulingHostSessionRequest
+    {
+        Host = "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        ExpiresIn = 3600,
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSchedulingHostSessionRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Sessions.<a href="/src/Coss/Scheduling/Sessions/SessionsClient.cs">CreateForBookerAsync</a>(CreateSchedulingBookerSessionRequest { ... }) -> WithRawResponseTask&lt;SchedulingSession&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets a browser book one event type, on coss.com's hosted page or your own UI, without your API key.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Sessions.CreateForBookerAsync(
+    new CreateSchedulingBookerSessionRequest
+    {
+        EventType = "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+        Attendee = new CreateSchedulingBookerSessionRequestAttendee
+        {
+            Uid = "patient_77",
+            Name = "Sam Lee",
+            TimeZone = "UTC",
+        },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSchedulingBookerSessionRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Sessions.<a href="/src/Coss/Scheduling/Sessions/SessionsClient.cs">CreateForBookingAsync</a>(CreateForBookingSessionsRequest { ... }) -> WithRawResponseTask&lt;SchedulingSession&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets an attendee reschedule or cancel this one booking, within the event type's cutoffs. Stops working when the booking's cancelled, or a day after it ends.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Sessions.CreateForBookingAsync(
+    new CreateForBookingSessionsRequest { Id = "book_01kd2m9a0b1c2d3e4f5g6h7j8m" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateForBookingSessionsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Settings
+<details><summary><code>client.Scheduling.Settings.<a href="/src/Coss/Scheduling/Settings/SettingsClient.cs">GetAsync</a>() -> WithRawResponseTask&lt;SchedulingSettings&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's scheduling settings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Settings.GetAsync();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Scheduling.Settings.<a href="/src/Coss/Scheduling/Settings/SettingsClient.cs">UpdateAsync</a>(UpdateSchedulingSettingsRequest { ... }) -> WithRawResponseTask&lt;SchedulingSettings&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Scheduling.Settings.UpdateAsync(
+    new UpdateSchedulingSettingsRequest { BrandName = "Acme Health" }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateSchedulingSettingsRequest` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
 ## Sign Documents
 <details><summary><code>client.Sign.Documents.<a href="/src/Coss/Sign/Documents/DocumentsClient.cs">ListAsync</a>(ListDocumentsRequest { ... }) -> WithRawResponseTask&lt;SignDocumentList&gt;</code></summary>
 <dl>
@@ -12879,6 +16431,20 @@ await client.Sign.Documents.UploadAsync(
 <details><summary><code>client.Sign.Documents.<a href="/src/Coss/Sign/Documents/DocumentsClient.cs">GetAsync</a>(GetDocumentsRequest { ... }) -> WithRawResponseTask&lt;SignDocument&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -13129,6 +16695,20 @@ await client.Sign.Requests.CreateAsync(
 <details><summary><code>client.Sign.Requests.<a href="/src/Coss/Sign/Requests/RequestsClient.cs">GetAsync</a>(GetRequestsRequest { ... }) -> WithRawResponseTask&lt;SignRequest&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -13830,6 +17410,20 @@ await client.Sign.Templates.CreateAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -14235,6 +17829,20 @@ await client.Sms.Suppressions.AddAsync(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -14276,6 +17884,20 @@ await client.Sms.Suppressions.CheckAsync(
 <details><summary><code>client.Sms.Suppressions.<a href="/src/Coss/Sms/Suppressions/SuppressionsClient.cs">GetAsync</a>(GetSuppressionsRequest { ... }) -> WithRawResponseTask&lt;SmsSuppression&gt;</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the SMS suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -14430,6 +18052,20 @@ await client.Sms.Received.ListAsync(new Coss.Sms_.ListReceivedRequest());
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message received on a number of the organization and routed to the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -14498,6 +18134,106 @@ Every number of the organization, whether it can send live messages now (its car
 ```csharp
 await client.Sms.Numbers.ListAsync();
 ```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Verify Settings
+<details><summary><code>client.Verify.Settings.<a href="/src/Coss/Verify/Settings/SettingsClient.cs">GetAsync</a>() -> WithRawResponseTask&lt;VerifySettings&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The API key's environment's settings, with defaults filled in: the name codes are sent for, code length, lifetime and attempts, the senders, and the countries SMS codes may go to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Verify.Settings.GetAsync();
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.Verify.Settings.<a href="/src/Coss/Verify/Settings/SettingsClient.cs">UpdateAsync</a>(UpdateVerifySettingsRequest { ... }) -> WithRawResponseTask&lt;VerifySettings&gt;</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the fields given; the others keep their values. `sms_from` must be one of the organization's numbers, and a live key's `email_from` must be on one of its verified domains.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```csharp
+await client.Verify.Settings.UpdateAsync(
+    new UpdateVerifySettingsRequest
+    {
+        SmsFrom = "+14155550100",
+        AllowedCountries = new List<string>() { "CA", "GB", "US" },
+    }
+);
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `UpdateVerifySettingsRequest` 
+    
 </dd>
 </dl>
 </dd>

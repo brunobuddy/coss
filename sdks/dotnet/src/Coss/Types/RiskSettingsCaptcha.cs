@@ -11,9 +11,15 @@ public record RiskSettingsCaptcha : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The captcha provider.
+    /// </summary>
     [JsonPropertyName("provider")]
     public required RiskSettingsCaptchaProvider Provider { get; set; }
 
+    /// <summary>
+    /// Whether assessments without a token get `captcha.missing`.
+    /// </summary>
     [JsonPropertyName("required")]
     public required bool Required { get; set; }
 

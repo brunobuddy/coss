@@ -14,6 +14,9 @@ public record DomainDmarc : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required DomainDmarcObject Object { get; set; }
 
+    /// <summary>
+    /// The domain's id.
+    /// </summary>
     [JsonPropertyName("domain_id")]
     public required string DomainId { get; set; }
 
@@ -87,9 +90,15 @@ public record DomainDmarc : IJsonOnDeserialized
     public IEnumerable<DomainDmarcChecksItem> Checks { get; set; } =
         new List<DomainDmarcChecksItem>();
 
+    /// <summary>
+    /// Things to look at before tightening the policy.
+    /// </summary>
     [JsonPropertyName("warnings")]
     public IEnumerable<string> Warnings { get; set; } = new List<string>();
 
+    /// <summary>
+    /// What the aggregate reports of this period say.
+    /// </summary>
     [JsonPropertyName("report_summary")]
     public required DomainDmarcReportSummary ReportSummary { get; set; }
 

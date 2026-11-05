@@ -9,15 +9,55 @@ from .dmarc_source import DmarcSource
 
 
 class DomainDmarcReportSummary(UniversalBaseModel):
-    period_start: dt.datetime
-    period_end: dt.datetime
-    reports: int
-    messages: int
-    passing: int
-    coss_messages: int
-    coss_passing: int
-    first_report_at: typing.Optional[dt.datetime] = None
-    last_report_at: typing.Optional[dt.datetime] = None
+    """
+    What the aggregate reports of this period say.
+    """
+
+    period_start: dt.datetime = pydantic.Field()
+    """
+    When the period starts.
+    """
+
+    period_end: dt.datetime = pydantic.Field()
+    """
+    When the period ends.
+    """
+
+    reports: int = pydantic.Field()
+    """
+    Reports received.
+    """
+
+    messages: int = pydantic.Field()
+    """
+    Messages they cover.
+    """
+
+    passing: int = pydantic.Field()
+    """
+    Of those, how many passed DMARC.
+    """
+
+    coss_messages: int = pydantic.Field()
+    """
+    Of those, how many were sent through coss.com.
+    """
+
+    coss_passing: int = pydantic.Field()
+    """
+    Of those, how many passed DMARC.
+    """
+
+    first_report_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the first report arrived. `null`: none yet.
+    """
+
+    last_report_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the latest report arrived. `null`: none yet.
+    """
+
     sources: typing.List[DmarcSource] = pydantic.Field()
     """
     The 50 sources with the most messages in the period.

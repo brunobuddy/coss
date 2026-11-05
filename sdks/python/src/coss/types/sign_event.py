@@ -19,18 +19,46 @@ class SignEvent(UniversalBaseModel):
     1-based position in the request's trail.
     """
 
-    type: SignEventType
-    signer_id: typing.Optional[str] = None
+    type: SignEventType = pydantic.Field()
+    """
+    What happened. `created`, `sent`, `canceled` and `expired` concern the request; `notified`, `reminded`, `viewed`, `consented`, `signed` and `declined` a signer; `completed` is the last signature and `sealed` the sealed document being ready.
+    """
+
+    signer_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The id of the signer it concerns. `null`: the whole request.
+    """
+
     actor: SignEventActor = pydantic.Field()
     """
     Who did it: your API key, a signer, a member in the dashboard, or coss.com.
     """
 
-    ip_address: typing.Optional[str] = None
-    user_agent: typing.Optional[str] = None
-    details: SignEventDetails
-    occurred_at: dt.datetime
-    previous_hash: typing.Optional[str] = None
+    ip_address: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The address the action came from. `null`: unknown, or coss.com acted.
+    """
+
+    user_agent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The client's `User-Agent`. `null`: unknown.
+    """
+
+    details: SignEventDetails = pydantic.Field()
+    """
+    What this event recorded, depending on its type.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
+
+    previous_hash: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The previous event's `hash`. `null` on the first event.
+    """
+
     hash: str = pydantic.Field()
     """
     SHA-256 over this event and `previous_hash`: changing or removing an event breaks the chain from there on.

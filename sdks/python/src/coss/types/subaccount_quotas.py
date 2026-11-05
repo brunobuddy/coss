@@ -7,6 +7,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class SubaccountQuotas(UniversalBaseModel):
+    """
+    Its own sending limits.
+    """
+
     recipients_per_day: typing.Optional[int] = pydantic.Field(default=None)
     """
     Recipients it may send to per day; `null`: only your organization's quota.

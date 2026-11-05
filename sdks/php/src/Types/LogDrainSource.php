@@ -13,5 +13,6 @@ enum LogDrainSource: string
     case Sign = "sign";
     case Verify = "verify";
     case Forms = "forms";
+    case Scheduling = "scheduling";
     case Audit = "audit";
 }

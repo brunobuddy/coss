@@ -11,6 +11,9 @@ from .inbox_message_received_webhook_event import InboxMessageReceivedWebhookEve
 from .received_email_webhook_event import ReceivedEmailWebhookEvent
 from .received_sms_webhook_event import ReceivedSmsWebhookEvent
 from .risk_webhook_event import RiskWebhookEvent
+from .scheduling_booking_webhook_event import SchedulingBookingWebhookEvent
+from .scheduling_calendar_delegation_webhook_event import SchedulingCalendarDelegationWebhookEvent
+from .scheduling_calendar_webhook_event import SchedulingCalendarWebhookEvent
 from .sign_request_webhook_event import SignRequestWebhookEvent
 from .sms_webhook_event import SmsWebhookEvent
 from .verification_webhook_event import VerificationWebhookEvent
@@ -28,4 +31,7 @@ WebhookTestEventEvent = typing.Union[
     SignRequestWebhookEvent,
     VerificationWebhookEvent,
     FormSubmissionWebhookEvent,
+    SchedulingBookingWebhookEvent,
+    SchedulingCalendarWebhookEvent,
+    SchedulingCalendarDelegationWebhookEvent,
 ]

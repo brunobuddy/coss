@@ -245,18 +245,30 @@ public class RawTopicsClient {
         }
     }
 
+    /**
+     * One topic of the API key's environment.
+     */
     public CossHttpResponse<Topic> get(String id) {
         return get(id, GetTopicsRequest.builder().build());
     }
 
+    /**
+     * One topic of the API key's environment.
+     */
     public CossHttpResponse<Topic> get(String id, RequestOptions requestOptions) {
         return get(id, GetTopicsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One topic of the API key's environment.
+     */
     public CossHttpResponse<Topic> get(String id, GetTopicsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One topic of the API key's environment.
+     */
     public CossHttpResponse<Topic> get(String id, GetTopicsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

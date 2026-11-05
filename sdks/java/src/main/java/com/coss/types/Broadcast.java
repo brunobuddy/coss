@@ -144,6 +144,9 @@ public final class Broadcast {
         return id;
     }
 
+    /**
+     * @return Shown only to you.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -157,6 +160,9 @@ public final class Broadcast {
         return status;
     }
 
+    /**
+     * @return The audience it goes to. <code>null</code>: a segment.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("audience_id")
     public OptionalNullable<String> getAudienceId() {
@@ -166,6 +172,9 @@ public final class Broadcast {
         return audienceId;
     }
 
+    /**
+     * @return The segment it goes to. <code>null</code>: an audience.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("segment_id")
     public OptionalNullable<String> getSegmentId() {
@@ -175,6 +184,9 @@ public final class Broadcast {
         return segmentId;
     }
 
+    /**
+     * @return The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("topic")
     public OptionalNullable<String> getTopic() {
@@ -184,21 +196,33 @@ public final class Broadcast {
         return topic;
     }
 
+    /**
+     * @return Who it's sent from.
+     */
     @JsonProperty("from")
     public String getFrom() {
         return from;
     }
 
+    /**
+     * @return Addresses replies go to.
+     */
     @JsonProperty("reply_to")
     public List<String> getReplyTo() {
         return replyTo;
     }
 
+    /**
+     * @return The subject, before contact fields are filled in.
+     */
     @JsonProperty("subject")
     public String getSubject() {
         return subject;
     }
 
+    /**
+     * @return The inbox preview line. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("preview_text")
     public OptionalNullable<String> getPreviewText() {
@@ -208,6 +232,9 @@ public final class Broadcast {
         return previewText;
     }
 
+    /**
+     * @return The HTML part, before contact fields are filled in. <code>null</code>: text only.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("html")
     public OptionalNullable<String> getHtml() {
@@ -217,6 +244,9 @@ public final class Broadcast {
         return html;
     }
 
+    /**
+     * @return The plain text part. <code>null</code>: HTML only.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("text")
     public OptionalNullable<String> getText() {
@@ -226,11 +256,17 @@ public final class Broadcast {
         return text;
     }
 
+    /**
+     * @return Which opens and clicks are tracked.
+     */
     @JsonProperty("tracking")
     public BroadcastTracking getTracking() {
         return tracking;
     }
 
+    /**
+     * @return Recipients per second. <code>null</code>: the plan's marketing rate.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("rate_per_second")
     public OptionalNullable<Long> getRatePerSecond() {
@@ -240,6 +276,9 @@ public final class Broadcast {
         return ratePerSecond;
     }
 
+    /**
+     * @return When it's set to start. <code>null</code>: not scheduled.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("scheduled_at")
     public OptionalNullable<OffsetDateTime> getScheduledAt() {
@@ -249,6 +288,9 @@ public final class Broadcast {
         return scheduledAt;
     }
 
+    /**
+     * @return When sending started. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("started_at")
     public OptionalNullable<OffsetDateTime> getStartedAt() {
@@ -258,6 +300,9 @@ public final class Broadcast {
         return startedAt;
     }
 
+    /**
+     * @return When it finished. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("completed_at")
     public OptionalNullable<OffsetDateTime> getCompletedAt() {
@@ -267,6 +312,9 @@ public final class Broadcast {
         return completedAt;
     }
 
+    /**
+     * @return When it was canceled. <code>null</code>: it wasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("canceled_at")
     public OptionalNullable<OffsetDateTime> getCanceledAt() {
@@ -300,6 +348,9 @@ public final class Broadcast {
         return pauseReason;
     }
 
+    /**
+     * @return Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("error")
     public OptionalNullable<BroadcastError> getError() {
@@ -497,6 +548,9 @@ public final class Broadcast {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown only to you.</p>
+         */
         StatusStage name(@NotNull String name);
     }
 
@@ -508,14 +562,23 @@ public final class Broadcast {
     }
 
     public interface FromStage {
+        /**
+         * <p>Who it's sent from.</p>
+         */
         SubjectStage from(@NotNull String from);
     }
 
     public interface SubjectStage {
+        /**
+         * <p>The subject, before contact fields are filled in.</p>
+         */
         TrackingStage subject(@NotNull String subject);
     }
 
     public interface TrackingStage {
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         */
         StatsStage tracking(@NotNull BroadcastTracking tracking);
     }
 
@@ -538,6 +601,9 @@ public final class Broadcast {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The audience it goes to. <code>null</code>: a segment.</p>
+         */
         _FinalStage audienceId(OptionalNullable<String> audienceId);
 
         _FinalStage audienceId(String audienceId);
@@ -546,6 +612,9 @@ public final class Broadcast {
 
         _FinalStage audienceId(Nullable<String> audienceId);
 
+        /**
+         * <p>The segment it goes to. <code>null</code>: an audience.</p>
+         */
         _FinalStage segmentId(OptionalNullable<String> segmentId);
 
         _FinalStage segmentId(String segmentId);
@@ -554,6 +623,9 @@ public final class Broadcast {
 
         _FinalStage segmentId(Nullable<String> segmentId);
 
+        /**
+         * <p>The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.</p>
+         */
         _FinalStage topic(OptionalNullable<String> topic);
 
         _FinalStage topic(String topic);
@@ -562,12 +634,18 @@ public final class Broadcast {
 
         _FinalStage topic(Nullable<String> topic);
 
+        /**
+         * <p>Addresses replies go to.</p>
+         */
         _FinalStage replyTo(List<String> replyTo);
 
         _FinalStage addReplyTo(String replyTo);
 
         _FinalStage addAllReplyTo(List<String> replyTo);
 
+        /**
+         * <p>The inbox preview line. <code>null</code>: none.</p>
+         */
         _FinalStage previewText(OptionalNullable<String> previewText);
 
         _FinalStage previewText(String previewText);
@@ -576,6 +654,9 @@ public final class Broadcast {
 
         _FinalStage previewText(Nullable<String> previewText);
 
+        /**
+         * <p>The HTML part, before contact fields are filled in. <code>null</code>: text only.</p>
+         */
         _FinalStage html(OptionalNullable<String> html);
 
         _FinalStage html(String html);
@@ -584,6 +665,9 @@ public final class Broadcast {
 
         _FinalStage html(Nullable<String> html);
 
+        /**
+         * <p>The plain text part. <code>null</code>: HTML only.</p>
+         */
         _FinalStage text(OptionalNullable<String> text);
 
         _FinalStage text(String text);
@@ -592,6 +676,9 @@ public final class Broadcast {
 
         _FinalStage text(Nullable<String> text);
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         */
         _FinalStage ratePerSecond(OptionalNullable<Long> ratePerSecond);
 
         _FinalStage ratePerSecond(Long ratePerSecond);
@@ -600,6 +687,9 @@ public final class Broadcast {
 
         _FinalStage ratePerSecond(Nullable<Long> ratePerSecond);
 
+        /**
+         * <p>When it's set to start. <code>null</code>: not scheduled.</p>
+         */
         _FinalStage scheduledAt(OptionalNullable<OffsetDateTime> scheduledAt);
 
         _FinalStage scheduledAt(OffsetDateTime scheduledAt);
@@ -608,6 +698,9 @@ public final class Broadcast {
 
         _FinalStage scheduledAt(Nullable<OffsetDateTime> scheduledAt);
 
+        /**
+         * <p>When sending started. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage startedAt(OptionalNullable<OffsetDateTime> startedAt);
 
         _FinalStage startedAt(OffsetDateTime startedAt);
@@ -616,6 +709,9 @@ public final class Broadcast {
 
         _FinalStage startedAt(Nullable<OffsetDateTime> startedAt);
 
+        /**
+         * <p>When it finished. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage completedAt(OptionalNullable<OffsetDateTime> completedAt);
 
         _FinalStage completedAt(OffsetDateTime completedAt);
@@ -624,6 +720,9 @@ public final class Broadcast {
 
         _FinalStage completedAt(Nullable<OffsetDateTime> completedAt);
 
+        /**
+         * <p>When it was canceled. <code>null</code>: it wasn't.</p>
+         */
         _FinalStage canceledAt(OptionalNullable<OffsetDateTime> canceledAt);
 
         _FinalStage canceledAt(OffsetDateTime canceledAt);
@@ -654,6 +753,9 @@ public final class Broadcast {
 
         _FinalStage pauseReason(Nullable<String> pauseReason);
 
+        /**
+         * <p>Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.</p>
+         */
         _FinalStage error(OptionalNullable<BroadcastError> error);
 
         _FinalStage error(BroadcastError error);
@@ -775,6 +877,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Shown only to you.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public StatusStage name(@NotNull String name) {
@@ -793,6 +899,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Who it's sent from.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("from")
         public SubjectStage from(@NotNull String from) {
@@ -800,6 +910,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The subject, before contact fields are filled in.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subject")
         public TrackingStage subject(@NotNull String subject) {
@@ -807,6 +921,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("tracking")
         public StatsStage tracking(@NotNull BroadcastTracking tracking) {
@@ -835,6 +953,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Nullable<BroadcastError> error) {
             if (error.isNull()) {
@@ -847,6 +969,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Optional<BroadcastError> error) {
             if (error.isPresent()) {
@@ -857,12 +983,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(BroadcastError error) {
             this.error = OptionalNullable.of(error);
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>, such as <code>target_unavailable</code> when its audience, segment or topic was deleted while sending. <code>null</code>: it didn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "error", nulls = Nulls.SKIP)
         public _FinalStage error(OptionalNullable<BroadcastError> error) {
@@ -970,6 +1103,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it was canceled. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage canceledAt(Nullable<OffsetDateTime> canceledAt) {
             if (canceledAt.isNull()) {
@@ -982,6 +1119,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it was canceled. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage canceledAt(Optional<OffsetDateTime> canceledAt) {
             if (canceledAt.isPresent()) {
@@ -992,12 +1133,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it was canceled. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage canceledAt(OffsetDateTime canceledAt) {
             this.canceledAt = OptionalNullable.of(canceledAt);
             return this;
         }
 
+        /**
+         * <p>When it was canceled. <code>null</code>: it wasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "canceled_at", nulls = Nulls.SKIP)
         public _FinalStage canceledAt(OptionalNullable<OffsetDateTime> canceledAt) {
@@ -1005,6 +1153,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it finished. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(Nullable<OffsetDateTime> completedAt) {
             if (completedAt.isNull()) {
@@ -1017,6 +1169,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it finished. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(Optional<OffsetDateTime> completedAt) {
             if (completedAt.isPresent()) {
@@ -1027,12 +1183,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it finished. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(OffsetDateTime completedAt) {
             this.completedAt = OptionalNullable.of(completedAt);
             return this;
         }
 
+        /**
+         * <p>When it finished. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "completed_at", nulls = Nulls.SKIP)
         public _FinalStage completedAt(OptionalNullable<OffsetDateTime> completedAt) {
@@ -1040,6 +1203,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When sending started. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage startedAt(Nullable<OffsetDateTime> startedAt) {
             if (startedAt.isNull()) {
@@ -1052,6 +1219,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When sending started. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage startedAt(Optional<OffsetDateTime> startedAt) {
             if (startedAt.isPresent()) {
@@ -1062,12 +1233,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When sending started. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage startedAt(OffsetDateTime startedAt) {
             this.startedAt = OptionalNullable.of(startedAt);
             return this;
         }
 
+        /**
+         * <p>When sending started. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "started_at", nulls = Nulls.SKIP)
         public _FinalStage startedAt(OptionalNullable<OffsetDateTime> startedAt) {
@@ -1075,6 +1253,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it's set to start. <code>null</code>: not scheduled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(Nullable<OffsetDateTime> scheduledAt) {
             if (scheduledAt.isNull()) {
@@ -1087,6 +1269,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it's set to start. <code>null</code>: not scheduled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(Optional<OffsetDateTime> scheduledAt) {
             if (scheduledAt.isPresent()) {
@@ -1097,12 +1283,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>When it's set to start. <code>null</code>: not scheduled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scheduledAt(OffsetDateTime scheduledAt) {
             this.scheduledAt = OptionalNullable.of(scheduledAt);
             return this;
         }
 
+        /**
+         * <p>When it's set to start. <code>null</code>: not scheduled.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "scheduled_at", nulls = Nulls.SKIP)
         public _FinalStage scheduledAt(OptionalNullable<OffsetDateTime> scheduledAt) {
@@ -1110,6 +1303,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ratePerSecond(Nullable<Long> ratePerSecond) {
             if (ratePerSecond.isNull()) {
@@ -1122,6 +1319,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ratePerSecond(Optional<Long> ratePerSecond) {
             if (ratePerSecond.isPresent()) {
@@ -1132,12 +1333,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage ratePerSecond(Long ratePerSecond) {
             this.ratePerSecond = OptionalNullable.of(ratePerSecond);
             return this;
         }
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "rate_per_second", nulls = Nulls.SKIP)
         public _FinalStage ratePerSecond(OptionalNullable<Long> ratePerSecond) {
@@ -1145,6 +1353,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Nullable<String> text) {
             if (text.isNull()) {
@@ -1157,6 +1369,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Optional<String> text) {
             if (text.isPresent()) {
@@ -1167,12 +1383,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(String text) {
             this.text = OptionalNullable.of(text);
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code>: HTML only.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public _FinalStage text(OptionalNullable<String> text) {
@@ -1180,6 +1403,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The HTML part, before contact fields are filled in. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Nullable<String> html) {
             if (html.isNull()) {
@@ -1192,6 +1419,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The HTML part, before contact fields are filled in. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Optional<String> html) {
             if (html.isPresent()) {
@@ -1202,12 +1433,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The HTML part, before contact fields are filled in. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(String html) {
             this.html = OptionalNullable.of(html);
             return this;
         }
 
+        /**
+         * <p>The HTML part, before contact fields are filled in. <code>null</code>: text only.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "html", nulls = Nulls.SKIP)
         public _FinalStage html(OptionalNullable<String> html) {
@@ -1215,6 +1453,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The inbox preview line. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previewText(Nullable<String> previewText) {
             if (previewText.isNull()) {
@@ -1227,6 +1469,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The inbox preview line. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previewText(Optional<String> previewText) {
             if (previewText.isPresent()) {
@@ -1237,12 +1483,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The inbox preview line. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage previewText(String previewText) {
             this.previewText = OptionalNullable.of(previewText);
             return this;
         }
 
+        /**
+         * <p>The inbox preview line. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "preview_text", nulls = Nulls.SKIP)
         public _FinalStage previewText(OptionalNullable<String> previewText) {
@@ -1250,6 +1503,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReplyTo(List<String> replyTo) {
             if (replyTo != null) {
@@ -1258,12 +1515,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReplyTo(String replyTo) {
             this.replyTo.add(replyTo);
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public _FinalStage replyTo(List<String> replyTo) {
@@ -1274,6 +1538,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage topic(Nullable<String> topic) {
             if (topic.isNull()) {
@@ -1286,6 +1554,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage topic(Optional<String> topic) {
             if (topic.isPresent()) {
@@ -1296,12 +1568,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage topic(String topic) {
             this.topic = OptionalNullable.of(topic);
             return this;
         }
 
+        /**
+         * <p>The topic it's about (its key), and its emails' <code>category</code>. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "topic", nulls = Nulls.SKIP)
         public _FinalStage topic(OptionalNullable<String> topic) {
@@ -1309,6 +1588,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The segment it goes to. <code>null</code>: an audience.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage segmentId(Nullable<String> segmentId) {
             if (segmentId.isNull()) {
@@ -1321,6 +1604,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The segment it goes to. <code>null</code>: an audience.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage segmentId(Optional<String> segmentId) {
             if (segmentId.isPresent()) {
@@ -1331,12 +1618,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The segment it goes to. <code>null</code>: an audience.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage segmentId(String segmentId) {
             this.segmentId = OptionalNullable.of(segmentId);
             return this;
         }
 
+        /**
+         * <p>The segment it goes to. <code>null</code>: an audience.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "segment_id", nulls = Nulls.SKIP)
         public _FinalStage segmentId(OptionalNullable<String> segmentId) {
@@ -1344,6 +1638,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The audience it goes to. <code>null</code>: a segment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage audienceId(Nullable<String> audienceId) {
             if (audienceId.isNull()) {
@@ -1356,6 +1654,10 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The audience it goes to. <code>null</code>: a segment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage audienceId(Optional<String> audienceId) {
             if (audienceId.isPresent()) {
@@ -1366,12 +1668,19 @@ public final class Broadcast {
             return this;
         }
 
+        /**
+         * <p>The audience it goes to. <code>null</code>: a segment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage audienceId(String audienceId) {
             this.audienceId = OptionalNullable.of(audienceId);
             return this;
         }
 
+        /**
+         * <p>The audience it goes to. <code>null</code>: a segment.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "audience_id", nulls = Nulls.SKIP)
         public _FinalStage audienceId(OptionalNullable<String> audienceId) {

@@ -10,7 +10,7 @@ use Coss\Core\Types\Union;
 class SegmentFilterConditionsItemConditionsConditionsItemCreatedAt extends JsonSerializableType
 {
     /**
-     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp> $op
+     * @var value-of<SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp> $op `before` or `after` a time, or created `within_days` the last days.
      */
     #[JsonProperty('op')]
     public string $op;

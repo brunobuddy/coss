@@ -24,7 +24,7 @@ class CreateSignRequestFromTemplateRequest extends JsonSerializableType
     public ?string $title;
 
     /**
-     * @var ?string $message
+     * @var ?string $message Default: the template's message.
      */
     #[JsonProperty('message')]
     public ?string $message;
@@ -48,7 +48,7 @@ class CreateSignRequestFromTemplateRequest extends JsonSerializableType
     public ?string $signingOrder;
 
     /**
-     * @var ?DateTime $expiresAt
+     * @var ?DateTime $expiresAt When an unfinished request expires, at most 365 days ahead.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiresAt;
@@ -60,7 +60,7 @@ class CreateSignRequestFromTemplateRequest extends JsonSerializableType
     public ?array $metadata;
 
     /**
-     * @var ?int $reminderIntervalDays
+     * @var ?int $reminderIntervalDays Days between reminders to email signers. Default: your Sign settings'. `null`: none.
      */
     #[JsonProperty('reminder_interval_days')]
     public ?int $reminderIntervalDays;

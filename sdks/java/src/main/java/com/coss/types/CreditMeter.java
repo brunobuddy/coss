@@ -7,14 +7,21 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class CreditMeter {
+    public static final CreditMeter EMAIL_RECEIVED_DATA =
+            new CreditMeter(Value.EMAIL_RECEIVED_DATA, "email.received_data");
+
     public static final CreditMeter EMAIL_DEDICATED_IP =
             new CreditMeter(Value.EMAIL_DEDICATED_IP, "email.dedicated_ip");
 
     public static final CreditMeter SMS_RECEIVED_SEGMENTS =
             new CreditMeter(Value.SMS_RECEIVED_SEGMENTS, "sms.received_segments");
 
-    public static final CreditMeter VIDEO_PARTICIPANT_MINUTES =
-            new CreditMeter(Value.VIDEO_PARTICIPANT_MINUTES, "video.participant_minutes");
+    public static final CreditMeter RISK_ASSESSMENTS = new CreditMeter(Value.RISK_ASSESSMENTS, "risk.assessments");
+
+    public static final CreditMeter SCHEDULING_HOSTS = new CreditMeter(Value.SCHEDULING_HOSTS, "scheduling.hosts");
+
+    public static final CreditMeter FORMS_FILE_UPLOADS =
+            new CreditMeter(Value.FORMS_FILE_UPLOADS, "forms.file_uploads");
 
     public static final CreditMeter FORMS_SUBMISSIONS = new CreditMeter(Value.FORMS_SUBMISSIONS, "forms.submissions");
 
@@ -26,9 +33,14 @@ public final class CreditMeter {
 
     public static final CreditMeter SMS_REGISTRATIONS = new CreditMeter(Value.SMS_REGISTRATIONS, "sms.registrations");
 
+    public static final CreditMeter RISK_CONTENT_CHECKS =
+            new CreditMeter(Value.RISK_CONTENT_CHECKS, "risk.content_checks");
+
     public static final CreditMeter EMAIL_RECIPIENTS = new CreditMeter(Value.EMAIL_RECIPIENTS, "email.recipients");
 
     public static final CreditMeter EMAIL_RECEIVED = new CreditMeter(Value.EMAIL_RECEIVED, "email.received");
+
+    public static final CreditMeter HOOKS_MESSAGES = new CreditMeter(Value.HOOKS_MESSAGES, "hooks.messages");
 
     public static final CreditMeter SCHEDULING_BOOKINGS =
             new CreditMeter(Value.SCHEDULING_BOOKINGS, "scheduling.bookings");
@@ -40,6 +52,9 @@ public final class CreditMeter {
             new CreditMeter(Value.SIGN_COMPLETED_REQUESTS, "sign.completed_requests");
 
     public static final CreditMeter VERIFY_SMS = new CreditMeter(Value.VERIFY_SMS, "verify.sms");
+
+    public static final CreditMeter EMAIL_ATTACHMENT_DATA =
+            new CreditMeter(Value.EMAIL_ATTACHMENT_DATA, "email.attachment_data");
 
     public static final CreditMeter SMS_NUMBERS = new CreditMeter(Value.SMS_NUMBERS, "sms.numbers");
 
@@ -74,12 +89,18 @@ public final class CreditMeter {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case EMAIL_RECEIVED_DATA:
+                return visitor.visitEmailReceivedData();
             case EMAIL_DEDICATED_IP:
                 return visitor.visitEmailDedicatedIp();
             case SMS_RECEIVED_SEGMENTS:
                 return visitor.visitSmsReceivedSegments();
-            case VIDEO_PARTICIPANT_MINUTES:
-                return visitor.visitVideoParticipantMinutes();
+            case RISK_ASSESSMENTS:
+                return visitor.visitRiskAssessments();
+            case SCHEDULING_HOSTS:
+                return visitor.visitSchedulingHosts();
+            case FORMS_FILE_UPLOADS:
+                return visitor.visitFormsFileUploads();
             case FORMS_SUBMISSIONS:
                 return visitor.visitFormsSubmissions();
             case EMAIL_INBOXES:
@@ -90,10 +111,14 @@ public final class CreditMeter {
                 return visitor.visitRiskPhoneChecks();
             case SMS_REGISTRATIONS:
                 return visitor.visitSmsRegistrations();
+            case RISK_CONTENT_CHECKS:
+                return visitor.visitRiskContentChecks();
             case EMAIL_RECIPIENTS:
                 return visitor.visitEmailRecipients();
             case EMAIL_RECEIVED:
                 return visitor.visitEmailReceived();
+            case HOOKS_MESSAGES:
+                return visitor.visitHooksMessages();
             case SCHEDULING_BOOKINGS:
                 return visitor.visitSchedulingBookings();
             case VERIFY_VERIFICATIONS:
@@ -102,6 +127,8 @@ public final class CreditMeter {
                 return visitor.visitSignCompletedRequests();
             case VERIFY_SMS:
                 return visitor.visitVerifySms();
+            case EMAIL_ATTACHMENT_DATA:
+                return visitor.visitEmailAttachmentData();
             case SMS_NUMBERS:
                 return visitor.visitSmsNumbers();
             case UNKNOWN:
@@ -113,12 +140,18 @@ public final class CreditMeter {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static CreditMeter valueOf(String value) {
         switch (value) {
+            case "email.received_data":
+                return EMAIL_RECEIVED_DATA;
             case "email.dedicated_ip":
                 return EMAIL_DEDICATED_IP;
             case "sms.received_segments":
                 return SMS_RECEIVED_SEGMENTS;
-            case "video.participant_minutes":
-                return VIDEO_PARTICIPANT_MINUTES;
+            case "risk.assessments":
+                return RISK_ASSESSMENTS;
+            case "scheduling.hosts":
+                return SCHEDULING_HOSTS;
+            case "forms.file_uploads":
+                return FORMS_FILE_UPLOADS;
             case "forms.submissions":
                 return FORMS_SUBMISSIONS;
             case "email.inboxes":
@@ -129,10 +162,14 @@ public final class CreditMeter {
                 return RISK_PHONE_CHECKS;
             case "sms.registrations":
                 return SMS_REGISTRATIONS;
+            case "risk.content_checks":
+                return RISK_CONTENT_CHECKS;
             case "email.recipients":
                 return EMAIL_RECIPIENTS;
             case "email.received":
                 return EMAIL_RECEIVED;
+            case "hooks.messages":
+                return HOOKS_MESSAGES;
             case "scheduling.bookings":
                 return SCHEDULING_BOOKINGS;
             case "verify.verifications":
@@ -141,6 +178,8 @@ public final class CreditMeter {
                 return SIGN_COMPLETED_REQUESTS;
             case "verify.sms":
                 return VERIFY_SMS;
+            case "email.attachment_data":
+                return EMAIL_ATTACHMENT_DATA;
             case "sms.numbers":
                 return SMS_NUMBERS;
             default:
@@ -153,7 +192,11 @@ public final class CreditMeter {
 
         EMAIL_DEDICATED_IP,
 
+        EMAIL_ATTACHMENT_DATA,
+
         EMAIL_RECEIVED,
+
+        EMAIL_RECEIVED_DATA,
 
         EMAIL_INBOXES,
 
@@ -169,15 +212,23 @@ public final class CreditMeter {
 
         RISK_PHONE_CHECKS,
 
+        RISK_ASSESSMENTS,
+
+        RISK_CONTENT_CHECKS,
+
         VERIFY_VERIFICATIONS,
 
         VERIFY_SMS,
 
         FORMS_SUBMISSIONS,
 
-        VIDEO_PARTICIPANT_MINUTES,
+        FORMS_FILE_UPLOADS,
 
         SCHEDULING_BOOKINGS,
+
+        SCHEDULING_HOSTS,
+
+        HOOKS_MESSAGES,
 
         UNKNOWN
     }
@@ -187,7 +238,11 @@ public final class CreditMeter {
 
         T visitEmailDedicatedIp();
 
+        T visitEmailAttachmentData();
+
         T visitEmailReceived();
+
+        T visitEmailReceivedData();
 
         T visitEmailInboxes();
 
@@ -203,15 +258,23 @@ public final class CreditMeter {
 
         T visitRiskPhoneChecks();
 
+        T visitRiskAssessments();
+
+        T visitRiskContentChecks();
+
         T visitVerifyVerifications();
 
         T visitVerifySms();
 
         T visitFormsSubmissions();
 
-        T visitVideoParticipantMinutes();
+        T visitFormsFileUploads();
 
         T visitSchedulingBookings();
+
+        T visitSchedulingHosts();
+
+        T visitHooksMessages();
 
         T visitUnknown(String unknownType);
     }

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { securityHeaders } from "@/lib/security-headers";
 
 const dev = process.env.NODE_ENV === "development";
-const SESSION_PAGE = /^\/[hbm]\/(schs_[0-9a-z]{26})\/?$/;
+const SESSION_PAGE = /^\/[hbmt]\/(schs_[0-9a-z]{26})\/?$/;
 
 function apiOrigin(): string | null {
   try {

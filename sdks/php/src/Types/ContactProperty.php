@@ -23,7 +23,7 @@ class ContactProperty extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $key
+     * @var string $key How contacts and templates name it (`{{{contact.<key>}}}`). Can't change.
      */
     #[JsonProperty('key')]
     public string $key;

@@ -8,31 +8,31 @@ use Coss\Core\Json\JsonProperty;
 class TemplateProblem extends JsonSerializableType
 {
     /**
-     * @var string $locale
+     * @var string $locale The locale whose content it's in.
      */
     #[JsonProperty('locale')]
     public string $locale;
 
     /**
-     * @var value-of<TemplateProblemField> $field
+     * @var value-of<TemplateProblemField> $field The part of the content it's in.
      */
     #[JsonProperty('field')]
     public string $field;
 
     /**
-     * @var string $message
+     * @var string $message What's wrong.
      */
     #[JsonProperty('message')]
     public string $message;
 
     /**
-     * @var int $line
+     * @var int $line The line it's on, from 1.
      */
     #[JsonProperty('line')]
     public int $line;
 
     /**
-     * @var int $column
+     * @var int $column The column it's at, from 1.
      */
     #[JsonProperty('column')]
     public int $column;

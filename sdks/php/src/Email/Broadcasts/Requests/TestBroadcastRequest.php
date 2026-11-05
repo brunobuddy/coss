@@ -9,7 +9,7 @@ use Coss\Core\Types\ArrayType;
 class TestBroadcastRequest extends JsonSerializableType
 {
     /**
-     * @var array<string> $to
+     * @var array<string> $to Who gets the test, at most 5 addresses.
      */
     #[JsonProperty('to'), ArrayType(['string'])]
     public array $to;

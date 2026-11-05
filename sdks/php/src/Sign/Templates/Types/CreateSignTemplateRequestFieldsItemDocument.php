@@ -50,13 +50,13 @@ class CreateSignTemplateRequestFieldsItemDocument extends JsonSerializableType
     public float $y;
 
     /**
-     * @var float $width
+     * @var float $width In PDF points.
      */
     #[JsonProperty('width')]
     public float $width;
 
     /**
-     * @var float $height
+     * @var float $height In PDF points.
      */
     #[JsonProperty('height')]
     public float $height;

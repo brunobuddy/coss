@@ -61,16 +61,25 @@ public final class FormField {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The <code>name</code> the form's input posts.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Validates the value and picks the input on hosted pages.
+     */
     @JsonProperty("type")
     public FormFieldType getType() {
         return type;
     }
 
+    /**
+     * @return Shown on hosted pages and in notifications. <code>null</code>: the name.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("label")
     public OptionalNullable<String> getLabel() {
@@ -80,11 +89,17 @@ public final class FormField {
         return label;
     }
 
+    /**
+     * @return Whether a submission must include it.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
     }
 
+    /**
+     * @return Shown in the empty input on hosted pages. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("placeholder")
     public OptionalNullable<String> getPlaceholder() {
@@ -94,11 +109,17 @@ public final class FormField {
         return placeholder;
     }
 
+    /**
+     * @return The choices of <code>select</code>, <code>radio</code> and <code>checkbox</code> fields. Empty for other types.
+     */
     @JsonProperty("options")
     public List<String> getOptions() {
         return options;
     }
 
+    /**
+     * @return The longest value accepted, in characters. <code>null</code>: only the overall limit.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("max_length")
     public OptionalNullable<Long> getMaxLength() {
@@ -163,16 +184,25 @@ public final class FormField {
     }
 
     public interface NameStage {
+        /**
+         * <p>The <code>name</code> the form's input posts.</p>
+         */
         TypeStage name(@NotNull String name);
 
         Builder from(FormField other);
     }
 
     public interface TypeStage {
+        /**
+         * <p>Validates the value and picks the input on hosted pages.</p>
+         */
         RequiredStage type(@NotNull FormFieldType type);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether a submission must include it.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -183,6 +213,9 @@ public final class FormField {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Shown on hosted pages and in notifications. <code>null</code>: the name.</p>
+         */
         _FinalStage label(OptionalNullable<String> label);
 
         _FinalStage label(String label);
@@ -191,6 +224,9 @@ public final class FormField {
 
         _FinalStage label(Nullable<String> label);
 
+        /**
+         * <p>Shown in the empty input on hosted pages. <code>null</code>: none.</p>
+         */
         _FinalStage placeholder(OptionalNullable<String> placeholder);
 
         _FinalStage placeholder(String placeholder);
@@ -199,12 +235,18 @@ public final class FormField {
 
         _FinalStage placeholder(Nullable<String> placeholder);
 
+        /**
+         * <p>The choices of <code>select</code>, <code>radio</code> and <code>checkbox</code> fields. Empty for other types.</p>
+         */
         _FinalStage options(List<String> options);
 
         _FinalStage addOptions(String options);
 
         _FinalStage addAllOptions(List<String> options);
 
+        /**
+         * <p>The longest value accepted, in characters. <code>null</code>: only the overall limit.</p>
+         */
         _FinalStage maxLength(OptionalNullable<Long> maxLength);
 
         _FinalStage maxLength(Long maxLength);
@@ -247,6 +289,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The <code>name</code> the form's input posts.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public TypeStage name(@NotNull String name) {
@@ -254,6 +300,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Validates the value and picks the input on hosted pages.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public RequiredStage type(@NotNull FormFieldType type) {
@@ -261,6 +311,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Whether a submission must include it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {
@@ -268,6 +322,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters. <code>null</code>: only the overall limit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage maxLength(Nullable<Long> maxLength) {
             if (maxLength.isNull()) {
@@ -280,6 +338,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters. <code>null</code>: only the overall limit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage maxLength(Optional<Long> maxLength) {
             if (maxLength.isPresent()) {
@@ -290,12 +352,19 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters. <code>null</code>: only the overall limit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage maxLength(Long maxLength) {
             this.maxLength = OptionalNullable.of(maxLength);
             return this;
         }
 
+        /**
+         * <p>The longest value accepted, in characters. <code>null</code>: only the overall limit.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "max_length", nulls = Nulls.SKIP)
         public _FinalStage maxLength(OptionalNullable<Long> maxLength) {
@@ -303,6 +372,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The choices of <code>select</code>, <code>radio</code> and <code>checkbox</code> fields. Empty for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllOptions(List<String> options) {
             if (options != null) {
@@ -311,12 +384,19 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>The choices of <code>select</code>, <code>radio</code> and <code>checkbox</code> fields. Empty for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addOptions(String options) {
             this.options.add(options);
             return this;
         }
 
+        /**
+         * <p>The choices of <code>select</code>, <code>radio</code> and <code>checkbox</code> fields. Empty for other types.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "options", nulls = Nulls.SKIP)
         public _FinalStage options(List<String> options) {
@@ -327,6 +407,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage placeholder(Nullable<String> placeholder) {
             if (placeholder.isNull()) {
@@ -339,6 +423,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage placeholder(Optional<String> placeholder) {
             if (placeholder.isPresent()) {
@@ -349,12 +437,19 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage placeholder(String placeholder) {
             this.placeholder = OptionalNullable.of(placeholder);
             return this;
         }
 
+        /**
+         * <p>Shown in the empty input on hosted pages. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "placeholder", nulls = Nulls.SKIP)
         public _FinalStage placeholder(OptionalNullable<String> placeholder) {
@@ -362,6 +457,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown on hosted pages and in notifications. <code>null</code>: the name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Nullable<String> label) {
             if (label.isNull()) {
@@ -374,6 +473,10 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown on hosted pages and in notifications. <code>null</code>: the name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Optional<String> label) {
             if (label.isPresent()) {
@@ -384,12 +487,19 @@ public final class FormField {
             return this;
         }
 
+        /**
+         * <p>Shown on hosted pages and in notifications. <code>null</code>: the name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(String label) {
             this.label = OptionalNullable.of(label);
             return this;
         }
 
+        /**
+         * <p>Shown on hosted pages and in notifications. <code>null</code>: the name.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "label", nulls = Nulls.SKIP)
         public _FinalStage label(OptionalNullable<String> label) {

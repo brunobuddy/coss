@@ -15,6 +15,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: readonly ChangelogEntry[] = [
   {
+    date: "2026-11-04",
+    title: "Scheduling reminders",
+    body: "One list says what goes out around a booking: before or after it, or after any change to it, to attendees, hosts or your team, by email, SMS or webhook, in your own words if you like. Webhooks now fire when a booking starts and ends, and each booking shows why anything wasn't sent.",
+    href: "/docs/scheduling/reminders",
+  },
+  {
     date: "2026-11-03",
     title: "Scheduling",
     body: "Let your users be booked: hosts, weekly hours, Google, Microsoft and CalDAV calendars, and bookings with double-booking prevented by the database. Hosted pages are served at cossbook.com, with your branding on emails.",

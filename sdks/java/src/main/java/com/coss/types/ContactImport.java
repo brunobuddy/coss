@@ -54,11 +54,17 @@ public final class ContactImport {
         return object;
     }
 
+    /**
+     * @return Contacts created.
+     */
     @JsonProperty("created")
     public long getCreated() {
         return created;
     }
 
+    /**
+     * @return Existing contacts updated.
+     */
     @JsonProperty("updated")
     public long getUpdated() {
         return updated;
@@ -72,6 +78,9 @@ public final class ContactImport {
         return keptUnsubscribed;
     }
 
+    /**
+     * @return Entries that were refused. The rest of the import still went through.
+     */
     @JsonProperty("invalid")
     public List<ContactImportInvalidItem> getInvalid() {
         return invalid;
@@ -117,10 +126,16 @@ public final class ContactImport {
     }
 
     public interface CreatedStage {
+        /**
+         * <p>Contacts created.</p>
+         */
         UpdatedStage created(long created);
     }
 
     public interface UpdatedStage {
+        /**
+         * <p>Existing contacts updated.</p>
+         */
         KeptUnsubscribedStage updated(long updated);
     }
 
@@ -138,6 +153,9 @@ public final class ContactImport {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Entries that were refused. The rest of the import still went through.</p>
+         */
         _FinalStage invalid(List<ContactImportInvalidItem> invalid);
 
         _FinalStage addInvalid(ContactImportInvalidItem invalid);
@@ -180,6 +198,10 @@ public final class ContactImport {
             return this;
         }
 
+        /**
+         * <p>Contacts created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created")
         public UpdatedStage created(long created) {
@@ -187,6 +209,10 @@ public final class ContactImport {
             return this;
         }
 
+        /**
+         * <p>Existing contacts updated.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("updated")
         public KeptUnsubscribedStage updated(long updated) {
@@ -205,6 +231,10 @@ public final class ContactImport {
             return this;
         }
 
+        /**
+         * <p>Entries that were refused. The rest of the import still went through.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllInvalid(List<ContactImportInvalidItem> invalid) {
             if (invalid != null) {
@@ -213,12 +243,19 @@ public final class ContactImport {
             return this;
         }
 
+        /**
+         * <p>Entries that were refused. The rest of the import still went through.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addInvalid(ContactImportInvalidItem invalid) {
             this.invalid.add(invalid);
             return this;
         }
 
+        /**
+         * <p>Entries that were refused. The rest of the import still went through.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "invalid", nulls = Nulls.SKIP)
         public _FinalStage invalid(List<ContactImportInvalidItem> invalid) {

@@ -108,6 +108,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One inbox of the API key's environment.
+//
 // Example:
 //
 //	request := &coss.GetInboxesRequest{

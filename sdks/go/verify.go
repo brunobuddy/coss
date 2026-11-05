@@ -329,10 +329,12 @@ var verificationNullableFields = map[string]*big.Int{
 }
 
 type Verification struct {
-	Object  VerificationObject  `json:"object" url:"object"`
-	ID      string              `json:"id" url:"id"`
+	Object VerificationObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// `sms` or `email`.
 	Channel VerificationChannel `json:"channel" url:"channel"`
-	To      string              `json:"to" url:"to"`
+	// The phone number (E.164) or address the code goes to.
+	To string `json:"to" url:"to"`
 	// ISO 3166 country of a phone number.
 	Country *string `json:"country,omitempty" url:"country,omitempty"`
 	// `pending` until the right code is checked (`approved`) or it ends: `expired`, `canceled`, `failed` (too many wrong codes, or the code couldn't be sent) or `blocked` (the fraud guard stopped it before anything was sent).
@@ -342,14 +344,18 @@ type Verification struct {
 	// Why it was `blocked` (empty otherwise).
 	Reasons []*VerificationReasonsItem `json:"reasons" url:"reasons"`
 	// Wrong codes checked so far.
-	Attempts    int64 `json:"attempts" url:"attempts"`
+	Attempts int64 `json:"attempts" url:"attempts"`
+	// How many wrong codes end it.
 	MaxAttempts int64 `json:"max_attempts" url:"max_attempts"`
 	// Each time the code was sent.
-	Sends []*VerificationSend     `json:"sends" url:"sends"`
-	Tags  []*VerificationTagsItem `json:"tags" url:"tags"`
+	Sends []*VerificationSend `json:"sends" url:"sends"`
+	// Your tags on the verification.
+	Tags []*VerificationTagsItem `json:"tags" url:"tags"`
 	// Made in a sandbox environment: simulated, and the code is always zeros.
-	Sandbox    bool       `json:"sandbox" url:"sandbox"`
-	ExpiresAt  time.Time  `json:"expires_at" url:"expires_at"`
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When the code stops working.
+	ExpiresAt time.Time `json:"expires_at" url:"expires_at"`
+	// When the right code was checked. `null`: it wasn't.
 	ApprovedAt *time.Time `json:"approved_at,omitempty" url:"approved_at,omitempty"`
 	CreatedAt  time.Time  `json:"created_at" url:"created_at"`
 
@@ -665,6 +671,7 @@ func (v *Verification) String() string {
 	return fmt.Sprintf("%#v", v)
 }
 
+// `sms` or `email`.
 type VerificationChannel string
 
 const (
@@ -832,7 +839,9 @@ var (
 
 // Why it `failed`.
 type VerificationFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1202,6 +1211,7 @@ var verificationSendNullableFields = map[string]*big.Int{
 }
 
 type VerificationSend struct {
+	// `sms` or `email`.
 	Channel VerificationSendChannel `json:"channel" url:"channel"`
 	// `own_number`: one of your numbers; `shared_number`: coss.com's; `email`: your sender; `coss_email`: coss.com's sender.
 	Route VerificationSendRoute `json:"route" url:"route"`
@@ -1361,6 +1371,7 @@ func (v *VerificationSend) String() string {
 	return fmt.Sprintf("%#v", v)
 }
 
+// `sms` or `email`.
 type VerificationSendChannel string
 
 const (
@@ -1453,7 +1464,9 @@ var (
 )
 
 type VerificationTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

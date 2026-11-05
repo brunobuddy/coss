@@ -15,13 +15,13 @@ class ContactImport extends JsonSerializableType
     public string $object;
 
     /**
-     * @var int $created
+     * @var int $created Contacts created.
      */
     #[JsonProperty('created')]
     public int $created;
 
     /**
-     * @var int $updated
+     * @var int $updated Existing contacts updated.
      */
     #[JsonProperty('updated')]
     public int $updated;
@@ -33,7 +33,7 @@ class ContactImport extends JsonSerializableType
     public int $keptUnsubscribed;
 
     /**
-     * @var array<ContactImportInvalidItem> $invalid
+     * @var array<ContactImportInvalidItem> $invalid Entries that were refused. The rest of the import still went through.
      */
     #[JsonProperty('invalid'), ArrayType([ContactImportInvalidItem::class])]
     public array $invalid;

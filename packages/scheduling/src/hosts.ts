@@ -70,6 +70,7 @@ export function toHostObject(row: HostRow): HostObjectOutput {
     uid: row.uid,
     name: row.name,
     email: row.email,
+    phone: row.phone,
     calendar_account: row.calendarAccount,
     time_zone: row.timeZone,
     locale: row.locale,
@@ -233,6 +234,7 @@ export async function createHost(
             uid: params.uid ?? null,
             name: params.name,
             email: params.email ?? null,
+            phone: params.phone ?? null,
             calendarAccount,
             timeZone: params.time_zone,
             locale: params.locale ?? null,
@@ -343,6 +345,7 @@ export async function updateHost(
           ...(params.uid !== undefined ? { uid: params.uid } : {}),
           ...(params.name !== undefined ? { name: params.name } : {}),
           ...(params.email !== undefined ? { email: params.email } : {}),
+          ...(params.phone !== undefined ? { phone: params.phone } : {}),
           ...(params.calendar_account !== undefined ? { calendarAccount } : {}),
           ...(params.time_zone !== undefined ? { timeZone: params.time_zone } : {}),
           ...(params.locale !== undefined ? { locale: params.locale } : {}),
@@ -539,7 +542,7 @@ export async function deleteHost(
     if (await hasLiveBookings(tx, host)) {
       throw new SchedulingError(
         "host_has_live_bookings",
-        "This host has upcoming bookings or holds. Cancel them, or set the host's status to disabled.",
+        "This host has upcoming bookings or holds. Reassign them (POST /v1/scheduling/reassignments moves them all), cancel them, or set the host's status to disabled.",
       );
     }
     const [deleted] = await tx

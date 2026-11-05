@@ -22,19 +22,19 @@ class EmailTemplate extends JsonSerializableType
     public string $id;
 
     /**
-     * @var ?string $alias
+     * @var ?string $alias A name to send the template by instead of its id. `null`: none.
      */
     #[JsonProperty('alias')]
     public ?string $alias;
 
     /**
-     * @var string $name
+     * @var string $name Shown in the dashboard.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
@@ -46,7 +46,7 @@ class EmailTemplate extends JsonSerializableType
     public ?int $publishedVersion;
 
     /**
-     * @var ?DateTime $publishedAt
+     * @var ?DateTime $publishedAt When the published version was published. `null`: never.
      */
     #[JsonProperty('published_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $publishedAt;

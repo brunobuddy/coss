@@ -17,6 +17,8 @@ import type {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
+  SchedulingReassignmentWebhookEvent,
 } from "./scheduling.ts";
 import type { SignRequestWebhookEvent } from "./sign.ts";
 import type {
@@ -490,4 +492,6 @@ export type WebhookEvent =
   | FormSubmissionWebhookEvent
   | SchedulingBookingWebhookEvent
   | SchedulingCalendarWebhookEvent
-  | SchedulingCalendarDelegationWebhookEvent;
+  | SchedulingCalendarDelegationWebhookEvent
+  | SchedulingOutOfOfficeWebhookEvent
+  | SchedulingReassignmentWebhookEvent;

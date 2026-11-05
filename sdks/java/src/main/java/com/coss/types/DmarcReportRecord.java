@@ -77,11 +77,17 @@ public final class DmarcReportRecord {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The address the messages came from.
+     */
     @JsonProperty("source_ip")
     public String getSourceIp() {
         return sourceIp;
     }
 
+    /**
+     * @return How many messages this line covers.
+     */
     @JsonProperty("count")
     public long getCount() {
         return count;
@@ -111,16 +117,25 @@ public final class DmarcReportRecord {
         return spf;
     }
 
+    /**
+     * @return Whether they passed DMARC.
+     */
     @JsonProperty("dmarc_pass")
     public boolean getDmarcPass() {
         return dmarcPass;
     }
 
+    /**
+     * @return The domain in their <code>From</code> header.
+     */
     @JsonProperty("header_from")
     public String getHeaderFrom() {
         return headerFrom;
     }
 
+    /**
+     * @return The domain in their envelope sender.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("envelope_from")
     public OptionalNullable<String> getEnvelopeFrom() {
@@ -130,16 +145,25 @@ public final class DmarcReportRecord {
         return envelopeFrom;
     }
 
+    /**
+     * @return Whether they were sent through coss.com, by its DKIM selectors or bounce domain.
+     */
     @JsonProperty("via_coss")
     public boolean getViaCoss() {
         return viaCoss;
     }
 
+    /**
+     * @return What receivers saw for DKIM and SPF.
+     */
     @JsonProperty("auth_results")
     public DmarcReportRecordAuthResults getAuthResults() {
         return authResults;
     }
 
+    /**
+     * @return Why receivers overrode the policy.
+     */
     @JsonProperty("reasons")
     public List<DmarcReportRecordReasonsItem> getReasons() {
         return reasons;
@@ -202,12 +226,18 @@ public final class DmarcReportRecord {
     }
 
     public interface SourceIpStage {
+        /**
+         * <p>The address the messages came from.</p>
+         */
         CountStage sourceIp(@NotNull String sourceIp);
 
         Builder from(DmarcReportRecord other);
     }
 
     public interface CountStage {
+        /**
+         * <p>How many messages this line covers.</p>
+         */
         DispositionStage count(long count);
     }
 
@@ -233,18 +263,30 @@ public final class DmarcReportRecord {
     }
 
     public interface DmarcPassStage {
+        /**
+         * <p>Whether they passed DMARC.</p>
+         */
         HeaderFromStage dmarcPass(boolean dmarcPass);
     }
 
     public interface HeaderFromStage {
+        /**
+         * <p>The domain in their <code>From</code> header.</p>
+         */
         ViaCossStage headerFrom(@NotNull String headerFrom);
     }
 
     public interface ViaCossStage {
+        /**
+         * <p>Whether they were sent through coss.com, by its DKIM selectors or bounce domain.</p>
+         */
         AuthResultsStage viaCoss(boolean viaCoss);
     }
 
     public interface AuthResultsStage {
+        /**
+         * <p>What receivers saw for DKIM and SPF.</p>
+         */
         _FinalStage authResults(@NotNull DmarcReportRecordAuthResults authResults);
     }
 
@@ -255,6 +297,9 @@ public final class DmarcReportRecord {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The domain in their envelope sender.</p>
+         */
         _FinalStage envelopeFrom(OptionalNullable<String> envelopeFrom);
 
         _FinalStage envelopeFrom(String envelopeFrom);
@@ -263,6 +308,9 @@ public final class DmarcReportRecord {
 
         _FinalStage envelopeFrom(Nullable<String> envelopeFrom);
 
+        /**
+         * <p>Why receivers overrode the policy.</p>
+         */
         _FinalStage reasons(List<DmarcReportRecordReasonsItem> reasons);
 
         _FinalStage addReasons(DmarcReportRecordReasonsItem reasons);
@@ -325,6 +373,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>The address the messages came from.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("source_ip")
         public CountStage sourceIp(@NotNull String sourceIp) {
@@ -332,6 +384,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>How many messages this line covers.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("count")
         public DispositionStage count(long count) {
@@ -372,6 +428,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>Whether they passed DMARC.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("dmarc_pass")
         public HeaderFromStage dmarcPass(boolean dmarcPass) {
@@ -379,6 +439,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>The domain in their <code>From</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("header_from")
         public ViaCossStage headerFrom(@NotNull String headerFrom) {
@@ -386,6 +450,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>Whether they were sent through coss.com, by its DKIM selectors or bounce domain.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("via_coss")
         public AuthResultsStage viaCoss(boolean viaCoss) {
@@ -393,6 +461,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>What receivers saw for DKIM and SPF.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("auth_results")
         public _FinalStage authResults(@NotNull DmarcReportRecordAuthResults authResults) {
@@ -400,6 +472,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>Why receivers overrode the policy.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReasons(List<DmarcReportRecordReasonsItem> reasons) {
             if (reasons != null) {
@@ -408,12 +484,19 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>Why receivers overrode the policy.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReasons(DmarcReportRecordReasonsItem reasons) {
             this.reasons.add(reasons);
             return this;
         }
 
+        /**
+         * <p>Why receivers overrode the policy.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reasons", nulls = Nulls.SKIP)
         public _FinalStage reasons(List<DmarcReportRecordReasonsItem> reasons) {
@@ -424,6 +507,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>The domain in their envelope sender.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage envelopeFrom(Nullable<String> envelopeFrom) {
             if (envelopeFrom.isNull()) {
@@ -436,6 +523,10 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>The domain in their envelope sender.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage envelopeFrom(Optional<String> envelopeFrom) {
             if (envelopeFrom.isPresent()) {
@@ -446,12 +537,19 @@ public final class DmarcReportRecord {
             return this;
         }
 
+        /**
+         * <p>The domain in their envelope sender.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage envelopeFrom(String envelopeFrom) {
             this.envelopeFrom = OptionalNullable.of(envelopeFrom);
             return this;
         }
 
+        /**
+         * <p>The domain in their envelope sender.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "envelope_from", nulls = Nulls.SKIP)
         public _FinalStage envelopeFrom(OptionalNullable<String> envelopeFrom) {

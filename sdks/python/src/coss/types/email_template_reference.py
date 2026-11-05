@@ -7,13 +7,20 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EmailTemplateReference(UniversalBaseModel):
-    id: str
+    id: str = pydantic.Field()
+    """
+    The template's id.
+    """
+
     version: typing.Optional[int] = pydantic.Field(default=None)
     """
     `null` for a dashboard test send of the draft.
     """
 
-    locale: str
+    locale: str = pydantic.Field()
+    """
+    The locale the email was rendered in.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

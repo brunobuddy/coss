@@ -579,6 +579,7 @@ class RawApplicationsClient:
             The application's `id` (`happ_…`) or your `uid` for it.
 
         name : typing.Optional[str]
+            Shown to the application's users in the portal.
 
         uid : typing.Optional[str]
             `null` removes it.
@@ -1286,6 +1287,7 @@ class AsyncRawApplicationsClient:
             The application's `id` (`happ_…`) or your `uid` for it.
 
         name : typing.Optional[str]
+            Shown to the application's users in the portal.
 
         uid : typing.Optional[str]
             `null` removes it.

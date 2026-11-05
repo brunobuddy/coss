@@ -171,9 +171,12 @@ class RawAudiencesClient:
 
     def create(self, *, name: str, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Audience]:
         """
+        Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+
         Parameters
         ----------
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -319,6 +322,8 @@ class RawAudiencesClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Audience]:
         """
+        One audience of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -568,12 +573,15 @@ class RawAudiencesClient:
         self, id: str, *, name: str, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[Audience]:
         """
+        Renames an audience. Its members stay.
+
         Parameters
         ----------
         id : str
             The audience's id.
 
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1038,6 +1046,8 @@ class RawAudiencesClient:
         self, id: str, contact_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[RemoveContactAudiencesResponse]:
         """
+        Takes a contact out of the audience. The contact itself stays.
+
         Parameters
         ----------
         id : str
@@ -1295,9 +1305,12 @@ class AsyncRawAudiencesClient:
         self, *, name: str, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Audience]:
         """
+        Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+
         Parameters
         ----------
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1445,6 +1458,8 @@ class AsyncRawAudiencesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Audience]:
         """
+        One audience of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -1694,12 +1709,15 @@ class AsyncRawAudiencesClient:
         self, id: str, *, name: str, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Audience]:
         """
+        Renames an audience. Its members stay.
+
         Parameters
         ----------
         id : str
             The audience's id.
 
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2164,6 +2182,8 @@ class AsyncRawAudiencesClient:
         self, id: str, contact_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[RemoveContactAudiencesResponse]:
         """
+        Takes a contact out of the audience. The contact itself stays.
+
         Parameters
         ----------
         id : str

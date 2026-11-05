@@ -197,20 +197,32 @@ public class AsyncRawSubmissionsClient {
         return future;
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<CossHttpResponse<FormSubmission>> get(String id, String submissionId) {
         return get(id, submissionId, GetSubmissionsRequest.builder().build());
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<CossHttpResponse<FormSubmission>> get(
             String id, String submissionId, RequestOptions requestOptions) {
         return get(id, submissionId, GetSubmissionsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<CossHttpResponse<FormSubmission>> get(
             String id, String submissionId, GetSubmissionsRequest request) {
         return get(id, submissionId, request, null);
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public CompletableFuture<CossHttpResponse<FormSubmission>> get(
             String id, String submissionId, GetSubmissionsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

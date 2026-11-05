@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What the aggregate reports of this period say.
     class DomainDmarcReportSummary < Internal::Types::Model
       field :period_start, -> { String }, optional: false, nullable: false
 

@@ -21,8 +21,16 @@ class Credit(UniversalBaseModel):
     `amount`: dollars (`amount` and `remaining` in cents); `units`: free units of `meter`.
     """
 
-    amount: int
-    remaining: int
+    amount: int = pydantic.Field()
+    """
+    How much was granted: cents, or units for a `units` credit.
+    """
+
+    remaining: int = pydantic.Field()
+    """
+    How much is left, in the same unit as `amount`.
+    """
+
     meter: typing.Optional[CreditMeter] = pydantic.Field(default=None)
     """
     What a `units` credit covers.
@@ -38,11 +46,31 @@ class Credit(UniversalBaseModel):
     `any`: also fees and other charges.
     """
 
-    source: CreditSource
-    description: str
-    effective_at: dt.datetime
-    expires_at: typing.Optional[dt.datetime] = None
-    voided_at: typing.Optional[dt.datetime] = None
+    source: CreditSource = pydantic.Field()
+    """
+    Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.
+    """
+
+    description: str = pydantic.Field()
+    """
+    What it's for.
+    """
+
+    effective_at: dt.datetime = pydantic.Field()
+    """
+    When it can start being used.
+    """
+
+    expires_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When what's left expires. `null`: never.
+    """
+
+    voided_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was voided. `null`: it wasn't.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

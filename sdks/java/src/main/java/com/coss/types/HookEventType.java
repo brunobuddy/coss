@@ -71,11 +71,17 @@ public final class HookEventType {
         return object;
     }
 
+    /**
+     * @return The type's name, which messages send as <code>event_type</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return What this event means, shown to your users. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -85,6 +91,9 @@ public final class HookEventType {
         return description;
     }
 
+    /**
+     * @return A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("schema")
     public OptionalNullable<Map<String, Object>> getSchema() {
@@ -94,6 +103,9 @@ public final class HookEventType {
         return schema;
     }
 
+    /**
+     * @return Sample payloads, shown to your users. Test sends use the first.
+     */
     @JsonProperty("examples")
     public List<Map<String, Object>> getExamples() {
         return examples;
@@ -180,6 +192,9 @@ public final class HookEventType {
     }
 
     public interface NameStage {
+        /**
+         * <p>The type's name, which messages send as <code>event_type</code>.</p>
+         */
         ArchivedStage name(@NotNull String name);
     }
 
@@ -205,6 +220,9 @@ public final class HookEventType {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -213,6 +231,9 @@ public final class HookEventType {
 
         _FinalStage description(Nullable<String> description);
 
+        /**
+         * <p>A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.</p>
+         */
         _FinalStage schema(OptionalNullable<Map<String, Object>> schema);
 
         _FinalStage schema(Map<String, Object> schema);
@@ -221,6 +242,9 @@ public final class HookEventType {
 
         _FinalStage schema(Nullable<Map<String, Object>> schema);
 
+        /**
+         * <p>Sample payloads, shown to your users. Test sends use the first.</p>
+         */
         _FinalStage examples(List<Map<String, Object>> examples);
 
         _FinalStage addExamples(Map<String, Object> examples);
@@ -272,6 +296,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>The type's name, which messages send as <code>event_type</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public ArchivedStage name(@NotNull String name) {
@@ -304,6 +332,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>Sample payloads, shown to your users. Test sends use the first.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllExamples(List<Map<String, Object>> examples) {
             if (examples != null) {
@@ -312,12 +344,19 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>Sample payloads, shown to your users. Test sends use the first.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addExamples(Map<String, Object> examples) {
             this.examples.add(examples);
             return this;
         }
 
+        /**
+         * <p>Sample payloads, shown to your users. Test sends use the first.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "examples", nulls = Nulls.SKIP)
         public _FinalStage examples(List<Map<String, Object>> examples) {
@@ -328,6 +367,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage schema(Nullable<Map<String, Object>> schema) {
             if (schema.isNull()) {
@@ -340,6 +383,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage schema(Optional<Map<String, Object>> schema) {
             if (schema.isPresent()) {
@@ -350,12 +397,19 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage schema(Map<String, Object> schema) {
             this.schema = OptionalNullable.of(schema);
             return this;
         }
 
+        /**
+         * <p>A JSON Schema of the payload, shown to your users (not enforced). <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "schema", nulls = Nulls.SKIP)
         public _FinalStage schema(OptionalNullable<Map<String, Object>> schema) {
@@ -363,6 +417,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -375,6 +433,10 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -385,12 +447,19 @@ public final class HookEventType {
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

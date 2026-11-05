@@ -12,7 +12,11 @@ from .inbox_thread_object import InboxThreadObject
 class InboxThread(UniversalBaseModel):
     object: InboxThreadObject
     id: str
-    inbox_id: str
+    inbox_id: str = pydantic.Field()
+    """
+    The inbox's id.
+    """
+
     subject: typing.Optional[str] = pydantic.Field(default=None)
     """
     The first message's subject.
@@ -23,13 +27,21 @@ class InboxThread(UniversalBaseModel):
     Addresses of everyone in the conversation but the inbox (Bcc'd ones never).
     """
 
-    message_count: int
+    message_count: int = pydantic.Field()
+    """
+    Messages in the thread.
+    """
+
     preview: typing.Optional[str] = pydantic.Field(default=None)
     """
     The start of the latest message.
     """
 
-    last_message_at: dt.datetime
+    last_message_at: dt.datetime = pydantic.Field()
+    """
+    When its latest message was received or sent.
+    """
+
     last_inbound_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When its latest inbound message arrived: later than `last_message_at`'s outbound one means the conversation awaits a reply.

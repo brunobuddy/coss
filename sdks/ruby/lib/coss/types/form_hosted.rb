@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The page coss.com can serve for this form.
     class FormHosted < Internal::Types::Model
       field :enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false
 

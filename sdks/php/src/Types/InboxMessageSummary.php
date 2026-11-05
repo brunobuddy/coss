@@ -53,19 +53,19 @@ class InboxMessageSummary extends JsonSerializableType
     public ?string $from;
 
     /**
-     * @var array<string> $to
+     * @var array<string> $to Addresses in the `To` header.
      */
     #[JsonProperty('to'), ArrayType(['string'])]
     public array $to;
 
     /**
-     * @var array<string> $cc
+     * @var array<string> $cc Addresses in the `Cc` header.
      */
     #[JsonProperty('cc'), ArrayType(['string'])]
     public array $cc;
 
     /**
-     * @var ?string $subject
+     * @var ?string $subject The subject. `null`: none.
      */
     #[JsonProperty('subject')]
     public ?string $subject;

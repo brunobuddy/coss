@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class RiskCalibrationReason extends JsonSerializableType
 {
     /**
-     * @var value-of<RiskCalibrationReasonCode> $code
+     * @var value-of<RiskCalibrationReasonCode> $code The reason's code.
      */
     #[JsonProperty('code')]
     public string $code;
@@ -38,7 +38,7 @@ class RiskCalibrationReason extends JsonSerializableType
     public ?float $precision;
 
     /**
-     * @var float $defaultWeight
+     * @var float $defaultWeight Its weight unless this environment changes it.
      */
     #[JsonProperty('default_weight')]
     public float $defaultWeight;

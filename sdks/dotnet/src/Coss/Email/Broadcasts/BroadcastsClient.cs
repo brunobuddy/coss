@@ -2237,6 +2237,9 @@ public partial class BroadcastsClient : IBroadcastsClient
         );
     }
 
+    /// <summary>
+    /// One broadcast of the API key's environment, with its status and stats.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Broadcasts.GetAsync(
     ///     new GetBroadcastsRequest { Id = "bcast_01k7c8m4q2f3e9v6t5r1n0p8yz" }

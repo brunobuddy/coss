@@ -17,6 +17,9 @@ public record Broadcast : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Shown only to you.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
@@ -26,58 +29,103 @@ public record Broadcast : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required BroadcastStatus Status { get; set; }
 
+    /// <summary>
+    /// The audience it goes to. `null`: a segment.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("audience_id")]
     public string? AudienceId { get; set; }
 
+    /// <summary>
+    /// The segment it goes to. `null`: an audience.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("segment_id")]
     public string? SegmentId { get; set; }
 
+    /// <summary>
+    /// The topic it's about (its key), and its emails' `category`. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("topic")]
     public string? Topic { get; set; }
 
+    /// <summary>
+    /// Who it's sent from.
+    /// </summary>
     [JsonPropertyName("from")]
     public required string From { get; set; }
 
+    /// <summary>
+    /// Addresses replies go to.
+    /// </summary>
     [JsonPropertyName("reply_to")]
     public IEnumerable<string> ReplyTo { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The subject, before contact fields are filled in.
+    /// </summary>
     [JsonPropertyName("subject")]
     public required string Subject { get; set; }
 
+    /// <summary>
+    /// The inbox preview line. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("preview_text")]
     public string? PreviewText { get; set; }
 
+    /// <summary>
+    /// The HTML part, before contact fields are filled in. `null`: text only.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("html")]
     public string? Html { get; set; }
 
+    /// <summary>
+    /// The plain text part. `null`: HTML only.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("text")]
     public string? Text { get; set; }
 
+    /// <summary>
+    /// Which opens and clicks are tracked.
+    /// </summary>
     [JsonPropertyName("tracking")]
     public required BroadcastTracking Tracking { get; set; }
 
+    /// <summary>
+    /// Recipients per second. `null`: the plan's marketing rate.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("rate_per_second")]
     public long? RatePerSecond { get; set; }
 
+    /// <summary>
+    /// When it's set to start. `null`: not scheduled.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("scheduled_at")]
     public DateTime? ScheduledAt { get; set; }
 
+    /// <summary>
+    /// When sending started. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("started_at")]
     public DateTime? StartedAt { get; set; }
 
+    /// <summary>
+    /// When it finished. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("completed_at")]
     public DateTime? CompletedAt { get; set; }
 
+    /// <summary>
+    /// When it was canceled. `null`: it wasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("canceled_at")]
     public DateTime? CanceledAt { get; set; }
@@ -96,6 +144,9 @@ public record Broadcast : IJsonOnDeserialized
     [JsonPropertyName("pause_reason")]
     public string? PauseReason { get; set; }
 
+    /// <summary>
+    /// Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("error")]
     public BroadcastError? Error { get; set; }

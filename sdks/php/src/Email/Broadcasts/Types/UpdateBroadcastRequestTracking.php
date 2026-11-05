@@ -5,16 +5,19 @@ namespace Coss\Email\Broadcasts\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Which opens and clicks are tracked.
+ */
 class UpdateBroadcastRequestTracking extends JsonSerializableType
 {
     /**
-     * @var ?bool $opens
+     * @var ?bool $opens Track opens with a pixel.
      */
     #[JsonProperty('opens')]
     public ?bool $opens;
 
     /**
-     * @var ?bool $clicks
+     * @var ?bool $clicks Track clicks by rewriting links.
      */
     #[JsonProperty('clicks')]
     public ?bool $clicks;

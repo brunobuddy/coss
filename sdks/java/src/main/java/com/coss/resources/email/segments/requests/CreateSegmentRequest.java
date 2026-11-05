@@ -32,6 +32,9 @@ public final class CreateSegmentRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the segment, unique in the environment.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -72,6 +75,9 @@ public final class CreateSegmentRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the segment, unique in the environment.</p>
+         */
         FilterStage name(@NotNull String name);
 
         Builder from(CreateSegmentRequest other);
@@ -107,6 +113,10 @@ public final class CreateSegmentRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the segment, unique in the environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public FilterStage name(@NotNull String name) {

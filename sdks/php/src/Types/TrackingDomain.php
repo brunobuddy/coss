@@ -43,19 +43,19 @@ class TrackingDomain extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $lastCheckedAt
+     * @var ?DateTime $lastCheckedAt When it was last checked. `null`: not yet.
      */
     #[JsonProperty('last_checked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastCheckedAt;
 
     /**
-     * @var ?DateTime $activatedAt
+     * @var ?DateTime $activatedAt When it became active. `null`: it isn't.
      */
     #[JsonProperty('activated_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $activatedAt;
 
     /**
-     * @var ?DateTime $failedAt
+     * @var ?DateTime $failedAt When it failed. `null`: it hasn't.
      */
     #[JsonProperty('failed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $failedAt;

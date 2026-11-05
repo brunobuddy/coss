@@ -11,4 +11,5 @@ enum RiskAssessmentDegradedItem: string
     case Captcha = "captcha";
     case Content = "content";
     case IpPrivacy = "ip_privacy";
+    case UsageLimit = "usage_limit";
 }

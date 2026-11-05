@@ -30,7 +30,11 @@ class TemplateVariableInput(UniversalBaseModel):
     Used when a send leaves it out. Not for lists.
     """
 
-    description: typing.Optional[str] = None
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What it's for, shown in the dashboard.
+    """
+
     fields: typing.Optional[typing.List[TemplateVariableInputFieldsItem]] = pydantic.Field(default=None)
     """
     A list's item fields (required for lists, only for lists).

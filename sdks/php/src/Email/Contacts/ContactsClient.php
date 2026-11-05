@@ -465,6 +465,8 @@ class ContactsClient
     }
 
     /**
+     * One contact of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->email->contacts->get(

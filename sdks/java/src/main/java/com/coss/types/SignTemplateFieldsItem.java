@@ -84,51 +84,81 @@ public final class SignTemplateFieldsItem {
         return id;
     }
 
+    /**
+     * @return The <code>key</code> of the role that fills it.
+     */
     @JsonProperty("role")
     public String getRole() {
         return role;
     }
 
+    /**
+     * @return The id of the document it's on.
+     */
     @JsonProperty("document_id")
     public String getDocumentId() {
         return documentId;
     }
 
+    /**
+     * @return What the field takes, as on a signature request.
+     */
     @JsonProperty("type")
     public SignTemplateFieldsItemType getType() {
         return type;
     }
 
+    /**
+     * @return 1-based page number.
+     */
     @JsonProperty("page")
     public long getPage() {
         return page;
     }
 
+    /**
+     * @return Left edge, in PDF points from the page's left.
+     */
     @JsonProperty("x")
     public double getX() {
         return x;
     }
 
+    /**
+     * @return Top edge, in PDF points from the page's top.
+     */
     @JsonProperty("y")
     public double getY() {
         return y;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("width")
     public double getWidth() {
         return width;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("height")
     public double getHeight() {
         return height;
     }
 
+    /**
+     * @return Whether a signer can finish with it empty.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
     }
 
+    /**
+     * @return Shown to the signer. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("label")
     public OptionalNullable<String> getLabel() {
@@ -138,6 +168,9 @@ public final class SignTemplateFieldsItem {
         return label;
     }
 
+    /**
+     * @return <code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("merge_key")
     public OptionalNullable<String> getMergeKey() {
@@ -218,38 +251,65 @@ public final class SignTemplateFieldsItem {
     }
 
     public interface RoleStage {
+        /**
+         * <p>The <code>key</code> of the role that fills it.</p>
+         */
         DocumentIdStage role(@NotNull String role);
     }
 
     public interface DocumentIdStage {
+        /**
+         * <p>The id of the document it's on.</p>
+         */
         TypeStage documentId(@NotNull String documentId);
     }
 
     public interface TypeStage {
+        /**
+         * <p>What the field takes, as on a signature request.</p>
+         */
         PageStage type(@NotNull SignTemplateFieldsItemType type);
     }
 
     public interface PageStage {
+        /**
+         * <p>1-based page number.</p>
+         */
         XStage page(long page);
     }
 
     public interface XStage {
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         */
         YStage x(double x);
     }
 
     public interface YStage {
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         */
         WidthStage y(double y);
     }
 
     public interface WidthStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         HeightStage width(double width);
     }
 
     public interface HeightStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         RequiredStage height(double height);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether a signer can finish with it empty.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -260,6 +320,9 @@ public final class SignTemplateFieldsItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         */
         _FinalStage label(OptionalNullable<String> label);
 
         _FinalStage label(String label);
@@ -268,6 +331,9 @@ public final class SignTemplateFieldsItem {
 
         _FinalStage label(Nullable<String> label);
 
+        /**
+         * <p><code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.</p>
+         */
         _FinalStage mergeKey(OptionalNullable<String> mergeKey);
 
         _FinalStage mergeKey(String mergeKey);
@@ -343,6 +409,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>The <code>key</code> of the role that fills it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("role")
         public DocumentIdStage role(@NotNull String role) {
@@ -350,6 +420,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>The id of the document it's on.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("document_id")
         public TypeStage documentId(@NotNull String documentId) {
@@ -357,6 +431,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>What the field takes, as on a signature request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public PageStage type(@NotNull SignTemplateFieldsItemType type) {
@@ -364,6 +442,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>1-based page number.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("page")
         public XStage page(long page) {
@@ -371,6 +453,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("x")
         public YStage x(double x) {
@@ -378,6 +464,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("y")
         public WidthStage y(double y) {
@@ -385,6 +475,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("width")
         public HeightStage width(double width) {
@@ -392,6 +486,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("height")
         public RequiredStage height(double height) {
@@ -399,6 +497,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Whether a signer can finish with it empty.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {
@@ -406,6 +508,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p><code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage mergeKey(Nullable<String> mergeKey) {
             if (mergeKey.isNull()) {
@@ -418,6 +524,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p><code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage mergeKey(Optional<String> mergeKey) {
             if (mergeKey.isPresent()) {
@@ -428,12 +538,19 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p><code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage mergeKey(String mergeKey) {
             this.mergeKey = OptionalNullable.of(mergeKey);
             return this;
         }
 
+        /**
+         * <p><code>text</code> fields: which <code>merge_fields</code> value fills it. <code>null</code>: the signer fills it.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "merge_key", nulls = Nulls.SKIP)
         public _FinalStage mergeKey(OptionalNullable<String> mergeKey) {
@@ -441,6 +558,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Nullable<String> label) {
             if (label.isNull()) {
@@ -453,6 +574,10 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Optional<String> label) {
             if (label.isPresent()) {
@@ -463,12 +588,19 @@ public final class SignTemplateFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(String label) {
             this.label = OptionalNullable.of(label);
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "label", nulls = Nulls.SKIP)
         public _FinalStage label(OptionalNullable<String> label) {

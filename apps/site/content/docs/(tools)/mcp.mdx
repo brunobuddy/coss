@@ -295,11 +295,19 @@ there. Spam is answered exactly like a success, so a submitter who saw a success
 reason for having no slots), `authorize_scheduling_calendar`, `list_scheduling_event_types`,
 `save_scheduling_event_type`, `list_scheduling_booking_events`, `list_scheduling_slots`, `explain_scheduling_slot`, `search_scheduling_availability`,
 `list_scheduling_bookings`, `get_scheduling_booking`, `create_scheduling_booking`,
-`reschedule_scheduling_booking`, `cancel_scheduling_booking` and `create_scheduling_session` (a link
-to a hosted page). `diagnose_scheduling_slots` explains an empty list, each finding `certain`,
-`likely` or `possible`: no host or schedule, a calendar to reauthorize, minimum notice, the booking
-window, limits, bookings and buffers. A calendar's busy times aren't readable through the API, so
-they can only be `possible`. See [Scheduling](/docs/scheduling).
+`reschedule_scheduling_booking`, `cancel_scheduling_booking`, `mark_scheduling_no_show`,
+`get_scheduling_reminders`, `save_scheduling_reminders`, `list_scheduling_booking_notifications` (why
+someone did or didn't get a reminder) and `create_scheduling_session` (a link to a hosted page).
+`list_scheduling_reassign_candidates` says who a booking could go to and why not,
+`reassign_scheduling_booking` gives it to them, and `preview_scheduling_reassignment`,
+`create_scheduling_reassignment`, `get_scheduling_reassignment`, `cancel_scheduling_reassignment` and
+`undo_scheduling_reassignment` [move many at once](/docs/scheduling/reassigning#many-at-once).
+`list_scheduling_out_of_office`, `create_scheduling_out_of_office`, `delete_scheduling_out_of_office` and
+`list_scheduling_out_of_office_conflicts` handle [time hosts are away](/docs/scheduling/out-of-office).
+`diagnose_scheduling_slots` explains an empty list, each finding `certain`, `likely` or `possible`: no
+host or schedule, a calendar to reauthorize, minimum notice, the booking window, limits, bookings and
+buffers. A calendar's busy times aren't readable through the API, so they can only be `possible`. See
+[Scheduling](/docs/scheduling).
 
 **Risk**: `assess_risk` records a decision for a sign-up, login, message, checkout or custom event.
 `list_risk_assessments`, `get_risk_assessment`, `list_risk_rules`, `list_risk_list_entries` and

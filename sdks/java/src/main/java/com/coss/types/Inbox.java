@@ -98,11 +98,17 @@ public final class Inbox {
         return address;
     }
 
+    /**
+     * @return The part of the address before the <code>@</code>.
+     */
     @JsonProperty("username")
     public String getUsername() {
         return username;
     }
 
+    /**
+     * @return The part of the address after the <code>@</code>.
+     */
     @JsonProperty("domain")
     public String getDomain() {
         return domain;
@@ -248,10 +254,16 @@ public final class Inbox {
     }
 
     public interface UsernameStage {
+        /**
+         * <p>The part of the address before the <code>@</code>.</p>
+         */
         DomainStage username(@NotNull String username);
     }
 
     public interface DomainStage {
+        /**
+         * <p>The part of the address after the <code>@</code>.</p>
+         */
         KindStage domain(@NotNull String domain);
     }
 
@@ -398,6 +410,10 @@ public final class Inbox {
             return this;
         }
 
+        /**
+         * <p>The part of the address before the <code>@</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("username")
         public DomainStage username(@NotNull String username) {
@@ -405,6 +421,10 @@ public final class Inbox {
             return this;
         }
 
+        /**
+         * <p>The part of the address after the <code>@</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain")
         public KindStage domain(@NotNull String domain) {

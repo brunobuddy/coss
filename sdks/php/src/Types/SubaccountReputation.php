@@ -7,6 +7,9 @@ use Coss\Core\Json\JsonProperty;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * Its own sending standing.
+ */
 class SubaccountReputation extends JsonSerializableType
 {
     /**
@@ -22,13 +25,13 @@ class SubaccountReputation extends JsonSerializableType
     public ?string $trigger;
 
     /**
-     * @var ?DateTime $changedAt
+     * @var ?DateTime $changedAt When its status last changed. `null`: never.
      */
     #[JsonProperty('changed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $changedAt;
 
     /**
-     * @var ?DateTime $reinstatedAt
+     * @var ?DateTime $reinstatedAt When it was last reinstated. `null`: never.
      */
     #[JsonProperty('reinstated_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $reinstatedAt;

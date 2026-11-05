@@ -22,19 +22,19 @@ class HookAttempt extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $deliveryId
+     * @var string $deliveryId The id of the delivery this attempt belongs to.
      */
     #[JsonProperty('delivery_id')]
     public string $deliveryId;
 
     /**
-     * @var string $endpointId
+     * @var string $endpointId The id of the endpoint it was sent to.
      */
     #[JsonProperty('endpoint_id')]
     public string $endpointId;
 
     /**
-     * @var DateTime $attemptedAt
+     * @var DateTime $attemptedAt When the attempt ran.
      */
     #[JsonProperty('attempted_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $attemptedAt;
@@ -46,13 +46,13 @@ class HookAttempt extends JsonSerializableType
     public ?int $statusCode;
 
     /**
-     * @var int $durationMs
+     * @var int $durationMs How long it took, in milliseconds.
      */
     #[JsonProperty('duration_ms')]
     public int $durationMs;
 
     /**
-     * @var ?string $error
+     * @var ?string $error Why it failed. `null`: it didn't.
      */
     #[JsonProperty('error')]
     public ?string $error;

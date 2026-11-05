@@ -21,6 +21,8 @@ export interface CreateSchedulingHostParams {
   name: string;
   /** Where this host's notifications go. Not an identity, and need not be unique. */
   email?: string;
+  /** Where this host's SMS reminders go, in E.164. */
+  phone?: string;
   time_zone: string;
   /** What this host's notifications are written in, such as `de`. Default: English. */
   locale?: string | null;
@@ -38,6 +40,7 @@ export interface UpdateSchedulingHostParams {
   uid?: string | null;
   name?: string;
   email?: string | null;
+  phone?: string | null;
   /** Moves a delegated calendar to this mailbox. Refused while bookings are still to come. */
   calendar_account?: string | null;
   time_zone?: string;
@@ -57,6 +60,7 @@ export interface SchedulingHost {
   uid: string | null;
   name: string;
   email: string | null;
+  phone: string | null;
   calendar_account: string | null;
   time_zone: string;
   locale: string | null;
@@ -194,6 +198,100 @@ export interface SchedulingEventTypeHostInput {
   schedule?: string | null;
 }
 
+/** The moment a reminder is timed from. */
+export type SchedulingReminderAnchor =
+  | "start"
+  | "end"
+  | "confirmed"
+  | "rescheduled"
+  | "cancelled"
+  | "declined"
+  | "pending_approval"
+  | "no_show";
+
+export type SchedulingReminderSend =
+  | "email_attendee"
+  | "email_host"
+  | "sms_attendee"
+  | "sms_host"
+  | "webhook";
+
+export type SchedulingLocationType =
+  | "link"
+  | "phone"
+  | "in_person"
+  | "google_meet"
+  | "microsoft_teams"
+  | "zoom";
+
+export interface SchedulingReminderInput {
+  /** Names this reminder in webhooks and on the booking. Default: from its timing, like `start-1440`. */
+  key?: string;
+  anchor: SchedulingReminderAnchor;
+  /** How long before the anchor. Only for `start` and `end`. */
+  before_minutes?: number | null;
+  /** How long after the anchor, up to 60 days. Default for other anchors: 0. */
+  after_minutes?: number | null;
+  /** Who hears about it. `webhook` fires `scheduling.booking.reminder`. */
+  send?: SchedulingReminderSend[];
+  /** Fixed addresses to email as well: verified members, or addresses on your verified domains. */
+  email_to?: string[];
+  /** Your own subject, with `{{variables}}`. Needs `email_from`. */
+  subject?: string | null;
+  /** Your own words in place of the standard first line, with `{{variables}}` and no links. Needs `email_from`. */
+  message?: string | null;
+  /** Your own text, with `{{variables}}` other than names, and no links. */
+  sms_message?: string | null;
+  /** One button in the email: https, on one of your verified domains. May use `{{booking_id}}` in its path or query. Needs `email_from`. */
+  button?: { label: string; url: string } | null;
+  /** Attach the calendar invitation to the emails. */
+  include_invite?: boolean;
+  /** If it was booked after this reminder's moment, send it right away instead of skipping it. */
+  send_if_late?: boolean;
+  /** Don't send it once the booking is marked a no-show. Default: true on `end`. */
+  skip_no_show?: boolean;
+  /** Only for bookings matching all of this, checked when it's due. */
+  only_if?: {
+    metadata?: Record<string, string> | null;
+    location_types?: SchedulingLocationType[] | null;
+  } | null;
+}
+
+export interface SchedulingReminder {
+  key: string;
+  anchor: SchedulingReminderAnchor;
+  before_minutes: number | null;
+  after_minutes: number | null;
+  send: SchedulingReminderSend[];
+  email_to: string[];
+  subject: string | null;
+  message: string | null;
+  sms_message: string | null;
+  button: { label: string; url: string } | null;
+  include_invite: boolean;
+  send_if_late: boolean;
+  skip_no_show: boolean;
+  only_if: { metadata: Record<string, string> | null; location_types: string[] | null } | null;
+}
+
+/** What's been queued for a booking and what became of it. Never who it went to. */
+export interface SchedulingBookingNotification {
+  object: "scheduling.booking_notification";
+  id: string;
+  /** `reminder` for an entry of `reminders`; otherwise a standard notification, or `started`/`ended`. */
+  kind: string;
+  reminder_key: string | null;
+  channel: "email" | "sms" | "webhook";
+  recipient: "attendee" | "host" | "endpoint" | "address";
+  due_at: string;
+  finished_at: string | null;
+  /**
+   * `null` while it's waiting. `sent`, or why not: `too_late`, `filtered`, `no_show`, `no_address`,
+   * `no_sender`, `stale`, `superseded`, `failed`.
+   */
+  outcome: string | null;
+}
+
 interface SchedulingEventTypeFields {
   duration_options?: number[];
   step_minutes?: number;
@@ -205,6 +303,8 @@ interface SchedulingEventTypeFields {
   limits?: SchedulingLimitInput[];
   capacity?: number | null;
   requires_approval?: boolean;
+  /** Whether bookings of this event type can go to another host. Default: true. */
+  reassignment_enabled?: boolean;
   approval_ttl_minutes?: number;
   hold_ttl_seconds?: number;
   cancel_notice_minutes?: number;
@@ -230,6 +330,10 @@ interface SchedulingEventTypeFields {
   questions?: SchedulingQuestionInput[];
   locations?: SchedulingLocationInput[];
   host_filter?: SchedulingAttributes | null;
+  /** Per event, overriding your settings for this event type. */
+  notifications?: Record<string, SchedulingNotificationSettings> | null;
+  /** Replaces your settings' `reminders` for this event type. `null` inherits them; `[]` means none. */
+  reminders?: SchedulingReminderInput[] | null;
   metadata?: Record<string, string>;
 }
 
@@ -269,6 +373,7 @@ export interface SchedulingEventType {
   limits: SchedulingLimit[];
   capacity: number | null;
   requires_approval: boolean;
+  reassignment_enabled: boolean;
   approval_ttl_minutes: number;
   hold_ttl_seconds: number;
   cancel_notice_minutes: number;
@@ -279,6 +384,8 @@ export interface SchedulingEventType {
   questions: SchedulingQuestion[];
   locations: SchedulingLocation[];
   host_filter: SchedulingAttributes | null;
+  notifications: Record<string, SchedulingNotificationSettings> | null;
+  reminders: SchedulingReminder[] | null;
   hosts: {
     host: string;
     role: "required" | "member";
@@ -321,6 +428,7 @@ export type SchedulingBookingActorKind =
   | "host_session"
   | "booker_session"
   | "manage_session"
+  | "manager_session"
   | "system";
 
 export interface CancelSchedulingBookingParams {
@@ -570,8 +678,17 @@ export interface SchedulingSettings {
   logo: SchedulingLogo | null;
   email_from: string | null;
   sms_from: string | null;
+  /** Reasons of your own for time away, on top of the preset ones. */
+  /** Name the new host when telling an attendee their booking has one. */
+  name_host_in_attendee_emails: boolean;
+  /** Whether hosts can give their own bookings to someone else from their page. */
+  host_reassignment: "off" | "eligible";
+  out_of_office_reasons: { key: string; label: string }[];
   calendar_failure_mode: "hide" | "last_known";
   notifications: Record<string, SchedulingNotificationSettings> | null;
+  email_reply_to: string | null;
+  /** What goes out around a booking, unless an event type has its own. `null`: a reminder a day before. */
+  reminders: SchedulingReminder[] | null;
 }
 
 export interface UpdateSchedulingSettingsParams {
@@ -582,8 +699,15 @@ export interface UpdateSchedulingSettingsParams {
   logo?: { content: string } | null;
   email_from?: string | null;
   sms_from?: string | null;
+  name_host_in_attendee_emails?: boolean;
+  host_reassignment?: "off" | "eligible";
+  out_of_office_reasons?: { key: string; label: string }[] | null;
   calendar_failure_mode?: "hide" | "last_known";
   notifications?: Record<string, SchedulingNotificationSettings> | null;
+  /** Where replies go, for emails from `email_from`. */
+  email_reply_to?: string | null;
+  /** What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before. */
+  reminders?: SchedulingReminderInput[] | null;
 }
 
 export interface AuthorizeSchedulingCalendarParams {
@@ -710,6 +834,71 @@ export interface CreateSchedulingHostSessionParams {
   read_only?: boolean;
 }
 
+export interface SchedulingHolidayCalendarWho {
+  /** These hosts, by id or uid. */
+  hosts?: string[];
+  /** Everyone matching these attributes, asked again at every sync. */
+  host_filter?: Record<string, string | string[]>;
+  /**
+   * Which regional holidays apply, matched against how the calendar names them, such as `England`.
+   * Without this, all of them do; empty, only nationwide ones.
+   */
+  regions?: string[];
+  /** Who can be booked in their place on those days, in order. */
+  delegates?: string[];
+  /** Bookings already on a holiday: `leave` (the default) only reports them. */
+  existing_bookings?: "leave" | "reassign";
+}
+
+/** Give one of `country` and `ics_url`, and one of `hosts` and `host_filter`. */
+export interface CreateSchedulingHolidayCalendarParams extends SchedulingHolidayCalendarWho {
+  name: string;
+  /** A code from the list of holiday calendars, such as `GB`. */
+  country?: string;
+  /** Your own feed, https or webcal, read in live environments. Stored encrypted. */
+  ics_url?: string;
+}
+
+export interface UpdateSchedulingHolidayCalendarParams extends SchedulingHolidayCalendarWho {
+  name?: string;
+}
+
+export interface SchedulingHolidayCalendar {
+  object: "scheduling.holiday_calendar";
+  id: string;
+  name: string;
+  source: "country" | "ics";
+  country: string | null;
+  hosts: string[] | null;
+  host_filter: Record<string, string | string[]> | null;
+  regions: string[] | null;
+  delegates: string[];
+  existing_bookings: "leave" | "reassign";
+  last_read_at: string | null;
+  /** Why its feed couldn't be read. */
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SchedulingHoliday {
+  date: string;
+  name: string;
+  /** Who has it, when it's not everyone: as the calendar says it. */
+  region: string | null;
+}
+
+/** Give one of `hosts` and `host_filter`. */
+export interface CreateSchedulingManagerSessionParams {
+  /** The hosts this page can reach, by id or uid. */
+  hosts?: string[];
+  /** Everyone matching these attributes, asked again on every request. */
+  host_filter?: Record<string, string | string[]>;
+  /** Seconds until it stops working. At most a day. */
+  expires_in?: number;
+  read_only?: boolean;
+}
+
 export interface CreateSchedulingBookerSessionParams {
   event_type: string;
   /** Only this host (id or uid). */
@@ -741,7 +930,11 @@ export type SchedulingBookingWebhookEventType =
   | "scheduling.booking.no_show"
   | "scheduling.booking.external_conflict"
   | "scheduling.booking.calendar_write_failed"
-  | "scheduling.booking.location_ready";
+  | "scheduling.booking.location_ready"
+  | "scheduling.booking.reassigned"
+  | "scheduling.booking.started"
+  | "scheduling.booking.ended"
+  | "scheduling.booking.reminder";
 
 export type SchedulingCalendarWebhookEventType =
   | "scheduling.calendar.connected"
@@ -752,10 +945,21 @@ export type SchedulingCalendarDelegationWebhookEventType =
   | "scheduling.calendar_delegation.failing"
   | "scheduling.calendar_delegation.restored";
 
+export type SchedulingOutOfOfficeWebhookEventType =
+  | "scheduling.out_of_office.created"
+  | "scheduling.out_of_office.updated"
+  | "scheduling.out_of_office.deleted"
+  | "scheduling.out_of_office.started"
+  | "scheduling.out_of_office.ended";
+
+export type SchedulingReassignmentWebhookEventType = "scheduling.reassignment.completed";
+
 export type SchedulingWebhookEventType =
   | SchedulingBookingWebhookEventType
   | SchedulingCalendarWebhookEventType
-  | SchedulingCalendarDelegationWebhookEventType;
+  | SchedulingCalendarDelegationWebhookEventType
+  | SchedulingOutOfOfficeWebhookEventType
+  | SchedulingReassignmentWebhookEventType;
 
 /** Ids, times and statuses only: a person's details and answers come from retrieving the booking. */
 export interface SchedulingBookingWebhookEventData {
@@ -768,6 +972,18 @@ export interface SchedulingBookingWebhookEventData {
   attendee_uids: string[];
   series_id: string | null;
   previous_start?: string;
+  /** On `scheduling.booking.reassigned`: who had it before. */
+  previous_host_ids?: string[];
+  /** On `scheduling.booking.reassigned`: the bulk reassignment it was part of. */
+  reassignment_id?: string;
+  /** Which reminder this is, on `scheduling.booking.reminder`. */
+  reminder?: {
+    key: string;
+    anchor: SchedulingReminderAnchor;
+    before_minutes: number | null;
+    after_minutes: number | null;
+    scheduled_for: string;
+  };
   occurred_at: string;
 }
 
@@ -803,4 +1019,313 @@ export interface SchedulingCalendarDelegationWebhookEvent {
     code: string | null;
     occurred_at: string;
   };
+}
+
+/** Ids and times only: why someone's away is never in a webhook. */
+export interface SchedulingOutOfOfficeWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingOutOfOfficeWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    out_of_office_id: string;
+    host_id: string;
+    start: string;
+    end: string;
+    group: string | null;
+    occurred_at: string;
+  };
+}
+
+/** Ids and counts only: why they moved is never in a webhook. */
+export interface SchedulingReassignmentWebhookEvent {
+  id: string;
+  object: "event";
+  type: SchedulingReassignmentWebhookEventType;
+  api_version: string;
+  created_at: string;
+  data: {
+    reassignment_id: string;
+    status: "completed" | "cancelled";
+    out_of_office_id: string | null;
+    counts: SchedulingReassignmentCounts;
+    occurred_at: string;
+  };
+}
+
+export interface SchedulingReassignmentCounts {
+  total: number;
+  pending: number;
+  reassigned: number;
+  /** They'd moved on since it was selected. */
+  skipped: number;
+  /** Nobody could take them: they stayed. */
+  no_candidate: number;
+  failed: number;
+  cancelled: number;
+}
+
+export interface SchedulingReassignmentSelection {
+  /** This host's bookings, by id or uid. */
+  host?: string;
+  /** The bookings that fall in this entry. */
+  out_of_office?: string;
+  booking_ids?: string[];
+  /** A series' occurrences still to come. */
+  series?: string;
+  start_after?: string;
+  start_before?: string;
+  event_types?: string[];
+  /** Only those with something else on the host's calendar at that time. */
+  external_conflict?: boolean;
+}
+
+export interface SchedulingReassignmentStrategy {
+  /** Give them all to this host. */
+  to_host?: string;
+  /** Try these first, in order. */
+  preferred_hosts?: string[];
+  /** After `preferred_hosts`: `auto` picks the fairest who's free, `leave` keeps it where it is. */
+  otherwise?: "auto" | "leave";
+  /** Who each goes to: a preview, with your changes. */
+  assignments?: { booking: string; to_host: string; from_host?: string }[];
+}
+
+export interface PreviewSchedulingReassignmentParams {
+  selection: SchedulingReassignmentSelection;
+  strategy?: SchedulingReassignmentStrategy;
+  overrides?: ReassignSchedulingBookingParams["overrides"];
+}
+
+export interface CreateSchedulingReassignmentParams extends PreviewSchedulingReassignmentParams {
+  reason_code: ReassignSchedulingBookingParams["reason_code"];
+  /** Why, in your words: required with an override of someone's availability. */
+  note?: string;
+  notify?: {
+    /** Tell attendees. Default: true. */
+    attendees?: boolean;
+    /** `digest` (the default) sends each host one email for the run. */
+    hosts?: "digest" | "each" | "none";
+  };
+}
+
+export interface UndoSchedulingReassignmentParams {
+  reason_code?: ReassignSchedulingBookingParams["reason_code"];
+  note?: string;
+  overrides?: ReassignSchedulingBookingParams["overrides"];
+  notify?: CreateSchedulingReassignmentParams["notify"];
+}
+
+export interface SchedulingReassignment {
+  object: "scheduling.reassignment";
+  id: string;
+  status: "pending" | "running" | "completed" | "cancelled";
+  reason_code: ReassignSchedulingBookingParams["reason_code"];
+  /** The entry that started it, if one did. */
+  out_of_office: string | null;
+  /** The run this gives back. */
+  undo_of: string | null;
+  counts: SchedulingReassignmentCounts;
+  created_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+}
+
+export interface SchedulingReassignmentItem {
+  object: "scheduling.reassignment_item";
+  id: string;
+  booking: string;
+  from_host: string | null;
+  to_host: string | null;
+  outcome: "pending" | "reassigned" | "skipped_changed" | "no_candidate" | "failed" | "cancelled";
+  error_code: string | null;
+}
+
+export interface SchedulingReassignmentPreview {
+  object: "scheduling.reassignment_preview";
+  items: {
+    booking: string;
+    event_type: string;
+    title: string;
+    status: SchedulingBookingStatus;
+    start: string;
+    end: string;
+    series: string | null;
+    group_session: string | null;
+    from_host: string | null;
+    /** Null when nobody could take it. */
+    to_host: string | null;
+    /** Why it would stay where it is. */
+    reason: string | null;
+  }[];
+  /** There are more than a preview covers. */
+  truncated: boolean;
+}
+
+/** Either instants, for part of a day, or whole dates, ending with `end_date` itself. */
+interface SchedulingOutOfOfficeWhen {
+  start?: string;
+  end?: string;
+  start_date?: string;
+  end_date?: string;
+  /** What the dates mean in. Default: the host's zone when this is made. */
+  time_zone?: string;
+}
+
+interface SchedulingOutOfOfficeDetails {
+  /** A preset reason, or a key from the settings' `out_of_office_reasons`. Never shown to bookers. */
+  reason?: string;
+  /** For people who manage this host. Encrypted, and never shown to a booker. */
+  notes?: string;
+  /** Shown to bookers while this host is away. Can't contain a link. */
+  public_message?: string;
+  /** Put a private "Out of office" event on the host's calendar. Default: true. */
+  show_on_calendar?: boolean;
+  /** Who can be booked in this host's place during it, in the order to try them. */
+  delegates?: string[];
+  /** Bookings already in the way: `leave` (the default) only reports them, `reassign` moves them. */
+  existing_bookings?: "leave" | "reassign";
+  /** With `existing_bookings: reassign`: who they go to. Default: the fairest who's free. */
+  reassign?: {
+    to_host?: string;
+    preferred_hosts?: string[];
+    otherwise?: "auto" | "leave";
+  };
+}
+
+/** Give exactly one of `host`, `hosts` and `host_filter`. */
+export interface CreateSchedulingOutOfOfficeParams
+  extends SchedulingOutOfOfficeWhen,
+    SchedulingOutOfOfficeDetails {
+  host?: string;
+  hosts?: string[];
+  /** Every active host matching these attributes right now. */
+  host_filter?: Record<string, string | string[]>;
+  /** Your own id for this entry, unique in the environment. Needs one host. */
+  external_id?: string;
+}
+
+export interface PutSchedulingOutOfOfficeParams
+  extends SchedulingOutOfOfficeWhen,
+    SchedulingOutOfOfficeDetails {
+  host: string;
+}
+
+export interface UpdateSchedulingOutOfOfficeParams extends SchedulingOutOfOfficeWhen {
+  reason?: string;
+  notes?: string | null;
+  public_message?: string | null;
+  show_on_calendar?: boolean;
+  delegates?: string[];
+  existing_bookings?: "leave" | "reassign";
+  reassign?: SchedulingOutOfOfficeDetails["reassign"];
+}
+
+export interface ListSchedulingOutOfOfficeParams extends SchedulingPageParams {
+  host?: string;
+  /** Entries ending after this. */
+  start_after?: string;
+  /** Entries starting before this. */
+  start_before?: string;
+  /** The entries one request made. */
+  group?: string;
+}
+
+export interface SchedulingOutOfOffice {
+  object: "scheduling.out_of_office";
+  id: string;
+  host: string;
+  start: string;
+  end: string;
+  /** How it was given, when it was as whole dates. */
+  all_day: { start_date: string; end_date: string; time_zone: string } | null;
+  reason: string;
+  notes: string | null;
+  public_message: string | null;
+  show_on_calendar: boolean;
+  /** Who can be booked in their place. */
+  delegates: string[];
+  existing_bookings: "leave" | "reassign";
+  external_id: string | null;
+  /** Shared by the entries one request made for several hosts. */
+  group: string | null;
+  source: "api" | "host" | "manager" | "dashboard" | "holiday";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeletedSchedulingOutOfOffice {
+  object: "scheduling.out_of_office";
+  id: string;
+  deleted: true;
+}
+
+/** A live booking that falls in an entry, which never changed it. */
+export interface SchedulingOutOfOfficeConflict {
+  object: "scheduling.out_of_office_conflict";
+  booking: string;
+  event_type: string;
+  title: string;
+  status: SchedulingBookingStatus;
+  start: string;
+  end: string;
+  series: string | null;
+  group_session: string | null;
+}
+
+export type SchedulingReassignmentReason =
+  | "host_unavailable"
+  | "out_of_office"
+  | "workload"
+  | "customer_request"
+  | "offboarding"
+  | "other";
+
+export type SchedulingReassignmentOverride =
+  | "any_host"
+  | "out_of_office"
+  | "outside_availability"
+  | "host_busy"
+  | "limit_reached"
+  | "calendar_unverified";
+
+export interface ReassignSchedulingBookingParams {
+  /** A session or a one-on-one has one. A collective can change several. */
+  changes: {
+    /** The host leaving, by id or uid. Needed when it could be several. */
+    from_host?: string;
+    /** The host taking over, by id or uid. Or set `auto`. */
+    to_host?: string;
+    /** Let coss.com pick, as a pool would: the fairest who's free and fits the booking's routing. */
+    auto?: boolean;
+    /** With `auto`: try these first, in order. */
+    preferred_hosts?: string[];
+  }[];
+  reason_code: SchedulingReassignmentReason;
+  /** Why, in your words: required with an override of someone's availability. Encrypted. */
+  note?: string;
+  /** Go ahead anyway. A host who already has something at this time can never be overridden. */
+  overrides?: SchedulingReassignmentOverride[];
+  notify?: { attendee?: boolean };
+}
+
+export interface SchedulingReassignCandidate {
+  object: "scheduling.reassign_candidate";
+  host: string;
+  uid: string | null;
+  name: string;
+  /** Takes this event type and fits the booking's routing. Otherwise it needs `any_host`. */
+  member: boolean;
+  available: boolean;
+  /** Why they aren't available, the first of `reasons`. */
+  reason: string | null;
+  /** Everything in the way, each needing its override. `already_claimed` can't be overridden. */
+  reasons: string[];
+  /** Their live bookings in the week from this one. */
+  load: number;
+  /** Their place in who a pool would pick next, from 1. Null for a non-member. */
+  rank: number | null;
+  /** They haven't connected what this booking's meeting needs, so it'd have none. */
+  meeting_provider_missing: boolean;
 }

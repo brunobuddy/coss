@@ -62,11 +62,17 @@ public final class SubaccountWebhookEventData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The sub-account's id.
+     */
     @JsonProperty("subaccount_id")
     public String getSubaccountId() {
         return subaccountId;
     }
 
+    /**
+     * @return Your own id for it. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("uid")
     public OptionalNullable<String> getUid() {
@@ -76,11 +82,17 @@ public final class SubaccountWebhookEventData {
         return uid;
     }
 
+    /**
+     * @return Its status after this event.
+     */
     @JsonProperty("status")
     public SubaccountWebhookEventDataStatus getStatus() {
         return status;
     }
 
+    /**
+     * @return Its status before.
+     */
     @JsonProperty("previous_status")
     public SubaccountWebhookEventDataPreviousStatus getPreviousStatus() {
         return previousStatus;
@@ -98,6 +110,9 @@ public final class SubaccountWebhookEventData {
         return trigger;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -166,20 +181,32 @@ public final class SubaccountWebhookEventData {
     }
 
     public interface SubaccountIdStage {
+        /**
+         * <p>The sub-account's id.</p>
+         */
         StatusStage subaccountId(@NotNull String subaccountId);
 
         Builder from(SubaccountWebhookEventData other);
     }
 
     public interface StatusStage {
+        /**
+         * <p>Its status after this event.</p>
+         */
         PreviousStatusStage status(@NotNull SubaccountWebhookEventDataStatus status);
     }
 
     public interface PreviousStatusStage {
+        /**
+         * <p>Its status before.</p>
+         */
         OccurredAtStage previousStatus(@NotNull SubaccountWebhookEventDataPreviousStatus previousStatus);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -190,6 +217,9 @@ public final class SubaccountWebhookEventData {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your own id for it. <code>null</code>: none.</p>
+         */
         _FinalStage uid(OptionalNullable<String> uid);
 
         _FinalStage uid(String uid);
@@ -253,6 +283,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The sub-account's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subaccount_id")
         public StatusStage subaccountId(@NotNull String subaccountId) {
@@ -260,6 +294,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Its status after this event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public PreviousStatusStage status(@NotNull SubaccountWebhookEventDataStatus status) {
@@ -267,6 +305,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Its status before.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("previous_status")
         public OccurredAtStage previousStatus(@NotNull SubaccountWebhookEventDataPreviousStatus previousStatus) {
@@ -274,6 +316,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -366,6 +412,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your own id for it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage uid(Nullable<String> uid) {
             if (uid.isNull()) {
@@ -378,6 +428,10 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your own id for it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage uid(Optional<String> uid) {
             if (uid.isPresent()) {
@@ -388,12 +442,19 @@ public final class SubaccountWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your own id for it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage uid(String uid) {
             this.uid = OptionalNullable.of(uid);
             return this;
         }
 
+        /**
+         * <p>Your own id for it. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "uid", nulls = Nulls.SKIP)
         public _FinalStage uid(OptionalNullable<String> uid) {

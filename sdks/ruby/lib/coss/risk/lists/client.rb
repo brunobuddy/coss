@@ -106,6 +106,8 @@ module Coss
           end
         end
 
+        # One allow or block list entry of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -141,6 +143,8 @@ module Coss
           end
         end
 
+        # Removes an entry from its list. Later assessments no longer see it.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

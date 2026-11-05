@@ -47,10 +47,12 @@ module Coss
       end
 
       # Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook
-      # attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB,
-      # usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees
-      # sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is
-      # returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+      # attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually
+      # within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana
+      # Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API
+      # key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only
+      # production ones. The response carries the signing secret, which is returned only here: store it, and verify
+      # every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
       #
       # @param request_options [Hash]
       # @param params [Coss::LogDrains::Types::CreateLogDrainRequest]
@@ -169,10 +171,11 @@ module Coss
         end
       end
 
-      # Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the
-      # signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for
-      # it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from
-      # then on.
+      # Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current
+      # value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried
+      # goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing
+      # is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines
+      # logged from then on.
       #
       # @param request_options [Hash]
       # @param params [Coss::LogDrains::Types::UpdateLogDrainRequest]

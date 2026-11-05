@@ -57,6 +57,7 @@ const {
   schedulingBooking,
   schedulingBusyInterval,
   schedulingLimitBucket,
+  schedulingOutOfOffice,
   organizationDeletion,
   organizationSuspension,
   inboxThread,
@@ -700,6 +701,18 @@ async function deleteOrganizationData(
       signFakeObject,
       signFakeObject.key,
       eq(signFakeObject.organizationId, organizationId),
+      batchSize,
+      signal,
+    ))
+  )
+    return false;
+  // Scheduling's time off: a holiday calendar makes a row per host and day, so it's many.
+  if (
+    !(await deleteInBatches(
+      deletion,
+      schedulingOutOfOffice,
+      schedulingOutOfOffice.id,
+      eq(schedulingOutOfOffice.organizationId, organizationId),
       batchSize,
       signal,
     ))

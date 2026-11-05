@@ -28,6 +28,7 @@ if typing.TYPE_CHECKING:
     from .billing_add_ons_item_interval import BillingAddOnsItemInterval
     from .billing_contract import BillingContract
     from .billing_contract_kind import BillingContractKind
+    from .billing_credit_limit import BillingCreditLimit
     from .billing_currency import BillingCurrency
     from .billing_estimate import BillingEstimate
     from .billing_features import BillingFeatures
@@ -136,6 +137,41 @@ if typing.TYPE_CHECKING:
     from .contact_webhook_event_data_source import ContactWebhookEventDataSource
     from .contact_webhook_event_object import ContactWebhookEventObject
     from .contact_webhook_event_type import ContactWebhookEventType
+    from .create_calendar_connection_request import (
+        CreateCalendarConnectionRequest,
+        CreateCalendarConnectionRequest_Caldav,
+        CreateCalendarConnectionRequest_Simulated,
+    )
+    from .create_calendar_connection_request_caldav import CreateCalendarConnectionRequestCaldav
+    from .create_calendar_connection_request_simulated import CreateCalendarConnectionRequestSimulated
+    from .create_calendar_delegation_request import (
+        CreateCalendarDelegationRequest,
+        CreateCalendarDelegationRequest_Google,
+        CreateCalendarDelegationRequest_Microsoft,
+    )
+    from .create_calendar_delegation_request_google import CreateCalendarDelegationRequestGoogle
+    from .create_calendar_delegation_request_microsoft import CreateCalendarDelegationRequestMicrosoft
+    from .create_series_request import CreateSeriesRequest
+    from .create_series_request_answers_value import CreateSeriesRequestAnswersValue
+    from .create_series_request_attributes_value import CreateSeriesRequestAttributesValue
+    from .create_series_request_location import (
+        CreateSeriesRequestLocation,
+        CreateSeriesRequestLocation_GoogleMeet,
+        CreateSeriesRequestLocation_InPerson,
+        CreateSeriesRequestLocation_Link,
+        CreateSeriesRequestLocation_MicrosoftTeams,
+        CreateSeriesRequestLocation_Phone,
+        CreateSeriesRequestLocation_Zoom,
+    )
+    from .create_series_request_location_google_meet import CreateSeriesRequestLocationGoogleMeet
+    from .create_series_request_location_in_person import CreateSeriesRequestLocationInPerson
+    from .create_series_request_location_link import CreateSeriesRequestLocationLink
+    from .create_series_request_location_microsoft_teams import CreateSeriesRequestLocationMicrosoftTeams
+    from .create_series_request_location_phone import CreateSeriesRequestLocationPhone
+    from .create_series_request_location_zoom import CreateSeriesRequestLocationZoom
+    from .create_series_request_on_conflict import CreateSeriesRequestOnConflict
+    from .create_series_request_recurrence import CreateSeriesRequestRecurrence
+    from .create_series_request_recurrence_frequency import CreateSeriesRequestRecurrenceFrequency
     from .credit import Credit
     from .credit_applies_to import CreditAppliesTo
     from .credit_kind import CreditKind
@@ -185,6 +221,14 @@ if typing.TYPE_CHECKING:
     from .deleted_risk_list_entry_object import DeletedRiskListEntryObject
     from .deleted_risk_rule import DeletedRiskRule
     from .deleted_risk_rule_object import DeletedRiskRuleObject
+    from .deleted_scheduling_calendar_connection import DeletedSchedulingCalendarConnection
+    from .deleted_scheduling_calendar_connection_object import DeletedSchedulingCalendarConnectionObject
+    from .deleted_scheduling_calendar_delegation import DeletedSchedulingCalendarDelegation
+    from .deleted_scheduling_calendar_delegation_object import DeletedSchedulingCalendarDelegationObject
+    from .deleted_scheduling_host import DeletedSchedulingHost
+    from .deleted_scheduling_host_object import DeletedSchedulingHostObject
+    from .deleted_scheduling_schedule import DeletedSchedulingSchedule
+    from .deleted_scheduling_schedule_object import DeletedSchedulingScheduleObject
     from .deleted_segment import DeletedSegment
     from .deleted_segment_object import DeletedSegmentObject
     from .deleted_sign_document import DeletedSignDocument
@@ -474,12 +518,14 @@ if typing.TYPE_CHECKING:
     from .log_drain import LogDrain
     from .log_drain_attempt import LogDrainAttempt
     from .log_drain_attempt_object import LogDrainAttemptObject
+    from .log_drain_auth_header import LogDrainAuthHeader
     from .log_drain_batch import LogDrainBatch
     from .log_drain_batch_list import LogDrainBatchList
     from .log_drain_batch_list_object import LogDrainBatchListObject
     from .log_drain_batch_object import LogDrainBatchObject
     from .log_drain_batch_status import LogDrainBatchStatus
     from .log_drain_disabled_reason import LogDrainDisabledReason
+    from .log_drain_format import LogDrainFormat
     from .log_drain_list import LogDrainList
     from .log_drain_list_object import LogDrainListObject
     from .log_drain_object import LogDrainObject
@@ -627,6 +673,166 @@ if typing.TYPE_CHECKING:
     from .risk_webhook_event_data import RiskWebhookEventData
     from .risk_webhook_event_object import RiskWebhookEventObject
     from .risk_webhook_event_type import RiskWebhookEventType
+    from .scheduling_attendee_erasure import SchedulingAttendeeErasure
+    from .scheduling_attendee_erasure_by_email import SchedulingAttendeeErasureByEmail
+    from .scheduling_attendee_erasure_by_email_object import SchedulingAttendeeErasureByEmailObject
+    from .scheduling_attendee_erasure_object import SchedulingAttendeeErasureObject
+    from .scheduling_attendee_input import SchedulingAttendeeInput
+    from .scheduling_availability_search_result import SchedulingAvailabilitySearchResult
+    from .scheduling_availability_search_result_data_item import SchedulingAvailabilitySearchResultDataItem
+    from .scheduling_availability_search_result_data_item_slots_item import (
+        SchedulingAvailabilitySearchResultDataItemSlotsItem,
+    )
+    from .scheduling_availability_search_result_object import SchedulingAvailabilitySearchResultObject
+    from .scheduling_booking import SchedulingBooking
+    from .scheduling_booking_attendees_item import SchedulingBookingAttendeesItem
+    from .scheduling_booking_attendees_item_answers_value import SchedulingBookingAttendeesItemAnswersValue
+    from .scheduling_booking_attendees_item_role import SchedulingBookingAttendeesItemRole
+    from .scheduling_booking_cancelled_by import SchedulingBookingCancelledBy
+    from .scheduling_booking_event import SchedulingBookingEvent
+    from .scheduling_booking_event_actor import SchedulingBookingEventActor
+    from .scheduling_booking_event_actor_kind import SchedulingBookingEventActorKind
+    from .scheduling_booking_event_list import SchedulingBookingEventList
+    from .scheduling_booking_event_list_object import SchedulingBookingEventListObject
+    from .scheduling_booking_event_object import SchedulingBookingEventObject
+    from .scheduling_booking_list import SchedulingBookingList
+    from .scheduling_booking_list_object import SchedulingBookingListObject
+    from .scheduling_booking_notification import SchedulingBookingNotification
+    from .scheduling_booking_notification_channel import SchedulingBookingNotificationChannel
+    from .scheduling_booking_notification_list import SchedulingBookingNotificationList
+    from .scheduling_booking_notification_list_object import SchedulingBookingNotificationListObject
+    from .scheduling_booking_notification_object import SchedulingBookingNotificationObject
+    from .scheduling_booking_notification_recipient import SchedulingBookingNotificationRecipient
+    from .scheduling_booking_object import SchedulingBookingObject
+    from .scheduling_booking_status import SchedulingBookingStatus
+    from .scheduling_booking_webhook_data import SchedulingBookingWebhookData
+    from .scheduling_booking_webhook_data_reminder import SchedulingBookingWebhookDataReminder
+    from .scheduling_booking_webhook_data_reminder_anchor import SchedulingBookingWebhookDataReminderAnchor
+    from .scheduling_booking_webhook_data_status import SchedulingBookingWebhookDataStatus
+    from .scheduling_booking_webhook_event import SchedulingBookingWebhookEvent
+    from .scheduling_booking_webhook_event_object import SchedulingBookingWebhookEventObject
+    from .scheduling_booking_webhook_event_type import SchedulingBookingWebhookEventType
+    from .scheduling_booking_window import SchedulingBookingWindow
+    from .scheduling_booking_window_days import SchedulingBookingWindowDays
+    from .scheduling_booking_window_days_kind import SchedulingBookingWindowDaysKind
+    from .scheduling_booking_window_from import SchedulingBookingWindowFrom
+    from .scheduling_booking_window_from_kind import SchedulingBookingWindowFromKind
+    from .scheduling_calendar_authorization import SchedulingCalendarAuthorization
+    from .scheduling_calendar_authorization_object import SchedulingCalendarAuthorizationObject
+    from .scheduling_calendar_connection import SchedulingCalendarConnection
+    from .scheduling_calendar_connection_calendars_item import SchedulingCalendarConnectionCalendarsItem
+    from .scheduling_calendar_connection_list import SchedulingCalendarConnectionList
+    from .scheduling_calendar_connection_list_object import SchedulingCalendarConnectionListObject
+    from .scheduling_calendar_connection_object import SchedulingCalendarConnectionObject
+    from .scheduling_calendar_connection_provider import SchedulingCalendarConnectionProvider
+    from .scheduling_calendar_connection_status import SchedulingCalendarConnectionStatus
+    from .scheduling_calendar_delegation import SchedulingCalendarDelegation
+    from .scheduling_calendar_delegation_list import SchedulingCalendarDelegationList
+    from .scheduling_calendar_delegation_list_object import SchedulingCalendarDelegationListObject
+    from .scheduling_calendar_delegation_object import SchedulingCalendarDelegationObject
+    from .scheduling_calendar_delegation_provider import SchedulingCalendarDelegationProvider
+    from .scheduling_calendar_delegation_status import SchedulingCalendarDelegationStatus
+    from .scheduling_calendar_delegation_webhook_event import SchedulingCalendarDelegationWebhookEvent
+    from .scheduling_calendar_delegation_webhook_event_data import SchedulingCalendarDelegationWebhookEventData
+    from .scheduling_calendar_delegation_webhook_event_object import SchedulingCalendarDelegationWebhookEventObject
+    from .scheduling_calendar_delegation_webhook_event_type import SchedulingCalendarDelegationWebhookEventType
+    from .scheduling_calendar_webhook_event import SchedulingCalendarWebhookEvent
+    from .scheduling_calendar_webhook_event_data import SchedulingCalendarWebhookEventData
+    from .scheduling_calendar_webhook_event_object import SchedulingCalendarWebhookEventObject
+    from .scheduling_calendar_webhook_event_type import SchedulingCalendarWebhookEventType
+    from .scheduling_cancelled_series import SchedulingCancelledSeries
+    from .scheduling_cancelled_series_object import SchedulingCancelledSeriesObject
+    from .scheduling_event_type import SchedulingEventType
+    from .scheduling_event_type_host_calendar_details import SchedulingEventTypeHostCalendarDetails
+    from .scheduling_event_type_host_filter_value import SchedulingEventTypeHostFilterValue
+    from .scheduling_event_type_host_input import SchedulingEventTypeHostInput
+    from .scheduling_event_type_host_input_role import SchedulingEventTypeHostInputRole
+    from .scheduling_event_type_hosts_item import SchedulingEventTypeHostsItem
+    from .scheduling_event_type_hosts_item_role import SchedulingEventTypeHostsItemRole
+    from .scheduling_event_type_kind import SchedulingEventTypeKind
+    from .scheduling_event_type_list import SchedulingEventTypeList
+    from .scheduling_event_type_list_object import SchedulingEventTypeListObject
+    from .scheduling_event_type_notifications_value import SchedulingEventTypeNotificationsValue
+    from .scheduling_event_type_object import SchedulingEventTypeObject
+    from .scheduling_event_type_status import SchedulingEventTypeStatus
+    from .scheduling_guest_input import SchedulingGuestInput
+    from .scheduling_host import SchedulingHost
+    from .scheduling_host_attributes_value import SchedulingHostAttributesValue
+    from .scheduling_host_list import SchedulingHostList
+    from .scheduling_host_list_object import SchedulingHostListObject
+    from .scheduling_host_location import (
+        SchedulingHostLocation,
+        SchedulingHostLocation_InPerson,
+        SchedulingHostLocation_Link,
+        SchedulingHostLocation_Phone,
+    )
+    from .scheduling_host_location_in_person import SchedulingHostLocationInPerson
+    from .scheduling_host_location_link import SchedulingHostLocationLink
+    from .scheduling_host_location_phone import SchedulingHostLocationPhone
+    from .scheduling_host_object import SchedulingHostObject
+    from .scheduling_host_status import SchedulingHostStatus
+    from .scheduling_limit import SchedulingLimit
+    from .scheduling_limit_period import SchedulingLimitPeriod
+    from .scheduling_limit_scope import SchedulingLimitScope
+    from .scheduling_location import (
+        SchedulingLocation,
+        SchedulingLocation_GoogleMeet,
+        SchedulingLocation_InPerson,
+        SchedulingLocation_Link,
+        SchedulingLocation_MicrosoftTeams,
+        SchedulingLocation_Phone,
+        SchedulingLocation_Zoom,
+    )
+    from .scheduling_location_google_meet import SchedulingLocationGoogleMeet
+    from .scheduling_location_in_person import SchedulingLocationInPerson
+    from .scheduling_location_link import SchedulingLocationLink
+    from .scheduling_location_microsoft_teams import SchedulingLocationMicrosoftTeams
+    from .scheduling_location_phone import SchedulingLocationPhone
+    from .scheduling_location_zoom import SchedulingLocationZoom
+    from .scheduling_question import SchedulingQuestion
+    from .scheduling_question_type import SchedulingQuestionType
+    from .scheduling_reminder import SchedulingReminder
+    from .scheduling_reminder_anchor import SchedulingReminderAnchor
+    from .scheduling_reminder_button import SchedulingReminderButton
+    from .scheduling_reminder_input import SchedulingReminderInput
+    from .scheduling_reminder_input_anchor import SchedulingReminderInputAnchor
+    from .scheduling_reminder_input_button import SchedulingReminderInputButton
+    from .scheduling_reminder_input_only_if import SchedulingReminderInputOnlyIf
+    from .scheduling_reminder_input_only_if_location_types_item import SchedulingReminderInputOnlyIfLocationTypesItem
+    from .scheduling_reminder_input_send_item import SchedulingReminderInputSendItem
+    from .scheduling_reminder_only_if import SchedulingReminderOnlyIf
+    from .scheduling_reminder_send_item import SchedulingReminderSendItem
+    from .scheduling_schedule import SchedulingSchedule
+    from .scheduling_schedule_list import SchedulingScheduleList
+    from .scheduling_schedule_list_object import SchedulingScheduleListObject
+    from .scheduling_schedule_object import SchedulingScheduleObject
+    from .scheduling_schedule_override import SchedulingScheduleOverride
+    from .scheduling_schedule_override_ranges_item import SchedulingScheduleOverrideRangesItem
+    from .scheduling_schedule_overrides_item import SchedulingScheduleOverridesItem
+    from .scheduling_schedule_overrides_item_ranges_item import SchedulingScheduleOverridesItemRangesItem
+    from .scheduling_schedule_rules_item import SchedulingScheduleRulesItem
+    from .scheduling_series import SchedulingSeries
+    from .scheduling_series_conflicts_item import SchedulingSeriesConflictsItem
+    from .scheduling_series_object import SchedulingSeriesObject
+    from .scheduling_series_preview import SchedulingSeriesPreview
+    from .scheduling_series_preview_data_item import SchedulingSeriesPreviewDataItem
+    from .scheduling_series_preview_object import SchedulingSeriesPreviewObject
+    from .scheduling_session import SchedulingSession
+    from .scheduling_session_object import SchedulingSessionObject
+    from .scheduling_settings import SchedulingSettings
+    from .scheduling_settings_calendar_failure_mode import SchedulingSettingsCalendarFailureMode
+    from .scheduling_settings_logo import SchedulingSettingsLogo
+    from .scheduling_settings_logo_content_type import SchedulingSettingsLogoContentType
+    from .scheduling_settings_notifications_value import SchedulingSettingsNotificationsValue
+    from .scheduling_settings_object import SchedulingSettingsObject
+    from .scheduling_slot import SchedulingSlot
+    from .scheduling_slot_explanation import SchedulingSlotExplanation
+    from .scheduling_slot_explanation_hosts_item import SchedulingSlotExplanationHostsItem
+    from .scheduling_slot_explanation_hosts_item_role import SchedulingSlotExplanationHostsItemRole
+    from .scheduling_slot_explanation_object import SchedulingSlotExplanationObject
+    from .scheduling_slot_list import SchedulingSlotList
+    from .scheduling_slot_list_object import SchedulingSlotListObject
+    from .scheduling_weekly_rule import SchedulingWeeklyRule
     from .segment import Segment
     from .segment_filter import SegmentFilter
     from .segment_filter_conditions_item import SegmentFilterConditionsItem
@@ -870,6 +1076,7 @@ if typing.TYPE_CHECKING:
     from .tracking_settings import TrackingSettings
     from .tracking_settings_object import TrackingSettingsObject
     from .update_tracking_rule_request import UpdateTrackingRuleRequest
+    from .upsert_schedule_request import UpsertScheduleRequest
     from .usage import Usage
     from .usage_list import UsageList
     from .usage_list_object import UsageListObject
@@ -898,6 +1105,8 @@ if typing.TYPE_CHECKING:
     from .verification_webhook_event_data_tags_item import VerificationWebhookEventDataTagsItem
     from .verification_webhook_event_object import VerificationWebhookEventObject
     from .verification_webhook_event_type import VerificationWebhookEventType
+    from .verify_settings import VerifySettings
+    from .verify_settings_object import VerifySettingsObject
     from .webhook_attempt import WebhookAttempt
     from .webhook_attempt_object import WebhookAttemptObject
     from .webhook_delivery import WebhookDelivery
@@ -948,6 +1157,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingAddOnsItemInterval": ".billing_add_ons_item_interval",
     "BillingContract": ".billing_contract",
     "BillingContractKind": ".billing_contract_kind",
+    "BillingCreditLimit": ".billing_credit_limit",
     "BillingCurrency": ".billing_currency",
     "BillingEstimate": ".billing_estimate",
     "BillingFeatures": ".billing_features",
@@ -1056,6 +1266,35 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContactWebhookEventDataSource": ".contact_webhook_event_data_source",
     "ContactWebhookEventObject": ".contact_webhook_event_object",
     "ContactWebhookEventType": ".contact_webhook_event_type",
+    "CreateCalendarConnectionRequest": ".create_calendar_connection_request",
+    "CreateCalendarConnectionRequestCaldav": ".create_calendar_connection_request_caldav",
+    "CreateCalendarConnectionRequestSimulated": ".create_calendar_connection_request_simulated",
+    "CreateCalendarConnectionRequest_Caldav": ".create_calendar_connection_request",
+    "CreateCalendarConnectionRequest_Simulated": ".create_calendar_connection_request",
+    "CreateCalendarDelegationRequest": ".create_calendar_delegation_request",
+    "CreateCalendarDelegationRequestGoogle": ".create_calendar_delegation_request_google",
+    "CreateCalendarDelegationRequestMicrosoft": ".create_calendar_delegation_request_microsoft",
+    "CreateCalendarDelegationRequest_Google": ".create_calendar_delegation_request",
+    "CreateCalendarDelegationRequest_Microsoft": ".create_calendar_delegation_request",
+    "CreateSeriesRequest": ".create_series_request",
+    "CreateSeriesRequestAnswersValue": ".create_series_request_answers_value",
+    "CreateSeriesRequestAttributesValue": ".create_series_request_attributes_value",
+    "CreateSeriesRequestLocation": ".create_series_request_location",
+    "CreateSeriesRequestLocationGoogleMeet": ".create_series_request_location_google_meet",
+    "CreateSeriesRequestLocationInPerson": ".create_series_request_location_in_person",
+    "CreateSeriesRequestLocationLink": ".create_series_request_location_link",
+    "CreateSeriesRequestLocationMicrosoftTeams": ".create_series_request_location_microsoft_teams",
+    "CreateSeriesRequestLocationPhone": ".create_series_request_location_phone",
+    "CreateSeriesRequestLocationZoom": ".create_series_request_location_zoom",
+    "CreateSeriesRequestLocation_GoogleMeet": ".create_series_request_location",
+    "CreateSeriesRequestLocation_InPerson": ".create_series_request_location",
+    "CreateSeriesRequestLocation_Link": ".create_series_request_location",
+    "CreateSeriesRequestLocation_MicrosoftTeams": ".create_series_request_location",
+    "CreateSeriesRequestLocation_Phone": ".create_series_request_location",
+    "CreateSeriesRequestLocation_Zoom": ".create_series_request_location",
+    "CreateSeriesRequestOnConflict": ".create_series_request_on_conflict",
+    "CreateSeriesRequestRecurrence": ".create_series_request_recurrence",
+    "CreateSeriesRequestRecurrenceFrequency": ".create_series_request_recurrence_frequency",
     "Credit": ".credit",
     "CreditAppliesTo": ".credit_applies_to",
     "CreditKind": ".credit_kind",
@@ -1105,6 +1344,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "DeletedRiskListEntryObject": ".deleted_risk_list_entry_object",
     "DeletedRiskRule": ".deleted_risk_rule",
     "DeletedRiskRuleObject": ".deleted_risk_rule_object",
+    "DeletedSchedulingCalendarConnection": ".deleted_scheduling_calendar_connection",
+    "DeletedSchedulingCalendarConnectionObject": ".deleted_scheduling_calendar_connection_object",
+    "DeletedSchedulingCalendarDelegation": ".deleted_scheduling_calendar_delegation",
+    "DeletedSchedulingCalendarDelegationObject": ".deleted_scheduling_calendar_delegation_object",
+    "DeletedSchedulingHost": ".deleted_scheduling_host",
+    "DeletedSchedulingHostObject": ".deleted_scheduling_host_object",
+    "DeletedSchedulingSchedule": ".deleted_scheduling_schedule",
+    "DeletedSchedulingScheduleObject": ".deleted_scheduling_schedule_object",
     "DeletedSegment": ".deleted_segment",
     "DeletedSegmentObject": ".deleted_segment_object",
     "DeletedSignDocument": ".deleted_sign_document",
@@ -1394,12 +1641,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "LogDrain": ".log_drain",
     "LogDrainAttempt": ".log_drain_attempt",
     "LogDrainAttemptObject": ".log_drain_attempt_object",
+    "LogDrainAuthHeader": ".log_drain_auth_header",
     "LogDrainBatch": ".log_drain_batch",
     "LogDrainBatchList": ".log_drain_batch_list",
     "LogDrainBatchListObject": ".log_drain_batch_list_object",
     "LogDrainBatchObject": ".log_drain_batch_object",
     "LogDrainBatchStatus": ".log_drain_batch_status",
     "LogDrainDisabledReason": ".log_drain_disabled_reason",
+    "LogDrainFormat": ".log_drain_format",
     "LogDrainList": ".log_drain_list",
     "LogDrainListObject": ".log_drain_list_object",
     "LogDrainObject": ".log_drain_object",
@@ -1547,6 +1796,160 @@ _dynamic_imports: typing.Dict[str, str] = {
     "RiskWebhookEventData": ".risk_webhook_event_data",
     "RiskWebhookEventObject": ".risk_webhook_event_object",
     "RiskWebhookEventType": ".risk_webhook_event_type",
+    "SchedulingAttendeeErasure": ".scheduling_attendee_erasure",
+    "SchedulingAttendeeErasureByEmail": ".scheduling_attendee_erasure_by_email",
+    "SchedulingAttendeeErasureByEmailObject": ".scheduling_attendee_erasure_by_email_object",
+    "SchedulingAttendeeErasureObject": ".scheduling_attendee_erasure_object",
+    "SchedulingAttendeeInput": ".scheduling_attendee_input",
+    "SchedulingAvailabilitySearchResult": ".scheduling_availability_search_result",
+    "SchedulingAvailabilitySearchResultDataItem": ".scheduling_availability_search_result_data_item",
+    "SchedulingAvailabilitySearchResultDataItemSlotsItem": ".scheduling_availability_search_result_data_item_slots_item",
+    "SchedulingAvailabilitySearchResultObject": ".scheduling_availability_search_result_object",
+    "SchedulingBooking": ".scheduling_booking",
+    "SchedulingBookingAttendeesItem": ".scheduling_booking_attendees_item",
+    "SchedulingBookingAttendeesItemAnswersValue": ".scheduling_booking_attendees_item_answers_value",
+    "SchedulingBookingAttendeesItemRole": ".scheduling_booking_attendees_item_role",
+    "SchedulingBookingCancelledBy": ".scheduling_booking_cancelled_by",
+    "SchedulingBookingEvent": ".scheduling_booking_event",
+    "SchedulingBookingEventActor": ".scheduling_booking_event_actor",
+    "SchedulingBookingEventActorKind": ".scheduling_booking_event_actor_kind",
+    "SchedulingBookingEventList": ".scheduling_booking_event_list",
+    "SchedulingBookingEventListObject": ".scheduling_booking_event_list_object",
+    "SchedulingBookingEventObject": ".scheduling_booking_event_object",
+    "SchedulingBookingList": ".scheduling_booking_list",
+    "SchedulingBookingListObject": ".scheduling_booking_list_object",
+    "SchedulingBookingNotification": ".scheduling_booking_notification",
+    "SchedulingBookingNotificationChannel": ".scheduling_booking_notification_channel",
+    "SchedulingBookingNotificationList": ".scheduling_booking_notification_list",
+    "SchedulingBookingNotificationListObject": ".scheduling_booking_notification_list_object",
+    "SchedulingBookingNotificationObject": ".scheduling_booking_notification_object",
+    "SchedulingBookingNotificationRecipient": ".scheduling_booking_notification_recipient",
+    "SchedulingBookingObject": ".scheduling_booking_object",
+    "SchedulingBookingStatus": ".scheduling_booking_status",
+    "SchedulingBookingWebhookData": ".scheduling_booking_webhook_data",
+    "SchedulingBookingWebhookDataReminder": ".scheduling_booking_webhook_data_reminder",
+    "SchedulingBookingWebhookDataReminderAnchor": ".scheduling_booking_webhook_data_reminder_anchor",
+    "SchedulingBookingWebhookDataStatus": ".scheduling_booking_webhook_data_status",
+    "SchedulingBookingWebhookEvent": ".scheduling_booking_webhook_event",
+    "SchedulingBookingWebhookEventObject": ".scheduling_booking_webhook_event_object",
+    "SchedulingBookingWebhookEventType": ".scheduling_booking_webhook_event_type",
+    "SchedulingBookingWindow": ".scheduling_booking_window",
+    "SchedulingBookingWindowDays": ".scheduling_booking_window_days",
+    "SchedulingBookingWindowDaysKind": ".scheduling_booking_window_days_kind",
+    "SchedulingBookingWindowFrom": ".scheduling_booking_window_from",
+    "SchedulingBookingWindowFromKind": ".scheduling_booking_window_from_kind",
+    "SchedulingCalendarAuthorization": ".scheduling_calendar_authorization",
+    "SchedulingCalendarAuthorizationObject": ".scheduling_calendar_authorization_object",
+    "SchedulingCalendarConnection": ".scheduling_calendar_connection",
+    "SchedulingCalendarConnectionCalendarsItem": ".scheduling_calendar_connection_calendars_item",
+    "SchedulingCalendarConnectionList": ".scheduling_calendar_connection_list",
+    "SchedulingCalendarConnectionListObject": ".scheduling_calendar_connection_list_object",
+    "SchedulingCalendarConnectionObject": ".scheduling_calendar_connection_object",
+    "SchedulingCalendarConnectionProvider": ".scheduling_calendar_connection_provider",
+    "SchedulingCalendarConnectionStatus": ".scheduling_calendar_connection_status",
+    "SchedulingCalendarDelegation": ".scheduling_calendar_delegation",
+    "SchedulingCalendarDelegationList": ".scheduling_calendar_delegation_list",
+    "SchedulingCalendarDelegationListObject": ".scheduling_calendar_delegation_list_object",
+    "SchedulingCalendarDelegationObject": ".scheduling_calendar_delegation_object",
+    "SchedulingCalendarDelegationProvider": ".scheduling_calendar_delegation_provider",
+    "SchedulingCalendarDelegationStatus": ".scheduling_calendar_delegation_status",
+    "SchedulingCalendarDelegationWebhookEvent": ".scheduling_calendar_delegation_webhook_event",
+    "SchedulingCalendarDelegationWebhookEventData": ".scheduling_calendar_delegation_webhook_event_data",
+    "SchedulingCalendarDelegationWebhookEventObject": ".scheduling_calendar_delegation_webhook_event_object",
+    "SchedulingCalendarDelegationWebhookEventType": ".scheduling_calendar_delegation_webhook_event_type",
+    "SchedulingCalendarWebhookEvent": ".scheduling_calendar_webhook_event",
+    "SchedulingCalendarWebhookEventData": ".scheduling_calendar_webhook_event_data",
+    "SchedulingCalendarWebhookEventObject": ".scheduling_calendar_webhook_event_object",
+    "SchedulingCalendarWebhookEventType": ".scheduling_calendar_webhook_event_type",
+    "SchedulingCancelledSeries": ".scheduling_cancelled_series",
+    "SchedulingCancelledSeriesObject": ".scheduling_cancelled_series_object",
+    "SchedulingEventType": ".scheduling_event_type",
+    "SchedulingEventTypeHostCalendarDetails": ".scheduling_event_type_host_calendar_details",
+    "SchedulingEventTypeHostFilterValue": ".scheduling_event_type_host_filter_value",
+    "SchedulingEventTypeHostInput": ".scheduling_event_type_host_input",
+    "SchedulingEventTypeHostInputRole": ".scheduling_event_type_host_input_role",
+    "SchedulingEventTypeHostsItem": ".scheduling_event_type_hosts_item",
+    "SchedulingEventTypeHostsItemRole": ".scheduling_event_type_hosts_item_role",
+    "SchedulingEventTypeKind": ".scheduling_event_type_kind",
+    "SchedulingEventTypeList": ".scheduling_event_type_list",
+    "SchedulingEventTypeListObject": ".scheduling_event_type_list_object",
+    "SchedulingEventTypeNotificationsValue": ".scheduling_event_type_notifications_value",
+    "SchedulingEventTypeObject": ".scheduling_event_type_object",
+    "SchedulingEventTypeStatus": ".scheduling_event_type_status",
+    "SchedulingGuestInput": ".scheduling_guest_input",
+    "SchedulingHost": ".scheduling_host",
+    "SchedulingHostAttributesValue": ".scheduling_host_attributes_value",
+    "SchedulingHostList": ".scheduling_host_list",
+    "SchedulingHostListObject": ".scheduling_host_list_object",
+    "SchedulingHostLocation": ".scheduling_host_location",
+    "SchedulingHostLocationInPerson": ".scheduling_host_location_in_person",
+    "SchedulingHostLocationLink": ".scheduling_host_location_link",
+    "SchedulingHostLocationPhone": ".scheduling_host_location_phone",
+    "SchedulingHostLocation_InPerson": ".scheduling_host_location",
+    "SchedulingHostLocation_Link": ".scheduling_host_location",
+    "SchedulingHostLocation_Phone": ".scheduling_host_location",
+    "SchedulingHostObject": ".scheduling_host_object",
+    "SchedulingHostStatus": ".scheduling_host_status",
+    "SchedulingLimit": ".scheduling_limit",
+    "SchedulingLimitPeriod": ".scheduling_limit_period",
+    "SchedulingLimitScope": ".scheduling_limit_scope",
+    "SchedulingLocation": ".scheduling_location",
+    "SchedulingLocationGoogleMeet": ".scheduling_location_google_meet",
+    "SchedulingLocationInPerson": ".scheduling_location_in_person",
+    "SchedulingLocationLink": ".scheduling_location_link",
+    "SchedulingLocationMicrosoftTeams": ".scheduling_location_microsoft_teams",
+    "SchedulingLocationPhone": ".scheduling_location_phone",
+    "SchedulingLocationZoom": ".scheduling_location_zoom",
+    "SchedulingLocation_GoogleMeet": ".scheduling_location",
+    "SchedulingLocation_InPerson": ".scheduling_location",
+    "SchedulingLocation_Link": ".scheduling_location",
+    "SchedulingLocation_MicrosoftTeams": ".scheduling_location",
+    "SchedulingLocation_Phone": ".scheduling_location",
+    "SchedulingLocation_Zoom": ".scheduling_location",
+    "SchedulingQuestion": ".scheduling_question",
+    "SchedulingQuestionType": ".scheduling_question_type",
+    "SchedulingReminder": ".scheduling_reminder",
+    "SchedulingReminderAnchor": ".scheduling_reminder_anchor",
+    "SchedulingReminderButton": ".scheduling_reminder_button",
+    "SchedulingReminderInput": ".scheduling_reminder_input",
+    "SchedulingReminderInputAnchor": ".scheduling_reminder_input_anchor",
+    "SchedulingReminderInputButton": ".scheduling_reminder_input_button",
+    "SchedulingReminderInputOnlyIf": ".scheduling_reminder_input_only_if",
+    "SchedulingReminderInputOnlyIfLocationTypesItem": ".scheduling_reminder_input_only_if_location_types_item",
+    "SchedulingReminderInputSendItem": ".scheduling_reminder_input_send_item",
+    "SchedulingReminderOnlyIf": ".scheduling_reminder_only_if",
+    "SchedulingReminderSendItem": ".scheduling_reminder_send_item",
+    "SchedulingSchedule": ".scheduling_schedule",
+    "SchedulingScheduleList": ".scheduling_schedule_list",
+    "SchedulingScheduleListObject": ".scheduling_schedule_list_object",
+    "SchedulingScheduleObject": ".scheduling_schedule_object",
+    "SchedulingScheduleOverride": ".scheduling_schedule_override",
+    "SchedulingScheduleOverrideRangesItem": ".scheduling_schedule_override_ranges_item",
+    "SchedulingScheduleOverridesItem": ".scheduling_schedule_overrides_item",
+    "SchedulingScheduleOverridesItemRangesItem": ".scheduling_schedule_overrides_item_ranges_item",
+    "SchedulingScheduleRulesItem": ".scheduling_schedule_rules_item",
+    "SchedulingSeries": ".scheduling_series",
+    "SchedulingSeriesConflictsItem": ".scheduling_series_conflicts_item",
+    "SchedulingSeriesObject": ".scheduling_series_object",
+    "SchedulingSeriesPreview": ".scheduling_series_preview",
+    "SchedulingSeriesPreviewDataItem": ".scheduling_series_preview_data_item",
+    "SchedulingSeriesPreviewObject": ".scheduling_series_preview_object",
+    "SchedulingSession": ".scheduling_session",
+    "SchedulingSessionObject": ".scheduling_session_object",
+    "SchedulingSettings": ".scheduling_settings",
+    "SchedulingSettingsCalendarFailureMode": ".scheduling_settings_calendar_failure_mode",
+    "SchedulingSettingsLogo": ".scheduling_settings_logo",
+    "SchedulingSettingsLogoContentType": ".scheduling_settings_logo_content_type",
+    "SchedulingSettingsNotificationsValue": ".scheduling_settings_notifications_value",
+    "SchedulingSettingsObject": ".scheduling_settings_object",
+    "SchedulingSlot": ".scheduling_slot",
+    "SchedulingSlotExplanation": ".scheduling_slot_explanation",
+    "SchedulingSlotExplanationHostsItem": ".scheduling_slot_explanation_hosts_item",
+    "SchedulingSlotExplanationHostsItemRole": ".scheduling_slot_explanation_hosts_item_role",
+    "SchedulingSlotExplanationObject": ".scheduling_slot_explanation_object",
+    "SchedulingSlotList": ".scheduling_slot_list",
+    "SchedulingSlotListObject": ".scheduling_slot_list_object",
+    "SchedulingWeeklyRule": ".scheduling_weekly_rule",
     "Segment": ".segment",
     "SegmentFilter": ".segment_filter",
     "SegmentFilterConditionsItem": ".segment_filter_conditions_item",
@@ -1762,6 +2165,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TrackingSettings": ".tracking_settings",
     "TrackingSettingsObject": ".tracking_settings_object",
     "UpdateTrackingRuleRequest": ".update_tracking_rule_request",
+    "UpsertScheduleRequest": ".upsert_schedule_request",
     "Usage": ".usage",
     "UsageList": ".usage_list",
     "UsageListObject": ".usage_list_object",
@@ -1790,6 +2194,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "VerificationWebhookEventDataTagsItem": ".verification_webhook_event_data_tags_item",
     "VerificationWebhookEventObject": ".verification_webhook_event_object",
     "VerificationWebhookEventType": ".verification_webhook_event_type",
+    "VerifySettings": ".verify_settings",
+    "VerifySettingsObject": ".verify_settings_object",
     "WebhookAttempt": ".webhook_attempt",
     "WebhookAttemptObject": ".webhook_attempt_object",
     "WebhookDelivery": ".webhook_delivery",
@@ -1864,6 +2270,7 @@ __all__ = [
     "BillingAddOnsItemInterval",
     "BillingContract",
     "BillingContractKind",
+    "BillingCreditLimit",
     "BillingCurrency",
     "BillingEstimate",
     "BillingFeatures",
@@ -1972,6 +2379,35 @@ __all__ = [
     "ContactWebhookEventDataSource",
     "ContactWebhookEventObject",
     "ContactWebhookEventType",
+    "CreateCalendarConnectionRequest",
+    "CreateCalendarConnectionRequestCaldav",
+    "CreateCalendarConnectionRequestSimulated",
+    "CreateCalendarConnectionRequest_Caldav",
+    "CreateCalendarConnectionRequest_Simulated",
+    "CreateCalendarDelegationRequest",
+    "CreateCalendarDelegationRequestGoogle",
+    "CreateCalendarDelegationRequestMicrosoft",
+    "CreateCalendarDelegationRequest_Google",
+    "CreateCalendarDelegationRequest_Microsoft",
+    "CreateSeriesRequest",
+    "CreateSeriesRequestAnswersValue",
+    "CreateSeriesRequestAttributesValue",
+    "CreateSeriesRequestLocation",
+    "CreateSeriesRequestLocationGoogleMeet",
+    "CreateSeriesRequestLocationInPerson",
+    "CreateSeriesRequestLocationLink",
+    "CreateSeriesRequestLocationMicrosoftTeams",
+    "CreateSeriesRequestLocationPhone",
+    "CreateSeriesRequestLocationZoom",
+    "CreateSeriesRequestLocation_GoogleMeet",
+    "CreateSeriesRequestLocation_InPerson",
+    "CreateSeriesRequestLocation_Link",
+    "CreateSeriesRequestLocation_MicrosoftTeams",
+    "CreateSeriesRequestLocation_Phone",
+    "CreateSeriesRequestLocation_Zoom",
+    "CreateSeriesRequestOnConflict",
+    "CreateSeriesRequestRecurrence",
+    "CreateSeriesRequestRecurrenceFrequency",
     "Credit",
     "CreditAppliesTo",
     "CreditKind",
@@ -2021,6 +2457,14 @@ __all__ = [
     "DeletedRiskListEntryObject",
     "DeletedRiskRule",
     "DeletedRiskRuleObject",
+    "DeletedSchedulingCalendarConnection",
+    "DeletedSchedulingCalendarConnectionObject",
+    "DeletedSchedulingCalendarDelegation",
+    "DeletedSchedulingCalendarDelegationObject",
+    "DeletedSchedulingHost",
+    "DeletedSchedulingHostObject",
+    "DeletedSchedulingSchedule",
+    "DeletedSchedulingScheduleObject",
     "DeletedSegment",
     "DeletedSegmentObject",
     "DeletedSignDocument",
@@ -2310,12 +2754,14 @@ __all__ = [
     "LogDrain",
     "LogDrainAttempt",
     "LogDrainAttemptObject",
+    "LogDrainAuthHeader",
     "LogDrainBatch",
     "LogDrainBatchList",
     "LogDrainBatchListObject",
     "LogDrainBatchObject",
     "LogDrainBatchStatus",
     "LogDrainDisabledReason",
+    "LogDrainFormat",
     "LogDrainList",
     "LogDrainListObject",
     "LogDrainObject",
@@ -2463,6 +2909,160 @@ __all__ = [
     "RiskWebhookEventData",
     "RiskWebhookEventObject",
     "RiskWebhookEventType",
+    "SchedulingAttendeeErasure",
+    "SchedulingAttendeeErasureByEmail",
+    "SchedulingAttendeeErasureByEmailObject",
+    "SchedulingAttendeeErasureObject",
+    "SchedulingAttendeeInput",
+    "SchedulingAvailabilitySearchResult",
+    "SchedulingAvailabilitySearchResultDataItem",
+    "SchedulingAvailabilitySearchResultDataItemSlotsItem",
+    "SchedulingAvailabilitySearchResultObject",
+    "SchedulingBooking",
+    "SchedulingBookingAttendeesItem",
+    "SchedulingBookingAttendeesItemAnswersValue",
+    "SchedulingBookingAttendeesItemRole",
+    "SchedulingBookingCancelledBy",
+    "SchedulingBookingEvent",
+    "SchedulingBookingEventActor",
+    "SchedulingBookingEventActorKind",
+    "SchedulingBookingEventList",
+    "SchedulingBookingEventListObject",
+    "SchedulingBookingEventObject",
+    "SchedulingBookingList",
+    "SchedulingBookingListObject",
+    "SchedulingBookingNotification",
+    "SchedulingBookingNotificationChannel",
+    "SchedulingBookingNotificationList",
+    "SchedulingBookingNotificationListObject",
+    "SchedulingBookingNotificationObject",
+    "SchedulingBookingNotificationRecipient",
+    "SchedulingBookingObject",
+    "SchedulingBookingStatus",
+    "SchedulingBookingWebhookData",
+    "SchedulingBookingWebhookDataReminder",
+    "SchedulingBookingWebhookDataReminderAnchor",
+    "SchedulingBookingWebhookDataStatus",
+    "SchedulingBookingWebhookEvent",
+    "SchedulingBookingWebhookEventObject",
+    "SchedulingBookingWebhookEventType",
+    "SchedulingBookingWindow",
+    "SchedulingBookingWindowDays",
+    "SchedulingBookingWindowDaysKind",
+    "SchedulingBookingWindowFrom",
+    "SchedulingBookingWindowFromKind",
+    "SchedulingCalendarAuthorization",
+    "SchedulingCalendarAuthorizationObject",
+    "SchedulingCalendarConnection",
+    "SchedulingCalendarConnectionCalendarsItem",
+    "SchedulingCalendarConnectionList",
+    "SchedulingCalendarConnectionListObject",
+    "SchedulingCalendarConnectionObject",
+    "SchedulingCalendarConnectionProvider",
+    "SchedulingCalendarConnectionStatus",
+    "SchedulingCalendarDelegation",
+    "SchedulingCalendarDelegationList",
+    "SchedulingCalendarDelegationListObject",
+    "SchedulingCalendarDelegationObject",
+    "SchedulingCalendarDelegationProvider",
+    "SchedulingCalendarDelegationStatus",
+    "SchedulingCalendarDelegationWebhookEvent",
+    "SchedulingCalendarDelegationWebhookEventData",
+    "SchedulingCalendarDelegationWebhookEventObject",
+    "SchedulingCalendarDelegationWebhookEventType",
+    "SchedulingCalendarWebhookEvent",
+    "SchedulingCalendarWebhookEventData",
+    "SchedulingCalendarWebhookEventObject",
+    "SchedulingCalendarWebhookEventType",
+    "SchedulingCancelledSeries",
+    "SchedulingCancelledSeriesObject",
+    "SchedulingEventType",
+    "SchedulingEventTypeHostCalendarDetails",
+    "SchedulingEventTypeHostFilterValue",
+    "SchedulingEventTypeHostInput",
+    "SchedulingEventTypeHostInputRole",
+    "SchedulingEventTypeHostsItem",
+    "SchedulingEventTypeHostsItemRole",
+    "SchedulingEventTypeKind",
+    "SchedulingEventTypeList",
+    "SchedulingEventTypeListObject",
+    "SchedulingEventTypeNotificationsValue",
+    "SchedulingEventTypeObject",
+    "SchedulingEventTypeStatus",
+    "SchedulingGuestInput",
+    "SchedulingHost",
+    "SchedulingHostAttributesValue",
+    "SchedulingHostList",
+    "SchedulingHostListObject",
+    "SchedulingHostLocation",
+    "SchedulingHostLocationInPerson",
+    "SchedulingHostLocationLink",
+    "SchedulingHostLocationPhone",
+    "SchedulingHostLocation_InPerson",
+    "SchedulingHostLocation_Link",
+    "SchedulingHostLocation_Phone",
+    "SchedulingHostObject",
+    "SchedulingHostStatus",
+    "SchedulingLimit",
+    "SchedulingLimitPeriod",
+    "SchedulingLimitScope",
+    "SchedulingLocation",
+    "SchedulingLocationGoogleMeet",
+    "SchedulingLocationInPerson",
+    "SchedulingLocationLink",
+    "SchedulingLocationMicrosoftTeams",
+    "SchedulingLocationPhone",
+    "SchedulingLocationZoom",
+    "SchedulingLocation_GoogleMeet",
+    "SchedulingLocation_InPerson",
+    "SchedulingLocation_Link",
+    "SchedulingLocation_MicrosoftTeams",
+    "SchedulingLocation_Phone",
+    "SchedulingLocation_Zoom",
+    "SchedulingQuestion",
+    "SchedulingQuestionType",
+    "SchedulingReminder",
+    "SchedulingReminderAnchor",
+    "SchedulingReminderButton",
+    "SchedulingReminderInput",
+    "SchedulingReminderInputAnchor",
+    "SchedulingReminderInputButton",
+    "SchedulingReminderInputOnlyIf",
+    "SchedulingReminderInputOnlyIfLocationTypesItem",
+    "SchedulingReminderInputSendItem",
+    "SchedulingReminderOnlyIf",
+    "SchedulingReminderSendItem",
+    "SchedulingSchedule",
+    "SchedulingScheduleList",
+    "SchedulingScheduleListObject",
+    "SchedulingScheduleObject",
+    "SchedulingScheduleOverride",
+    "SchedulingScheduleOverrideRangesItem",
+    "SchedulingScheduleOverridesItem",
+    "SchedulingScheduleOverridesItemRangesItem",
+    "SchedulingScheduleRulesItem",
+    "SchedulingSeries",
+    "SchedulingSeriesConflictsItem",
+    "SchedulingSeriesObject",
+    "SchedulingSeriesPreview",
+    "SchedulingSeriesPreviewDataItem",
+    "SchedulingSeriesPreviewObject",
+    "SchedulingSession",
+    "SchedulingSessionObject",
+    "SchedulingSettings",
+    "SchedulingSettingsCalendarFailureMode",
+    "SchedulingSettingsLogo",
+    "SchedulingSettingsLogoContentType",
+    "SchedulingSettingsNotificationsValue",
+    "SchedulingSettingsObject",
+    "SchedulingSlot",
+    "SchedulingSlotExplanation",
+    "SchedulingSlotExplanationHostsItem",
+    "SchedulingSlotExplanationHostsItemRole",
+    "SchedulingSlotExplanationObject",
+    "SchedulingSlotList",
+    "SchedulingSlotListObject",
+    "SchedulingWeeklyRule",
     "Segment",
     "SegmentFilter",
     "SegmentFilterConditionsItem",
@@ -2678,6 +3278,7 @@ __all__ = [
     "TrackingSettings",
     "TrackingSettingsObject",
     "UpdateTrackingRuleRequest",
+    "UpsertScheduleRequest",
     "Usage",
     "UsageList",
     "UsageListObject",
@@ -2706,6 +3307,8 @@ __all__ = [
     "VerificationWebhookEventDataTagsItem",
     "VerificationWebhookEventObject",
     "VerificationWebhookEventType",
+    "VerifySettings",
+    "VerifySettingsObject",
     "WebhookAttempt",
     "WebhookAttemptObject",
     "WebhookDelivery",

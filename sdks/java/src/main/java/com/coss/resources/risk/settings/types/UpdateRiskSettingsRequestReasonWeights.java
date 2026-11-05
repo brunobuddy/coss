@@ -218,6 +218,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.invalid")
     public OptionalNullable<Double> getEmailInvalid() {
@@ -227,6 +230,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailInvalid;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.disposable")
     public OptionalNullable<Double> getEmailDisposable() {
@@ -236,6 +242,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailDisposable;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.undeliverable")
     public OptionalNullable<Double> getEmailUndeliverable() {
@@ -245,6 +254,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailUndeliverable;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.role_account")
     public OptionalNullable<Double> getEmailRoleAccount() {
@@ -254,6 +266,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailRoleAccount;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.typo")
     public OptionalNullable<Double> getEmailTypo() {
@@ -263,6 +278,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailTypo;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email.domain_new")
     public OptionalNullable<Double> getEmailDomainNew() {
@@ -272,6 +290,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return emailDomainNew;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.tor")
     public OptionalNullable<Double> getIpTor() {
@@ -281,6 +302,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipTor;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.vpn_network")
     public OptionalNullable<Double> getIpVpnNetwork() {
@@ -290,6 +314,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipVpnNetwork;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.hosting_provider")
     public OptionalNullable<Double> getIpHostingProvider() {
@@ -299,6 +326,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipHostingProvider;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.vpn")
     public OptionalNullable<Double> getIpVpn() {
@@ -308,6 +338,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipVpn;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.proxy")
     public OptionalNullable<Double> getIpProxy() {
@@ -317,6 +350,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipProxy;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.relay")
     public OptionalNullable<Double> getIpRelay() {
@@ -326,6 +362,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipRelay;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip.private")
     public OptionalNullable<Double> getIpPrivate() {
@@ -335,6 +374,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return ipPrivate;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_ip_1h")
     public OptionalNullable<Double> getVelocitySignupsPerIp1H() {
@@ -344,6 +386,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerIp1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_ip_24h")
     public OptionalNullable<Double> getVelocitySignupsPerIp24H() {
@@ -353,6 +398,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerIp24H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_subnet_1h")
     public OptionalNullable<Double> getVelocitySignupsPerSubnet1H() {
@@ -362,6 +410,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerSubnet1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_email_domain_1h")
     public OptionalNullable<Double> getVelocitySignupsPerEmailDomain1H() {
@@ -371,6 +422,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerEmailDomain1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_mailbox_24h")
     public OptionalNullable<Double> getVelocitySignupsPerMailbox24H() {
@@ -380,6 +434,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerMailbox24H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.signups_per_device_24h")
     public OptionalNullable<Double> getVelocitySignupsPerDevice24H() {
@@ -389,6 +446,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocitySignupsPerDevice24H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.checkouts_per_ip_1h")
     public OptionalNullable<Double> getVelocityCheckoutsPerIp1H() {
@@ -398,6 +458,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityCheckoutsPerIp1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.checkouts_per_user_1h")
     public OptionalNullable<Double> getVelocityCheckoutsPerUser1H() {
@@ -407,6 +470,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityCheckoutsPerUser1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.checkouts_per_card_24h")
     public OptionalNullable<Double> getVelocityCheckoutsPerCard24H() {
@@ -416,6 +482,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityCheckoutsPerCard24H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.logins_per_ip_1h")
     public OptionalNullable<Double> getVelocityLoginsPerIp1H() {
@@ -425,6 +494,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityLoginsPerIp1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.logins_per_user_1h")
     public OptionalNullable<Double> getVelocityLoginsPerUser1H() {
@@ -434,6 +506,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityLoginsPerUser1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.events_per_ip_1h")
     public OptionalNullable<Double> getVelocityEventsPerIp1H() {
@@ -443,6 +518,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityEventsPerIp1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("velocity.events_per_user_1h")
     public OptionalNullable<Double> getVelocityEventsPerUser1H() {
@@ -452,6 +530,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return velocityEventsPerUser1H;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("duplicate.canonical_mailbox")
     public OptionalNullable<Double> getDuplicateCanonicalMailbox() {
@@ -461,6 +542,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return duplicateCanonicalMailbox;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("duplicate.device")
     public OptionalNullable<Double> getDuplicateDevice() {
@@ -470,6 +554,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return duplicateDevice;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_mailbox")
     public OptionalNullable<Double> getHistoryFraudMailbox() {
@@ -479,6 +566,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudMailbox;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_user")
     public OptionalNullable<Double> getHistoryFraudUser() {
@@ -488,6 +578,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudUser;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_ip")
     public OptionalNullable<Double> getHistoryFraudIp() {
@@ -497,6 +590,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudIp;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_subnet")
     public OptionalNullable<Double> getHistoryFraudSubnet() {
@@ -506,6 +602,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudSubnet;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_card")
     public OptionalNullable<Double> getHistoryFraudCard() {
@@ -515,6 +614,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudCard;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("history.fraud_device")
     public OptionalNullable<Double> getHistoryFraudDevice() {
@@ -524,6 +626,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return historyFraudDevice;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("checkout.card_country_mismatch")
     public OptionalNullable<Double> getCheckoutCardCountryMismatch() {
@@ -533,6 +638,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return checkoutCardCountryMismatch;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("checkout.billing_country_mismatch")
     public OptionalNullable<Double> getCheckoutBillingCountryMismatch() {
@@ -542,6 +650,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return checkoutBillingCountryMismatch;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("checkout.prepaid_card")
     public OptionalNullable<Double> getCheckoutPrepaidCard() {
@@ -551,6 +662,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return checkoutPrepaidCard;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("device.automation")
     public OptionalNullable<Double> getDeviceAutomation() {
@@ -560,6 +674,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return deviceAutomation;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("device.invalid")
     public OptionalNullable<Double> getDeviceInvalid() {
@@ -569,6 +686,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return deviceInvalid;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("login.new_country")
     public OptionalNullable<Double> getLoginNewCountry() {
@@ -578,6 +698,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return loginNewCountry;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("login.new_network")
     public OptionalNullable<Double> getLoginNewNetwork() {
@@ -587,6 +710,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return loginNewNetwork;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("captcha.failed")
     public OptionalNullable<Double> getCaptchaFailed() {
@@ -596,6 +722,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return captchaFailed;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("captcha.missing")
     public OptionalNullable<Double> getCaptchaMissing() {
@@ -605,6 +734,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return captchaMissing;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("content.spam")
     public OptionalNullable<Double> getContentSpam() {
@@ -614,6 +746,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return contentSpam;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("content.phishing")
     public OptionalNullable<Double> getContentPhishing() {
@@ -623,6 +758,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return contentPhishing;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("content.malware")
     public OptionalNullable<Double> getContentMalware() {
@@ -632,6 +770,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
         return contentMalware;
     }
 
+    /**
+     * @return This reason's new weight. <code>null</code> restores its default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("content.fraud")
     public OptionalNullable<Double> getContentFraud() {
@@ -1198,6 +1339,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.invalid", nulls = Nulls.SKIP)
         public Builder emailInvalid(OptionalNullable<Double> emailInvalid) {
             this.emailInvalid = emailInvalid;
@@ -1229,6 +1373,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.disposable", nulls = Nulls.SKIP)
         public Builder emailDisposable(OptionalNullable<Double> emailDisposable) {
             this.emailDisposable = emailDisposable;
@@ -1260,6 +1407,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.undeliverable", nulls = Nulls.SKIP)
         public Builder emailUndeliverable(OptionalNullable<Double> emailUndeliverable) {
             this.emailUndeliverable = emailUndeliverable;
@@ -1291,6 +1441,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.role_account", nulls = Nulls.SKIP)
         public Builder emailRoleAccount(OptionalNullable<Double> emailRoleAccount) {
             this.emailRoleAccount = emailRoleAccount;
@@ -1322,6 +1475,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.typo", nulls = Nulls.SKIP)
         public Builder emailTypo(OptionalNullable<Double> emailTypo) {
             this.emailTypo = emailTypo;
@@ -1353,6 +1509,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "email.domain_new", nulls = Nulls.SKIP)
         public Builder emailDomainNew(OptionalNullable<Double> emailDomainNew) {
             this.emailDomainNew = emailDomainNew;
@@ -1384,6 +1543,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.tor", nulls = Nulls.SKIP)
         public Builder ipTor(OptionalNullable<Double> ipTor) {
             this.ipTor = ipTor;
@@ -1415,6 +1577,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.vpn_network", nulls = Nulls.SKIP)
         public Builder ipVpnNetwork(OptionalNullable<Double> ipVpnNetwork) {
             this.ipVpnNetwork = ipVpnNetwork;
@@ -1446,6 +1611,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.hosting_provider", nulls = Nulls.SKIP)
         public Builder ipHostingProvider(OptionalNullable<Double> ipHostingProvider) {
             this.ipHostingProvider = ipHostingProvider;
@@ -1477,6 +1645,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.vpn", nulls = Nulls.SKIP)
         public Builder ipVpn(OptionalNullable<Double> ipVpn) {
             this.ipVpn = ipVpn;
@@ -1508,6 +1679,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.proxy", nulls = Nulls.SKIP)
         public Builder ipProxy(OptionalNullable<Double> ipProxy) {
             this.ipProxy = ipProxy;
@@ -1539,6 +1713,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.relay", nulls = Nulls.SKIP)
         public Builder ipRelay(OptionalNullable<Double> ipRelay) {
             this.ipRelay = ipRelay;
@@ -1570,6 +1747,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "ip.private", nulls = Nulls.SKIP)
         public Builder ipPrivate(OptionalNullable<Double> ipPrivate) {
             this.ipPrivate = ipPrivate;
@@ -1601,6 +1781,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerIp1H(OptionalNullable<Double> velocitySignupsPerIp1H) {
             this.velocitySignupsPerIp1H = velocitySignupsPerIp1H;
@@ -1632,6 +1815,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_ip_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerIp24H(OptionalNullable<Double> velocitySignupsPerIp24H) {
             this.velocitySignupsPerIp24H = velocitySignupsPerIp24H;
@@ -1663,6 +1849,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_subnet_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerSubnet1H(OptionalNullable<Double> velocitySignupsPerSubnet1H) {
             this.velocitySignupsPerSubnet1H = velocitySignupsPerSubnet1H;
@@ -1694,6 +1883,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_email_domain_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerEmailDomain1H(OptionalNullable<Double> velocitySignupsPerEmailDomain1H) {
             this.velocitySignupsPerEmailDomain1H = velocitySignupsPerEmailDomain1H;
@@ -1725,6 +1917,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_mailbox_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerMailbox24H(OptionalNullable<Double> velocitySignupsPerMailbox24H) {
             this.velocitySignupsPerMailbox24H = velocitySignupsPerMailbox24H;
@@ -1756,6 +1951,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_device_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerDevice24H(OptionalNullable<Double> velocitySignupsPerDevice24H) {
             this.velocitySignupsPerDevice24H = velocitySignupsPerDevice24H;
@@ -1787,6 +1985,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerIp1H(OptionalNullable<Double> velocityCheckoutsPerIp1H) {
             this.velocityCheckoutsPerIp1H = velocityCheckoutsPerIp1H;
@@ -1818,6 +2019,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerUser1H(OptionalNullable<Double> velocityCheckoutsPerUser1H) {
             this.velocityCheckoutsPerUser1H = velocityCheckoutsPerUser1H;
@@ -1849,6 +2053,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_card_24h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerCard24H(OptionalNullable<Double> velocityCheckoutsPerCard24H) {
             this.velocityCheckoutsPerCard24H = velocityCheckoutsPerCard24H;
@@ -1880,6 +2087,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.logins_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityLoginsPerIp1H(OptionalNullable<Double> velocityLoginsPerIp1H) {
             this.velocityLoginsPerIp1H = velocityLoginsPerIp1H;
@@ -1911,6 +2121,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.logins_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityLoginsPerUser1H(OptionalNullable<Double> velocityLoginsPerUser1H) {
             this.velocityLoginsPerUser1H = velocityLoginsPerUser1H;
@@ -1942,6 +2155,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.events_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityEventsPerIp1H(OptionalNullable<Double> velocityEventsPerIp1H) {
             this.velocityEventsPerIp1H = velocityEventsPerIp1H;
@@ -1973,6 +2189,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "velocity.events_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityEventsPerUser1H(OptionalNullable<Double> velocityEventsPerUser1H) {
             this.velocityEventsPerUser1H = velocityEventsPerUser1H;
@@ -2004,6 +2223,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "duplicate.canonical_mailbox", nulls = Nulls.SKIP)
         public Builder duplicateCanonicalMailbox(OptionalNullable<Double> duplicateCanonicalMailbox) {
             this.duplicateCanonicalMailbox = duplicateCanonicalMailbox;
@@ -2035,6 +2257,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "duplicate.device", nulls = Nulls.SKIP)
         public Builder duplicateDevice(OptionalNullable<Double> duplicateDevice) {
             this.duplicateDevice = duplicateDevice;
@@ -2066,6 +2291,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_mailbox", nulls = Nulls.SKIP)
         public Builder historyFraudMailbox(OptionalNullable<Double> historyFraudMailbox) {
             this.historyFraudMailbox = historyFraudMailbox;
@@ -2097,6 +2325,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_user", nulls = Nulls.SKIP)
         public Builder historyFraudUser(OptionalNullable<Double> historyFraudUser) {
             this.historyFraudUser = historyFraudUser;
@@ -2128,6 +2359,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_ip", nulls = Nulls.SKIP)
         public Builder historyFraudIp(OptionalNullable<Double> historyFraudIp) {
             this.historyFraudIp = historyFraudIp;
@@ -2159,6 +2393,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_subnet", nulls = Nulls.SKIP)
         public Builder historyFraudSubnet(OptionalNullable<Double> historyFraudSubnet) {
             this.historyFraudSubnet = historyFraudSubnet;
@@ -2190,6 +2427,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_card", nulls = Nulls.SKIP)
         public Builder historyFraudCard(OptionalNullable<Double> historyFraudCard) {
             this.historyFraudCard = historyFraudCard;
@@ -2221,6 +2461,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "history.fraud_device", nulls = Nulls.SKIP)
         public Builder historyFraudDevice(OptionalNullable<Double> historyFraudDevice) {
             this.historyFraudDevice = historyFraudDevice;
@@ -2252,6 +2495,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "checkout.card_country_mismatch", nulls = Nulls.SKIP)
         public Builder checkoutCardCountryMismatch(OptionalNullable<Double> checkoutCardCountryMismatch) {
             this.checkoutCardCountryMismatch = checkoutCardCountryMismatch;
@@ -2283,6 +2529,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "checkout.billing_country_mismatch", nulls = Nulls.SKIP)
         public Builder checkoutBillingCountryMismatch(OptionalNullable<Double> checkoutBillingCountryMismatch) {
             this.checkoutBillingCountryMismatch = checkoutBillingCountryMismatch;
@@ -2314,6 +2563,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "checkout.prepaid_card", nulls = Nulls.SKIP)
         public Builder checkoutPrepaidCard(OptionalNullable<Double> checkoutPrepaidCard) {
             this.checkoutPrepaidCard = checkoutPrepaidCard;
@@ -2345,6 +2597,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "device.automation", nulls = Nulls.SKIP)
         public Builder deviceAutomation(OptionalNullable<Double> deviceAutomation) {
             this.deviceAutomation = deviceAutomation;
@@ -2376,6 +2631,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "device.invalid", nulls = Nulls.SKIP)
         public Builder deviceInvalid(OptionalNullable<Double> deviceInvalid) {
             this.deviceInvalid = deviceInvalid;
@@ -2407,6 +2665,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "login.new_country", nulls = Nulls.SKIP)
         public Builder loginNewCountry(OptionalNullable<Double> loginNewCountry) {
             this.loginNewCountry = loginNewCountry;
@@ -2438,6 +2699,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "login.new_network", nulls = Nulls.SKIP)
         public Builder loginNewNetwork(OptionalNullable<Double> loginNewNetwork) {
             this.loginNewNetwork = loginNewNetwork;
@@ -2469,6 +2733,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "captcha.failed", nulls = Nulls.SKIP)
         public Builder captchaFailed(OptionalNullable<Double> captchaFailed) {
             this.captchaFailed = captchaFailed;
@@ -2500,6 +2767,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "captcha.missing", nulls = Nulls.SKIP)
         public Builder captchaMissing(OptionalNullable<Double> captchaMissing) {
             this.captchaMissing = captchaMissing;
@@ -2531,6 +2801,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "content.spam", nulls = Nulls.SKIP)
         public Builder contentSpam(OptionalNullable<Double> contentSpam) {
             this.contentSpam = contentSpam;
@@ -2562,6 +2835,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "content.phishing", nulls = Nulls.SKIP)
         public Builder contentPhishing(OptionalNullable<Double> contentPhishing) {
             this.contentPhishing = contentPhishing;
@@ -2593,6 +2869,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "content.malware", nulls = Nulls.SKIP)
         public Builder contentMalware(OptionalNullable<Double> contentMalware) {
             this.contentMalware = contentMalware;
@@ -2624,6 +2903,9 @@ public final class UpdateRiskSettingsRequestReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's new weight. <code>null</code> restores its default.</p>
+         */
         @JsonSetter(value = "content.fraud", nulls = Nulls.SKIP)
         public Builder contentFraud(OptionalNullable<Double> contentFraud) {
             this.contentFraud = contentFraud;

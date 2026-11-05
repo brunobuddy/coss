@@ -102,6 +102,8 @@ module Coss
         end
       end
 
+      # A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+      #
       # @param request_options [Hash]
       # @param params [Hash]
       # @option request_options [String] :base_url

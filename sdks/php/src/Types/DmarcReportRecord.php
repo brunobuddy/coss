@@ -9,13 +9,13 @@ use Coss\Core\Types\ArrayType;
 class DmarcReportRecord extends JsonSerializableType
 {
     /**
-     * @var string $sourceIp
+     * @var string $sourceIp The address the messages came from.
      */
     #[JsonProperty('source_ip')]
     public string $sourceIp;
 
     /**
-     * @var int $count
+     * @var int $count How many messages this line covers.
      */
     #[JsonProperty('count')]
     public int $count;
@@ -39,37 +39,37 @@ class DmarcReportRecord extends JsonSerializableType
     public string $spf;
 
     /**
-     * @var bool $dmarcPass
+     * @var bool $dmarcPass Whether they passed DMARC.
      */
     #[JsonProperty('dmarc_pass')]
     public bool $dmarcPass;
 
     /**
-     * @var string $headerFrom
+     * @var string $headerFrom The domain in their `From` header.
      */
     #[JsonProperty('header_from')]
     public string $headerFrom;
 
     /**
-     * @var ?string $envelopeFrom
+     * @var ?string $envelopeFrom The domain in their envelope sender.
      */
     #[JsonProperty('envelope_from')]
     public ?string $envelopeFrom;
 
     /**
-     * @var bool $viaCoss
+     * @var bool $viaCoss Whether they were sent through coss.com, by its DKIM selectors or bounce domain.
      */
     #[JsonProperty('via_coss')]
     public bool $viaCoss;
 
     /**
-     * @var DmarcReportRecordAuthResults $authResults
+     * @var DmarcReportRecordAuthResults $authResults What receivers saw for DKIM and SPF.
      */
     #[JsonProperty('auth_results')]
     public DmarcReportRecordAuthResults $authResults;
 
     /**
-     * @var array<DmarcReportRecordReasonsItem> $reasons
+     * @var array<DmarcReportRecordReasonsItem> $reasons Why receivers overrode the policy.
      */
     #[JsonProperty('reasons'), ArrayType([DmarcReportRecordReasonsItem::class])]
     public array $reasons;

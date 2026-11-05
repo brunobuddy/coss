@@ -62,6 +62,9 @@ public final class UpdateMarketingSettingsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The sender's name in the preference center. <code>null</code>: the organization's.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("display_name")
     public OptionalNullable<String> getDisplayName() {
@@ -71,6 +74,9 @@ public final class UpdateMarketingSettingsRequest {
         return displayName;
     }
 
+    /**
+     * @return The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("mailing_address")
     public OptionalNullable<String> getMailingAddress() {
@@ -80,11 +86,17 @@ public final class UpdateMarketingSettingsRequest {
         return mailingAddress;
     }
 
+    /**
+     * @return Whether contacts upserted without <code>double_opt_in</code> must confirm first.
+     */
     @JsonProperty("double_opt_in_default")
     public Optional<Boolean> getDoubleOptInDefault() {
         return doubleOptInDefault;
     }
 
+    /**
+     * @return The sender of confirmation emails (a verified domain's address for live keys).
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmation_from")
     public OptionalNullable<String> getConfirmationFrom() {
@@ -94,6 +106,9 @@ public final class UpdateMarketingSettingsRequest {
         return confirmationFrom;
     }
 
+    /**
+     * @return <code>null</code>: coss.com's default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmation_subject")
     public OptionalNullable<String> getConfirmationSubject() {
@@ -103,6 +118,9 @@ public final class UpdateMarketingSettingsRequest {
         return confirmationSubject;
     }
 
+    /**
+     * @return <code>null</code>: coss.com's default. Must contain <code>{{{confirmation_url}}}</code>.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmation_html")
     public OptionalNullable<String> getConfirmationHtml() {
@@ -112,6 +130,9 @@ public final class UpdateMarketingSettingsRequest {
         return confirmationHtml;
     }
 
+    /**
+     * @return <code>null</code>: coss.com's default. Must contain <code>{{{confirmation_url}}}</code>.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmation_text")
     public OptionalNullable<String> getConfirmationText() {
@@ -121,6 +142,9 @@ public final class UpdateMarketingSettingsRequest {
         return confirmationText;
     }
 
+    /**
+     * @return Where a confirmed contact is sent, an https URL. <code>null</code>: coss.com's own page.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmed_redirect_url")
     public OptionalNullable<String> getConfirmedRedirectUrl() {
@@ -251,6 +275,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The sender's name in the preference center. <code>null</code>: the organization's.</p>
+         */
         @JsonSetter(value = "display_name", nulls = Nulls.SKIP)
         public Builder displayName(OptionalNullable<String> displayName) {
             this.displayName = displayName;
@@ -282,6 +309,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.</p>
+         */
         @JsonSetter(value = "mailing_address", nulls = Nulls.SKIP)
         public Builder mailingAddress(OptionalNullable<String> mailingAddress) {
             this.mailingAddress = mailingAddress;
@@ -313,6 +343,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Whether contacts upserted without <code>double_opt_in</code> must confirm first.</p>
+         */
         @JsonSetter(value = "double_opt_in_default", nulls = Nulls.SKIP)
         public Builder doubleOptInDefault(Optional<Boolean> doubleOptInDefault) {
             this.doubleOptInDefault = doubleOptInDefault;
@@ -324,6 +357,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>The sender of confirmation emails (a verified domain's address for live keys).</p>
+         */
         @JsonSetter(value = "confirmation_from", nulls = Nulls.SKIP)
         public Builder confirmationFrom(OptionalNullable<String> confirmationFrom) {
             this.confirmationFrom = confirmationFrom;
@@ -355,6 +391,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p><code>null</code>: coss.com's default.</p>
+         */
         @JsonSetter(value = "confirmation_subject", nulls = Nulls.SKIP)
         public Builder confirmationSubject(OptionalNullable<String> confirmationSubject) {
             this.confirmationSubject = confirmationSubject;
@@ -386,6 +425,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p><code>null</code>: coss.com's default. Must contain <code>{{{confirmation_url}}}</code>.</p>
+         */
         @JsonSetter(value = "confirmation_html", nulls = Nulls.SKIP)
         public Builder confirmationHtml(OptionalNullable<String> confirmationHtml) {
             this.confirmationHtml = confirmationHtml;
@@ -417,6 +459,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p><code>null</code>: coss.com's default. Must contain <code>{{{confirmation_url}}}</code>.</p>
+         */
         @JsonSetter(value = "confirmation_text", nulls = Nulls.SKIP)
         public Builder confirmationText(OptionalNullable<String> confirmationText) {
             this.confirmationText = confirmationText;
@@ -448,6 +493,9 @@ public final class UpdateMarketingSettingsRequest {
             return this;
         }
 
+        /**
+         * <p>Where a confirmed contact is sent, an https URL. <code>null</code>: coss.com's own page.</p>
+         */
         @JsonSetter(value = "confirmed_redirect_url", nulls = Nulls.SKIP)
         public Builder confirmedRedirectUrl(OptionalNullable<String> confirmedRedirectUrl) {
             this.confirmedRedirectUrl = confirmedRedirectUrl;

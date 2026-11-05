@@ -13,6 +13,7 @@ var (
 )
 
 type CreateSmsSuppressionRequest struct {
+	// The number to suppress, in E.164.
 	PhoneNumber string `json:"phone_number" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
