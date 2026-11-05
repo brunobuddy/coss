@@ -309,23 +309,31 @@ var smsNullableFields = map[string]*big.Int{
 type Sms struct {
 	Object SmsObject `json:"object" url:"object"`
 	ID     string    `json:"id" url:"id"`
-	From   string    `json:"from" url:"from"`
-	To     string    `json:"to" url:"to"`
-	Body   string    `json:"body" url:"body"`
+	// The number it's sent from, in E.164.
+	From string `json:"from" url:"from"`
+	// The recipient's number, in E.164.
+	To string `json:"to" url:"to"`
+	// The text. Empty once discarded.
+	Body string `json:"body" url:"body"`
 	// `queued` until handed to the carrier (`sent`), then `delivered` or `undelivered` once the carrier reports. `failed`: never sent. `scheduled` and `canceled`: scheduled sends.
 	Status SmsStatus `json:"status" url:"status"`
 	// Segments the body takes (what is billed).
-	Segments int64       `json:"segments" url:"segments"`
+	Segments int64 `json:"segments" url:"segments"`
+	// `gsm7` fits the basic alphabet; `ucs2` is used for anything else, with smaller segments.
 	Encoding SmsEncoding `json:"encoding" url:"encoding"`
 	// ISO 3166 country of `to`.
-	Country string         `json:"country" url:"country"`
-	Tags    []*SmsTagsItem `json:"tags" url:"tags"`
+	Country string `json:"country" url:"country"`
+	// Your tags on the message.
+	Tags []*SmsTagsItem `json:"tags" url:"tags"`
 	// Why the message failed or wasn't delivered.
 	Failure *SmsFailure `json:"failure,omitempty" url:"failure,omitempty"`
 	// Sent from a sandbox environment: simulated.
-	Sandbox     bool       `json:"sandbox" url:"sandbox"`
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it's set to send. `null`: it was sent at once.
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty" url:"scheduled_at,omitempty"`
-	SentAt      *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
+	// When it was handed to the carrier. `null`: not yet.
+	SentAt *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
+	// When the carrier reported delivery. `null`: not delivered, or not reported.
 	DeliveredAt *time.Time `json:"delivered_at,omitempty" url:"delivered_at,omitempty"`
 	CreatedAt   time.Time  `json:"created_at" url:"created_at"`
 
@@ -645,6 +653,7 @@ func (s *Sms) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// `gsm7` fits the basic alphabet; `ucs2` is used for anything else, with smaller segments.
 type SmsEncoding string
 
 const (
@@ -677,12 +686,15 @@ var (
 )
 
 type SmsEvent struct {
-	Object     SmsEventObject `json:"object" url:"object"`
-	ID         string         `json:"id" url:"id"`
-	SmsID      string         `json:"sms_id" url:"sms_id"`
-	Type       SmsEventType   `json:"type" url:"type"`
-	OccurredAt time.Time      `json:"occurred_at" url:"occurred_at"`
-	Data       *SmsEventData  `json:"data" url:"data"`
+	Object SmsEventObject `json:"object" url:"object"`
+	ID     string         `json:"id" url:"id"`
+	// The id of the message.
+	SmsID string `json:"sms_id" url:"sms_id"`
+	// What happened: `sms.scheduled`, `sms.sent`, `sms.delivered`, `sms.undelivered`, `sms.failed`, `sms.suppressed` or `sms.canceled`.
+	Type SmsEventType `json:"type" url:"type"`
+	// When it happened.
+	OccurredAt time.Time     `json:"occurred_at" url:"occurred_at"`
+	Data       *SmsEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -852,6 +864,7 @@ var smsEventDataNullableFields = map[string]*big.Int{
 	"provider_error_code": smsEventDataFieldProviderErrorCode,
 }
 
+// Details of the event, where it has any.
 type SmsEventData struct {
 	// Why the message failed or wasn't delivered.
 	Failure *SmsEventDataFailure `json:"failure,omitempty" url:"failure,omitempty"`
@@ -981,7 +994,9 @@ var (
 
 // Why the message failed or wasn't delivered.
 type SmsEventDataFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1084,7 +1099,9 @@ var (
 
 // `sms.suppressed`: the entry that made coss.com skip the number.
 type SmsEventDataSuppression struct {
-	ID     string                        `json:"id" url:"id"`
+	// The suppression's id.
+	ID string `json:"id" url:"id"`
+	// Why the number is suppressed.
 	Reason SmsEventDataSuppressionReason `json:"reason" url:"reason"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1180,6 +1197,7 @@ func (s *SmsEventDataSuppression) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Why the number is suppressed.
 type SmsEventDataSuppressionReason string
 
 const (
@@ -1361,6 +1379,7 @@ func (s SmsEventObject) Ptr() *SmsEventObject {
 	return &s
 }
 
+// What happened: `sms.scheduled`, `sms.sent`, `sms.delivered`, `sms.undelivered`, `sms.failed`, `sms.suppressed` or `sms.canceled`.
 type SmsEventType string
 
 const (
@@ -1405,7 +1424,9 @@ var (
 
 // Why the message failed or wasn't delivered.
 type SmsFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1701,7 +1722,9 @@ var (
 )
 
 type SmsTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1803,7 +1826,9 @@ var (
 )
 
 type SendSmsRequestTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name, unique on the message.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

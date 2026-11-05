@@ -95,6 +95,8 @@ func (c *Client) Add(
 	return response.Body, nil
 }
 
+// Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+//
 // Example:
 //
 //	request := &sms.CheckSuppressionsRequest{
@@ -120,6 +122,8 @@ func (c *Client) Check(
 	return response.Body, nil
 }
 
+// One entry of the SMS suppression list of the API key's environment.
+//
 // Example:
 //
 //	request := &sms.GetSuppressionsRequest{

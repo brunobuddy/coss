@@ -11,9 +11,15 @@ public record SegmentFilterConditionsItemConditionsConditionsItemAudience : IJso
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Whether the contact is in the audience.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemConditionsConditionsItemAudienceOp Op { get; set; }
 
+    /// <summary>
+    /// The audience's id.
+    /// </summary>
     [JsonPropertyName("audience_id")]
     public required string AudienceId { get; set; }
 

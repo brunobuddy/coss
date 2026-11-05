@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Details of the event: only what its `type` has.
+ */
 class EmailEventData extends JsonSerializableType
 {
     /**

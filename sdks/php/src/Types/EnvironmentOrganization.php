@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * The organization it belongs to.
+ */
 class EnvironmentOrganization extends JsonSerializableType
 {
     /**
@@ -32,11 +35,18 @@ class EnvironmentOrganization extends JsonSerializableType
     public string $apiVersion;
 
     /**
+     * @var bool $hipaaMode Whether the organization is in HIPAA mode, which refuses some requests with `hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.
+     */
+    #[JsonProperty('hipaa_mode')]
+    public bool $hipaaMode;
+
+    /**
      * @param array{
      *   id: string,
      *   name: string,
      *   slug: string,
      *   apiVersion: string,
+     *   hipaaMode: bool,
      * } $values
      */
     public function __construct(
@@ -46,6 +56,7 @@ class EnvironmentOrganization extends JsonSerializableType
         $this->name = $values['name'];
         $this->slug = $values['slug'];
         $this->apiVersion = $values['apiVersion'];
+        $this->hipaaMode = $values['hipaaMode'];
     }
 
     /**

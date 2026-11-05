@@ -3,5 +3,6 @@
 import typing
 
 RiskAssessmentDegradedItem = typing.Union[
-    typing.Literal["email_dns", "domain_age", "ip_data", "velocity", "captcha", "content", "ip_privacy"], typing.Any
+    typing.Literal["email_dns", "domain_age", "ip_data", "velocity", "captcha", "content", "ip_privacy", "usage_limit"],
+    typing.Any,
 ]

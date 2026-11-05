@@ -42,6 +42,9 @@ public record CreateBroadcastRequest
     [JsonPropertyName("from")]
     public required string From { get; set; }
 
+    /// <summary>
+    /// Addresses replies go to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("reply_to")]
     public IEnumerable<string>? ReplyTo { get; set; }
@@ -66,10 +69,16 @@ public record CreateBroadcastRequest
     [JsonPropertyName("html")]
     public string? Html { get; set; }
 
+    /// <summary>
+    /// The plain text part. Takes the same placeholders as `html`.
+    /// </summary>
     [Optional]
     [JsonPropertyName("text")]
     public string? Text { get; set; }
 
+    /// <summary>
+    /// Which opens and clicks are tracked.
+    /// </summary>
     [Optional]
     [JsonPropertyName("tracking")]
     public CreateBroadcastRequestTracking? Tracking { get; set; }

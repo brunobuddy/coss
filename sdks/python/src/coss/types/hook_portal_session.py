@@ -11,7 +11,11 @@ from .hook_portal_session_object import HookPortalSessionObject
 class HookPortalSession(UniversalBaseModel):
     object: HookPortalSessionObject
     id: str
-    application_id: str
+    application_id: str = pydantic.Field()
+    """
+    The id of the application this session manages.
+    """
+
     url: str = pydantic.Field()
     """
     Open it or embed it in an iframe (from an allowed origin). The token is in the URL fragment, so it never reaches a server log: hand the URL only to that application's user.
@@ -22,8 +26,15 @@ class HookPortalSession(UniversalBaseModel):
     The secret part of `url`, shown only here.
     """
 
-    read_only: bool
-    expires_at: dt.datetime
+    read_only: bool = pydantic.Field()
+    """
+    Whether the user can only look.
+    """
+
+    expires_at: dt.datetime = pydantic.Field()
+    """
+    When the session stops working.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

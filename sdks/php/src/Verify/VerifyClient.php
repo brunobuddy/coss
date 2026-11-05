@@ -2,6 +2,7 @@
 
 namespace Coss\Verify;
 
+use Coss\Verify\Settings\SettingsClient;
 use Psr\Http\Client\ClientInterface;
 use Coss\Core\Client\RawClient;
 use Coss\Verify\Requests\ListVerifyRequest;
@@ -21,6 +22,11 @@ use Coss\Types\VerificationCheck;
 
 class VerifyClient
 {
+    /**
+     * @var SettingsClient $settings
+     */
+    public SettingsClient $settings;
+
     /**
      * @var array{
      *   baseUrl?: string,
@@ -53,6 +59,7 @@ class VerifyClient
     ) {
         $this->client = $client;
         $this->options = $options ?? [];
+        $this->settings = new SettingsClient($this->client, $this->options);
     }
 
     /**
@@ -258,6 +265,8 @@ class VerifyClient
     }
 
     /**
+     * A verification's status and destination. Its code is never returned.
+     *
      * Example:
      * ```php
      * $client->verify->get(

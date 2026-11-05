@@ -68,6 +68,9 @@ public final class RiskLimit {
         return object;
     }
 
+    /**
+     * @return The bucket's name.
+     */
     @JsonProperty("bucket")
     public String getBucket() {
         return bucket;
@@ -182,6 +185,9 @@ public final class RiskLimit {
     }
 
     public interface BucketStage {
+        /**
+         * <p>The bucket's name.</p>
+         */
         AllowedStage bucket(@NotNull String bucket);
     }
 
@@ -290,6 +296,10 @@ public final class RiskLimit {
             return this;
         }
 
+        /**
+         * <p>The bucket's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("bucket")
         public AllowedStage bucket(@NotNull String bucket) {

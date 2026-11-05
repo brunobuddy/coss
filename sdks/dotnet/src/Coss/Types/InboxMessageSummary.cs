@@ -42,12 +42,21 @@ public record InboxMessageSummary : IJsonOnDeserialized
     [JsonPropertyName("from")]
     public string? From { get; set; }
 
+    /// <summary>
+    /// Addresses in the `To` header.
+    /// </summary>
     [JsonPropertyName("to")]
     public IEnumerable<string> To { get; set; } = new List<string>();
 
+    /// <summary>
+    /// Addresses in the `Cc` header.
+    /// </summary>
     [JsonPropertyName("cc")]
     public IEnumerable<string> Cc { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The subject. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("subject")]
     public string? Subject { get; set; }

@@ -18,7 +18,7 @@ class RiskCalibration extends JsonSerializableType
     public string $object;
 
     /**
-     * @var int $windowDays
+     * @var int $windowDays How many days back it looks.
      */
     #[JsonProperty('window_days')]
     public int $windowDays;
@@ -36,13 +36,13 @@ class RiskCalibration extends JsonSerializableType
     public int $labeled;
 
     /**
-     * @var array<RiskCalibrationReason> $reasons
+     * @var array<RiskCalibrationReason> $reasons How each reason did against your feedback.
      */
     #[JsonProperty('reasons'), ArrayType([RiskCalibrationReason::class])]
     public array $reasons;
 
     /**
-     * @var array<RiskCalibrationRule> $rules
+     * @var array<RiskCalibrationRule> $rules How each rule did against your feedback.
      */
     #[JsonProperty('rules'), ArrayType([RiskCalibrationRule::class])]
     public array $rules;

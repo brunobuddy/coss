@@ -19,6 +19,7 @@ import com.coss.errors.ContentTooLargeError;
 import com.coss.errors.ForbiddenError;
 import com.coss.errors.InternalServerError;
 import com.coss.errors.NotFoundError;
+import com.coss.errors.PaymentRequiredError;
 import com.coss.errors.ServiceUnavailableError;
 import com.coss.errors.TooManyRequestsError;
 import com.coss.errors.UnauthorizedError;
@@ -161,14 +162,14 @@ public class RawMessagesClient {
     }
 
     /**
-     * Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to <code>event_type</code> within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's <code>webhook-id</code> header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (<code>account_suspended</code>). Hooks resources belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox ones, a <code>coss_live_…</code> key only production ones.
+     * Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to <code>event_type</code> within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's <code>webhook-id</code> header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (<code>account_suspended</code>), on a billing hold (<code>billing_hold</code>), over a budget (<code>budget_exceeded</code>) or past Free's monthly messages (<code>usage_limit_exceeded</code>). Hooks resources belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox ones, a <code>coss_live_…</code> key only production ones.
      */
     public CossHttpResponse<HookMessage> send(String application, SendHookMessageRequest request) {
         return send(application, request, null);
     }
 
     /**
-     * Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to <code>event_type</code> within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's <code>webhook-id</code> header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (<code>account_suspended</code>). Hooks resources belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox ones, a <code>coss_live_…</code> key only production ones.
+     * Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to <code>event_type</code> within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's <code>webhook-id</code> header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (<code>account_suspended</code>), on a billing hold (<code>billing_hold</code>), over a budget (<code>budget_exceeded</code>) or past Free's monthly messages (<code>usage_limit_exceeded</code>). Hooks resources belong to the API key's own environment: a <code>coss_test_…</code> key only ever sees sandbox ones, a <code>coss_live_…</code> key only production ones.
      */
     public CossHttpResponse<HookMessage> send(
             String application, SendHookMessageRequest request, RequestOptions requestOptions) {
@@ -228,6 +229,9 @@ public class RawMessagesClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
                     case 401:
                         throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
+                    case 402:
+                        throw new PaymentRequiredError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
                     case 403:
                         throw new ForbiddenError(

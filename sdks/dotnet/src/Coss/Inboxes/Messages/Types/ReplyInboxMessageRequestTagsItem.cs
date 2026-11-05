@@ -12,9 +12,15 @@ public record ReplyInboxMessageRequestTagsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The tag's name, unique on the email.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The tag's value.
+    /// </summary>
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 

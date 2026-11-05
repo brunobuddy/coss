@@ -2587,6 +2587,14 @@ func TestSettersEmailWebhookEventData(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetTraceparent", func(t *testing.T) {
+		obj := &EmailWebhookEventData{}
+		var fernTestValueTraceparent *string
+		obj.SetTraceparent(fernTestValueTraceparent)
+		assert.Equal(t, fernTestValueTraceparent, obj.Traceparent)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestGettersEmailWebhookEventData(t *testing.T) {
@@ -3200,6 +3208,39 @@ func TestGettersEmailWebhookEventData(t *testing.T) {
 		_ = obj.GetSubaccountID() // Should return zero value
 	})
 
+	t.Run("GetTraceparent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &EmailWebhookEventData{}
+		var expected *string
+		obj.Traceparent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTraceparent(), "getter should return the property value")
+	})
+
+	t.Run("GetTraceparent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &EmailWebhookEventData{}
+		obj.Traceparent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTraceparent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTraceparent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *EmailWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTraceparent() // Should return zero value
+	})
+
 }
 
 func TestSettersMarkExplicitEmailWebhookEventData(t *testing.T) {
@@ -3800,6 +3841,37 @@ func TestSettersMarkExplicitEmailWebhookEventData(t *testing.T) {
 
 		// Act
 		obj.SetSubaccountID(fernTestValueSubaccountID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTraceparent_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &EmailWebhookEventData{}
+		var fernTestValueTraceparent *string
+
+		// Act
+		obj.SetTraceparent(fernTestValueTraceparent)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -11643,6 +11715,2845 @@ func TestSettersMarkExplicitRiskWebhookEventData(t *testing.T) {
 
 }
 
+func TestSettersSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("SetBookingID", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueBookingID string
+		obj.SetBookingID(fernTestValueBookingID)
+		assert.Equal(t, fernTestValueBookingID, obj.BookingID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetEventTypeID", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueEventTypeID string
+		obj.SetEventTypeID(fernTestValueEventTypeID)
+		assert.Equal(t, fernTestValueEventTypeID, obj.EventTypeID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetStatus", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueStatus SchedulingBookingWebhookDataStatus
+		obj.SetStatus(fernTestValueStatus)
+		assert.Equal(t, fernTestValueStatus, obj.Status)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetStart", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueStart string
+		obj.SetStart(fernTestValueStart)
+		assert.Equal(t, fernTestValueStart, obj.Start)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetEnd", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueEnd string
+		obj.SetEnd(fernTestValueEnd)
+		assert.Equal(t, fernTestValueEnd, obj.End)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetHostIDs", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueHostIDs []string
+		obj.SetHostIDs(fernTestValueHostIDs)
+		assert.Equal(t, fernTestValueHostIDs, obj.HostIDs)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAttendeeUIDs", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueAttendeeUIDs []string
+		obj.SetAttendeeUIDs(fernTestValueAttendeeUIDs)
+		assert.Equal(t, fernTestValueAttendeeUIDs, obj.AttendeeUIDs)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetSeriesID", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueSeriesID *string
+		obj.SetSeriesID(fernTestValueSeriesID)
+		assert.Equal(t, fernTestValueSeriesID, obj.SeriesID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPreviousStart", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValuePreviousStart *string
+		obj.SetPreviousStart(fernTestValuePreviousStart)
+		assert.Equal(t, fernTestValuePreviousStart, obj.PreviousStart)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetReminder", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueReminder *SchedulingBookingWebhookDataReminder
+		obj.SetReminder(fernTestValueReminder)
+		assert.Equal(t, fernTestValueReminder, obj.Reminder)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetOccurredAt", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueOccurredAt string
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+		assert.Equal(t, fernTestValueOccurredAt, obj.OccurredAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("GetBookingID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected string
+		obj.BookingID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBookingID(), "getter should return the property value")
+	})
+
+	t.Run("GetBookingID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBookingID() // Should return zero value
+	})
+
+	t.Run("GetEventTypeID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected string
+		obj.EventTypeID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEventTypeID(), "getter should return the property value")
+	})
+
+	t.Run("GetEventTypeID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEventTypeID() // Should return zero value
+	})
+
+	t.Run("GetStatus", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected SchedulingBookingWebhookDataStatus
+		obj.Status = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetStatus(), "getter should return the property value")
+	})
+
+	t.Run("GetStatus_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetStatus() // Should return zero value
+	})
+
+	t.Run("GetStart", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected string
+		obj.Start = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetStart(), "getter should return the property value")
+	})
+
+	t.Run("GetStart_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetStart() // Should return zero value
+	})
+
+	t.Run("GetEnd", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected string
+		obj.End = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEnd(), "getter should return the property value")
+	})
+
+	t.Run("GetEnd_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEnd() // Should return zero value
+	})
+
+	t.Run("GetHostIDs", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected []string
+		obj.HostIDs = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetHostIDs(), "getter should return the property value")
+	})
+
+	t.Run("GetHostIDs_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		obj.HostIDs = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetHostIDs(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetHostIDs_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetHostIDs() // Should return zero value
+	})
+
+	t.Run("GetAttendeeUIDs", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected []string
+		obj.AttendeeUIDs = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAttendeeUIDs(), "getter should return the property value")
+	})
+
+	t.Run("GetAttendeeUIDs_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		obj.AttendeeUIDs = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAttendeeUIDs(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAttendeeUIDs_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAttendeeUIDs() // Should return zero value
+	})
+
+	t.Run("GetSeriesID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected *string
+		obj.SeriesID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetSeriesID(), "getter should return the property value")
+	})
+
+	t.Run("GetSeriesID_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		obj.SeriesID = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetSeriesID(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetSeriesID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetSeriesID() // Should return zero value
+	})
+
+	t.Run("GetPreviousStart", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected *string
+		obj.PreviousStart = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPreviousStart(), "getter should return the property value")
+	})
+
+	t.Run("GetPreviousStart_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		obj.PreviousStart = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPreviousStart(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPreviousStart_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPreviousStart() // Should return zero value
+	})
+
+	t.Run("GetReminder", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected *SchedulingBookingWebhookDataReminder
+		obj.Reminder = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetReminder(), "getter should return the property value")
+	})
+
+	t.Run("GetReminder_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		obj.Reminder = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetReminder(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetReminder_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetReminder() // Should return zero value
+	})
+
+	t.Run("GetOccurredAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var expected string
+		obj.OccurredAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetOccurredAt(), "getter should return the property value")
+	})
+
+	t.Run("GetOccurredAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetOccurredAt() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("SetBookingID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueBookingID string
+
+		// Act
+		obj.SetBookingID(fernTestValueBookingID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEventTypeID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueEventTypeID string
+
+		// Act
+		obj.SetEventTypeID(fernTestValueEventTypeID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetStatus_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueStatus SchedulingBookingWebhookDataStatus
+
+		// Act
+		obj.SetStatus(fernTestValueStatus)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetStart_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueStart string
+
+		// Act
+		obj.SetStart(fernTestValueStart)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEnd_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueEnd string
+
+		// Act
+		obj.SetEnd(fernTestValueEnd)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetHostIDs_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueHostIDs []string
+
+		// Act
+		obj.SetHostIDs(fernTestValueHostIDs)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAttendeeUIDs_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueAttendeeUIDs []string
+
+		// Act
+		obj.SetAttendeeUIDs(fernTestValueAttendeeUIDs)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetSeriesID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueSeriesID *string
+
+		// Act
+		obj.SetSeriesID(fernTestValueSeriesID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPreviousStart_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValuePreviousStart *string
+
+		// Act
+		obj.SetPreviousStart(fernTestValuePreviousStart)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetReminder_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueReminder *SchedulingBookingWebhookDataReminder
+
+		// Act
+		obj.SetReminder(fernTestValueReminder)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetOccurredAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+		var fernTestValueOccurredAt string
+
+		// Act
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("SetKey", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueKey string
+		obj.SetKey(fernTestValueKey)
+		assert.Equal(t, fernTestValueKey, obj.Key)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAnchor", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueAnchor SchedulingBookingWebhookDataReminderAnchor
+		obj.SetAnchor(fernTestValueAnchor)
+		assert.Equal(t, fernTestValueAnchor, obj.Anchor)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetBeforeMinutes", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueBeforeMinutes *float64
+		obj.SetBeforeMinutes(fernTestValueBeforeMinutes)
+		assert.Equal(t, fernTestValueBeforeMinutes, obj.BeforeMinutes)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAfterMinutes", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueAfterMinutes *float64
+		obj.SetAfterMinutes(fernTestValueAfterMinutes)
+		assert.Equal(t, fernTestValueAfterMinutes, obj.AfterMinutes)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetScheduledFor", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueScheduledFor string
+		obj.SetScheduledFor(fernTestValueScheduledFor)
+		assert.Equal(t, fernTestValueScheduledFor, obj.ScheduledFor)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("GetKey", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var expected string
+		obj.Key = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetKey(), "getter should return the property value")
+	})
+
+	t.Run("GetKey_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetKey() // Should return zero value
+	})
+
+	t.Run("GetAnchor", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var expected SchedulingBookingWebhookDataReminderAnchor
+		obj.Anchor = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAnchor(), "getter should return the property value")
+	})
+
+	t.Run("GetAnchor_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAnchor() // Should return zero value
+	})
+
+	t.Run("GetBeforeMinutes", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var expected *float64
+		obj.BeforeMinutes = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetBeforeMinutes(), "getter should return the property value")
+	})
+
+	t.Run("GetBeforeMinutes_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		obj.BeforeMinutes = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetBeforeMinutes(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetBeforeMinutes_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetBeforeMinutes() // Should return zero value
+	})
+
+	t.Run("GetAfterMinutes", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var expected *float64
+		obj.AfterMinutes = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAfterMinutes(), "getter should return the property value")
+	})
+
+	t.Run("GetAfterMinutes_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		obj.AfterMinutes = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAfterMinutes(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAfterMinutes_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAfterMinutes() // Should return zero value
+	})
+
+	t.Run("GetScheduledFor", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var expected string
+		obj.ScheduledFor = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetScheduledFor(), "getter should return the property value")
+	})
+
+	t.Run("GetScheduledFor_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetScheduledFor() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("SetKey_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueKey string
+
+		// Act
+		obj.SetKey(fernTestValueKey)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAnchor_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueAnchor SchedulingBookingWebhookDataReminderAnchor
+
+		// Act
+		obj.SetAnchor(fernTestValueAnchor)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetBeforeMinutes_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueBeforeMinutes *float64
+
+		// Act
+		obj.SetBeforeMinutes(fernTestValueBeforeMinutes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAfterMinutes_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueAfterMinutes *float64
+
+		// Act
+		obj.SetAfterMinutes(fernTestValueAfterMinutes)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetScheduledFor_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+		var fernTestValueScheduledFor string
+
+		// Act
+		obj.SetScheduledFor(fernTestValueScheduledFor)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("SetID", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueID string
+		obj.SetID(fernTestValueID)
+		assert.Equal(t, fernTestValueID, obj.ID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetObject", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueObject SchedulingBookingWebhookEventObject
+		obj.SetObject(fernTestValueObject)
+		assert.Equal(t, fernTestValueObject, obj.Object)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAPIVersion", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueAPIVersion string
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+		assert.Equal(t, fernTestValueAPIVersion, obj.APIVersion)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCreatedAt", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+		assert.Equal(t, fernTestValueCreatedAt, obj.CreatedAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetType", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueType SchedulingBookingWebhookEventType
+		obj.SetType(fernTestValueType)
+		assert.Equal(t, fernTestValueType, obj.Type)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetData", func(t *testing.T) {
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueData *SchedulingBookingWebhookData
+		obj.SetData(fernTestValueData)
+		assert.Equal(t, fernTestValueData, obj.Data)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("GetID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected string
+		obj.ID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetID(), "getter should return the property value")
+	})
+
+	t.Run("GetID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetID() // Should return zero value
+	})
+
+	t.Run("GetObject", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected SchedulingBookingWebhookEventObject
+		obj.Object = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetObject(), "getter should return the property value")
+	})
+
+	t.Run("GetObject_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetObject() // Should return zero value
+	})
+
+	t.Run("GetAPIVersion", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected string
+		obj.APIVersion = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAPIVersion(), "getter should return the property value")
+	})
+
+	t.Run("GetAPIVersion_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAPIVersion() // Should return zero value
+	})
+
+	t.Run("GetCreatedAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected time.Time
+		obj.CreatedAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCreatedAt(), "getter should return the property value")
+	})
+
+	t.Run("GetCreatedAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCreatedAt() // Should return zero value
+	})
+
+	t.Run("GetType", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected SchedulingBookingWebhookEventType
+		obj.Type = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetType(), "getter should return the property value")
+	})
+
+	t.Run("GetType_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetType() // Should return zero value
+	})
+
+	t.Run("GetData", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var expected *SchedulingBookingWebhookData
+		obj.Data = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetData(), "getter should return the property value")
+	})
+
+	t.Run("GetData_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		obj.Data = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetData(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetData_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetData() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("SetID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueID string
+
+		// Act
+		obj.SetID(fernTestValueID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetObject_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueObject SchedulingBookingWebhookEventObject
+
+		// Act
+		obj.SetObject(fernTestValueObject)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAPIVersion_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueAPIVersion string
+
+		// Act
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCreatedAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+
+		// Act
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetType_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueType SchedulingBookingWebhookEventType
+
+		// Act
+		obj.SetType(fernTestValueType)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetData_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+		var fernTestValueData *SchedulingBookingWebhookData
+
+		// Act
+		obj.SetData(fernTestValueData)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("SetID", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueID string
+		obj.SetID(fernTestValueID)
+		assert.Equal(t, fernTestValueID, obj.ID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetObject", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueObject SchedulingCalendarDelegationWebhookEventObject
+		obj.SetObject(fernTestValueObject)
+		assert.Equal(t, fernTestValueObject, obj.Object)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAPIVersion", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueAPIVersion string
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+		assert.Equal(t, fernTestValueAPIVersion, obj.APIVersion)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCreatedAt", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+		assert.Equal(t, fernTestValueCreatedAt, obj.CreatedAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetType", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueType SchedulingCalendarDelegationWebhookEventType
+		obj.SetType(fernTestValueType)
+		assert.Equal(t, fernTestValueType, obj.Type)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetData", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueData *SchedulingCalendarDelegationWebhookEventData
+		obj.SetData(fernTestValueData)
+		assert.Equal(t, fernTestValueData, obj.Data)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("GetID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected string
+		obj.ID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetID(), "getter should return the property value")
+	})
+
+	t.Run("GetID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetID() // Should return zero value
+	})
+
+	t.Run("GetObject", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected SchedulingCalendarDelegationWebhookEventObject
+		obj.Object = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetObject(), "getter should return the property value")
+	})
+
+	t.Run("GetObject_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetObject() // Should return zero value
+	})
+
+	t.Run("GetAPIVersion", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected string
+		obj.APIVersion = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAPIVersion(), "getter should return the property value")
+	})
+
+	t.Run("GetAPIVersion_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAPIVersion() // Should return zero value
+	})
+
+	t.Run("GetCreatedAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected time.Time
+		obj.CreatedAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCreatedAt(), "getter should return the property value")
+	})
+
+	t.Run("GetCreatedAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCreatedAt() // Should return zero value
+	})
+
+	t.Run("GetType", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected SchedulingCalendarDelegationWebhookEventType
+		obj.Type = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetType(), "getter should return the property value")
+	})
+
+	t.Run("GetType_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetType() // Should return zero value
+	})
+
+	t.Run("GetData", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var expected *SchedulingCalendarDelegationWebhookEventData
+		obj.Data = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetData(), "getter should return the property value")
+	})
+
+	t.Run("GetData_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		obj.Data = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetData(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetData_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetData() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("SetID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueID string
+
+		// Act
+		obj.SetID(fernTestValueID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetObject_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueObject SchedulingCalendarDelegationWebhookEventObject
+
+		// Act
+		obj.SetObject(fernTestValueObject)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAPIVersion_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueAPIVersion string
+
+		// Act
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCreatedAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+
+		// Act
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetType_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueType SchedulingCalendarDelegationWebhookEventType
+
+		// Act
+		obj.SetType(fernTestValueType)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetData_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		var fernTestValueData *SchedulingCalendarDelegationWebhookEventData
+
+		// Act
+		obj.SetData(fernTestValueData)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("SetDelegationID", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueDelegationID string
+		obj.SetDelegationID(fernTestValueDelegationID)
+		assert.Equal(t, fernTestValueDelegationID, obj.DelegationID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetProvider", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueProvider string
+		obj.SetProvider(fernTestValueProvider)
+		assert.Equal(t, fernTestValueProvider, obj.Provider)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetDomain", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueDomain string
+		obj.SetDomain(fernTestValueDomain)
+		assert.Equal(t, fernTestValueDomain, obj.Domain)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCode", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueCode *string
+		obj.SetCode(fernTestValueCode)
+		assert.Equal(t, fernTestValueCode, obj.Code)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetOccurredAt", func(t *testing.T) {
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueOccurredAt string
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+		assert.Equal(t, fernTestValueOccurredAt, obj.OccurredAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("GetDelegationID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var expected string
+		obj.DelegationID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDelegationID(), "getter should return the property value")
+	})
+
+	t.Run("GetDelegationID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDelegationID() // Should return zero value
+	})
+
+	t.Run("GetProvider", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var expected string
+		obj.Provider = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetProvider(), "getter should return the property value")
+	})
+
+	t.Run("GetProvider_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetProvider() // Should return zero value
+	})
+
+	t.Run("GetDomain", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var expected string
+		obj.Domain = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetDomain(), "getter should return the property value")
+	})
+
+	t.Run("GetDomain_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetDomain() // Should return zero value
+	})
+
+	t.Run("GetCode", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var expected *string
+		obj.Code = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCode(), "getter should return the property value")
+	})
+
+	t.Run("GetCode_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		obj.Code = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCode(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCode_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCode() // Should return zero value
+	})
+
+	t.Run("GetOccurredAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var expected string
+		obj.OccurredAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetOccurredAt(), "getter should return the property value")
+	})
+
+	t.Run("GetOccurredAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetOccurredAt() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("SetDelegationID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueDelegationID string
+
+		// Act
+		obj.SetDelegationID(fernTestValueDelegationID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetProvider_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueProvider string
+
+		// Act
+		obj.SetProvider(fernTestValueProvider)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetDomain_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueDomain string
+
+		// Act
+		obj.SetDomain(fernTestValueDomain)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCode_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueCode *string
+
+		// Act
+		obj.SetCode(fernTestValueCode)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetOccurredAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		var fernTestValueOccurredAt string
+
+		// Act
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("SetID", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueID string
+		obj.SetID(fernTestValueID)
+		assert.Equal(t, fernTestValueID, obj.ID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetObject", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueObject SchedulingCalendarWebhookEventObject
+		obj.SetObject(fernTestValueObject)
+		assert.Equal(t, fernTestValueObject, obj.Object)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAPIVersion", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueAPIVersion string
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+		assert.Equal(t, fernTestValueAPIVersion, obj.APIVersion)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCreatedAt", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+		assert.Equal(t, fernTestValueCreatedAt, obj.CreatedAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetType", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueType SchedulingCalendarWebhookEventType
+		obj.SetType(fernTestValueType)
+		assert.Equal(t, fernTestValueType, obj.Type)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetData", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueData *SchedulingCalendarWebhookEventData
+		obj.SetData(fernTestValueData)
+		assert.Equal(t, fernTestValueData, obj.Data)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("GetID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected string
+		obj.ID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetID(), "getter should return the property value")
+	})
+
+	t.Run("GetID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetID() // Should return zero value
+	})
+
+	t.Run("GetObject", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected SchedulingCalendarWebhookEventObject
+		obj.Object = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetObject(), "getter should return the property value")
+	})
+
+	t.Run("GetObject_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetObject() // Should return zero value
+	})
+
+	t.Run("GetAPIVersion", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected string
+		obj.APIVersion = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAPIVersion(), "getter should return the property value")
+	})
+
+	t.Run("GetAPIVersion_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAPIVersion() // Should return zero value
+	})
+
+	t.Run("GetCreatedAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected time.Time
+		obj.CreatedAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCreatedAt(), "getter should return the property value")
+	})
+
+	t.Run("GetCreatedAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCreatedAt() // Should return zero value
+	})
+
+	t.Run("GetType", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected SchedulingCalendarWebhookEventType
+		obj.Type = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetType(), "getter should return the property value")
+	})
+
+	t.Run("GetType_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetType() // Should return zero value
+	})
+
+	t.Run("GetData", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var expected *SchedulingCalendarWebhookEventData
+		obj.Data = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetData(), "getter should return the property value")
+	})
+
+	t.Run("GetData_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		obj.Data = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetData(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetData_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetData() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("SetID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueID string
+
+		// Act
+		obj.SetID(fernTestValueID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetObject_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueObject SchedulingCalendarWebhookEventObject
+
+		// Act
+		obj.SetObject(fernTestValueObject)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAPIVersion_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueAPIVersion string
+
+		// Act
+		obj.SetAPIVersion(fernTestValueAPIVersion)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCreatedAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueCreatedAt time.Time
+
+		// Act
+		obj.SetCreatedAt(fernTestValueCreatedAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetType_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueType SchedulingCalendarWebhookEventType
+
+		// Act
+		obj.SetType(fernTestValueType)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetData_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+		var fernTestValueData *SchedulingCalendarWebhookEventData
+
+		// Act
+		obj.SetData(fernTestValueData)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("SetHostID", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueHostID string
+		obj.SetHostID(fernTestValueHostID)
+		assert.Equal(t, fernTestValueHostID, obj.HostID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetConnectionID", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueConnectionID string
+		obj.SetConnectionID(fernTestValueConnectionID)
+		assert.Equal(t, fernTestValueConnectionID, obj.ConnectionID)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetProvider", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueProvider string
+		obj.SetProvider(fernTestValueProvider)
+		assert.Equal(t, fernTestValueProvider, obj.Provider)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetOccurredAt", func(t *testing.T) {
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueOccurredAt string
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+		assert.Equal(t, fernTestValueOccurredAt, obj.OccurredAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("GetHostID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var expected string
+		obj.HostID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetHostID(), "getter should return the property value")
+	})
+
+	t.Run("GetHostID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetHostID() // Should return zero value
+	})
+
+	t.Run("GetConnectionID", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var expected string
+		obj.ConnectionID = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetConnectionID(), "getter should return the property value")
+	})
+
+	t.Run("GetConnectionID_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetConnectionID() // Should return zero value
+	})
+
+	t.Run("GetProvider", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var expected string
+		obj.Provider = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetProvider(), "getter should return the property value")
+	})
+
+	t.Run("GetProvider_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetProvider() // Should return zero value
+	})
+
+	t.Run("GetOccurredAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var expected string
+		obj.OccurredAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetOccurredAt(), "getter should return the property value")
+	})
+
+	t.Run("GetOccurredAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetOccurredAt() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("SetHostID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueHostID string
+
+		// Act
+		obj.SetHostID(fernTestValueHostID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetConnectionID_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueConnectionID string
+
+		// Act
+		obj.SetConnectionID(fernTestValueConnectionID)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetProvider_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueProvider string
+
+		// Act
+		obj.SetProvider(fernTestValueProvider)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetOccurredAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+		var fernTestValueOccurredAt string
+
+		// Act
+		obj.SetOccurredAt(fernTestValueOccurredAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersSignRequestWebhookEvent(t *testing.T) {
 	t.Run("SetID", func(t *testing.T) {
 		obj := &SignRequestWebhookEvent{}
@@ -13378,6 +16289,14 @@ func TestSettersSmsWebhookEventData(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetTraceparent", func(t *testing.T) {
+		obj := &SmsWebhookEventData{}
+		var fernTestValueTraceparent *string
+		obj.SetTraceparent(fernTestValueTraceparent)
+		assert.Equal(t, fernTestValueTraceparent, obj.Traceparent)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestGettersSmsWebhookEventData(t *testing.T) {
@@ -13672,6 +16591,39 @@ func TestGettersSmsWebhookEventData(t *testing.T) {
 			}
 		}()
 		_ = obj.GetOccurredAt() // Should return zero value
+	})
+
+	t.Run("GetTraceparent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SmsWebhookEventData{}
+		var expected *string
+		obj.Traceparent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTraceparent(), "getter should return the property value")
+	})
+
+	t.Run("GetTraceparent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SmsWebhookEventData{}
+		obj.Traceparent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTraceparent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTraceparent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SmsWebhookEventData
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTraceparent() // Should return zero value
 	})
 
 }
@@ -13995,6 +16947,37 @@ func TestSettersMarkExplicitSmsWebhookEventData(t *testing.T) {
 
 		// Act
 		obj.SetOccurredAt(fernTestValueOccurredAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTraceparent_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SmsWebhookEventData{}
+		var fernTestValueTraceparent *string
+
+		// Act
+		obj.SetTraceparent(fernTestValueTraceparent)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -16480,6 +19463,105 @@ func TestGettersWebhookTestEventEvent(t *testing.T) {
 		_ = obj.GetFormSubmissionWebhookEvent() // Should return zero value
 	})
 
+	t.Run("GetSchedulingBookingWebhookEvent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		var expected *SchedulingBookingWebhookEvent
+		obj.SchedulingBookingWebhookEvent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetSchedulingBookingWebhookEvent(), "getter should return the property value")
+	})
+
+	t.Run("GetSchedulingBookingWebhookEvent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		obj.SchedulingBookingWebhookEvent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetSchedulingBookingWebhookEvent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetSchedulingBookingWebhookEvent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookTestEventEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetSchedulingBookingWebhookEvent() // Should return zero value
+	})
+
+	t.Run("GetSchedulingCalendarWebhookEvent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		var expected *SchedulingCalendarWebhookEvent
+		obj.SchedulingCalendarWebhookEvent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetSchedulingCalendarWebhookEvent(), "getter should return the property value")
+	})
+
+	t.Run("GetSchedulingCalendarWebhookEvent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		obj.SchedulingCalendarWebhookEvent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetSchedulingCalendarWebhookEvent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetSchedulingCalendarWebhookEvent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookTestEventEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetSchedulingCalendarWebhookEvent() // Should return zero value
+	})
+
+	t.Run("GetSchedulingCalendarDelegationWebhookEvent", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		var expected *SchedulingCalendarDelegationWebhookEvent
+		obj.SchedulingCalendarDelegationWebhookEvent = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetSchedulingCalendarDelegationWebhookEvent(), "getter should return the property value")
+	})
+
+	t.Run("GetSchedulingCalendarDelegationWebhookEvent_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &WebhookTestEventEvent{}
+		obj.SchedulingCalendarDelegationWebhookEvent = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetSchedulingCalendarDelegationWebhookEvent(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetSchedulingCalendarDelegationWebhookEvent_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *WebhookTestEventEvent
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetSchedulingCalendarDelegationWebhookEvent() // Should return zero value
+	})
+
 }
 
 func TestJSONMarshalingBroadcastWebhookEvent(t *testing.T) {
@@ -17533,6 +20615,237 @@ func TestJSONMarshalingRiskWebhookEventData(t *testing.T) {
 	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
 		t.Parallel()
 		var obj RiskWebhookEventData
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookData{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingBookingWebhookData
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookData
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookData
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookDataReminder{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingBookingWebhookDataReminder
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookDataReminder
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookDataReminder
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingBookingWebhookEvent{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingBookingWebhookEvent
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookEvent
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookEvent
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingCalendarDelegationWebhookEvent
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEvent
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEvent
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingCalendarDelegationWebhookEventData
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEventData
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEventData
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEvent{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingCalendarWebhookEvent
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarWebhookEvent
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarWebhookEvent
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
+func TestJSONMarshalingSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &SchedulingCalendarWebhookEventData{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled SchedulingCalendarWebhookEventData
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarWebhookEventData
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarWebhookEventData
 		err := json.Unmarshal([]byte(`{}`), &obj)
 		assert.NoError(t, err, "unmarshaling empty object should succeed")
 	})
@@ -18700,6 +22013,136 @@ func TestRequiredNullableRoundTripRiskWebhookEventData(t *testing.T) {
 	})
 }
 
+func TestRequiredNullableRoundTripSchedulingBookingWebhookData(t *testing.T) {
+	requiredNullableKeys := []string{
+		"series_id",
+	}
+	marshalToMap := func(t *testing.T, obj *SchedulingBookingWebhookData) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookData
+		require.NoError(t, json.Unmarshal([]byte(`{"series_id":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookData
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &SchedulingBookingWebhookData{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
+func TestRequiredNullableRoundTripSchedulingBookingWebhookDataReminder(t *testing.T) {
+	requiredNullableKeys := []string{
+		"before_minutes",
+		"after_minutes",
+	}
+	marshalToMap := func(t *testing.T, obj *SchedulingBookingWebhookDataReminder) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookDataReminder
+		require.NoError(t, json.Unmarshal([]byte(`{"before_minutes":null,"after_minutes":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingBookingWebhookDataReminder
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &SchedulingBookingWebhookDataReminder{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
+func TestRequiredNullableRoundTripSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	requiredNullableKeys := []string{
+		"code",
+	}
+	marshalToMap := func(t *testing.T, obj *SchedulingCalendarDelegationWebhookEventData) map[string]json.RawMessage {
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		var result map[string]json.RawMessage
+		require.NoError(t, json.Unmarshal(data, &result), "marshaled data should be a JSON object")
+		return result
+	}
+
+	t.Run("NullPreserved", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEventData
+		require.NoError(t, json.Unmarshal([]byte(`{"code":null}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			value, ok := result[key]
+			require.True(t, ok, "required nullable field %q received as null should be present in the output", key)
+			assert.Equal(t, "null", string(value), "required nullable field %q received as null should be null in the output", key)
+		}
+	})
+
+	t.Run("AbsentStaysAbsent", func(t *testing.T) {
+		t.Parallel()
+		var obj SchedulingCalendarDelegationWebhookEventData
+		require.NoError(t, json.Unmarshal([]byte(`{}`), &obj))
+		result := marshalToMap(t, &obj)
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q absent from the input should be absent from the output", key)
+		}
+	})
+
+	t.Run("FreshValueOmits", func(t *testing.T) {
+		t.Parallel()
+		result := marshalToMap(t, &SchedulingCalendarDelegationWebhookEventData{})
+		for _, key := range requiredNullableKeys {
+			assert.NotContains(t, result, key, "required nullable field %q should be omitted from a freshly constructed value", key)
+		}
+	})
+}
+
 func TestRequiredNullableRoundTripSignRequestWebhookEventData(t *testing.T) {
 	requiredNullableKeys := []string{
 		"signer",
@@ -19380,6 +22823,118 @@ func TestStringRiskWebhookEventData(t *testing.T) {
 	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *RiskWebhookEventData
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookData{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookDataReminder{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookEvent{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarWebhookEvent{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestStringSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarWebhookEventData{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
 	})
@@ -20415,6 +23970,132 @@ func TestEnumCreateTestWebhookEventRequestType(t *testing.T) {
 		assert.Equal(t, CreateTestWebhookEventRequestType("form.submission.flagged"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_scheduling_booking_created", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.created")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.created"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_pending_approval", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.pending_approval")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.pending_approval"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_confirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.confirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.confirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_rescheduled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.rescheduled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.rescheduled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_cancelled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.cancelled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_declined", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.declined")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.declined"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_no_show", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.no_show")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.no_show"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_external_conflict", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.external_conflict")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.external_conflict"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_calendar_write_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.calendar_write_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.calendar_write_failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_location_ready", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.location_ready")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.location_ready"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_started", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.started")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.started"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_ended", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.ended")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.ended"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_reminder", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.booking.reminder")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.booking.reminder"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_connected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.calendar.connected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.calendar.connected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_needs_reauth", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.calendar.needs_reauth")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.calendar.needs_reauth"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_disconnected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.calendar.disconnected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.calendar.disconnected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_delegation_failing", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.calendar_delegation.failing")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.calendar_delegation.failing"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_delegation_restored", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateTestWebhookEventRequestTypeFromString("scheduling.calendar_delegation.restored")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateTestWebhookEventRequestType("scheduling.calendar_delegation.restored"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewCreateTestWebhookEventRequestTypeFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -21050,6 +24731,364 @@ func TestEnumRiskWebhookEventType(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewRiskWebhookEventTypeFromString("risk.assessment.review")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingBookingWebhookDataReminderAnchor(t *testing.T) {
+	t.Run("NewFromString_start", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("start")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("start"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_end", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("end")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("end"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_confirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("confirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("confirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_rescheduled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("rescheduled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("rescheduled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_cancelled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("cancelled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_declined", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("declined")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("declined"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_pending_approval", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("pending_approval")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("pending_approval"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_no_show", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("no_show")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataReminderAnchor("no_show"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingBookingWebhookDataReminderAnchorFromString("start")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingBookingWebhookDataStatus(t *testing.T) {
+	t.Run("NewFromString_held", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("held")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataStatus("held"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_pending_approval", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("pending_approval")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataStatus("pending_approval"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_confirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("confirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataStatus("confirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_cancelled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("cancelled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataStatus("cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_declined", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("declined")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookDataStatus("declined"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingBookingWebhookDataStatusFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingBookingWebhookDataStatusFromString("held")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingBookingWebhookEventObject(t *testing.T) {
+	t.Run("NewFromString_event", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventObjectFromString("event")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventObject("event"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingBookingWebhookEventObjectFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingBookingWebhookEventObjectFromString("event")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingBookingWebhookEventType(t *testing.T) {
+	t.Run("NewFromString_scheduling_booking_created", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.created")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.created"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_pending_approval", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.pending_approval")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.pending_approval"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_confirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.confirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.confirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_rescheduled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.rescheduled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.rescheduled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_cancelled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.cancelled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_declined", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.declined")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.declined"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_no_show", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.no_show")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.no_show"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_external_conflict", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.external_conflict")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.external_conflict"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_calendar_write_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.calendar_write_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.calendar_write_failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_location_ready", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.location_ready")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.location_ready"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_started", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.started")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.started"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_ended", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.ended")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.ended"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_reminder", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.reminder")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingBookingWebhookEventType("scheduling.booking.reminder"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingBookingWebhookEventTypeFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingBookingWebhookEventTypeFromString("scheduling.booking.created")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingCalendarDelegationWebhookEventObject(t *testing.T) {
+	t.Run("NewFromString_event", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarDelegationWebhookEventObjectFromString("event")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarDelegationWebhookEventObject("event"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingCalendarDelegationWebhookEventObjectFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingCalendarDelegationWebhookEventObjectFromString("event")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingCalendarDelegationWebhookEventType(t *testing.T) {
+	t.Run("NewFromString_scheduling_calendar_delegation_failing", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarDelegationWebhookEventTypeFromString("scheduling.calendar_delegation.failing")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarDelegationWebhookEventType("scheduling.calendar_delegation.failing"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_delegation_restored", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarDelegationWebhookEventTypeFromString("scheduling.calendar_delegation.restored")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarDelegationWebhookEventType("scheduling.calendar_delegation.restored"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingCalendarDelegationWebhookEventTypeFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingCalendarDelegationWebhookEventTypeFromString("scheduling.calendar_delegation.failing")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingCalendarWebhookEventObject(t *testing.T) {
+	t.Run("NewFromString_event", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarWebhookEventObjectFromString("event")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarWebhookEventObject("event"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingCalendarWebhookEventObjectFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingCalendarWebhookEventObjectFromString("event")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumSchedulingCalendarWebhookEventType(t *testing.T) {
+	t.Run("NewFromString_scheduling_calendar_connected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarWebhookEventTypeFromString("scheduling.calendar.connected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarWebhookEventType("scheduling.calendar.connected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_needs_reauth", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarWebhookEventTypeFromString("scheduling.calendar.needs_reauth")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarWebhookEventType("scheduling.calendar.needs_reauth"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_disconnected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSchedulingCalendarWebhookEventTypeFromString("scheduling.calendar.disconnected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SchedulingCalendarWebhookEventType("scheduling.calendar.disconnected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewSchedulingCalendarWebhookEventTypeFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewSchedulingCalendarWebhookEventTypeFromString("scheduling.calendar.connected")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)
@@ -22269,6 +26308,167 @@ func TestExtraPropertiesRiskWebhookEventData(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *RiskWebhookEventData
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingBookingWebhookData(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookData{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookData
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingBookingWebhookDataReminder(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookDataReminder{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookDataReminder
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingBookingWebhookEvent(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingBookingWebhookEvent{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingBookingWebhookEvent
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingCalendarDelegationWebhookEvent(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarDelegationWebhookEvent{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEvent
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingCalendarDelegationWebhookEventData(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarDelegationWebhookEventData{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarDelegationWebhookEventData
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingCalendarWebhookEvent(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarWebhookEvent{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEvent
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesSchedulingCalendarWebhookEventData(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &SchedulingCalendarWebhookEventData{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *SchedulingCalendarWebhookEventData
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

@@ -17,15 +17,27 @@ public record SmsNumber : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The number, in E.164.
+    /// </summary>
     [JsonPropertyName("phone_number")]
     public required string PhoneNumber { get; set; }
 
+    /// <summary>
+    /// `local` (US A2P 10DLC) or `toll_free` (toll-free verification, and sends only to the US and Canada).
+    /// </summary>
     [JsonPropertyName("kind")]
     public required SmsNumberKind Kind { get; set; }
 
+    /// <summary>
+    /// Its country (ISO 3166-1 alpha-2).
+    /// </summary>
     [JsonPropertyName("country")]
     public required string Country { get; set; }
 
+    /// <summary>
+    /// `pending`: not ready yet. `active`: ready, once its registration is approved. `releasing`: being given up.
+    /// </summary>
     [JsonPropertyName("status")]
     public required SmsNumberStatus Status { get; set; }
 

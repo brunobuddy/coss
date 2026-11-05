@@ -13,9 +13,15 @@ public record CreateRiskListEntryRequest
     [JsonPropertyName("type")]
     public required RiskListEntryType Type { get; set; }
 
+    /// <summary>
+    /// What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
+    /// </summary>
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 
+    /// <summary>
+    /// Your note about it.
+    /// </summary>
     [Optional]
     [JsonPropertyName("note")]
     public string? Note { get; set; }

@@ -96,11 +96,17 @@ public final class SignTemplate {
         return id;
     }
 
+    /**
+     * @return Your name for the template.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Requests' title. <code>null</code>: the template's name.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("title")
     public OptionalNullable<String> getTitle() {
@@ -110,6 +116,9 @@ public final class SignTemplate {
         return title;
     }
 
+    /**
+     * @return Requests' message to signers. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("message")
     public OptionalNullable<String> getMessage() {
@@ -119,21 +128,33 @@ public final class SignTemplate {
         return message;
     }
 
+    /**
+     * @return Its requests' order, unless one sets its own.
+     */
     @JsonProperty("signing_order")
     public SignTemplateSigningOrder getSigningOrder() {
         return signingOrder;
     }
 
+    /**
+     * @return The documents its requests use, in order.
+     */
     @JsonProperty("documents")
     public List<SignTemplateDocumentsItem> getDocuments() {
         return documents;
     }
 
+    /**
+     * @return Who signs: each request names one signer per role.
+     */
     @JsonProperty("roles")
     public List<SignTemplateRolesItem> getRoles() {
         return roles;
     }
 
+    /**
+     * @return Each role's fields.
+     */
     @JsonProperty("fields")
     public List<SignTemplateFieldsItem> getFields() {
         return fields;
@@ -147,6 +168,9 @@ public final class SignTemplate {
         return ready;
     }
 
+    /**
+     * @return Whether it belongs to a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
@@ -239,10 +263,16 @@ public final class SignTemplate {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the template.</p>
+         */
         SigningOrderStage name(@NotNull String name);
     }
 
     public interface SigningOrderStage {
+        /**
+         * <p>Its requests' order, unless one sets its own.</p>
+         */
         ReadyStage signingOrder(@NotNull SignTemplateSigningOrder signingOrder);
     }
 
@@ -254,6 +284,9 @@ public final class SignTemplate {
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         */
         CreatedAtStage sandbox(boolean sandbox);
     }
 
@@ -272,6 +305,9 @@ public final class SignTemplate {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Requests' title. <code>null</code>: the template's name.</p>
+         */
         _FinalStage title(OptionalNullable<String> title);
 
         _FinalStage title(String title);
@@ -280,6 +316,9 @@ public final class SignTemplate {
 
         _FinalStage title(Nullable<String> title);
 
+        /**
+         * <p>Requests' message to signers. <code>null</code>: none.</p>
+         */
         _FinalStage message(OptionalNullable<String> message);
 
         _FinalStage message(String message);
@@ -288,18 +327,27 @@ public final class SignTemplate {
 
         _FinalStage message(Nullable<String> message);
 
+        /**
+         * <p>The documents its requests use, in order.</p>
+         */
         _FinalStage documents(List<SignTemplateDocumentsItem> documents);
 
         _FinalStage addDocuments(SignTemplateDocumentsItem documents);
 
         _FinalStage addAllDocuments(List<SignTemplateDocumentsItem> documents);
 
+        /**
+         * <p>Who signs: each request names one signer per role.</p>
+         */
         _FinalStage roles(List<SignTemplateRolesItem> roles);
 
         _FinalStage addRoles(SignTemplateRolesItem roles);
 
         _FinalStage addAllRoles(List<SignTemplateRolesItem> roles);
 
+        /**
+         * <p>Each role's fields.</p>
+         */
         _FinalStage fields(List<SignTemplateFieldsItem> fields);
 
         _FinalStage addFields(SignTemplateFieldsItem fields);
@@ -381,6 +429,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Your name for the template.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public SigningOrderStage name(@NotNull String name) {
@@ -388,6 +440,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Its requests' order, unless one sets its own.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("signing_order")
         public ReadyStage signingOrder(@NotNull SignTemplateSigningOrder signingOrder) {
@@ -406,6 +462,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public CreatedAtStage sandbox(boolean sandbox) {
@@ -427,6 +487,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Each role's fields.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllFields(List<SignTemplateFieldsItem> fields) {
             if (fields != null) {
@@ -435,12 +499,19 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Each role's fields.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addFields(SignTemplateFieldsItem fields) {
             this.fields.add(fields);
             return this;
         }
 
+        /**
+         * <p>Each role's fields.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "fields", nulls = Nulls.SKIP)
         public _FinalStage fields(List<SignTemplateFieldsItem> fields) {
@@ -451,6 +522,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Who signs: each request names one signer per role.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllRoles(List<SignTemplateRolesItem> roles) {
             if (roles != null) {
@@ -459,12 +534,19 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Who signs: each request names one signer per role.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addRoles(SignTemplateRolesItem roles) {
             this.roles.add(roles);
             return this;
         }
 
+        /**
+         * <p>Who signs: each request names one signer per role.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "roles", nulls = Nulls.SKIP)
         public _FinalStage roles(List<SignTemplateRolesItem> roles) {
@@ -475,6 +557,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>The documents its requests use, in order.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllDocuments(List<SignTemplateDocumentsItem> documents) {
             if (documents != null) {
@@ -483,12 +569,19 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>The documents its requests use, in order.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addDocuments(SignTemplateDocumentsItem documents) {
             this.documents.add(documents);
             return this;
         }
 
+        /**
+         * <p>The documents its requests use, in order.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "documents", nulls = Nulls.SKIP)
         public _FinalStage documents(List<SignTemplateDocumentsItem> documents) {
@@ -499,6 +592,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' message to signers. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage message(Nullable<String> message) {
             if (message.isNull()) {
@@ -511,6 +608,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' message to signers. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage message(Optional<String> message) {
             if (message.isPresent()) {
@@ -521,12 +622,19 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' message to signers. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage message(String message) {
             this.message = OptionalNullable.of(message);
             return this;
         }
 
+        /**
+         * <p>Requests' message to signers. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "message", nulls = Nulls.SKIP)
         public _FinalStage message(OptionalNullable<String> message) {
@@ -534,6 +642,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' title. <code>null</code>: the template's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(Nullable<String> title) {
             if (title.isNull()) {
@@ -546,6 +658,10 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' title. <code>null</code>: the template's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(Optional<String> title) {
             if (title.isPresent()) {
@@ -556,12 +672,19 @@ public final class SignTemplate {
             return this;
         }
 
+        /**
+         * <p>Requests' title. <code>null</code>: the template's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage title(String title) {
             this.title = OptionalNullable.of(title);
             return this;
         }
 
+        /**
+         * <p>Requests' title. <code>null</code>: the template's name.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "title", nulls = Nulls.SKIP)
         public _FinalStage title(OptionalNullable<String> title) {

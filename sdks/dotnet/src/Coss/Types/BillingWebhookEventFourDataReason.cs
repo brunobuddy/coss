@@ -14,6 +14,8 @@ public readonly record struct BillingWebhookEventFourDataReason : IStringEnum
 
     public static readonly BillingWebhookEventFourDataReason SpendLimit = new(Values.SpendLimit);
 
+    public static readonly BillingWebhookEventFourDataReason CreditLimit = new(Values.CreditLimit);
+
     public static readonly BillingWebhookEventFourDataReason Admin = new(Values.Admin);
 
     public BillingWebhookEventFourDataReason(string value)
@@ -116,6 +118,8 @@ public readonly record struct BillingWebhookEventFourDataReason : IStringEnum
         public const string Delinquent = "delinquent";
 
         public const string SpendLimit = "spend_limit";
+
+        public const string CreditLimit = "credit_limit";
 
         public const string Admin = "admin";
     }

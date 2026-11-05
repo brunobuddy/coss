@@ -12,6 +12,8 @@ public readonly record struct BillingOverviewHoldsItemReason : IStringEnum
 
     public static readonly BillingOverviewHoldsItemReason SpendLimit = new(Values.SpendLimit);
 
+    public static readonly BillingOverviewHoldsItemReason CreditLimit = new(Values.CreditLimit);
+
     public static readonly BillingOverviewHoldsItemReason Admin = new(Values.Admin);
 
     public BillingOverviewHoldsItemReason(string value)
@@ -114,6 +116,8 @@ public readonly record struct BillingOverviewHoldsItemReason : IStringEnum
         public const string Delinquent = "delinquent";
 
         public const string SpendLimit = "spend_limit";
+
+        public const string CreditLimit = "credit_limit";
 
         public const string Admin = "admin";
     }

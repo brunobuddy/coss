@@ -15,7 +15,7 @@ class SuppressionCheck extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $address
+     * @var string $address The address checked.
      */
     #[JsonProperty('address')]
     public string $address;

@@ -16,7 +16,11 @@ from .form_submission_status import FormSubmissionStatus
 class FormSubmission(UniversalBaseModel):
     object: FormSubmissionObject
     id: str
-    form_id: str
+    form_id: str = pydantic.Field()
+    """
+    The id of the form it was posted to.
+    """
+
     status: FormSubmissionStatus = pydantic.Field()
     """
     `accepted`: delivered (webhooks, notifications, contacts). `held`: Risk asked for a review. `spam`: refused by Risk, the content check or the honeypot. `pending_confirmation`: waiting for the submitter's email link.
@@ -27,22 +31,66 @@ class FormSubmission(UniversalBaseModel):
     Field name → value; a field posted several times has an array.
     """
 
-    submitter_email: typing.Optional[str] = None
-    files: typing.List[FormSubmissionFile]
-    spam_reason: typing.Optional[FormSubmissionSpamReason] = None
+    submitter_email: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The value of the form's `submitter.email_field`. `null` when it has none.
+    """
+
+    files: typing.List[FormSubmissionFile] = pydantic.Field()
+    """
+    Uploaded files. Download them with the API.
+    """
+
+    spam_reason: typing.Optional[FormSubmissionSpamReason] = pydantic.Field(default=None)
+    """
+    Why it was flagged. `honeypot`: the honeypot field was filled. `risk_block`: Risk blocked it. `risk_review`: Risk asked for a review. `content`: its text passed `content_threshold`. `null`: not flagged.
+    """
+
     risk: typing.Optional[FormSubmissionRisk] = pydantic.Field(default=None)
     """
     Risk's assessment; `null` when none ran (honeypot).
     """
 
-    ip: typing.Optional[str] = None
-    user_agent: typing.Optional[str] = None
-    origin: typing.Optional[str] = None
-    referrer: typing.Optional[str] = None
-    confirmed_at: typing.Optional[dt.datetime] = None
-    accepted_at: typing.Optional[dt.datetime] = None
-    released_at: typing.Optional[dt.datetime] = None
-    sandbox: bool
+    ip: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The address it was posted from. `null`: unknown.
+    """
+
+    user_agent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The browser's `User-Agent`. `null`: not sent.
+    """
+
+    origin: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The site it was posted from. `null`: not sent.
+    """
+
+    referrer: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The page it was posted from. `null`: not sent.
+    """
+
+    confirmed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the submitter clicked the emailed link. `null`: they haven't, or the form doesn't verify.
+    """
+
+    accepted_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it became `accepted`. `null`: it hasn't.
+    """
+
+    released_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was released from `held` or `spam`. `null`: it wasn't.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

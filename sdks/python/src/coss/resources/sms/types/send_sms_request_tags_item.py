@@ -7,8 +7,15 @@ from ....core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class SendSmsRequestTagsItem(UniversalBaseModel):
-    name: str
-    value: str
+    name: str = pydantic.Field()
+    """
+    The tag's name, unique on the message.
+    """
+
+    value: str = pydantic.Field()
+    """
+    The tag's value.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

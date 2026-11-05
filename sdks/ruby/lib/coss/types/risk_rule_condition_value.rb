@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What to compare it with: its type follows the field, and `in` and `not_in` take a list of strings.
     class RiskRuleConditionValue < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

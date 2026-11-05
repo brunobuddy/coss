@@ -27,7 +27,8 @@ public class GetTest : BaseMockServerTest
                 "id": "id",
                 "name": "name",
                 "slug": "slug",
-                "api_version": "api_version"
+                "api_version": "api_version",
+                "hipaa_mode": true
               },
               "api_key": {
                 "id": "id",
@@ -74,7 +75,8 @@ public class GetTest : BaseMockServerTest
                 "id": "org_01k7c8m4q2f3e9v6t5r1n0p8yz",
                 "name": "Acme",
                 "slug": "acme",
-                "api_version": "2026-10-10"
+                "api_version": "2026-10-10",
+                "hipaa_mode": true
               },
               "api_key": {
                 "id": "key_01k7c8m4q2f3e9v6t5r1n0p8yz",

@@ -1,0 +1,160 @@
+using Coss.Scheduling;
+using Coss.Test.Unit.MockServer;
+using Coss.Test.Utils;
+using NUnit.Framework;
+
+namespace Coss.Test.Unit.MockServer.Scheduling.Hosts;
+
+[TestFixture]
+[Parallelizable(ParallelScope.Self)]
+public class ListTest : BaseMockServerTest
+{
+    [NUnit.Framework.Test]
+    public async Task MockServerTest_1()
+    {
+        const string mockResponse = """
+            {
+              "object": "list",
+              "data": [
+                {
+                  "object": "scheduling.host",
+                  "id": "id",
+                  "uid": "uid",
+                  "name": "name",
+                  "email": "email",
+                  "phone": "phone",
+                  "calendar_account": "calendar_account",
+                  "time_zone": "time_zone",
+                  "locale": "locale",
+                  "attributes": {
+                    "attributes": "attributes"
+                  },
+                  "locations": [
+                    {
+                      "type": "link",
+                      "url": "url"
+                    },
+                    {
+                      "type": "link",
+                      "url": "url"
+                    }
+                  ],
+                  "metadata": {
+                    "metadata": "metadata"
+                  },
+                  "status": "active",
+                  "created_at": "created_at",
+                  "updated_at": "updated_at"
+                },
+                {
+                  "object": "scheduling.host",
+                  "id": "id",
+                  "uid": "uid",
+                  "name": "name",
+                  "email": "email",
+                  "phone": "phone",
+                  "calendar_account": "calendar_account",
+                  "time_zone": "time_zone",
+                  "locale": "locale",
+                  "attributes": {
+                    "attributes": "attributes"
+                  },
+                  "locations": [
+                    {
+                      "type": "link",
+                      "url": "url"
+                    },
+                    {
+                      "type": "link",
+                      "url": "url"
+                    }
+                  ],
+                  "metadata": {
+                    "metadata": "metadata"
+                  },
+                  "status": "active",
+                  "created_at": "created_at",
+                  "updated_at": "updated_at"
+                }
+              ],
+              "has_more": true
+            }
+            """;
+
+        Server
+            .Given(
+                WireMock
+                    .RequestBuilders.Request.Create()
+                    .WithPath("/v1/scheduling/hosts")
+                    .UsingGet()
+            )
+            .RespondWith(
+                WireMock
+                    .ResponseBuilders.Response.Create()
+                    .WithStatusCode(200)
+                    .WithBody(mockResponse)
+            );
+
+        var response = await Client.Scheduling.Hosts.ListAsync(new ListHostsRequest());
+        JsonAssert.AreEqual(response, mockResponse);
+    }
+
+    [NUnit.Framework.Test]
+    public async Task MockServerTest_2()
+    {
+        const string mockResponse = """
+            {
+              "object": "list",
+              "data": [
+                {
+                  "object": "scheduling.host",
+                  "id": "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+                  "uid": "doctor_482",
+                  "name": "Dr. Ana Reyes",
+                  "email": "ana@example.com",
+                  "phone": null,
+                  "calendar_account": null,
+                  "time_zone": "America/New_York",
+                  "locale": null,
+                  "attributes": {
+                    "licensed_in": [
+                      "NY",
+                      "NJ"
+                    ]
+                  },
+                  "locations": [
+                    {
+                      "type": "in_person",
+                      "address": "12 Main St, New York, NY"
+                    }
+                  ],
+                  "metadata": {
+                    "key": "value"
+                  },
+                  "status": "active",
+                  "created_at": "2027-01-01T10:00:00.000Z",
+                  "updated_at": "2027-01-01T10:00:00.000Z"
+                }
+              ],
+              "has_more": false
+            }
+            """;
+
+        Server
+            .Given(
+                WireMock
+                    .RequestBuilders.Request.Create()
+                    .WithPath("/v1/scheduling/hosts")
+                    .UsingGet()
+            )
+            .RespondWith(
+                WireMock
+                    .ResponseBuilders.Response.Create()
+                    .WithStatusCode(200)
+                    .WithBody(mockResponse)
+            );
+
+        var response = await Client.Scheduling.Hosts.ListAsync(new ListHostsRequest());
+        JsonAssert.AreEqual(response, mockResponse);
+    }
+}

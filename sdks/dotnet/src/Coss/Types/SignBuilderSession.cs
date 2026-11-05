@@ -17,6 +17,9 @@ public record SignBuilderSession : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the template it edits.
+    /// </summary>
     [JsonPropertyName("template_id")]
     public required string TemplateId { get; set; }
 
@@ -32,6 +35,9 @@ public record SignBuilderSession : IJsonOnDeserialized
     [JsonPropertyName("token")]
     public required string Token { get; set; }
 
+    /// <summary>
+    /// When the link stops working.
+    /// </summary>
     [JsonPropertyName("expires_at")]
     public required DateTime ExpiresAt { get; set; }
 

@@ -2247,6 +2247,20 @@ client.sms.send_(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message sent from the API key's environment, with its current status.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2703,6 +2717,20 @@ client.verify.check(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A verification's status and destination. Its code is never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -2928,7 +2956,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -2976,7 +3004,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**spam:** `Coss::Forms::Types::CreateFormRequestSpam` 
+**spam:** `Coss::Forms::Types::CreateFormRequestSpam` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -2984,7 +3012,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**submitter:** `Coss::Forms::Types::CreateFormRequestSubmitter` 
+**submitter:** `Coss::Forms::Types::CreateFormRequestSubmitter` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -2992,7 +3020,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**notifications:** `Coss::Forms::Types::CreateFormRequestNotifications` 
+**notifications:** `Coss::Forms::Types::CreateFormRequestNotifications` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -3000,7 +3028,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**contacts:** `Coss::Forms::Types::CreateFormRequestContacts` 
+**contacts:** `Coss::Forms::Types::CreateFormRequestContacts` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -3008,7 +3036,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**files:** `Coss::Forms::Types::CreateFormRequestFiles` 
+**files:** `Coss::Forms::Types::CreateFormRequestFiles` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -3016,7 +3044,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**hosted:** `Coss::Forms::Types::CreateFormRequestHosted` 
+**hosted:** `Coss::Forms::Types::CreateFormRequestHosted` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -3039,6 +3067,20 @@ client.forms.create(
 <details><summary><code>client.forms.<a href="/lib/Coss/forms/client.rb">get</a>(id:) -> Coss::Types::Form</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -3204,7 +3246,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -3252,7 +3294,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**spam:** `Coss::Forms::Types::UpdateFormRequestSpam` 
+**spam:** `Coss::Forms::Types::UpdateFormRequestSpam` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -3260,7 +3302,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**submitter:** `Coss::Forms::Types::UpdateFormRequestSubmitter` 
+**submitter:** `Coss::Forms::Types::UpdateFormRequestSubmitter` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -3268,7 +3310,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**notifications:** `Coss::Forms::Types::UpdateFormRequestNotifications` 
+**notifications:** `Coss::Forms::Types::UpdateFormRequestNotifications` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -3276,7 +3318,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**contacts:** `Coss::Forms::Types::UpdateFormRequestContacts` 
+**contacts:** `Coss::Forms::Types::UpdateFormRequestContacts` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -3284,7 +3326,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**files:** `Coss::Forms::Types::UpdateFormRequestFiles` 
+**files:** `Coss::Forms::Types::UpdateFormRequestFiles` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -3292,7 +3334,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**hosted:** `Coss::Forms::Types::UpdateFormRequestHosted` 
+**hosted:** `Coss::Forms::Types::UpdateFormRequestHosted` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -3538,6 +3580,20 @@ client.logs.list
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One line of the API key's environment log.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -3712,6 +3768,20 @@ client.audit_events.list
 <details><summary><code>client.audit_events.<a href="/lib/Coss/audit_events/client.rb">get</a>(id:) -> Coss::Types::AuditEvent</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One event of the organization's audit log.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -3973,7 +4043,7 @@ client.log_drains.list
 <dl>
 <dd>
 
-Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 </dd>
 </dl>
 </dd>
@@ -4024,6 +4094,22 @@ client.log_drains.create(
 <dd>
 
 **sources:** `Internal::Types::Array[Coss::Types::LogDrainSource]` — What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**format:** `Coss::LogDrains::Types::CreateLogDrainRequestFormat` — How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**auth_header:** `Coss::Types::LogDrainAuthHeader` 
     
 </dd>
 </dl>
@@ -4179,7 +4265,7 @@ client.log_drains.delete(id: "drain_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <dl>
 <dd>
 
-Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 </dd>
 </dl>
 </dd>
@@ -4244,7 +4330,23 @@ client.log_drains.update(
 <dl>
 <dd>
 
-**enabled:** `Internal::Types::Boolean` 
+**format:** `Coss::Types::LogDrainFormat` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**auth_header:** `Coss::Types::LogDrainAuthHeader` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**enabled:** `Internal::Types::Boolean` — `false` disables it, and `true` enables it again.
     
 </dd>
 </dl>
@@ -4428,6 +4530,20 @@ client.inboxes.create(
 <details><summary><code>client.inboxes.<a href="/lib/Coss/inboxes/client.rb">get</a>(inbox_id:) -> Coss::Types::Inbox</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One inbox of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -4621,7 +4737,7 @@ client.inboxes.update(
 <dl>
 <dd>
 
-Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
+Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans include some every month) unless they end in `block`. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
 </dd>
 </dl>
 </dd>
@@ -5084,7 +5200,7 @@ client.risk.check_phone(phone: "+14155550123")
 <dl>
 <dd>
 
-Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
+Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (`risk.content_checks`; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
 </dd>
 </dl>
 </dd>
@@ -6081,7 +6197,7 @@ client.email.templates.create(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Your note about it, shown in the dashboard.
     
 </dd>
 </dl>
@@ -6310,7 +6426,7 @@ client.email.templates.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Shown in the dashboard.
     
 </dd>
 </dl>
@@ -6326,7 +6442,7 @@ client.email.templates.update(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -7170,6 +7286,20 @@ client.email.suppressions.export
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -7616,7 +7746,7 @@ client.email.subaccounts.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for it.
     
 </dd>
 </dl>
@@ -8394,7 +8524,7 @@ client.email.contacts.upsert(
 <dl>
 <dd>
 
-**first_name:** `String` 
+**first_name:** `String` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -8402,7 +8532,7 @@ client.email.contacts.upsert(
 <dl>
 <dd>
 
-**last_name:** `String` 
+**last_name:** `String` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -8648,7 +8778,7 @@ client.email.contacts.import(contacts: [{
 <dl>
 <dd>
 
-**contacts:** `Internal::Types::Array[Coss::Email::Contacts::Types::ImportContactsRequestContactsItem]` 
+**contacts:** `Internal::Types::Array[Coss::Email::Contacts::Types::ImportContactsRequestContactsItem]` — The contacts to create or update, at most 1,000.
     
 </dd>
 </dl>
@@ -8749,6 +8879,20 @@ client.email.contacts.export
 <details><summary><code>client.email.contacts.<a href="/lib/Coss/email/contacts/client.rb">get</a>(id:) -> Coss::Types::Contact</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -8912,7 +9056,7 @@ client.email.contacts.update(
 <dl>
 <dd>
 
-**first_name:** `String` 
+**first_name:** `String` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -8920,7 +9064,7 @@ client.email.contacts.update(
 <dl>
 <dd>
 
-**last_name:** `String` 
+**last_name:** `String` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -9082,7 +9226,7 @@ client.email.contacts.update_topics(
 <dl>
 <dd>
 
-**topics:** `Internal::Types::Array[Coss::Email::Contacts::Types::UpdateContactTopicsRequestTopicsItem]` 
+**topics:** `Internal::Types::Array[Coss::Email::Contacts::Types::UpdateContactTopicsRequestTopicsItem]` — The contact's choices per topic. Topics not listed keep theirs.
     
 </dd>
 </dl>
@@ -9280,7 +9424,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**reply_to:** `Internal::Types::Array[String]` 
+**reply_to:** `Internal::Types::Array[String]` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -9312,7 +9456,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**text:** `String` 
+**text:** `String` — The plain text part. Takes the same placeholders as `html`.
     
 </dd>
 </dl>
@@ -9320,7 +9464,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**tracking:** `Coss::Email::Broadcasts::Types::CreateBroadcastRequestTracking` 
+**tracking:** `Coss::Email::Broadcasts::Types::CreateBroadcastRequestTracking` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -9367,6 +9511,20 @@ client.email.broadcasts.create(
 <details><summary><code>client.email.broadcasts.<a href="/lib/Coss/email/broadcasts/client.rb">get</a>(id:) -> Coss::Types::Broadcast</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One broadcast of the API key's environment, with its status and stats.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -9535,7 +9693,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**audience_id:** `String` 
+**audience_id:** `String` — Send to this audience. `null` clears it.
     
 </dd>
 </dl>
@@ -9543,7 +9701,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**segment_id:** `String` 
+**segment_id:** `String` — Send to this segment. `null` clears it.
     
 </dd>
 </dl>
@@ -9551,7 +9709,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**topic:** `String` 
+**topic:** `String` — The topic it's about (its key). `null` clears it.
     
 </dd>
 </dl>
@@ -9567,7 +9725,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**reply_to:** `Internal::Types::Array[String]` 
+**reply_to:** `Internal::Types::Array[String]` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -9583,7 +9741,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**preview_text:** `String` 
+**preview_text:** `String` — The inbox preview line. `null` removes it.
     
 </dd>
 </dl>
@@ -9591,7 +9749,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**html:** `String` 
+**html:** `String` — The HTML part. `null` removes it, if `text` remains.
     
 </dd>
 </dl>
@@ -9599,7 +9757,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**text:** `String` 
+**text:** `String` — The plain text part. `null` removes it, if `html` remains.
     
 </dd>
 </dl>
@@ -9607,7 +9765,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**tracking:** `Coss::Email::Broadcasts::Types::UpdateBroadcastRequestTracking` 
+**tracking:** `Coss::Email::Broadcasts::Types::UpdateBroadcastRequestTracking` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -9615,7 +9773,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**rate_per_second:** `Integer` 
+**rate_per_second:** `Integer` — Recipients per second. `null`: the plan's marketing rate.
     
 </dd>
 </dl>
@@ -9947,7 +10105,7 @@ client.email.broadcasts.test(
 <dl>
 <dd>
 
-**to:** `Internal::Types::Array[String]` 
+**to:** `Internal::Types::Array[String]` — Who gets the test, at most 5 addresses.
     
 </dd>
 </dl>
@@ -10128,6 +10286,20 @@ client.email.audiences.list
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -10152,7 +10324,7 @@ client.email.audiences.create(name: "Beta testers")
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -10175,6 +10347,20 @@ client.email.audiences.create(name: "Beta testers")
 <details><summary><code>client.email.audiences.<a href="/lib/Coss/email/audiences/client.rb">get</a>(id:) -> Coss::Types::Audience</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One audience of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10286,6 +10472,20 @@ client.email.audiences.remove(id: "aud_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Renames an audience. Its members stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -10321,7 +10521,7 @@ client.email.audiences.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -10495,6 +10695,20 @@ client.email.audiences.add_contacts(
 <details><summary><code>client.email.audiences.<a href="/lib/Coss/email/audiences/client.rb">remove_contact</a>(id:, contact_id:) -> Coss::Email::Audiences::Types::RemoveContactAudiencesResponse</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes a contact out of the audience. The contact itself stays.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10690,7 +10904,7 @@ client.email.segments.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -10721,6 +10935,20 @@ client.email.segments.create(
 <details><summary><code>client.email.segments.<a href="/lib/Coss/email/segments/client.rb">get</a>(id:) -> Coss::Types::Segment</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One segment of the API key's environment, with its filter.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10770,6 +10998,20 @@ client.email.segments.get(id: "seg_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a segment. The contacts it matched stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -10818,6 +11060,20 @@ client.email.segments.remove(id: "seg_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a segment's name or filter. Only the fields given change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -10853,7 +11109,7 @@ client.email.segments.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -11076,7 +11332,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**key:** `String` 
+**key:** `String` — The `category` of the emails about this topic. Can't change.
     
 </dd>
 </dl>
@@ -11084,7 +11340,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -11092,7 +11348,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -11139,6 +11395,20 @@ client.email.topics.create(
 <details><summary><code>client.email.topics.<a href="/lib/Coss/email/topics/client.rb">get</a>(id:) -> Coss::Types::Topic</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One topic of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -11299,7 +11569,7 @@ client.email.topics.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -11307,7 +11577,7 @@ client.email.topics.update(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -11448,7 +11718,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**display_name:** `String` 
+**display_name:** `String` — The sender's name in the preference center. `null`: the organization's.
     
 </dd>
 </dl>
@@ -11456,7 +11726,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**mailing_address:** `String` 
+**mailing_address:** `String` — The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
     
 </dd>
 </dl>
@@ -11464,7 +11734,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**double_opt_in_default:** `Internal::Types::Boolean` 
+**double_opt_in_default:** `Internal::Types::Boolean` — Whether contacts upserted without `double_opt_in` must confirm first.
     
 </dd>
 </dl>
@@ -11472,7 +11742,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**confirmation_from:** `String` 
+**confirmation_from:** `String` — The sender of confirmation emails (a verified domain's address for live keys).
     
 </dd>
 </dl>
@@ -11480,7 +11750,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**confirmation_subject:** `String` 
+**confirmation_subject:** `String` — `null`: coss.com's default.
     
 </dd>
 </dl>
@@ -11488,7 +11758,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**confirmation_html:** `String` 
+**confirmation_html:** `String` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -11496,7 +11766,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**confirmation_text:** `String` 
+**confirmation_text:** `String` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -11504,7 +11774,7 @@ client.email.marketing_settings.update(mailing_address: "Acme Inc., 548 Market S
 <dl>
 <dd>
 
-**confirmed_redirect_url:** `String` 
+**confirmed_redirect_url:** `String` — Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
     
 </dd>
 </dl>
@@ -12009,7 +12279,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**key:** `String` 
+**key:** `String` — How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
     
 </dd>
 </dl>
@@ -12017,7 +12287,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**type:** `Coss::Email::Contacts::Properties::Types::CreateContactPropertyRequestType` 
+**type:** `Coss::Email::Contacts::Properties::Types::CreateContactPropertyRequestType` — What values it takes. `date` values are ISO 8601 strings. Can't change.
     
 </dd>
 </dl>
@@ -12025,7 +12295,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**fallback:** `Coss::Email::Contacts::Properties::Types::CreateContactPropertyRequestFallback` 
+**fallback:** `Coss::Email::Contacts::Properties::Types::CreateContactPropertyRequestFallback` — Used in templates for contacts without a value.
     
 </dd>
 </dl>
@@ -12048,6 +12318,20 @@ client.email.contacts.properties.create(
 <details><summary><code>client.email.contacts.properties.<a href="/lib/Coss/email/contacts/properties/client.rb">get</a>(id:) -> Coss::Types::ContactProperty</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact property of the API key's environment: its key, type and fallback.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12159,6 +12443,20 @@ client.email.contacts.properties.remove(id: "cprop_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the value used when a contact has none for this property. Its key and type can't change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12194,7 +12492,7 @@ client.email.contacts.properties.update(
 <dl>
 <dd>
 
-**fallback:** `Coss::Email::Contacts::Properties::Types::UpdateContactPropertyRequestFallback` 
+**fallback:** `Coss::Email::Contacts::Properties::Types::UpdateContactPropertyRequestFallback` — Used in templates for contacts without a value. `null` removes it.
     
 </dd>
 </dl>
@@ -12529,6 +12827,20 @@ client.forms.submissions.list(id: "form_01kd2m8n3p4q5r6s7t8v9w0x1y")
 <details><summary><code>client.forms.submissions.<a href="/lib/Coss/forms/submissions/client.rb">get</a>(id:, submission_id:) -> Coss::Types::FormSubmission</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One submission of the form, with its data, files and Risk's assessment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12942,7 +13254,7 @@ client.hooks.event_types.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
     
 </dd>
 </dl>
@@ -12950,7 +13262,7 @@ client.hooks.event_types.create(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — What this event means, shown to your users.
     
 </dd>
 </dl>
@@ -13163,7 +13475,7 @@ client.hooks.event_types.update(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — What this event means, shown to your users. `null` removes it.
     
 </dd>
 </dl>
@@ -13539,7 +13851,7 @@ client.hooks.applications.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Shown to the application's users in the portal.
     
 </dd>
 </dl>
@@ -13700,7 +14012,7 @@ client.hooks.endpoints.create(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Your note about it.
     
 </dd>
 </dl>
@@ -13740,7 +14052,7 @@ client.hooks.endpoints.create(
 <dl>
 <dd>
 
-**enabled:** `Internal::Types::Boolean` 
+**enabled:** `Internal::Types::Boolean` — Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
     
 </dd>
 </dl>
@@ -13968,7 +14280,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**url:** `String` 
+**url:** `String` — Where deliveries are sent.
     
 </dd>
 </dl>
@@ -13976,7 +14288,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**description:** `String` 
+**description:** `String` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -14008,7 +14320,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**enabled:** `Internal::Types::Boolean` 
+**enabled:** `Internal::Types::Boolean` — `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
     
 </dd>
 </dl>
@@ -14409,7 +14721,7 @@ client.hooks.endpoints.send_test(
 <dl>
 <dd>
 
-**event_type:** `String` 
+**event_type:** `String` — The event type to send as.
     
 </dd>
 </dl>
@@ -14633,7 +14945,7 @@ client.hooks.messages.list(application: "customer_8812")
 <dl>
 <dd>
 
-Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 </dd>
 </dl>
 </dd>
@@ -15540,7 +15852,7 @@ client.inboxes.messages.send_(
 <dl>
 <dd>
 
-**to:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestTo` 
+**to:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestTo` — Who it goes to.
     
 </dd>
 </dl>
@@ -15548,7 +15860,7 @@ client.inboxes.messages.send_(
 <dl>
 <dd>
 
-**cc:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestCc` 
+**cc:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestCc` — Who it's copied to.
     
 </dd>
 </dl>
@@ -15556,7 +15868,7 @@ client.inboxes.messages.send_(
 <dl>
 <dd>
 
-**bcc:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestBcc` 
+**bcc:** `Coss::Inboxes::Messages::Types::SendInboxMessageRequestBcc` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -15596,7 +15908,7 @@ client.inboxes.messages.send_(
 <dl>
 <dd>
 
-**tags:** `Internal::Types::Array[Coss::Inboxes::Messages::Types::SendInboxMessageRequestTagsItem]` 
+**tags:** `Internal::Types::Array[Coss::Inboxes::Messages::Types::SendInboxMessageRequestTagsItem]` — Your tags on the email.
     
 </dd>
 </dl>
@@ -15850,7 +16162,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**cc:** `Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestCc` 
+**cc:** `Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestCc` — Who it's copied to.
     
 </dd>
 </dl>
@@ -15858,7 +16170,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**bcc:** `Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestBcc` 
+**bcc:** `Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestBcc` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -15890,7 +16202,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**tags:** `Internal::Types::Array[Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestTagsItem]` 
+**tags:** `Internal::Types::Array[Coss::Inboxes::Messages::Types::ReplyInboxMessageRequestTagsItem]` — Your tags on the email.
     
 </dd>
 </dl>
@@ -15923,7 +16235,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 </dd>
 </dl>
 </dd>
@@ -16278,7 +16590,7 @@ client.risk.lists.list
 <dl>
 <dd>
 
-**list:** `Coss::Types::RiskList` 
+**list:** `Coss::Types::RiskList` — Which list: `allow` or `block`.
     
 </dd>
 </dl>
@@ -16385,7 +16697,7 @@ client.risk.lists.add(
 <dl>
 <dd>
 
-**value:** `String` 
+**value:** `String` — What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
     
 </dd>
 </dl>
@@ -16393,7 +16705,7 @@ client.risk.lists.add(
 <dl>
 <dd>
 
-**note:** `String` 
+**note:** `String` — Your note about it.
     
 </dd>
 </dl>
@@ -16424,6 +16736,20 @@ client.risk.lists.add(
 <details><summary><code>client.risk.lists.<a href="/lib/Coss/risk/lists/client.rb">get</a>(id:) -> Coss::Types::RiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One allow or block list entry of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -16472,6 +16798,20 @@ client.risk.lists.get(id: "rskle_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <details><summary><code>client.risk.lists.<a href="/lib/Coss/risk/lists/client.rb">remove</a>(id:) -> Coss::Types::DeletedRiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes an entry from its list. Later assessments no longer see it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -16684,7 +17024,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**review_threshold:** `Integer` 
+**review_threshold:** `Integer` — Scores at or above it are `review`.
     
 </dd>
 </dl>
@@ -16692,7 +17032,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**block_threshold:** `Integer` 
+**block_threshold:** `Integer` — Scores at or above it are `block`.
     
 </dd>
 </dl>
@@ -16700,7 +17040,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**disabled_reasons:** `Internal::Types::Array[Coss::Risk::Settings::Types::UpdateRiskSettingsRequestDisabledReasonsItem]` 
+**disabled_reasons:** `Internal::Types::Array[Coss::Risk::Settings::Types::UpdateRiskSettingsRequestDisabledReasonsItem]` — Reasons that never fire in this environment. Replaces the list.
     
 </dd>
 </dl>
@@ -16854,7 +17194,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the rule, returned with reasons when it decides.
     
 </dd>
 </dl>
@@ -16862,7 +17202,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**enabled:** `Internal::Types::Boolean` 
+**enabled:** `Internal::Types::Boolean` — Default `true`.
     
 </dd>
 </dl>
@@ -16878,7 +17218,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**events:** `Internal::Types::Array[Coss::Types::RiskEvent]` 
+**events:** `Internal::Types::Array[Coss::Types::RiskEvent]` — Events it applies to. Default: every event.
     
 </dd>
 </dl>
@@ -16894,7 +17234,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**conditions:** `Internal::Types::Array[Coss::Types::RiskRuleCondition]` 
+**conditions:** `Internal::Types::Array[Coss::Types::RiskRuleCondition]` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -16925,6 +17265,20 @@ client.risk.rules.create(
 <details><summary><code>client.risk.rules.<a href="/lib/Coss/risk/rules/client.rb">get</a>(id:) -> Coss::Types::RiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One rule of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -16973,6 +17327,20 @@ client.risk.rules.get(id: "rskrule_01k7c8m4q2f3e9v6t5r1n0p8yz")
 <details><summary><code>client.risk.rules.<a href="/lib/Coss/risk/rules/client.rb">delete</a>(id:) -> Coss::Types::DeletedRiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a rule. Later assessments no longer apply it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -17071,7 +17439,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the rule.
     
 </dd>
 </dl>
@@ -17079,7 +17447,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**enabled:** `Internal::Types::Boolean` 
+**enabled:** `Internal::Types::Boolean` — `false` keeps it, and stops applying it.
     
 </dd>
 </dl>
@@ -17087,7 +17455,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**position:** `Integer` 
+**position:** `Integer` — Rules are tried in ascending order.
     
 </dd>
 </dl>
@@ -17095,7 +17463,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**events:** `Internal::Types::Array[Coss::Types::RiskEvent]` 
+**events:** `Internal::Types::Array[Coss::Types::RiskEvent]` — Events it applies to. Empty: every event.
     
 </dd>
 </dl>
@@ -17103,7 +17471,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**match:** `Coss::Risk::Rules::Types::UpdateRiskRuleRequestMatch` 
+**match:** `Coss::Risk::Rules::Types::UpdateRiskRuleRequestMatch` — `all`: every condition must hold. `any`: one is enough.
     
 </dd>
 </dl>
@@ -17111,7 +17479,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**conditions:** `Internal::Types::Array[Coss::Types::RiskRuleCondition]` 
+**conditions:** `Internal::Types::Array[Coss::Types::RiskRuleCondition]` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -17296,6 +17664,20 @@ client.risk.limit_buckets.create(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -17456,7 +17838,7 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**limit:** `Integer` 
+**limit:** `Integer` — Tokens added per `period_seconds`.
     
 </dd>
 </dl>
@@ -17464,7 +17846,7 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**period_seconds:** `Integer` 
+**period_seconds:** `Integer` — How many seconds `limit` tokens take to be added.
     
 </dd>
 </dl>
@@ -17472,7 +17854,7 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**burst:** `Integer` 
+**burst:** `Integer` — The bucket's size: how many requests a key can make at once.
     
 </dd>
 </dl>
@@ -17480,7 +17862,7 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**on_failure:** `Coss::Risk::LimitBuckets::Types::UpdateRiskLimitBucketRequestOnFailure` 
+**on_failure:** `Coss::Risk::LimitBuckets::Types::UpdateRiskLimitBucketRequestOnFailure` — The answer while coss.com can't count: `allow` or `deny`.
     
 </dd>
 </dl>
@@ -17489,6 +17871,4774 @@ client.risk.limit_buckets.update(
 <dd>
 
 **request_options:** `Coss::Risk::LimitBuckets::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Hosts
+<details><summary><code>client.scheduling.hosts.<a href="/lib/Coss/scheduling/hosts/client.rb">list</a>() -> Coss::Types::SchedulingHostList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's hosts, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.hosts.list
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `String` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Hosts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="/lib/Coss/scheduling/hosts/client.rb">create</a>(request) -> Coss::Types::SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A person who can be booked: one of your users, such as a doctor or a tutor.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.hosts.create(
+  uid: "doctor_482",
+  name: "Dr. Ana Reyes",
+  email: "ana@example.com",
+  time_zone: "America/New_York",
+  attributes: {
+    licensed_in: %w[NY NJ]
+  },
+  locations: []
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**uid:** `String` — Your own id for this host, unique in the environment.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `String` — The host's name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email:** `String` — Where this host's notifications go. Not an identity, and need not be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**phone:** `String` — Where this host's SMS reminders go, in E.164.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_account:** `String` — The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locale:** `String` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Hosts::Types::CreateHostRequestAttributesValue]` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `Internal::Types::Array[Coss::Types::SchedulingHostLocation]` — This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Hosts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="/lib/Coss/scheduling/hosts/client.rb">get</a>(host:) -> Coss::Types::SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.hosts.get(host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Hosts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="/lib/Coss/scheduling/hosts/client.rb">remove</a>(host:) -> Coss::Types::DeletedSchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes the host and its schedules and calendars. Refused while bookings are still to come (`host_has_live_bookings`): cancel them, or set the host's status to `disabled`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.hosts.remove(host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Hosts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="/lib/Coss/scheduling/hosts/client.rb">update</a>(host:, request) -> Coss::Types::SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. A `disabled` host keeps its bookings but gets no new ones.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.hosts.update(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  status: "disabled"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `String` — Your own id for this host, unique in the environment.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `String` — The host's name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email:** `String` — Where this host's notifications go. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**phone:** `String` — Where this host's SMS reminders go, in E.164. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_account:** `String` — Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `String` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locale:** `String` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Hosts::Types::UpdateHostRequestAttributesValue]` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `Internal::Types::Array[Coss::Types::SchedulingHostLocation]` — Replaces this host's own locations. Existing bookings keep the location they have.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `Coss::Scheduling::Hosts::Types::UpdateHostRequestStatus` — A `disabled` host isn't offered. Its existing bookings stay.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Hosts::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Schedules
+<details><summary><code>client.scheduling.schedules.<a href="/lib/Coss/scheduling/schedules/client.rb">list</a>(host:) -> Coss::Types::SchedulingScheduleList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+All of the host's schedules, oldest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.schedules.list(host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Schedules::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="/lib/Coss/scheduling/schedules/client.rb">create</a>(host:, request) -> Coss::Types::SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host's weekly hours and date overrides, in local time. The first one is the host's default.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.schedules.create(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  name: "Clinic hours",
+  rules: [{
+    days: [1, 2, 3, 4, 5],
+    start: "09:00",
+    end_: "17:00"
+  }],
+  overrides: [{
+    date: "2027-12-24",
+    ranges: [{
+      start: "start",
+      end_: "end"
+    }]
+  }]
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Schedules::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="/lib/Coss/scheduling/schedules/client.rb">get</a>(host:, schedule_id:) -> Coss::Types::SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the host's schedules.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.schedules.get(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  schedule_id: "sched_01kd2m9a0b1c2d3e4f5g6h7j8m"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `String` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Schedules::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="/lib/Coss/scheduling/schedules/client.rb">update</a>(host:, schedule_id:, request) -> Coss::Types::SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces its weekly rules, and its overrides when given. Existing bookings stay: a schedule only decides what's offered next.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.schedules.update(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  schedule_id: "sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  name: "Clinic hours",
+  rules: [{
+    days: [1, 2, 3, 4, 5],
+    start: "09:00",
+    end_: "17:00"
+  }],
+  overrides: [{
+    date: "2027-12-24",
+    ranges: [{
+      start: "start",
+      end_: "end"
+    }]
+  }]
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `String` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Schedules::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="/lib/Coss/scheduling/schedules/client.rb">remove</a>(host:, schedule_id:) -> Coss::Types::DeletedSchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refused for the host's default schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.schedules.remove(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  schedule_id: "sched_01kd2m9a0b1c2d3e4f5g6h7j8m"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `String` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Schedules::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling EventTypes
+<details><summary><code>client.scheduling.event_types.<a href="/lib/Coss/scheduling/event_types/client.rb">list</a>() -> Coss::Types::SchedulingEventTypeList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's event types, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.event_types.list
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `String` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::EventTypes::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="/lib/Coss/scheduling/event_types/client.rb">create</a>(request) -> Coss::Types::SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What can be booked: `one_on_one` with one host, `pool` for any free host, `collective` when every required host must be free, or `group` for a session with seats.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.event_types.create(
+  kind: "one_on_one",
+  title: "Initial consultation",
+  duration_minutes: 30,
+  buffer_after_minutes: 10,
+  min_notice_minutes: 120,
+  hosts: [{
+    host: "doctor_482"
+  }]
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**uid:** `String` — Your own id for this event type, unique in the environment, accepted wherever its id is.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**kind:** `Coss::Scheduling::EventTypes::Types::CreateEventTypeRequestKind` — Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `String` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**title:** `String` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_options:** `Internal::Types::Array[Integer]` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**step_minutes:** `Integer` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**grid_time_zone:** `String` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_before_minutes:** `Integer` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_after_minutes:** `Integer` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**min_notice_minutes:** `Integer` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**booking_window:** `Coss::Types::SchedulingBookingWindow` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limits:** `Internal::Types::Array[Coss::Types::SchedulingLimit]` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**capacity:** `Integer` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requires_approval:** `Internal::Types::Boolean` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_ttl_minutes:** `Integer` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hold_ttl_seconds:** `Integer` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cancel_notice_minutes:** `Integer` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reschedule_notice_minutes:** `Integer` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_guests:** `Integer` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_active_bookings_per_attendee:** `Integer` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_calendar_details:** `Coss::Scheduling::EventTypes::Types::CreateEventTypeRequestHostCalendarDetails` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**questions:** `Internal::Types::Array[Coss::Types::SchedulingQuestion]` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `Internal::Types::Array[Coss::Types::SchedulingLocation]` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_filter:** `Internal::Types::Hash[String, Coss::Scheduling::EventTypes::Types::CreateEventTypeRequestHostFilterValue]` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `Internal::Types::Hash[String, Coss::Scheduling::EventTypes::Types::CreateEventTypeRequestNotificationsValue]` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `Internal::Types::Array[Coss::Types::SchedulingReminderInput]` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `Internal::Types::Array[Coss::Types::SchedulingEventTypeHostInput]` — Who can be booked. `one_on_one` and `group` take one; `collective` needs at least one `required` host.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::EventTypes::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="/lib/Coss/scheduling/event_types/client.rb">get</a>(event_type:) -> Coss::Types::SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An event type by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.event_types.get(event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::EventTypes::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="/lib/Coss/scheduling/event_types/client.rb">update</a>(event_type:, request) -> Coss::Types::SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. Existing bookings keep what they were booked with. Set `status` to `archived` to stop new bookings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.event_types.update(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  min_notice_minutes: 240
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `String` — Your own id for this event type. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `String` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**title:** `String` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_options:** `Internal::Types::Array[Integer]` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**step_minutes:** `Integer` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**grid_time_zone:** `String` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_before_minutes:** `Integer` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_after_minutes:** `Integer` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**min_notice_minutes:** `Integer` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**booking_window:** `Coss::Types::SchedulingBookingWindow` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limits:** `Internal::Types::Array[Coss::Types::SchedulingLimit]` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**capacity:** `Integer` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requires_approval:** `Internal::Types::Boolean` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_ttl_minutes:** `Integer` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hold_ttl_seconds:** `Integer` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cancel_notice_minutes:** `Integer` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reschedule_notice_minutes:** `Integer` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_guests:** `Integer` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_active_bookings_per_attendee:** `Integer` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_calendar_details:** `Coss::Scheduling::EventTypes::Types::UpdateEventTypeRequestHostCalendarDetails` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**questions:** `Internal::Types::Array[Coss::Types::SchedulingQuestion]` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `Internal::Types::Array[Coss::Types::SchedulingLocation]` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_filter:** `Internal::Types::Hash[String, Coss::Scheduling::EventTypes::Types::UpdateEventTypeRequestHostFilterValue]` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `Internal::Types::Hash[String, Coss::Scheduling::EventTypes::Types::UpdateEventTypeRequestNotificationsValue]` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `Internal::Types::Array[Coss::Types::SchedulingReminderInput]` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `Coss::Scheduling::EventTypes::Types::UpdateEventTypeRequestStatus` — `archived` stops new bookings, and keeps existing ones.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `Internal::Types::Array[Coss::Types::SchedulingEventTypeHostInput]` — Replaces the assigned hosts. Removed hosts keep their existing bookings.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::EventTypes::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Slots
+<details><summary><code>client.scheduling.slots.<a href="/lib/Coss/scheduling/slots/client.rb">list</a>(event_type:) -> Coss::Types::SchedulingSlotList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Starts an attendee can book between `start` and `end` (at most 62 days), as UTC instants to show in their own time zone. A host whose calendar can't be read isn't offered.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.slots.list(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  end_: "2027-01-04T15:00:00.000Z"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**end_:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — Only this host's slots (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `String` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Slots::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.slots.<a href="/lib/Coss/scheduling/slots/client.rb">explain</a>(event_type:) -> Coss::Types::SchedulingSlotExplanation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Why one start can or can't be booked right now, host by host, decided the same way a booking is. For support and debugging: it says when a host is busy, so don't show it to attendees.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.slots.explain(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `String` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Slots::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Availability
+<details><summary><code>client.scheduling.availability.<a href="/lib/Coss/scheduling/availability/client.rb">search</a>(request) -> Coss::Types::SchedulingAvailabilitySearchResult</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+For "who's free" pages: each matching host's soonest slots, soonest first, across up to 500 hosts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.availability.search(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T00:00:00.000Z",
+  end_: "2027-01-18T00:00:00.000Z",
+  attributes: {
+    licensed_in: "CA"
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**end_:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Availability::Types::AvailabilitySearchRequestAttributesValue]` — Only hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `Internal::Types::Array[String]` — Only these hosts (ids or uids). Default: everyone the event type could offer.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slots_per_host:** `Integer` — How many of each host's soonest slots to return.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Integer` — Hosts to return, soonest availability first.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Availability::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Bookings
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">list</a>() -> Coss::Types::SchedulingBookingList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's bookings, newest first. Answers aren't included.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.list(
+  start_after: "2027-01-04T15:00:00.000Z",
+  start_before: "2027-01-04T15:00:00.000Z"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `String` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**event_type:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `Coss::Scheduling::Bookings::Types::ListBookingsRequestStatus` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee_uid:** `String` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start_after:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start_before:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">create</a>(request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books a slot, or joins a group session. Without a `host`, a pool chooses fairly among those free. An event type that requires approval answers with a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.create(
+  idempotency_key: "welcome-user-123",
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  attendee: {
+    uid: "patient_77",
+    name: "Sam Lee",
+    email: "sam@example.com",
+    time_zone: "UTC"
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**idempotency_key:** `String` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Bookings::Types::CreateBookingRequestAttributesValue]` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `Coss::Types::SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**guests:** `Internal::Types::Array[Coss::Types::SchedulingGuestInput]` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**answers:** `Internal::Types::Hash[String, Coss::Scheduling::Bookings::Types::CreateBookingRequestAnswersValue]` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `Coss::Scheduling::Bookings::Types::CreateBookingRequestLocation` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">get</a>(id:) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A booking with its attendees and their answers.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.get(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">reschedule</a>(id:, request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves it to a new time, keeping its id. The old time stays booked if the new one isn't free.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.reschedule(
+  id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-05T15:00:00.000Z"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — The new start. The old time stays booked unless this one's free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — Move a pool booking to this host. Default: its current hosts.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">cancel</a>(id:, request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Frees the time and removes the calendar event. A cancelled booking stays charged.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.cancel(
+  id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  reason: "Feeling better"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reason:** `String` — Why it's being cancelled. Only retrieving this booking returns it: it's never in webhooks, logs or emails.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">events</a>(id:) -> Coss::Types::SchedulingBookingEventList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's happened to a booking, oldest first, and who did it. There's no personal data in here.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.events(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `String` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">approve</a>(id:) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Confirms a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.approve(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">decline</a>(id:) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refuses a `pending_approval` booking and frees the time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.decline(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">notifications</a>(id:) -> Coss::Types::SchedulingBookingNotificationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.notifications(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `Integer` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `String` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">mark_no_show</a>(id:) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Records that the attendee didn't come, once the booking has started.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.mark_no_show(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="/lib/Coss/scheduling/bookings/client.rb">update_location</a>(id:, request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Where it happens, such as the meeting link you made after the `scheduling.booking.confirmed` webhook.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.bookings.update_location(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `Coss::Types::SchedulingLocation` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Bookings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Holds
+<details><summary><code>client.scheduling.holds.<a href="/lib/Coss/scheduling/holds/client.rb">create</a>(request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Keeps a slot for a while (the event type's `hold_ttl_seconds`) so you can take payment, then confirm it. Answers with a `held` booking, which isn't charged and sends nothing.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.holds.create(
+  idempotency_key: "welcome-user-123",
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  attendee: {
+    uid: "patient_77",
+    time_zone: "UTC"
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**idempotency_key:** `String` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `String` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Holds::Types::CreateHoldRequestAttributesValue]` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `Integer` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `Coss::Types::SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**guests:** `Internal::Types::Array[Coss::Types::SchedulingGuestInput]` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**answers:** `Internal::Types::Hash[String, Coss::Scheduling::Holds::Types::CreateHoldRequestAnswersValue]` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `Coss::Scheduling::Holds::Types::CreateHoldRequestLocation` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `Internal::Types::Hash[String, String]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Holds::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.holds.<a href="/lib/Coss/scheduling/holds/client.rb">confirm</a>(id:, request) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns a hold into a booking. Always succeeds before the hold expires. Repeating it is safe.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.holds.confirm(
+  id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  if_still_free: true
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**if_still_free:** `Internal::Types::Boolean` — After the hold expired, book anyway if nobody else took the slot. Default: refuse with `hold_expired`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Holds::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.holds.<a href="/lib/Coss/scheduling/holds/client.rb">release</a>(id:) -> Coss::Types::SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives the slot back early.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.holds.release(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Holds::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Series
+<details><summary><code>client.scheduling.series.<a href="/lib/Coss/scheduling/series/client.rb">create</a>(request) -> Coss::Types::SchedulingSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books up to 52 occurrences, keeping the attendee's local time across DST changes. Each one is an ordinary booking that can move on its own, and a pool keeps one host throughout.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.series.create(
+  idempotency_key: "welcome-user-123",
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  attendee: {
+    uid: "patient_77",
+    time_zone: "America/New_York"
+  },
+  recurrence: {
+    frequency: "weekly",
+    interval: 1,
+    count: 12
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**idempotency_key:** `String` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::CreateSeriesRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Series::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.series.<a href="/lib/Coss/scheduling/series/client.rb">preview</a>(request) -> Coss::Types::SchedulingSeriesPreview</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Which occurrences would be free, without booking anything.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.series.preview(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  start: "2027-01-04T15:00:00.000Z",
+  attendee: {
+    uid: "patient_77",
+    time_zone: "America/New_York"
+  },
+  recurrence: {
+    frequency: "weekly",
+    interval: 1,
+    count: 12
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::CreateSeriesRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Series::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.series.<a href="/lib/Coss/scheduling/series/client.rb">cancel</a>(id:, request) -> Coss::Types::SchedulingCancelledSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Cancels the occurrences from `from_index` on, or all of them.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.series.cancel(
+  id: "series_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  from_index: 4
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The series' id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from_index:** `Integer` — Cancel this occurrence and those after it. Default: all of them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Series::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Attendees
+<details><summary><code>client.scheduling.attendees.<a href="/lib/Coss/scheduling/attendees/client.rb">erase</a>(uid:) -> Coss::Types::SchedulingAttendeeErasure</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this person's details and answers from every booking now, and ends any booker session fixed to them. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.attendees.erase(uid: "patient_77")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**uid:** `String` — Your id for the attendee.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Attendees::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.attendees.<a href="/lib/Coss/scheduling/attendees/client.rb">erase_by_email</a>(request) -> Coss::Types::SchedulingAttendeeErasureByEmail</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.attendees.erase_by_email(email: "sam@example.com")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**email:** `String` — The address to forget, an attendee's or a guest's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Attendees::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Calendars
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">authorize</a>(host:, request) -> Coss::Types::SchedulingCalendarAuthorization</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.authorize(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  provider: "google"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**provider:** `Coss::Scheduling::Calendars::Types::AuthorizeCalendarRequestProvider` — Whose consent page to open. CalDAV connects with a password instead.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**return_url:** `String` — Where to send the browser afterwards, on one of the environment's allowed origins. `coss_calendar` says what happened: `connected`, `denied` or `invalid`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">list</a>(host:) -> Coss::Types::SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With each connection's calendars and which of them count.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.list(host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">connect</a>(host:, request) -> Coss::Types::SchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+CalDAV (Apple and others) with an app password, or, in sandbox environments, a `simulated` calendar whose busy times you set yourself. Google and Microsoft use `authorize`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.connect(host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::CreateCalendarConnectionRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">disconnect</a>(host:, id:) -> Coss::Types::DeletedSchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Revokes coss.com's access and deletes every busy time read through it. One a calendar delegation manages is refused (`calendar_managed`).
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.disconnect(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  id: "calconn_01kd2m9a0b1c2d3e4f5g6h7j8m"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**id:** `String` — The connection's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">update</a>(host:, calendar_id:, request) -> Coss::Types::SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether its busy times block slots, and whether bookings are written to it.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.update(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  calendar_id: "cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  read_busy: true
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_id:** `String` — The calendar's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**read_busy:** `Internal::Types::Boolean` — Whether this calendar's busy times block slots.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**write_target:** `Internal::Types::Boolean` — Bookings are written to one calendar; setting this moves it here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="/lib/Coss/scheduling/calendars/client.rb">set_simulated_busy</a>(host:, request) -> </code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sandbox environments only: test how bookings react to a busy calendar.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendars.set_simulated_busy(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  intervals: [{
+    start: "2027-01-04T15:00:00.000Z",
+    end_: "2027-01-04T16:00:00.000Z"
+  }]
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**intervals:** `Internal::Types::Array[Coss::Scheduling::Calendars::Types::SetSimulatedBusyRequestIntervalsItem]` — The simulated calendar's busy times.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Calendars::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling CalendarDelegations
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">list</a>() -> Coss::Types::SchedulingCalendarDelegationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With how many hosts each has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.list
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">create</a>(request) -> Coss::Types::SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An admin authorizes once, and every host on the domain gets their calendar with no consent screen. It stays `pending`: authorize what it returns, then verify it. Credentials are never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.create
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `Coss::Types::CreateCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">get</a>(id:) -> Coss::Types::SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its status, what to authorize, and how many hosts it has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.get(id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">delete</a>(id:) -> Coss::Types::DeletedSchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its hosts lose these calendars within minutes. They stay bookable with no conflict check, and events already written stay on their calendars, out of reach of later moves or cancellations.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.delete(id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">update</a>(id:, request) -> Coss::Types::SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+New credentials are tried on the verified mailbox before they replace the old ones, and end an outage if they work.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.update(
+  id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  match_host_email: false
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**match_host_email:** `Internal::Types::Boolean` — Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**service_account_key:** `String` — A new key. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**client_secret:** `String` — A new client secret. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**secret_expires_at:** `String` — When the Entra client secret expires. Owners and admins are warned 14 days before.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="/lib/Coss/scheduling/calendar_delegations/client.rb">verify</a>(id:, request) -> Coss::Types::SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. Google can take up to 24 hours to apply a new authorization, so a refusal may just need time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.calendar_delegations.verify(
+  id: "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  account: "ana@example.com"
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**account:** `String` — A real mailbox on the domain to try. In Microsoft 365, a user principal name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::CalendarDelegations::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Sessions
+<details><summary><code>client.scheduling.sessions.<a href="/lib/Coss/scheduling/sessions/client.rb">create_for_host</a>(host:, request) -> Coss::Types::SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.sessions.create_for_host(
+  host: "host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  expires_in: 3600
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `String` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**expires_in:** `Integer` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**read_only:** `Internal::Types::Boolean` — The host can look but not change anything.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Sessions::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.sessions.<a href="/lib/Coss/scheduling/sessions/client.rb">create_for_booker</a>(request) -> Coss::Types::SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets a browser book one event type, on coss.com's hosted page or your own UI, without your API key.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.sessions.create_for_booker(
+  event_type: "evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+  attendee: {
+    uid: "patient_77",
+    name: "Sam Lee",
+    time_zone: "UTC"
+  }
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `String` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `String` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `Internal::Types::Hash[String, Coss::Scheduling::Sessions::Types::CreateSchedulingBookerSessionRequestAttributesValue]` — Only offer times, and book, among pool hosts matching all of these. The browser can't see or change them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `Coss::Scheduling::Sessions::Types::CreateSchedulingBookerSessionRequestAttendee` — Who's booking, if you already know: the browser then can't change it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**expires_in:** `Integer` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Sessions::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.sessions.<a href="/lib/Coss/scheduling/sessions/client.rb">create_for_booking</a>(id:) -> Coss::Types::SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets an attendee reschedule or cancel this one booking, within the event type's cutoffs. Stops working when the booking's cancelled, or a day after it ends.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.sessions.create_for_booking(id: "book_01kd2m9a0b1c2d3e4f5g6h7j8m")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `String` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Sessions::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Settings
+<details><summary><code>client.scheduling.settings.<a href="/lib/Coss/scheduling/settings/client.rb">get</a>() -> Coss::Types::SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's scheduling settings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.settings.get
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Settings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.settings.<a href="/lib/Coss/scheduling/settings/client.rb">update</a>(request) -> Coss::Types::SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.scheduling.settings.update(brand_name: "Acme Health")
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**allowed_origins:** `Internal::Types::Array[String]` — Sites allowed to embed coss.com's hosted pages and call the client API, as `https://host` origins.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**brand_name:** `String` — Your name on hosted pages and on emails sent from `email_from`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**accent_color:** `String` — The accent color as `#RRGGBB`. `null` restores the default.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**logo:** `Coss::Scheduling::Settings::Types::UpdateSchedulingSettingsRequestLogo` — Your logo, a PNG or JPEG. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_from:** `String` — Sender of booking emails, on a verified domain. `null`: coss.com's own address.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sms_from:** `String` — Your approved number for SMS reminders, in E.164. `null`: no SMS is sent.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_failure_mode:** `Coss::Scheduling::Settings::Types::UpdateSchedulingSettingsRequestCalendarFailureMode` — When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `Internal::Types::Hash[String, Coss::Scheduling::Settings::Types::UpdateSchedulingSettingsRequestNotificationsValue]` — Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_reply_to:** `String` — Where replies go, for emails from `email_from`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `Internal::Types::Array[Coss::Types::SchedulingReminderInput]` — What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Scheduling::Settings::RequestOptions` 
     
 </dd>
 </dl>
@@ -17647,6 +22797,20 @@ client.sign.documents.upload(
 <details><summary><code>client.sign.documents.<a href="/lib/Coss/sign/documents/client.rb">get</a>(id:) -> Coss::Types::SignDocument</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -17933,7 +23097,7 @@ client.sign.requests.create(
 <dl>
 <dd>
 
-**signers:** `Internal::Types::Array[Coss::Sign::Requests::Types::CreateSignRequestRequestSignersItem]` 
+**signers:** `Internal::Types::Array[Coss::Sign::Requests::Types::CreateSignRequestRequestSignersItem]` — Who signs, and what each fills.
     
 </dd>
 </dl>
@@ -17996,6 +23160,20 @@ client.sign.requests.create(
 <details><summary><code>client.sign.requests.<a href="/lib/Coss/sign/requests/client.rb">get</a>(id:) -> Coss::Types::SignRequest</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -18596,7 +23774,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**allowed_origins:** `Internal::Types::Array[String]` 
+**allowed_origins:** `Internal::Types::Array[String]` — Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
     
 </dd>
 </dl>
@@ -18604,7 +23782,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**display_name:** `String` 
+**display_name:** `String` — The requester's name signers see. `null`: the organization's name.
     
 </dd>
 </dl>
@@ -18612,7 +23790,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**accent_color:** `String` 
+**accent_color:** `String` — The signing page's accent color, as `#RRGGBB`. `null`: the default.
     
 </dd>
 </dl>
@@ -18620,7 +23798,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**theme:** `Coss::Sign::Settings::Types::UpdateSignSettingsRequestTheme` 
+**theme:** `Coss::Sign::Settings::Types::UpdateSignSettingsRequestTheme` — The signing page's theme. `system` follows the signer's device.
     
 </dd>
 </dl>
@@ -18628,7 +23806,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**disclosure:** `String` 
+**disclosure:** `String` — Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
     
 </dd>
 </dl>
@@ -18636,7 +23814,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**email_from:** `String` 
+**email_from:** `String` — Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
     
 </dd>
 </dl>
@@ -18644,7 +23822,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**reminder_interval_days:** `Integer` 
+**reminder_interval_days:** `Integer` — The default days between reminders for new requests. `null`: none.
     
 </dd>
 </dl>
@@ -18817,7 +23995,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the template.
     
 </dd>
 </dl>
@@ -18841,7 +24019,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**signing_order:** `Coss::Sign::Templates::Types::CreateSignTemplateRequestSigningOrder` 
+**signing_order:** `Coss::Sign::Templates::Types::CreateSignTemplateRequestSigningOrder` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -18849,7 +24027,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**documents:** `Internal::Types::Array[Coss::Sign::Templates::Types::CreateSignTemplateRequestDocumentsItem]` 
+**documents:** `Internal::Types::Array[Coss::Sign::Templates::Types::CreateSignTemplateRequestDocumentsItem]` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -18888,6 +24066,20 @@ client.sign.templates.create(
 <details><summary><code>client.sign.templates.<a href="/lib/Coss/sign/templates/client.rb">get</a>(id:) -> Coss::Types::SignTemplate</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -19048,7 +24240,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**name:** `String` 
+**name:** `String` — Your name for the template.
     
 </dd>
 </dl>
@@ -19072,7 +24264,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**signing_order:** `Coss::Sign::Templates::Types::UpdateSignTemplateRequestSigningOrder` 
+**signing_order:** `Coss::Sign::Templates::Types::UpdateSignTemplateRequestSigningOrder` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -19080,7 +24272,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**documents:** `Internal::Types::Array[Coss::Sign::Templates::Types::UpdateSignTemplateRequestDocumentsItem]` 
+**documents:** `Internal::Types::Array[Coss::Sign::Templates::Types::UpdateSignTemplateRequestDocumentsItem]` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -19198,7 +24390,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**message:** `String` 
+**message:** `String` — Default: the template's message.
     
 </dd>
 </dl>
@@ -19230,7 +24422,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**expires_at:** `String` 
+**expires_at:** `String` — When an unfinished request expires, at most 365 days ahead.
     
 </dd>
 </dl>
@@ -19246,7 +24438,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**reminder_interval_days:** `Integer` 
+**reminder_interval_days:** `Integer` — Days between reminders to email signers. Default: your Sign settings'. `null`: none.
     
 </dd>
 </dl>
@@ -19468,7 +24660,7 @@ client.sms.suppressions.add(phone_number: "+14155550199")
 <dl>
 <dd>
 
-**phone_number:** `String` 
+**phone_number:** `String` — The number to suppress, in E.164.
     
 </dd>
 </dl>
@@ -19491,6 +24683,20 @@ client.sms.suppressions.add(phone_number: "+14155550199")
 <details><summary><code>client.sms.suppressions.<a href="/lib/Coss/sms/suppressions/client.rb">check</a>() -> Coss::Types::SmsSuppressionCheck</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -19539,6 +24745,20 @@ client.sms.suppressions.check(phone_number: "phone_number")
 <details><summary><code>client.sms.suppressions.<a href="/lib/Coss/sms/suppressions/client.rb">get</a>(id:) -> Coss::Types::SmsSuppression</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the SMS suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -19753,6 +24973,20 @@ client.sms.received.list
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message received on a number of the organization and routed to the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -19841,6 +25075,174 @@ client.sms.numbers.list
 <dd>
 
 **request_options:** `Coss::Sms::Numbers::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Verify Settings
+<details><summary><code>client.verify.settings.<a href="/lib/Coss/verify/settings/client.rb">get</a>() -> Coss::Types::VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The API key's environment's settings, with defaults filled in: the name codes are sent for, code length, lifetime and attempts, the senders, and the countries SMS codes may go to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.verify.settings.get
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Verify::Settings::RequestOptions` 
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.verify.settings.<a href="/lib/Coss/verify/settings/client.rb">update</a>(request) -> Coss::Types::VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the fields given; the others keep their values. `sms_from` must be one of the organization's numbers, and a live key's `email_from` must be on one of its verified domains.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```ruby
+client.verify.settings.update(
+  sms_from: "+14155550100",
+  allowed_countries: %w[CA GB US]
+)
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**app_name:** `String` — The name codes are sent for; `null`: the project's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**code_length:** `Integer` — Digits in a code, 4-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttl_seconds:** `Integer` — How long a code works, 60-1800 s.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_attempts:** `Integer` — Wrong codes before a verification fails, 1-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sms_from:** `String` — One of the organization's numbers; `null`: coss.com's shared numbers.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_from:** `String` — An address on one of the organization's verified domains (live keys); `null`: coss.com's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**allowed_countries:** `Internal::Types::Array[String]` — ISO 3166 countries SMS codes may go to.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `Coss::Verify::Settings::RequestOptions` 
     
 </dd>
 </dl>

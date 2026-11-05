@@ -23,6 +23,9 @@ public record ReceivedEmailSummary : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required ReceivedEmailSummaryStatus Status { get; set; }
 
+    /// <summary>
+    /// Why it's `blocked`. `null`: it isn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("blocked_reason")]
     public ReceivedEmailSummaryBlockedReason? BlockedReason { get; set; }
@@ -58,6 +61,9 @@ public record ReceivedEmailSummary : IJsonOnDeserialized
     [JsonPropertyName("cc")]
     public IEnumerable<string> Cc { get; set; } = new List<string>();
 
+    /// <summary>
+    /// The `Subject` header. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("subject")]
     public string? Subject { get; set; }
@@ -69,6 +75,9 @@ public record ReceivedEmailSummary : IJsonOnDeserialized
     [JsonPropertyName("message_id")]
     public string? MessageId { get; set; }
 
+    /// <summary>
+    /// Its attachments, without their bytes.
+    /// </summary>
     [JsonPropertyName("attachments")]
     public IEnumerable<ReceivedEmailAttachment> Attachments { get; set; } =
         new List<ReceivedEmailAttachment>();
@@ -94,6 +103,9 @@ public record ReceivedEmailSummary : IJsonOnDeserialized
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
+    /// <summary>
+    /// When it arrived.
+    /// </summary>
     [JsonPropertyName("received_at")]
     public required DateTime ReceivedAt { get; set; }
 

@@ -458,18 +458,30 @@ public class AsyncRawVerifyClient {
         return future;
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<CossHttpResponse<Verification>> get(String id) {
         return get(id, GetVerifyRequest.builder().build());
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<CossHttpResponse<Verification>> get(String id, RequestOptions requestOptions) {
         return get(id, GetVerifyRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<CossHttpResponse<Verification>> get(String id, GetVerifyRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<CossHttpResponse<Verification>> get(
             String id, GetVerifyRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

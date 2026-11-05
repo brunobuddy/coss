@@ -36,6 +36,9 @@ public final class RiskCaptchaSignals {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether the request carried a token.
+     */
     @JsonProperty("provided")
     public boolean getProvided() {
         return provided;
@@ -89,6 +92,9 @@ public final class RiskCaptchaSignals {
     }
 
     public interface ProvidedStage {
+        /**
+         * <p>Whether the request carried a token.</p>
+         */
         _FinalStage provided(boolean provided);
 
         Builder from(RiskCaptchaSignals other);
@@ -131,6 +137,10 @@ public final class RiskCaptchaSignals {
             return this;
         }
 
+        /**
+         * <p>Whether the request carried a token.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("provided")
         public _FinalStage provided(boolean provided) {

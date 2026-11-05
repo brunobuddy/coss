@@ -55,16 +55,25 @@ public final class RiskCheckoutSignals {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The amount you sent, in the currency's smallest unit.
+     */
     @JsonProperty("amount")
     public long getAmount() {
         return amount;
     }
 
+    /**
+     * @return The currency you sent.
+     */
     @JsonProperty("currency")
     public String getCurrency() {
         return currency;
     }
 
+    /**
+     * @return The card's country. <code>null</code> when not given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("card_country")
     public OptionalNullable<String> getCardCountry() {
@@ -74,6 +83,9 @@ public final class RiskCheckoutSignals {
         return cardCountry;
     }
 
+    /**
+     * @return The card's funding type. <code>null</code> when not given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("card_funding")
     public OptionalNullable<RiskCheckoutSignalsCardFunding> getCardFunding() {
@@ -83,6 +95,9 @@ public final class RiskCheckoutSignals {
         return cardFunding;
     }
 
+    /**
+     * @return The billing country. <code>null</code> when not given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("billing_country")
     public OptionalNullable<String> getBillingCountry() {
@@ -92,6 +107,9 @@ public final class RiskCheckoutSignals {
         return billingCountry;
     }
 
+    /**
+     * @return The shipping country. <code>null</code> when not given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("shipping_country")
     public OptionalNullable<String> getShippingCountry() {
@@ -166,12 +184,18 @@ public final class RiskCheckoutSignals {
     }
 
     public interface AmountStage {
+        /**
+         * <p>The amount you sent, in the currency's smallest unit.</p>
+         */
         CurrencyStage amount(long amount);
 
         Builder from(RiskCheckoutSignals other);
     }
 
     public interface CurrencyStage {
+        /**
+         * <p>The currency you sent.</p>
+         */
         _FinalStage currency(@NotNull String currency);
     }
 
@@ -182,6 +206,9 @@ public final class RiskCheckoutSignals {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The card's country. <code>null</code> when not given.</p>
+         */
         _FinalStage cardCountry(OptionalNullable<String> cardCountry);
 
         _FinalStage cardCountry(String cardCountry);
@@ -190,6 +217,9 @@ public final class RiskCheckoutSignals {
 
         _FinalStage cardCountry(Nullable<String> cardCountry);
 
+        /**
+         * <p>The card's funding type. <code>null</code> when not given.</p>
+         */
         _FinalStage cardFunding(OptionalNullable<RiskCheckoutSignalsCardFunding> cardFunding);
 
         _FinalStage cardFunding(RiskCheckoutSignalsCardFunding cardFunding);
@@ -198,6 +228,9 @@ public final class RiskCheckoutSignals {
 
         _FinalStage cardFunding(Nullable<RiskCheckoutSignalsCardFunding> cardFunding);
 
+        /**
+         * <p>The billing country. <code>null</code> when not given.</p>
+         */
         _FinalStage billingCountry(OptionalNullable<String> billingCountry);
 
         _FinalStage billingCountry(String billingCountry);
@@ -206,6 +239,9 @@ public final class RiskCheckoutSignals {
 
         _FinalStage billingCountry(Nullable<String> billingCountry);
 
+        /**
+         * <p>The shipping country. <code>null</code> when not given.</p>
+         */
         _FinalStage shippingCountry(OptionalNullable<String> shippingCountry);
 
         _FinalStage shippingCountry(String shippingCountry);
@@ -245,6 +281,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The amount you sent, in the currency's smallest unit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("amount")
         public CurrencyStage amount(long amount) {
@@ -252,6 +292,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The currency you sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("currency")
         public _FinalStage currency(@NotNull String currency) {
@@ -259,6 +303,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The shipping country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage shippingCountry(Nullable<String> shippingCountry) {
             if (shippingCountry.isNull()) {
@@ -271,6 +319,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The shipping country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage shippingCountry(Optional<String> shippingCountry) {
             if (shippingCountry.isPresent()) {
@@ -281,12 +333,19 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The shipping country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage shippingCountry(String shippingCountry) {
             this.shippingCountry = OptionalNullable.of(shippingCountry);
             return this;
         }
 
+        /**
+         * <p>The shipping country. <code>null</code> when not given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "shipping_country", nulls = Nulls.SKIP)
         public _FinalStage shippingCountry(OptionalNullable<String> shippingCountry) {
@@ -294,6 +353,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The billing country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage billingCountry(Nullable<String> billingCountry) {
             if (billingCountry.isNull()) {
@@ -306,6 +369,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The billing country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage billingCountry(Optional<String> billingCountry) {
             if (billingCountry.isPresent()) {
@@ -316,12 +383,19 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The billing country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage billingCountry(String billingCountry) {
             this.billingCountry = OptionalNullable.of(billingCountry);
             return this;
         }
 
+        /**
+         * <p>The billing country. <code>null</code> when not given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "billing_country", nulls = Nulls.SKIP)
         public _FinalStage billingCountry(OptionalNullable<String> billingCountry) {
@@ -329,6 +403,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's funding type. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardFunding(Nullable<RiskCheckoutSignalsCardFunding> cardFunding) {
             if (cardFunding.isNull()) {
@@ -341,6 +419,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's funding type. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardFunding(Optional<RiskCheckoutSignalsCardFunding> cardFunding) {
             if (cardFunding.isPresent()) {
@@ -351,12 +433,19 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's funding type. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardFunding(RiskCheckoutSignalsCardFunding cardFunding) {
             this.cardFunding = OptionalNullable.of(cardFunding);
             return this;
         }
 
+        /**
+         * <p>The card's funding type. <code>null</code> when not given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "card_funding", nulls = Nulls.SKIP)
         public _FinalStage cardFunding(OptionalNullable<RiskCheckoutSignalsCardFunding> cardFunding) {
@@ -364,6 +453,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardCountry(Nullable<String> cardCountry) {
             if (cardCountry.isNull()) {
@@ -376,6 +469,10 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardCountry(Optional<String> cardCountry) {
             if (cardCountry.isPresent()) {
@@ -386,12 +483,19 @@ public final class RiskCheckoutSignals {
             return this;
         }
 
+        /**
+         * <p>The card's country. <code>null</code> when not given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage cardCountry(String cardCountry) {
             this.cardCountry = OptionalNullable.of(cardCountry);
             return this;
         }
 
+        /**
+         * <p>The card's country. <code>null</code> when not given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "card_country", nulls = Nulls.SKIP)
         public _FinalStage cardCountry(OptionalNullable<String> cardCountry) {

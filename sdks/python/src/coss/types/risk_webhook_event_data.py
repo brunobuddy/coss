@@ -12,19 +12,46 @@ from .risk_reason import RiskReason
 
 
 class RiskWebhookEventData(UniversalBaseModel):
-    assessment_id: str
+    """
+    The assessment, without its signals.
+    """
+
+    assessment_id: str = pydantic.Field()
+    """
+    The assessment's id.
+    """
+
     event: RiskEvent
-    event_name: typing.Optional[str] = None
+    event_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your name for a `custom` event. `null`: none.
+    """
+
     decision: RiskDecision
-    score: float
-    reasons: typing.List[RiskReason]
-    user_id: typing.Optional[str] = None
+    score: float = pydantic.Field()
+    """
+    0-1: how risky the signals are together.
+    """
+
+    reasons: typing.List[RiskReason] = pydantic.Field()
+    """
+    Why, most significant first.
+    """
+
+    user_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your user id. `null`: none given.
+    """
+
     outcome: typing.Optional[RiskOutcome] = pydantic.Field(default=None)
     """
     `risk.assessment.reviewed`: the outcome that resolved the review.
     """
 
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -38,16 +38,25 @@ public final class TemplateVariableFieldsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Used inside <code>{{#each}}</code> as <code>{{name}}</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return The field's type.
+     */
     @JsonProperty("type")
     public TemplateVariableFieldsItemType getType() {
         return type;
     }
 
+    /**
+     * @return Whether each item must have it.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
@@ -83,16 +92,25 @@ public final class TemplateVariableFieldsItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>Used inside <code>{{#each}}</code> as <code>{{name}}</code>.</p>
+         */
         TypeStage name(@NotNull String name);
 
         Builder from(TemplateVariableFieldsItem other);
     }
 
     public interface TypeStage {
+        /**
+         * <p>The field's type.</p>
+         */
         RequiredStage type(@NotNull TemplateVariableFieldsItemType type);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether each item must have it.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -125,6 +143,10 @@ public final class TemplateVariableFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Used inside <code>{{#each}}</code> as <code>{{name}}</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public TypeStage name(@NotNull String name) {
@@ -132,6 +154,10 @@ public final class TemplateVariableFieldsItem {
             return this;
         }
 
+        /**
+         * <p>The field's type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public RequiredStage type(@NotNull TemplateVariableFieldsItemType type) {
@@ -139,6 +165,10 @@ public final class TemplateVariableFieldsItem {
             return this;
         }
 
+        /**
+         * <p>Whether each item must have it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {

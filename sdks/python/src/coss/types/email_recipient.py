@@ -10,18 +10,29 @@ from .email_recipient_type import EmailRecipientType
 
 
 class EmailRecipient(UniversalBaseModel):
+    """
+    One recipient of an email and how delivery to them went.
+    """
+
     address: str = pydantic.Field()
     """
     The bare, lower-cased address.
     """
 
-    type: EmailRecipientType
+    type: EmailRecipientType = pydantic.Field()
+    """
+    Which list it's on: `to`, `cc` or `bcc`.
+    """
+
     status: EmailRecipientStatus = pydantic.Field()
     """
     Delivery status of this recipient. `suppressed` means the address is on the environment's suppression list (for every email or for this email's category), so it was skipped. `canceled` means the scheduled email was canceled before it was sent.
     """
 
-    last_event_at: typing.Optional[dt.datetime] = None
+    last_event_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When its latest delivery event happened. `null`: none yet.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

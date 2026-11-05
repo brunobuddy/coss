@@ -7,6 +7,8 @@ import com.coss.core.Nullable;
 import com.coss.core.NullableNonemptyFilter;
 import com.coss.core.ObjectMappers;
 import com.coss.core.OptionalNullable;
+import com.coss.resources.logdrains.types.CreateLogDrainRequestFormat;
+import com.coss.types.LogDrainAuthHeader;
 import com.coss.types.LogDrainSource;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -32,16 +34,24 @@ public final class CreateLogDrainRequest {
 
     private final Optional<List<LogDrainSource>> sources;
 
+    private final Optional<CreateLogDrainRequestFormat> format;
+
+    private final OptionalNullable<LogDrainAuthHeader> authHeader;
+
     private final Map<String, Object> additionalProperties;
 
     private CreateLogDrainRequest(
             String url,
             OptionalNullable<String> description,
             Optional<List<LogDrainSource>> sources,
+            Optional<CreateLogDrainRequestFormat> format,
+            OptionalNullable<LogDrainAuthHeader> authHeader,
             Map<String, Object> additionalProperties) {
         this.url = url;
         this.description = description;
         this.sources = sources;
+        this.format = format;
+        this.authHeader = authHeader;
         this.additionalProperties = additionalProperties;
     }
 
@@ -73,10 +83,33 @@ public final class CreateLogDrainRequest {
         return sources;
     }
 
+    /**
+     * @return How batches are encoded. <code>ndjson</code>: one JSON object per line (<code>application/x-ndjson</code>), for your own endpoint. <code>loki</code>: Loki's push API (<code>/loki/api/v1/push</code>, Grafana Cloud Logs). <code>datadog</code>: Datadog's log intake (<code>/api/v2/logs</code>). <code>otlp</code>: OTLP/HTTP logs in JSON (<code>/v1/logs</code>, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to <code>ndjson</code>.
+     */
+    @JsonProperty("format")
+    public Optional<CreateLogDrainRequestFormat> getFormat() {
+        return format;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("auth_header")
+    public OptionalNullable<LogDrainAuthHeader> getAuthHeader() {
+        if (authHeader == null) {
+            return OptionalNullable.absent();
+        }
+        return authHeader;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     private OptionalNullable<String> _getDescription() {
         return description;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("auth_header")
+    private OptionalNullable<LogDrainAuthHeader> _getAuthHeader() {
+        return authHeader;
     }
 
     @java.lang.Override
@@ -91,12 +124,16 @@ public final class CreateLogDrainRequest {
     }
 
     private boolean equalTo(CreateLogDrainRequest other) {
-        return url.equals(other.url) && description.equals(other.description) && sources.equals(other.sources);
+        return url.equals(other.url)
+                && description.equals(other.description)
+                && sources.equals(other.sources)
+                && format.equals(other.format)
+                && authHeader.equals(other.authHeader);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.url, this.description, this.sources);
+        return Objects.hash(this.url, this.description, this.sources, this.format, this.authHeader);
     }
 
     @java.lang.Override
@@ -141,11 +178,30 @@ public final class CreateLogDrainRequest {
         _FinalStage sources(Optional<List<LogDrainSource>> sources);
 
         _FinalStage sources(List<LogDrainSource> sources);
+
+        /**
+         * <p>How batches are encoded. <code>ndjson</code>: one JSON object per line (<code>application/x-ndjson</code>), for your own endpoint. <code>loki</code>: Loki's push API (<code>/loki/api/v1/push</code>, Grafana Cloud Logs). <code>datadog</code>: Datadog's log intake (<code>/api/v2/logs</code>). <code>otlp</code>: OTLP/HTTP logs in JSON (<code>/v1/logs</code>, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to <code>ndjson</code>.</p>
+         */
+        _FinalStage format(Optional<CreateLogDrainRequestFormat> format);
+
+        _FinalStage format(CreateLogDrainRequestFormat format);
+
+        _FinalStage authHeader(OptionalNullable<LogDrainAuthHeader> authHeader);
+
+        _FinalStage authHeader(LogDrainAuthHeader authHeader);
+
+        _FinalStage authHeader(Optional<LogDrainAuthHeader> authHeader);
+
+        _FinalStage authHeader(Nullable<LogDrainAuthHeader> authHeader);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder implements UrlStage, _FinalStage {
         private String url;
+
+        private OptionalNullable<LogDrainAuthHeader> authHeader = OptionalNullable.absent();
+
+        private Optional<CreateLogDrainRequestFormat> format = Optional.empty();
 
         private Optional<List<LogDrainSource>> sources = Optional.empty();
 
@@ -161,6 +217,8 @@ public final class CreateLogDrainRequest {
             url(other.getUrl());
             description(other.getDescription());
             sources(other.getSources());
+            format(other.getFormat());
+            authHeader(other.getAuthHeader());
             return this;
         }
 
@@ -172,6 +230,61 @@ public final class CreateLogDrainRequest {
         @JsonSetter("url")
         public _FinalStage url(@NotNull String url) {
             this.url = Objects.requireNonNull(url, "url must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage authHeader(Nullable<LogDrainAuthHeader> authHeader) {
+            if (authHeader.isNull()) {
+                this.authHeader = OptionalNullable.ofNull();
+            } else if (authHeader.isEmpty()) {
+                this.authHeader = OptionalNullable.absent();
+            } else {
+                this.authHeader = OptionalNullable.of(authHeader.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage authHeader(Optional<LogDrainAuthHeader> authHeader) {
+            if (authHeader.isPresent()) {
+                this.authHeader = OptionalNullable.of(authHeader.get());
+            } else {
+                this.authHeader = OptionalNullable.absent();
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage authHeader(LogDrainAuthHeader authHeader) {
+            this.authHeader = OptionalNullable.of(authHeader);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "auth_header", nulls = Nulls.SKIP)
+        public _FinalStage authHeader(OptionalNullable<LogDrainAuthHeader> authHeader) {
+            this.authHeader = authHeader;
+            return this;
+        }
+
+        /**
+         * <p>How batches are encoded. <code>ndjson</code>: one JSON object per line (<code>application/x-ndjson</code>), for your own endpoint. <code>loki</code>: Loki's push API (<code>/loki/api/v1/push</code>, Grafana Cloud Logs). <code>datadog</code>: Datadog's log intake (<code>/api/v2/logs</code>). <code>otlp</code>: OTLP/HTTP logs in JSON (<code>/v1/logs</code>, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to <code>ndjson</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        public _FinalStage format(CreateLogDrainRequestFormat format) {
+            this.format = Optional.ofNullable(format);
+            return this;
+        }
+
+        /**
+         * <p>How batches are encoded. <code>ndjson</code>: one JSON object per line (<code>application/x-ndjson</code>), for your own endpoint. <code>loki</code>: Loki's push API (<code>/loki/api/v1/push</code>, Grafana Cloud Logs). <code>datadog</code>: Datadog's log intake (<code>/api/v2/logs</code>). <code>otlp</code>: OTLP/HTTP logs in JSON (<code>/v1/logs</code>, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to <code>ndjson</code>.</p>
+         */
+        @java.lang.Override
+        @JsonSetter(value = "format", nulls = Nulls.SKIP)
+        public _FinalStage format(Optional<CreateLogDrainRequestFormat> format) {
+            this.format = format;
             return this;
         }
 
@@ -247,7 +360,7 @@ public final class CreateLogDrainRequest {
 
         @java.lang.Override
         public CreateLogDrainRequest build() {
-            return new CreateLogDrainRequest(url, description, sources, additionalProperties);
+            return new CreateLogDrainRequest(url, description, sources, format, authHeader, additionalProperties);
         }
 
         @java.lang.Override

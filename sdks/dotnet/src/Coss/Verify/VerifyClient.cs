@@ -10,7 +10,10 @@ public partial class VerifyClient : IVerifyClient
     internal VerifyClient(RawClient client)
     {
         _client = client;
+        Settings = new Coss.Verify.SettingsClient(_client);
     }
+
+    public Coss.Verify.ISettingsClient Settings { get; }
 
     private async Task<WithRawResponse<VerificationList>> ListAsyncCore(
         ListVerifyRequest request,
@@ -1020,6 +1023,9 @@ public partial class VerifyClient : IVerifyClient
         );
     }
 
+    /// <summary>
+    /// A verification's status and destination. Its code is never returned.
+    /// </summary>
     /// <example><code>
     /// await client.Verify.GetAsync(new GetVerifyRequest { Id = "vrf_01k8e2m4q2f3e9v6t5r1n0p8yz" });
     /// </code></example>

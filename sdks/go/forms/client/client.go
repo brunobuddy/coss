@@ -105,6 +105,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+//
 // Example:
 //
 //	request := &coss.GetFormsRequest{

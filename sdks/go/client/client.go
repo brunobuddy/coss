@@ -21,9 +21,10 @@ import (
 	option "github.com/cosscom/coss-go/option"
 	reputation "github.com/cosscom/coss-go/reputation"
 	riskclient "github.com/cosscom/coss-go/risk/client"
+	schedulingclient "github.com/cosscom/coss-go/scheduling/client"
 	signclient "github.com/cosscom/coss-go/sign/client"
 	smsclient "github.com/cosscom/coss-go/sms/client"
-	verify "github.com/cosscom/coss-go/verify"
+	verifyclient "github.com/cosscom/coss-go/verify/client"
 	webhookendpointsclient "github.com/cosscom/coss-go/webhookendpoints/client"
 	webhookevents "github.com/cosscom/coss-go/webhookevents"
 	webhooklisteners "github.com/cosscom/coss-go/webhooklisteners"
@@ -38,7 +39,7 @@ type Client struct {
 	WebhookListeners *webhooklisteners.Client
 	WebhookEvents    *webhookevents.Client
 	Sms              *smsclient.Client
-	Verify           *verify.Client
+	Verify           *verifyclient.Client
 	Forms            *formsclient.Client
 	Reputation       *reputation.Client
 	Logs             *logs.Client
@@ -48,6 +49,7 @@ type Client struct {
 	Inboxes          *inboxesclient.Client
 	Risk             *riskclient.Client
 	Hooks            *hooksclient.Client
+	Scheduling       *schedulingclient.Client
 	Sign             *signclient.Client
 
 	options *core.RequestOptions
@@ -73,7 +75,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		WebhookListeners: webhooklisteners.NewClient(options),
 		WebhookEvents:    webhookevents.NewClient(options),
 		Sms:              smsclient.NewClient(options),
-		Verify:           verify.NewClient(options),
+		Verify:           verifyclient.NewClient(options),
 		Forms:            formsclient.NewClient(options),
 		Reputation:       reputation.NewClient(options),
 		Logs:             logs.NewClient(options),
@@ -83,6 +85,7 @@ func NewClient(opts ...option.RequestOption) *Client {
 		Inboxes:          inboxesclient.NewClient(options),
 		Risk:             riskclient.NewClient(options),
 		Hooks:            hooksclient.NewClient(options),
+		Scheduling:       schedulingclient.NewClient(options),
 		Sign:             signclient.NewClient(options),
 		options:          options,
 		baseURL:          options.BaseURL,

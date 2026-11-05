@@ -43,11 +43,17 @@ public final class BillingPaymentMethod {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Its type, such as <code>card</code>.
+     */
     @JsonProperty("type")
     public String getType() {
         return type;
     }
 
+    /**
+     * @return The card's brand. <code>null</code> for other types.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("brand")
     public OptionalNullable<String> getBrand() {
@@ -57,6 +63,9 @@ public final class BillingPaymentMethod {
         return brand;
     }
 
+    /**
+     * @return The card's last four digits. <code>null</code> for other types.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last4")
     public OptionalNullable<String> getLast4() {
@@ -108,6 +117,9 @@ public final class BillingPaymentMethod {
     }
 
     public interface TypeStage {
+        /**
+         * <p>Its type, such as <code>card</code>.</p>
+         */
         _FinalStage type(@NotNull String type);
 
         Builder from(BillingPaymentMethod other);
@@ -120,6 +132,9 @@ public final class BillingPaymentMethod {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The card's brand. <code>null</code> for other types.</p>
+         */
         _FinalStage brand(OptionalNullable<String> brand);
 
         _FinalStage brand(String brand);
@@ -128,6 +143,9 @@ public final class BillingPaymentMethod {
 
         _FinalStage brand(Nullable<String> brand);
 
+        /**
+         * <p>The card's last four digits. <code>null</code> for other types.</p>
+         */
         _FinalStage last4(OptionalNullable<String> last4);
 
         _FinalStage last4(String last4);
@@ -158,6 +176,10 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>Its type, such as <code>card</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public _FinalStage type(@NotNull String type) {
@@ -165,6 +187,10 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's last four digits. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage last4(Nullable<String> last4) {
             if (last4.isNull()) {
@@ -177,6 +203,10 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's last four digits. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage last4(Optional<String> last4) {
             if (last4.isPresent()) {
@@ -187,12 +217,19 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's last four digits. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage last4(String last4) {
             this.last4 = OptionalNullable.of(last4);
             return this;
         }
 
+        /**
+         * <p>The card's last four digits. <code>null</code> for other types.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last4", nulls = Nulls.SKIP)
         public _FinalStage last4(OptionalNullable<String> last4) {
@@ -200,6 +237,10 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's brand. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage brand(Nullable<String> brand) {
             if (brand.isNull()) {
@@ -212,6 +253,10 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's brand. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage brand(Optional<String> brand) {
             if (brand.isPresent()) {
@@ -222,12 +267,19 @@ public final class BillingPaymentMethod {
             return this;
         }
 
+        /**
+         * <p>The card's brand. <code>null</code> for other types.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage brand(String brand) {
             this.brand = OptionalNullable.of(brand);
             return this;
         }
 
+        /**
+         * <p>The card's brand. <code>null</code> for other types.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "brand", nulls = Nulls.SKIP)
         public _FinalStage brand(OptionalNullable<String> brand) {

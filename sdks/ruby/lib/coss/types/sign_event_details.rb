@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What this event recorded, depending on its type.
     class SignEventDetails < Internal::Types::Model
       field :reason, -> { String }, optional: true, nullable: false
 

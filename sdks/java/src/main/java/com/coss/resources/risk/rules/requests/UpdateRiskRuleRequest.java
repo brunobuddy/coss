@@ -60,31 +60,49 @@ public final class UpdateRiskRuleRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the rule.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
     }
 
+    /**
+     * @return <code>false</code> keeps it, and stops applying it.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
     }
 
+    /**
+     * @return Rules are tried in ascending order.
+     */
     @JsonProperty("position")
     public Optional<Integer> getPosition() {
         return position;
     }
 
+    /**
+     * @return Events it applies to. Empty: every event.
+     */
     @JsonProperty("events")
     public Optional<List<RiskEvent>> getEvents() {
         return events;
     }
 
+    /**
+     * @return <code>all</code>: every condition must hold. <code>any</code>: one is enough.
+     */
     @JsonProperty("match")
     public Optional<UpdateRiskRuleRequestMatch> getMatch() {
         return match;
     }
 
+    /**
+     * @return What must hold, by <code>match</code>.
+     */
     @JsonProperty("conditions")
     public Optional<List<RiskRuleCondition>> getConditions() {
         return conditions;
@@ -163,6 +181,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the rule.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;
@@ -174,6 +195,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p><code>false</code> keeps it, and stops applying it.</p>
+         */
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public Builder enabled(Optional<Boolean> enabled) {
             this.enabled = enabled;
@@ -185,6 +209,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Rules are tried in ascending order.</p>
+         */
         @JsonSetter(value = "position", nulls = Nulls.SKIP)
         public Builder position(Optional<Integer> position) {
             this.position = position;
@@ -196,6 +223,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>Events it applies to. Empty: every event.</p>
+         */
         @JsonSetter(value = "events", nulls = Nulls.SKIP)
         public Builder events(Optional<List<RiskEvent>> events) {
             this.events = events;
@@ -207,6 +237,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p><code>all</code>: every condition must hold. <code>any</code>: one is enough.</p>
+         */
         @JsonSetter(value = "match", nulls = Nulls.SKIP)
         public Builder match(Optional<UpdateRiskRuleRequestMatch> match) {
             this.match = match;
@@ -218,6 +251,9 @@ public final class UpdateRiskRuleRequest {
             return this;
         }
 
+        /**
+         * <p>What must hold, by <code>match</code>.</p>
+         */
         @JsonSetter(value = "conditions", nulls = Nulls.SKIP)
         public Builder conditions(Optional<List<RiskRuleCondition>> conditions) {
             this.conditions = conditions;

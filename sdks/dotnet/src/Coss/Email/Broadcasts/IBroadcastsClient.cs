@@ -22,6 +22,9 @@ public partial interface IBroadcastsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One broadcast of the API key's environment, with its status and stats.
+    /// </summary>
     WithRawResponseTask<Broadcast> GetAsync(
         GetBroadcastsRequest request,
         RequestOptions? options = null,

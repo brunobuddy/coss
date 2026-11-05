@@ -9,6 +9,10 @@ from ....core.serialization import FieldMetadata
 
 
 class CreateFormRequestNotifications(UniversalBaseModel):
+    """
+    Emails about accepted submissions. Only the fields given change.
+    """
+
     recipients: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
     """
     Who gets an email for each accepted submission: members of your organization, or addresses on its verified domains.

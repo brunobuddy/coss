@@ -7,8 +7,19 @@ from ......core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class CreateBroadcastRequestTracking(UniversalBaseModel):
-    opens: typing.Optional[bool] = None
-    clicks: typing.Optional[bool] = None
+    """
+    Which opens and clicks are tracked.
+    """
+
+    opens: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Track opens with a pixel.
+    """
+
+    clicks: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Track clicks by rewriting links.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

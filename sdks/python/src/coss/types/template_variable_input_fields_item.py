@@ -8,9 +8,20 @@ from .template_variable_input_fields_item_type import TemplateVariableInputField
 
 
 class TemplateVariableInputFieldsItem(UniversalBaseModel):
-    name: str
-    type: TemplateVariableInputFieldsItemType
-    required: typing.Optional[bool] = None
+    name: str = pydantic.Field()
+    """
+    Used inside `{{#each}}` as `{{name}}`.
+    """
+
+    type: TemplateVariableInputFieldsItemType = pydantic.Field()
+    """
+    The field's type.
+    """
+
+    required: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Whether each item must have it. Defaults to true.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

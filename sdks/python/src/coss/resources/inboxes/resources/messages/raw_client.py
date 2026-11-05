@@ -220,6 +220,7 @@ class RawMessagesClient:
             The inbox's id.
 
         to : SendInboxMessageRequestTo
+            Who it goes to.
 
         subject : str
             The new thread's subject.
@@ -228,8 +229,10 @@ class RawMessagesClient:
             Makes the send safe to retry: a repeat with the same key and body returns the first message instead of sending again (keys are per inbox). 1-256 characters.
 
         cc : typing.Optional[SendInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -241,6 +244,7 @@ class RawMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[SendInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -703,8 +707,10 @@ class RawMessagesClient:
             Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default `false`: only the sender (its `Reply-To`, when it has one).
 
         cc : typing.Optional[ReplyInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[ReplyInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -716,6 +722,7 @@ class RawMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[ReplyInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1061,6 +1068,7 @@ class AsyncRawMessagesClient:
             The inbox's id.
 
         to : SendInboxMessageRequestTo
+            Who it goes to.
 
         subject : str
             The new thread's subject.
@@ -1069,8 +1077,10 @@ class AsyncRawMessagesClient:
             Makes the send safe to retry: a repeat with the same key and body returns the first message instead of sending again (keys are per inbox). 1-256 characters.
 
         cc : typing.Optional[SendInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -1082,6 +1092,7 @@ class AsyncRawMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[SendInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1545,8 +1556,10 @@ class AsyncRawMessagesClient:
             Also reply to everyone else on the message (its `to` and `cc`, but the inbox). Default `false`: only the sender (its `Reply-To`, when it has one).
 
         cc : typing.Optional[ReplyInboxMessageRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[ReplyInboxMessageRequestBcc]
+            Who it's blind copied to.
 
         text : typing.Optional[str]
             Plain-text body. Without it, an `html` email goes out with a text part generated from the HTML.
@@ -1558,6 +1571,7 @@ class AsyncRawMessagesClient:
             Up to 20 files, at most 25 MB combined.
 
         tags : typing.Optional[typing.Sequence[ReplyInboxMessageRequestTagsItem]]
+            Your tags on the email.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

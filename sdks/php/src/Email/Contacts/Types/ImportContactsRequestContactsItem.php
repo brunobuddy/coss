@@ -16,13 +16,13 @@ class ImportContactsRequestContactsItem extends JsonSerializableType
     public string $email;
 
     /**
-     * @var ?string $firstName
+     * @var ?string $firstName Their first name.
      */
     #[JsonProperty('first_name')]
     public ?string $firstName;
 
     /**
-     * @var ?string $lastName
+     * @var ?string $lastName Their last name.
      */
     #[JsonProperty('last_name')]
     public ?string $lastName;

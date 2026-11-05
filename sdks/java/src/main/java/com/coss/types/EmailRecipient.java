@@ -56,6 +56,9 @@ public final class EmailRecipient {
         return address;
     }
 
+    /**
+     * @return Which list it's on: <code>to</code>, <code>cc</code> or <code>bcc</code>.
+     */
     @JsonProperty("type")
     public EmailRecipientType getType() {
         return type;
@@ -69,6 +72,9 @@ public final class EmailRecipient {
         return status;
     }
 
+    /**
+     * @return When its latest delivery event happened. <code>null</code>: none yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_event_at")
     public OptionalNullable<OffsetDateTime> getLastEventAt() {
@@ -126,6 +132,9 @@ public final class EmailRecipient {
     }
 
     public interface TypeStage {
+        /**
+         * <p>Which list it's on: <code>to</code>, <code>cc</code> or <code>bcc</code>.</p>
+         */
         StatusStage type(@NotNull EmailRecipientType type);
     }
 
@@ -143,6 +152,9 @@ public final class EmailRecipient {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When its latest delivery event happened. <code>null</code>: none yet.</p>
+         */
         _FinalStage lastEventAt(OptionalNullable<OffsetDateTime> lastEventAt);
 
         _FinalStage lastEventAt(OffsetDateTime lastEventAt);
@@ -187,6 +199,10 @@ public final class EmailRecipient {
             return this;
         }
 
+        /**
+         * <p>Which list it's on: <code>to</code>, <code>cc</code> or <code>bcc</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public StatusStage type(@NotNull EmailRecipientType type) {
@@ -205,6 +221,10 @@ public final class EmailRecipient {
             return this;
         }
 
+        /**
+         * <p>When its latest delivery event happened. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastEventAt(Nullable<OffsetDateTime> lastEventAt) {
             if (lastEventAt.isNull()) {
@@ -217,6 +237,10 @@ public final class EmailRecipient {
             return this;
         }
 
+        /**
+         * <p>When its latest delivery event happened. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastEventAt(Optional<OffsetDateTime> lastEventAt) {
             if (lastEventAt.isPresent()) {
@@ -227,12 +251,19 @@ public final class EmailRecipient {
             return this;
         }
 
+        /**
+         * <p>When its latest delivery event happened. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastEventAt(OffsetDateTime lastEventAt) {
             this.lastEventAt = OptionalNullable.of(lastEventAt);
             return this;
         }
 
+        /**
+         * <p>When its latest delivery event happened. <code>null</code>: none yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_event_at", nulls = Nulls.SKIP)
         public _FinalStage lastEventAt(OptionalNullable<OffsetDateTime> lastEventAt) {

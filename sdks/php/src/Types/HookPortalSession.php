@@ -22,7 +22,7 @@ class HookPortalSession extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $applicationId
+     * @var string $applicationId The id of the application this session manages.
      */
     #[JsonProperty('application_id')]
     public string $applicationId;
@@ -40,13 +40,13 @@ class HookPortalSession extends JsonSerializableType
     public string $token;
 
     /**
-     * @var bool $readOnly
+     * @var bool $readOnly Whether the user can only look.
      */
     #[JsonProperty('read_only')]
     public bool $readOnly;
 
     /**
-     * @var DateTime $expiresAt
+     * @var DateTime $expiresAt When the session stops working.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $expiresAt;

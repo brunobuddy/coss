@@ -122,6 +122,8 @@ class SubmissionsClient
     }
 
     /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     *
      * Example:
      * ```php
      * $client->forms->submissions->get(

@@ -88,8 +88,10 @@ class EventTypesClient:
         Parameters
         ----------
         name : str
+            The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
 
         description : typing.Optional[str]
+            What this event means, shown to your users.
 
         schema : typing.Optional[typing.Dict[str, typing.Any]]
             A JSON Schema of the payload, shown to your users (not enforced).
@@ -207,6 +209,7 @@ class EventTypesClient:
             The event type's name.
 
         description : typing.Optional[str]
+            What this event means, shown to your users. `null` removes it.
 
         schema : typing.Optional[typing.Dict[str, typing.Any]]
             A JSON Schema of the payload, shown to your users (not enforced).
@@ -332,8 +335,10 @@ class AsyncEventTypesClient:
         Parameters
         ----------
         name : str
+            The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
 
         description : typing.Optional[str]
+            What this event means, shown to your users.
 
         schema : typing.Optional[typing.Dict[str, typing.Any]]
             A JSON Schema of the payload, shown to your users (not enforced).
@@ -475,6 +480,7 @@ class AsyncEventTypesClient:
             The event type's name.
 
         description : typing.Optional[str]
+            What this event means, shown to your users. `null` removes it.
 
         schema : typing.Optional[typing.Dict[str, typing.Any]]
             A JSON Schema of the payload, shown to your users (not enforced).

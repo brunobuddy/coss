@@ -17,9 +17,15 @@ public record EmailEvent : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The email's id.
+    /// </summary>
     [JsonPropertyName("email_id")]
     public required string EmailId { get; set; }
 
+    /// <summary>
+    /// What happened, such as `email.delivered` or `email.bounced`.
+    /// </summary>
     [JsonPropertyName("type")]
     public required EmailEventType Type { get; set; }
 
@@ -30,6 +36,9 @@ public record EmailEvent : IJsonOnDeserialized
     [JsonPropertyName("recipient")]
     public string? Recipient { get; set; }
 
+    /// <summary>
+    /// When it happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 

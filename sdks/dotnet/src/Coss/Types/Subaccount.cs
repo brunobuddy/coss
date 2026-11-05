@@ -24,9 +24,15 @@ public record Subaccount : IJsonOnDeserialized
     [JsonPropertyName("uid")]
     public string? Uid { get; set; }
 
+    /// <summary>
+    /// Your name for it.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// Your own key-value pairs.
+    /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
 

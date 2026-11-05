@@ -82,21 +82,33 @@ public final class SmsNumber {
         return id;
     }
 
+    /**
+     * @return The number, in E.164.
+     */
     @JsonProperty("phone_number")
     public String getPhoneNumber() {
         return phoneNumber;
     }
 
+    /**
+     * @return <code>local</code> (US A2P 10DLC) or <code>toll_free</code> (toll-free verification, and sends only to the US and Canada).
+     */
     @JsonProperty("kind")
     public SmsNumberKind getKind() {
         return kind;
     }
 
+    /**
+     * @return Its country (ISO 3166-1 alpha-2).
+     */
     @JsonProperty("country")
     public String getCountry() {
         return country;
     }
 
+    /**
+     * @return <code>pending</code>: not ready yet. <code>active</code>: ready, once its registration is approved. <code>releasing</code>: being given up.
+     */
     @JsonProperty("status")
     public SmsNumberStatus getStatus() {
         return status;
@@ -200,18 +212,30 @@ public final class SmsNumber {
     }
 
     public interface PhoneNumberStage {
+        /**
+         * <p>The number, in E.164.</p>
+         */
         KindStage phoneNumber(@NotNull String phoneNumber);
     }
 
     public interface KindStage {
+        /**
+         * <p><code>local</code> (US A2P 10DLC) or <code>toll_free</code> (toll-free verification, and sends only to the US and Canada).</p>
+         */
         CountryStage kind(@NotNull SmsNumberKind kind);
     }
 
     public interface CountryStage {
+        /**
+         * <p>Its country (ISO 3166-1 alpha-2).</p>
+         */
         StatusStage country(@NotNull String country);
     }
 
     public interface StatusStage {
+        /**
+         * <p><code>pending</code>: not ready yet. <code>active</code>: ready, once its registration is approved. <code>releasing</code>: being given up.</p>
+         */
         CanSendStage status(@NotNull SmsNumberStatus status);
     }
 
@@ -318,6 +342,10 @@ public final class SmsNumber {
             return this;
         }
 
+        /**
+         * <p>The number, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("phone_number")
         public KindStage phoneNumber(@NotNull String phoneNumber) {
@@ -325,6 +353,10 @@ public final class SmsNumber {
             return this;
         }
 
+        /**
+         * <p><code>local</code> (US A2P 10DLC) or <code>toll_free</code> (toll-free verification, and sends only to the US and Canada).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("kind")
         public CountryStage kind(@NotNull SmsNumberKind kind) {
@@ -332,6 +364,10 @@ public final class SmsNumber {
             return this;
         }
 
+        /**
+         * <p>Its country (ISO 3166-1 alpha-2).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("country")
         public StatusStage country(@NotNull String country) {
@@ -339,6 +375,10 @@ public final class SmsNumber {
             return this;
         }
 
+        /**
+         * <p><code>pending</code>: not ready yet. <code>active</code>: ready, once its registration is approved. <code>releasing</code>: being given up.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public CanSendStage status(@NotNull SmsNumberStatus status) {

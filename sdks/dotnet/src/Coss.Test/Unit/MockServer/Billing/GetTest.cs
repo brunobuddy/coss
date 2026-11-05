@@ -64,6 +64,11 @@ public class GetTest : BaseMockServerTest
               },
               "credit_remaining": 1000000,
               "spend_limit": 1000000,
+              "credit_limit": {
+                "limit": 1000000,
+                "used": 1000000,
+                "charge_threshold": 1000000
+              },
               "payment_method": {
                 "type": "type",
                 "brand": "brand",
@@ -160,6 +165,11 @@ public class GetTest : BaseMockServerTest
               },
               "credit_remaining": 0,
               "spend_limit": null,
+              "credit_limit": {
+                "limit": 50000,
+                "used": 2300,
+                "charge_threshold": 10000
+              },
               "payment_method": {
                 "type": "card",
                 "brand": "visa",

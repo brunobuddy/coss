@@ -14,6 +14,9 @@ public record RenderedEmailTemplate : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RenderedEmailTemplateObject Object { get; set; }
 
+    /// <summary>
+    /// The template's id.
+    /// </summary>
     [JsonPropertyName("template_id")]
     public required string TemplateId { get; set; }
 
@@ -30,13 +33,22 @@ public record RenderedEmailTemplate : IJsonOnDeserialized
     [JsonPropertyName("locale")]
     public required string Locale { get; set; }
 
+    /// <summary>
+    /// The rendered subject.
+    /// </summary>
     [JsonPropertyName("subject")]
     public required string Subject { get; set; }
 
+    /// <summary>
+    /// The rendered HTML. `null`: the template has none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("html")]
     public string? Html { get; set; }
 
+    /// <summary>
+    /// The rendered plain text. `null`: the template has none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("text")]
     public string? Text { get; set; }

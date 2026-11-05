@@ -177,6 +177,7 @@ func (c CreateRiskLimitBucketRequestOnFailure) Ptr() *CreateRiskLimitBucketReque
 	return &c
 }
 
+// The answer while coss.com can't count: `allow` or `deny`.
 type UpdateRiskLimitBucketRequestOnFailure string
 
 const (
@@ -209,11 +210,15 @@ var (
 
 type UpdateRiskLimitBucketRequest struct {
 	// The bucket's id.
-	ID            string                                 `json:"-" url:"-"`
-	Limit         *int                                   `json:"limit,omitempty" url:"-"`
-	PeriodSeconds *int                                   `json:"period_seconds,omitempty" url:"-"`
-	Burst         *int                                   `json:"burst,omitempty" url:"-"`
-	OnFailure     *UpdateRiskLimitBucketRequestOnFailure `json:"on_failure,omitempty" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Tokens added per `period_seconds`.
+	Limit *int `json:"limit,omitempty" url:"-"`
+	// How many seconds `limit` tokens take to be added.
+	PeriodSeconds *int `json:"period_seconds,omitempty" url:"-"`
+	// The bucket's size: how many requests a key can make at once.
+	Burst *int `json:"burst,omitempty" url:"-"`
+	// The answer while coss.com can't count: `allow` or `deny`.
+	OnFailure *UpdateRiskLimitBucketRequestOnFailure `json:"on_failure,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

@@ -14,6 +14,8 @@ var (
 	createLogDrainRequestFieldURL         = big.NewInt(1 << 0)
 	createLogDrainRequestFieldDescription = big.NewInt(1 << 1)
 	createLogDrainRequestFieldSources     = big.NewInt(1 << 2)
+	createLogDrainRequestFieldFormat      = big.NewInt(1 << 3)
+	createLogDrainRequestFieldAuthHeader  = big.NewInt(1 << 4)
 )
 
 type CreateLogDrainRequest struct {
@@ -23,6 +25,9 @@ type CreateLogDrainRequest struct {
 	Description *string `json:"description,omitempty" url:"-"`
 	// What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
 	Sources []LogDrainSource `json:"sources,omitempty" url:"-"`
+	// How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+	Format     *CreateLogDrainRequestFormat `json:"format,omitempty" url:"-"`
+	AuthHeader *LogDrainAuthHeader          `json:"auth_header,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -56,6 +61,20 @@ func (c *CreateLogDrainRequest) SetDescription(description *string) {
 func (c *CreateLogDrainRequest) SetSources(sources []LogDrainSource) {
 	c.Sources = sources
 	c.require(createLogDrainRequestFieldSources)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateLogDrainRequest) SetFormat(format *CreateLogDrainRequestFormat) {
+	c.Format = format
+	c.require(createLogDrainRequestFieldFormat)
+}
+
+// SetAuthHeader sets the AuthHeader field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (c *CreateLogDrainRequest) SetAuthHeader(authHeader *LogDrainAuthHeader) {
+	c.AuthHeader = authHeader
+	c.require(createLogDrainRequestFieldAuthHeader)
 }
 
 func (c *CreateLogDrainRequest) UnmarshalJSON(data []byte) error {
@@ -278,34 +297,43 @@ var (
 	logDrainFieldURL            = big.NewInt(1 << 2)
 	logDrainFieldDescription    = big.NewInt(1 << 3)
 	logDrainFieldSources        = big.NewInt(1 << 4)
-	logDrainFieldEnabled        = big.NewInt(1 << 5)
-	logDrainFieldDisabledReason = big.NewInt(1 << 6)
-	logDrainFieldDisabledAt     = big.NewInt(1 << 7)
-	logDrainFieldCreatedAt      = big.NewInt(1 << 8)
-	logDrainFieldUpdatedAt      = big.NewInt(1 << 9)
+	logDrainFieldFormat         = big.NewInt(1 << 5)
+	logDrainFieldAuthHeaderName = big.NewInt(1 << 6)
+	logDrainFieldEnabled        = big.NewInt(1 << 7)
+	logDrainFieldDisabledReason = big.NewInt(1 << 8)
+	logDrainFieldDisabledAt     = big.NewInt(1 << 9)
+	logDrainFieldCreatedAt      = big.NewInt(1 << 10)
+	logDrainFieldUpdatedAt      = big.NewInt(1 << 11)
 )
 
 // logDrainNullableFields maps the wire names of LogDrain's nullable fields (required or optional) to their field bits.
 var logDrainNullableFields = map[string]*big.Int{
-	"description":     logDrainFieldDescription,
-	"disabled_reason": logDrainFieldDisabledReason,
-	"disabled_at":     logDrainFieldDisabledAt,
+	"description":      logDrainFieldDescription,
+	"auth_header_name": logDrainFieldAuthHeaderName,
+	"disabled_reason":  logDrainFieldDisabledReason,
+	"disabled_at":      logDrainFieldDisabledAt,
 }
 
 type LogDrain struct {
-	Object      LogDrainObject `json:"object" url:"object"`
-	ID          string         `json:"id" url:"id"`
-	URL         string         `json:"url" url:"url"`
-	Description *string        `json:"description,omitempty" url:"description,omitempty"`
+	Object LogDrainObject `json:"object" url:"object"`
+	ID     string         `json:"id" url:"id"`
+	// Where batches are posted.
+	URL string `json:"url" url:"url"`
+	// Your note about it. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later.
 	Sources []LogDrainSource `json:"sources" url:"sources"`
+	Format  LogDrainFormat   `json:"format" url:"format"`
+	// The header sent with every batch to authenticate it (e.g. `Authorization`, `DD-API-KEY`), or `null`. Its value is never returned.
+	AuthHeaderName *string `json:"auth_header_name,omitempty" url:"auth_header_name,omitempty"`
 	// A disabled drain receives nothing, and lines logged while it is disabled are not kept for it.
 	Enabled bool `json:"enabled" url:"enabled"`
 	// `manual`: someone disabled it. `failing`: a batch failed every attempt, so coss.com disabled it. `null` while enabled.
 	DisabledReason *LogDrainDisabledReason `json:"disabled_reason,omitempty" url:"disabled_reason,omitempty"`
-	DisabledAt     *time.Time              `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
-	CreatedAt      time.Time               `json:"created_at" url:"created_at"`
-	UpdatedAt      time.Time               `json:"updated_at" url:"updated_at"`
+	// When it was disabled. `null` while enabled.
+	DisabledAt *time.Time `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at" url:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at" url:"updated_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -347,6 +375,20 @@ func (l *LogDrain) GetSources() []LogDrainSource {
 		return nil
 	}
 	return l.Sources
+}
+
+func (l *LogDrain) GetFormat() LogDrainFormat {
+	if l == nil {
+		return ""
+	}
+	return l.Format
+}
+
+func (l *LogDrain) GetAuthHeaderName() *string {
+	if l == nil {
+		return nil
+	}
+	return l.AuthHeaderName
 }
 
 func (l *LogDrain) GetEnabled() bool {
@@ -433,6 +475,20 @@ func (l *LogDrain) SetDescription(description *string) {
 func (l *LogDrain) SetSources(sources []LogDrainSource) {
 	l.Sources = sources
 	l.require(logDrainFieldSources)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrain) SetFormat(format LogDrainFormat) {
+	l.Format = format
+	l.require(logDrainFieldFormat)
+}
+
+// SetAuthHeaderName sets the AuthHeaderName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrain) SetAuthHeaderName(authHeaderName *string) {
+	l.AuthHeaderName = authHeaderName
+	l.require(logDrainFieldAuthHeaderName)
 }
 
 // SetEnabled sets the Enabled field and marks it as non-optional;
@@ -535,6 +591,111 @@ func (l *LogDrain) String() string {
 	return fmt.Sprintf("%#v", l)
 }
 
+var (
+	logDrainAuthHeaderFieldName  = big.NewInt(1 << 0)
+	logDrainAuthHeaderFieldValue = big.NewInt(1 << 1)
+)
+
+// A header sent with every batch, for intake APIs that take a key: `Authorization` (`Basic …`, `Bearer …`), `DD-API-KEY`… Its value is stored encrypted and never returned. `null` removes it.
+type LogDrainAuthHeader struct {
+	// The header's name.
+	Name string `json:"name" url:"name"`
+	// The header's value. Encrypted, and never returned.
+	Value string `json:"value" url:"value"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (l *LogDrainAuthHeader) GetName() string {
+	if l == nil {
+		return ""
+	}
+	return l.Name
+}
+
+func (l *LogDrainAuthHeader) GetValue() string {
+	if l == nil {
+		return ""
+	}
+	return l.Value
+}
+
+func (l *LogDrainAuthHeader) GetExtraProperties() map[string]interface{} {
+	if l == nil {
+		return nil
+	}
+	return l.extraProperties
+}
+
+func (l *LogDrainAuthHeader) require(field *big.Int) {
+	next := new(big.Int)
+	if l.explicitFields != nil {
+		next.Set(l.explicitFields)
+	}
+	next.Or(next, field)
+	l.explicitFields = next
+}
+
+// SetName sets the Name field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrainAuthHeader) SetName(name string) {
+	l.Name = name
+	l.require(logDrainAuthHeaderFieldName)
+}
+
+// SetValue sets the Value field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrainAuthHeader) SetValue(value string) {
+	l.Value = value
+	l.require(logDrainAuthHeaderFieldValue)
+}
+
+func (l *LogDrainAuthHeader) UnmarshalJSON(data []byte) error {
+	type unmarshaler LogDrainAuthHeader
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*l = LogDrainAuthHeader(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *l)
+	if err != nil {
+		return err
+	}
+	l.extraProperties = extraProperties
+	l.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (l *LogDrainAuthHeader) MarshalJSON() ([]byte, error) {
+	type embed LogDrainAuthHeader
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*l),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, l.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (l *LogDrainAuthHeader) String() string {
+	if l == nil {
+		return "<nil>"
+	}
+	if len(l.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(l.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(l); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", l)
+}
+
 // `manual`: someone disabled it. `failing`: a batch failed every attempt, so coss.com disabled it. `null` while enabled.
 type LogDrainDisabledReason string
 
@@ -555,6 +716,35 @@ func NewLogDrainDisabledReasonFromString(s string) (LogDrainDisabledReason, erro
 }
 
 func (l LogDrainDisabledReason) Ptr() *LogDrainDisabledReason {
+	return &l
+}
+
+// How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…).
+type LogDrainFormat string
+
+const (
+	LogDrainFormatNdjson  LogDrainFormat = "ndjson"
+	LogDrainFormatLoki    LogDrainFormat = "loki"
+	LogDrainFormatDatadog LogDrainFormat = "datadog"
+	LogDrainFormatOtlp    LogDrainFormat = "otlp"
+)
+
+func NewLogDrainFormatFromString(s string) (LogDrainFormat, error) {
+	switch s {
+	case "ndjson":
+		return LogDrainFormatNdjson, nil
+	case "loki":
+		return LogDrainFormatLoki, nil
+	case "datadog":
+		return LogDrainFormatDatadog, nil
+	case "otlp":
+		return LogDrainFormatOtlp, nil
+	}
+	var t LogDrainFormat
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (l LogDrainFormat) Ptr() *LogDrainFormat {
 	return &l
 }
 
@@ -718,16 +908,17 @@ func (l LogDrainObject) Ptr() *LogDrainObject {
 type LogDrainSource string
 
 const (
-	LogDrainSourceAPI     LogDrainSource = "api"
-	LogDrainSourceEmail   LogDrainSource = "email"
-	LogDrainSourceWebhook LogDrainSource = "webhook"
-	LogDrainSourceRisk    LogDrainSource = "risk"
-	LogDrainSourceSMTP    LogDrainSource = "smtp"
-	LogDrainSourceSms     LogDrainSource = "sms"
-	LogDrainSourceSign    LogDrainSource = "sign"
-	LogDrainSourceVerify  LogDrainSource = "verify"
-	LogDrainSourceForms   LogDrainSource = "forms"
-	LogDrainSourceAudit   LogDrainSource = "audit"
+	LogDrainSourceAPI        LogDrainSource = "api"
+	LogDrainSourceEmail      LogDrainSource = "email"
+	LogDrainSourceWebhook    LogDrainSource = "webhook"
+	LogDrainSourceRisk       LogDrainSource = "risk"
+	LogDrainSourceSMTP       LogDrainSource = "smtp"
+	LogDrainSourceSms        LogDrainSource = "sms"
+	LogDrainSourceSign       LogDrainSource = "sign"
+	LogDrainSourceVerify     LogDrainSource = "verify"
+	LogDrainSourceForms      LogDrainSource = "forms"
+	LogDrainSourceScheduling LogDrainSource = "scheduling"
+	LogDrainSourceAudit      LogDrainSource = "audit"
 )
 
 func NewLogDrainSourceFromString(s string) (LogDrainSource, error) {
@@ -750,6 +941,8 @@ func NewLogDrainSourceFromString(s string) (LogDrainSource, error) {
 		return LogDrainSourceVerify, nil
 	case "forms":
 		return LogDrainSourceForms, nil
+	case "scheduling":
+		return LogDrainSourceScheduling, nil
 	case "audit":
 		return LogDrainSourceAudit, nil
 	}
@@ -767,35 +960,44 @@ var (
 	logDrainWithSecretFieldURL            = big.NewInt(1 << 2)
 	logDrainWithSecretFieldDescription    = big.NewInt(1 << 3)
 	logDrainWithSecretFieldSources        = big.NewInt(1 << 4)
-	logDrainWithSecretFieldEnabled        = big.NewInt(1 << 5)
-	logDrainWithSecretFieldDisabledReason = big.NewInt(1 << 6)
-	logDrainWithSecretFieldDisabledAt     = big.NewInt(1 << 7)
-	logDrainWithSecretFieldCreatedAt      = big.NewInt(1 << 8)
-	logDrainWithSecretFieldUpdatedAt      = big.NewInt(1 << 9)
-	logDrainWithSecretFieldSecret         = big.NewInt(1 << 10)
+	logDrainWithSecretFieldFormat         = big.NewInt(1 << 5)
+	logDrainWithSecretFieldAuthHeaderName = big.NewInt(1 << 6)
+	logDrainWithSecretFieldEnabled        = big.NewInt(1 << 7)
+	logDrainWithSecretFieldDisabledReason = big.NewInt(1 << 8)
+	logDrainWithSecretFieldDisabledAt     = big.NewInt(1 << 9)
+	logDrainWithSecretFieldCreatedAt      = big.NewInt(1 << 10)
+	logDrainWithSecretFieldUpdatedAt      = big.NewInt(1 << 11)
+	logDrainWithSecretFieldSecret         = big.NewInt(1 << 12)
 )
 
 // logDrainWithSecretNullableFields maps the wire names of LogDrainWithSecret's nullable fields (required or optional) to their field bits.
 var logDrainWithSecretNullableFields = map[string]*big.Int{
-	"description":     logDrainWithSecretFieldDescription,
-	"disabled_reason": logDrainWithSecretFieldDisabledReason,
-	"disabled_at":     logDrainWithSecretFieldDisabledAt,
+	"description":      logDrainWithSecretFieldDescription,
+	"auth_header_name": logDrainWithSecretFieldAuthHeaderName,
+	"disabled_reason":  logDrainWithSecretFieldDisabledReason,
+	"disabled_at":      logDrainWithSecretFieldDisabledAt,
 }
 
 type LogDrainWithSecret struct {
-	Object      LogDrainWithSecretObject `json:"object" url:"object"`
-	ID          string                   `json:"id" url:"id"`
-	URL         string                   `json:"url" url:"url"`
-	Description *string                  `json:"description,omitempty" url:"description,omitempty"`
+	Object LogDrainWithSecretObject `json:"object" url:"object"`
+	ID     string                   `json:"id" url:"id"`
+	// Where batches are posted.
+	URL string `json:"url" url:"url"`
+	// Your note about it. `null`: none.
+	Description *string `json:"description,omitempty" url:"description,omitempty"`
 	// What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later.
 	Sources []LogDrainSource `json:"sources" url:"sources"`
+	Format  LogDrainFormat   `json:"format" url:"format"`
+	// The header sent with every batch to authenticate it (e.g. `Authorization`, `DD-API-KEY`), or `null`. Its value is never returned.
+	AuthHeaderName *string `json:"auth_header_name,omitempty" url:"auth_header_name,omitempty"`
 	// A disabled drain receives nothing, and lines logged while it is disabled are not kept for it.
 	Enabled bool `json:"enabled" url:"enabled"`
 	// `manual`: someone disabled it. `failing`: a batch failed every attempt, so coss.com disabled it. `null` while enabled.
 	DisabledReason *LogDrainWithSecretDisabledReason `json:"disabled_reason,omitempty" url:"disabled_reason,omitempty"`
-	DisabledAt     *time.Time                        `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
-	CreatedAt      time.Time                         `json:"created_at" url:"created_at"`
-	UpdatedAt      time.Time                         `json:"updated_at" url:"updated_at"`
+	// When it was disabled. `null` while enabled.
+	DisabledAt *time.Time `json:"disabled_at,omitempty" url:"disabled_at,omitempty"`
+	CreatedAt  time.Time  `json:"created_at" url:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at" url:"updated_at"`
 	// The drain's `whsec_…` signing secret, used to verify the batches coss.com sends. Returned only when the drain is created — store it now; it cannot be read back through the API.
 	Secret string `json:"secret" url:"secret"`
 
@@ -839,6 +1041,20 @@ func (l *LogDrainWithSecret) GetSources() []LogDrainSource {
 		return nil
 	}
 	return l.Sources
+}
+
+func (l *LogDrainWithSecret) GetFormat() LogDrainFormat {
+	if l == nil {
+		return ""
+	}
+	return l.Format
+}
+
+func (l *LogDrainWithSecret) GetAuthHeaderName() *string {
+	if l == nil {
+		return nil
+	}
+	return l.AuthHeaderName
 }
 
 func (l *LogDrainWithSecret) GetEnabled() bool {
@@ -932,6 +1148,20 @@ func (l *LogDrainWithSecret) SetDescription(description *string) {
 func (l *LogDrainWithSecret) SetSources(sources []LogDrainSource) {
 	l.Sources = sources
 	l.require(logDrainWithSecretFieldSources)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrainWithSecret) SetFormat(format LogDrainFormat) {
+	l.Format = format
+	l.require(logDrainWithSecretFieldFormat)
+}
+
+// SetAuthHeaderName sets the AuthHeaderName field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (l *LogDrainWithSecret) SetAuthHeaderName(authHeaderName *string) {
+	l.AuthHeaderName = authHeaderName
+	l.require(logDrainWithSecretFieldAuthHeaderName)
 }
 
 // SetEnabled sets the Enabled field and marks it as non-optional;
@@ -1083,12 +1313,43 @@ func (l LogDrainWithSecretObject) Ptr() *LogDrainWithSecretObject {
 	return &l
 }
 
+// How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+type CreateLogDrainRequestFormat string
+
+const (
+	CreateLogDrainRequestFormatNdjson  CreateLogDrainRequestFormat = "ndjson"
+	CreateLogDrainRequestFormatLoki    CreateLogDrainRequestFormat = "loki"
+	CreateLogDrainRequestFormatDatadog CreateLogDrainRequestFormat = "datadog"
+	CreateLogDrainRequestFormatOtlp    CreateLogDrainRequestFormat = "otlp"
+)
+
+func NewCreateLogDrainRequestFormatFromString(s string) (CreateLogDrainRequestFormat, error) {
+	switch s {
+	case "ndjson":
+		return CreateLogDrainRequestFormatNdjson, nil
+	case "loki":
+		return CreateLogDrainRequestFormatLoki, nil
+	case "datadog":
+		return CreateLogDrainRequestFormatDatadog, nil
+	case "otlp":
+		return CreateLogDrainRequestFormatOtlp, nil
+	}
+	var t CreateLogDrainRequestFormat
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (c CreateLogDrainRequestFormat) Ptr() *CreateLogDrainRequestFormat {
+	return &c
+}
+
 var (
 	updateLogDrainRequestFieldID          = big.NewInt(1 << 0)
 	updateLogDrainRequestFieldURL         = big.NewInt(1 << 1)
 	updateLogDrainRequestFieldDescription = big.NewInt(1 << 2)
 	updateLogDrainRequestFieldSources     = big.NewInt(1 << 3)
-	updateLogDrainRequestFieldEnabled     = big.NewInt(1 << 4)
+	updateLogDrainRequestFieldFormat      = big.NewInt(1 << 4)
+	updateLogDrainRequestFieldAuthHeader  = big.NewInt(1 << 5)
+	updateLogDrainRequestFieldEnabled     = big.NewInt(1 << 6)
 )
 
 type UpdateLogDrainRequest struct {
@@ -1099,8 +1360,11 @@ type UpdateLogDrainRequest struct {
 	// A note for your own reference. `null` clears it.
 	Description *string `json:"description,omitempty" url:"-"`
 	// What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later.
-	Sources []LogDrainSource `json:"sources,omitempty" url:"-"`
-	Enabled *bool            `json:"enabled,omitempty" url:"-"`
+	Sources    []LogDrainSource    `json:"sources,omitempty" url:"-"`
+	Format     *LogDrainFormat     `json:"format,omitempty" url:"-"`
+	AuthHeader *LogDrainAuthHeader `json:"auth_header,omitempty" url:"-"`
+	// `false` disables it, and `true` enables it again.
+	Enabled *bool `json:"enabled,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1141,6 +1405,20 @@ func (u *UpdateLogDrainRequest) SetDescription(description *string) {
 func (u *UpdateLogDrainRequest) SetSources(sources []LogDrainSource) {
 	u.Sources = sources
 	u.require(updateLogDrainRequestFieldSources)
+}
+
+// SetFormat sets the Format field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateLogDrainRequest) SetFormat(format *LogDrainFormat) {
+	u.Format = format
+	u.require(updateLogDrainRequestFieldFormat)
+}
+
+// SetAuthHeader sets the AuthHeader field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *UpdateLogDrainRequest) SetAuthHeader(authHeader *LogDrainAuthHeader) {
+	u.AuthHeader = authHeader
+	u.require(updateLogDrainRequestFieldAuthHeader)
 }
 
 // SetEnabled sets the Enabled field and marks it as non-optional;

@@ -20,6 +20,7 @@ import com.coss.errors.ContentTooLargeError;
 import com.coss.errors.ForbiddenError;
 import com.coss.errors.InternalServerError;
 import com.coss.errors.NotFoundError;
+import com.coss.errors.PaymentRequiredError;
 import com.coss.errors.ServiceUnavailableError;
 import com.coss.errors.TooManyRequestsError;
 import com.coss.errors.UnauthorizedError;
@@ -231,6 +232,9 @@ public class RawRequestsClient {
                     case 401:
                         throw new UnauthorizedError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
+                    case 402:
+                        throw new PaymentRequiredError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
                     case 403:
                         throw new ForbiddenError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
@@ -269,18 +273,30 @@ public class RawRequestsClient {
         }
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CossHttpResponse<SignRequest> get(String id) {
         return get(id, GetRequestsRequest.builder().build());
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CossHttpResponse<SignRequest> get(String id, RequestOptions requestOptions) {
         return get(id, GetRequestsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CossHttpResponse<SignRequest> get(String id, GetRequestsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * A signature request with its documents, signers and fields, and <code>signed_document</code> once it's sealed.
+     */
     public CossHttpResponse<SignRequest> get(String id, GetRequestsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -524,6 +540,9 @@ public class RawRequestsClient {
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
                     case 401:
                         throw new UnauthorizedError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
+                    case 402:
+                        throw new PaymentRequiredError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class), response);
                     case 403:
                         throw new ForbiddenError(

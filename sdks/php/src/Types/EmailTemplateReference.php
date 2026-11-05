@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class EmailTemplateReference extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The template's id.
      */
     #[JsonProperty('id')]
     public string $id;
@@ -20,7 +20,7 @@ class EmailTemplateReference extends JsonSerializableType
     public ?int $version;
 
     /**
-     * @var string $locale
+     * @var string $locale The locale the email was rendered in.
      */
     #[JsonProperty('locale')]
     public string $locale;

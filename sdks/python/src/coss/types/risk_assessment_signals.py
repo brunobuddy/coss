@@ -15,22 +15,49 @@ from .risk_velocity_signals import RiskVelocitySignals
 
 
 class RiskAssessmentSignals(UniversalBaseModel):
-    email: typing.Optional[RiskEmailSignals] = None
-    ip: typing.Optional[RiskIpSignals] = None
+    """
+    What the assessment saw, by group. A group is `null` when it had nothing to go on.
+    """
+
+    email: typing.Optional[RiskEmailSignals] = pydantic.Field(default=None)
+    """
+    What the address says. `null`: no email was given.
+    """
+
+    ip: typing.Optional[RiskIpSignals] = pydantic.Field(default=None)
+    """
+    What the IP address says. `null`: none was given.
+    """
+
     velocity: typing.Optional[RiskVelocitySignals] = pydantic.Field(default=None)
     """
     `null` when velocity was unavailable (see `degraded`).
     """
 
-    captcha: typing.Optional[RiskCaptchaSignals] = None
-    login: typing.Optional[RiskLoginSignals] = None
+    captcha: typing.Optional[RiskCaptchaSignals] = pydantic.Field(default=None)
+    """
+    How the captcha went. `null`: no captcha applied.
+    """
+
+    login: typing.Optional[RiskLoginSignals] = pydantic.Field(default=None)
+    """
+    Whether a login is new for this user. `null`: not a login of a user with history.
+    """
+
     content: typing.Optional[RiskContentSignals] = pydantic.Field(default=None)
     """
     `null` when no content was given or it couldn't be classified.
     """
 
-    checkout: typing.Optional[RiskCheckoutSignals] = None
-    device: typing.Optional[RiskDeviceSignals] = None
+    checkout: typing.Optional[RiskCheckoutSignals] = pydantic.Field(default=None)
+    """
+    What you sent in `checkout`. `null`: not given.
+    """
+
+    device: typing.Optional[RiskDeviceSignals] = pydantic.Field(default=None)
+    """
+    What the device token said. `null`: none was given.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

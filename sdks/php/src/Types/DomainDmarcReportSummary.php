@@ -8,58 +8,61 @@ use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\Date;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * What the aggregate reports of this period say.
+ */
 class DomainDmarcReportSummary extends JsonSerializableType
 {
     /**
-     * @var DateTime $periodStart
+     * @var DateTime $periodStart When the period starts.
      */
     #[JsonProperty('period_start'), Date(Date::TYPE_DATETIME)]
     public DateTime $periodStart;
 
     /**
-     * @var DateTime $periodEnd
+     * @var DateTime $periodEnd When the period ends.
      */
     #[JsonProperty('period_end'), Date(Date::TYPE_DATETIME)]
     public DateTime $periodEnd;
 
     /**
-     * @var int $reports
+     * @var int $reports Reports received.
      */
     #[JsonProperty('reports')]
     public int $reports;
 
     /**
-     * @var int $messages
+     * @var int $messages Messages they cover.
      */
     #[JsonProperty('messages')]
     public int $messages;
 
     /**
-     * @var int $passing
+     * @var int $passing Of those, how many passed DMARC.
      */
     #[JsonProperty('passing')]
     public int $passing;
 
     /**
-     * @var int $cossMessages
+     * @var int $cossMessages Of those, how many were sent through coss.com.
      */
     #[JsonProperty('coss_messages')]
     public int $cossMessages;
 
     /**
-     * @var int $cossPassing
+     * @var int $cossPassing Of those, how many passed DMARC.
      */
     #[JsonProperty('coss_passing')]
     public int $cossPassing;
 
     /**
-     * @var ?DateTime $firstReportAt
+     * @var ?DateTime $firstReportAt When the first report arrived. `null`: none yet.
      */
     #[JsonProperty('first_report_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $firstReportAt;
 
     /**
-     * @var ?DateTime $lastReportAt
+     * @var ?DateTime $lastReportAt When the latest report arrived. `null`: none yet.
      */
     #[JsonProperty('last_report_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastReportAt;

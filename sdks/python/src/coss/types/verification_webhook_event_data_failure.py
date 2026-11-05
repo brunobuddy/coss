@@ -7,8 +7,19 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class VerificationWebhookEventDataFailure(UniversalBaseModel):
-    code: str
-    message: str
+    """
+    Why it `failed`. `null` otherwise.
+    """
+
+    code: str = pydantic.Field()
+    """
+    Machine-readable reason.
+    """
+
+    message: str = pydantic.Field()
+    """
+    Human-readable explanation.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

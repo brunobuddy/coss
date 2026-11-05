@@ -21,6 +21,9 @@ public partial interface ILimitBucketsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+    /// </summary>
     WithRawResponseTask<RiskLimitBucket> GetAsync(
         GetLimitBucketsRequest request,
         RequestOptions? options = null,

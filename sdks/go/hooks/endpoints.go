@@ -23,8 +23,9 @@ var (
 
 type CreateHookEndpointRequest struct {
 	// The application's `id` (`happ_…`) or your `uid` for it.
-	Application string  `json:"-" url:"-"`
-	URL         string  `json:"url" url:"-"`
+	Application string `json:"-" url:"-"`
+	URL         string `json:"url" url:"-"`
+	// Your note about it.
 	Description *string `json:"description,omitempty" url:"-"`
 	// Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
 	FilterTypes []string `json:"filter_types,omitempty" url:"-"`
@@ -34,7 +35,8 @@ type CreateHookEndpointRequest struct {
 	RateLimitPerSecond *int `json:"rate_limit_per_second,omitempty" url:"-"`
 	// Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 	Metadata map[string]string `json:"metadata,omitempty" url:"-"`
-	Enabled  *bool             `json:"enabled,omitempty" url:"-"`
+	// Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
+	Enabled *bool `json:"enabled,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -541,7 +543,8 @@ type SendHookTestRequest struct {
 	Application string `json:"-" url:"-"`
 	// The endpoint's id.
 	EndpointID string `json:"-" url:"-"`
-	EventType  string `json:"event_type" url:"-"`
+	// The event type to send as.
+	EventType string `json:"event_type" url:"-"`
 	// Defaults to the event type's first example.
 	Payload map[string]any `json:"payload,omitempty" url:"-"`
 
@@ -648,8 +651,10 @@ type UpdateHookEndpointRequest struct {
 	// The application's `id` (`happ_…`) or your `uid` for it.
 	Application string `json:"-" url:"-"`
 	// The endpoint's id.
-	EndpointID  string  `json:"-" url:"-"`
-	URL         *string `json:"url,omitempty" url:"-"`
+	EndpointID string `json:"-" url:"-"`
+	// Where deliveries are sent.
+	URL *string `json:"url,omitempty" url:"-"`
+	// Your note about it. `null` removes it.
 	Description *string `json:"description,omitempty" url:"-"`
 	// Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
 	FilterTypes []string `json:"filter_types,omitempty" url:"-"`
@@ -657,7 +662,8 @@ type UpdateHookEndpointRequest struct {
 	RateLimitPerSecond *int `json:"rate_limit_per_second,omitempty" url:"-"`
 	// Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 	Metadata map[string]string `json:"metadata,omitempty" url:"-"`
-	Enabled  *bool             `json:"enabled,omitempty" url:"-"`
+	// `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
+	Enabled *bool `json:"enabled,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

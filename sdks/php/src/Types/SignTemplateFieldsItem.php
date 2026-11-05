@@ -14,67 +14,67 @@ class SignTemplateFieldsItem extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $role
+     * @var string $role The `key` of the role that fills it.
      */
     #[JsonProperty('role')]
     public string $role;
 
     /**
-     * @var string $documentId
+     * @var string $documentId The id of the document it's on.
      */
     #[JsonProperty('document_id')]
     public string $documentId;
 
     /**
-     * @var value-of<SignTemplateFieldsItemType> $type
+     * @var value-of<SignTemplateFieldsItemType> $type What the field takes, as on a signature request.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var int $page
+     * @var int $page 1-based page number.
      */
     #[JsonProperty('page')]
     public int $page;
 
     /**
-     * @var float $x
+     * @var float $x Left edge, in PDF points from the page's left.
      */
     #[JsonProperty('x')]
     public float $x;
 
     /**
-     * @var float $y
+     * @var float $y Top edge, in PDF points from the page's top.
      */
     #[JsonProperty('y')]
     public float $y;
 
     /**
-     * @var float $width
+     * @var float $width In PDF points.
      */
     #[JsonProperty('width')]
     public float $width;
 
     /**
-     * @var float $height
+     * @var float $height In PDF points.
      */
     #[JsonProperty('height')]
     public float $height;
 
     /**
-     * @var bool $required
+     * @var bool $required Whether a signer can finish with it empty.
      */
     #[JsonProperty('required')]
     public bool $required;
 
     /**
-     * @var ?string $label
+     * @var ?string $label Shown to the signer. `null`: none.
      */
     #[JsonProperty('label')]
     public ?string $label;
 
     /**
-     * @var ?string $mergeKey
+     * @var ?string $mergeKey `text` fields: which `merge_fields` value fills it. `null`: the signer fills it.
      */
     #[JsonProperty('merge_key')]
     public ?string $mergeKey;

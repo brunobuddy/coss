@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class SendEmailRequestTagsItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The tag's name, unique on the email.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $value
+     * @var string $value The tag's value.
      */
     #[JsonProperty('value')]
     public string $value;

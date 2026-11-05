@@ -8,7 +8,11 @@ from .update_risk_settings_request_captcha_provider import UpdateRiskSettingsReq
 
 
 class UpdateRiskSettingsRequestCaptcha(UniversalBaseModel):
-    provider: UpdateRiskSettingsRequestCaptchaProvider
+    provider: UpdateRiskSettingsRequestCaptchaProvider = pydantic.Field()
+    """
+    The captcha provider.
+    """
+
     secret: typing.Optional[str] = pydantic.Field(default=None)
     """
     The provider's secret key. Required when setting a provider for the first time or changing it; stored encrypted and never returned.

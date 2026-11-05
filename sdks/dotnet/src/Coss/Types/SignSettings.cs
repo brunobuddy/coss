@@ -27,10 +27,16 @@ public record SignSettings : IJsonOnDeserialized
     [JsonPropertyName("display_name")]
     public string? DisplayName { get; set; }
 
+    /// <summary>
+    /// The signing page's accent color, as `#RRGGBB`. `null`: the default.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("accent_color")]
     public string? AccentColor { get; set; }
 
+    /// <summary>
+    /// The signing page's theme. `system` follows the signer's device.
+    /// </summary>
     [JsonPropertyName("theme")]
     public required SignSettingsTheme Theme { get; set; }
 

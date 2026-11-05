@@ -14,6 +14,9 @@ public record BillingOverview : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required BillingOverviewObject Object { get; set; }
 
+    /// <summary>
+    /// The organization's id.
+    /// </summary>
     [JsonPropertyName("organization_id")]
     public required string OrganizationId { get; set; }
 
@@ -50,6 +53,9 @@ public record BillingOverview : IJsonOnDeserialized
     public IEnumerable<BillingOverviewHoldsItem> Holds { get; set; } =
         new List<BillingOverviewHoldsItem>();
 
+    /// <summary>
+    /// Always `usd`.
+    /// </summary>
     [JsonPropertyName("currency")]
     public required BillingOverviewCurrency Currency { get; set; }
 
@@ -59,6 +65,9 @@ public record BillingOverview : IJsonOnDeserialized
     [JsonPropertyName("period")]
     public required BillingOverviewPeriod Period { get; set; }
 
+    /// <summary>
+    /// This month's usage per meter.
+    /// </summary>
     [JsonPropertyName("usage")]
     public IEnumerable<BillingOverviewUsageItem> Usage { get; set; } =
         new List<BillingOverviewUsageItem>();
@@ -82,6 +91,16 @@ public record BillingOverview : IJsonOnDeserialized
     [JsonPropertyName("spend_limit")]
     public long? SpendLimit { get; set; }
 
+    /// <summary>
+    /// Where the organization stands against its credit limit; `null`: it has none.
+    /// </summary>
+    [Nullable]
+    [JsonPropertyName("credit_limit")]
+    public BillingOverviewCreditLimit? CreditLimit { get; set; }
+
+    /// <summary>
+    /// The payment method on file. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("payment_method")]
     public BillingOverviewPaymentMethod? PaymentMethod { get; set; }
@@ -93,6 +112,9 @@ public record BillingOverview : IJsonOnDeserialized
     public IEnumerable<BillingOverviewAddOnsItem> AddOns { get; set; } =
         new List<BillingOverviewAddOnsItem>();
 
+    /// <summary>
+    /// Which features the plan includes.
+    /// </summary>
     [JsonPropertyName("features")]
     public required BillingOverviewFeatures Features { get; set; }
 

@@ -17,11 +17,31 @@ from .invoice_status import InvoiceStatus
 class Invoice(UniversalBaseModel):
     object: InvoiceObject
     id: str
-    number: typing.Optional[str] = None
-    kind: InvoiceKind
-    status: InvoiceStatus
-    currency: InvoiceCurrency
-    period: InvoicePeriod
+    number: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The invoice number. `null` until it's finalized.
+    """
+
+    kind: InvoiceKind = pydantic.Field()
+    """
+    `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
+    """
+
+    status: InvoiceStatus = pydantic.Field()
+    """
+    `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
+    """
+
+    currency: InvoiceCurrency = pydantic.Field()
+    """
+    Always `usd`.
+    """
+
+    period: InvoicePeriod = pydantic.Field()
+    """
+    What period it covers.
+    """
+
     subtotal: int = pydantic.Field()
     """
     An amount in cents (USD).
@@ -57,17 +77,41 @@ class Invoice(UniversalBaseModel):
     An amount in cents (USD).
     """
 
-    collection_method: InvoiceCollectionMethod
-    due_at: typing.Optional[dt.datetime] = None
-    finalized_at: typing.Optional[dt.datetime] = None
-    paid_at: typing.Optional[dt.datetime] = None
-    voided_at: typing.Optional[dt.datetime] = None
+    collection_method: InvoiceCollectionMethod = pydantic.Field()
+    """
+    `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
+    """
+
+    due_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When payment is due. `null`: not set.
+    """
+
+    finalized_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was finalized. `null`: not yet.
+    """
+
+    paid_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was paid. `null`: not paid.
+    """
+
+    voided_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was voided. `null`: it wasn't.
+    """
+
     hosted_url: typing.Optional[str] = pydantic.Field(default=None)
     """
     A page to view (and pay) the invoice.
     """
 
-    pdf_url: typing.Optional[str] = None
+    pdf_url: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The invoice as a PDF. `null`: not available.
+    """
+
     lines: typing.List[InvoiceLine]
 
     if IS_PYDANTIC_V2:

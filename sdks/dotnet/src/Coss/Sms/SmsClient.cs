@@ -1019,6 +1019,9 @@ public partial class SmsClient : ISmsClient
         return new WithRawResponseTask<Sms>(SendAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// One message sent from the API key's environment, with its current status.
+    /// </summary>
     /// <example><code>
     /// await client.Sms.GetAsync(new GetSmsRequest { Id = "sms_01k7c8m4q2f3e9v6t5r1n0p8yz" });
     /// </code></example>

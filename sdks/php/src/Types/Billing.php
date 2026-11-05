@@ -15,7 +15,7 @@ class Billing extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $organizationId
+     * @var string $organizationId The organization's id.
      */
     #[JsonProperty('organization_id')]
     public string $organizationId;
@@ -51,7 +51,7 @@ class Billing extends JsonSerializableType
     public array $holds;
 
     /**
-     * @var value-of<BillingCurrency> $currency
+     * @var value-of<BillingCurrency> $currency Always `usd`.
      */
     #[JsonProperty('currency')]
     public string $currency;
@@ -63,7 +63,7 @@ class Billing extends JsonSerializableType
     public BillingPeriod $period;
 
     /**
-     * @var array<BillingUsageItem> $usage
+     * @var array<BillingUsageItem> $usage This month's usage per meter.
      */
     #[JsonProperty('usage'), ArrayType([BillingUsageItem::class])]
     public array $usage;
@@ -87,7 +87,13 @@ class Billing extends JsonSerializableType
     public ?int $spendLimit;
 
     /**
-     * @var ?BillingPaymentMethod $paymentMethod
+     * @var ?BillingCreditLimit $creditLimit Where the organization stands against its credit limit; `null`: it has none.
+     */
+    #[JsonProperty('credit_limit')]
+    public ?BillingCreditLimit $creditLimit;
+
+    /**
+     * @var ?BillingPaymentMethod $paymentMethod The payment method on file. `null`: none.
      */
     #[JsonProperty('payment_method')]
     public ?BillingPaymentMethod $paymentMethod;
@@ -99,7 +105,7 @@ class Billing extends JsonSerializableType
     public array $addOns;
 
     /**
-     * @var BillingFeatures $features
+     * @var BillingFeatures $features Which features the plan includes.
      */
     #[JsonProperty('features')]
     public BillingFeatures $features;
@@ -128,6 +134,7 @@ class Billing extends JsonSerializableType
      *   contract?: ?BillingContract,
      *   scheduledChange?: ?BillingScheduledChange,
      *   spendLimit?: ?int,
+     *   creditLimit?: ?BillingCreditLimit,
      *   paymentMethod?: ?BillingPaymentMethod,
      * } $values
      */
@@ -155,6 +162,10 @@ class Billing extends JsonSerializableType
         $this->spendLimit = $values['spendLimit'] ?? null;
         if (array_key_exists('spendLimit', $values)) {
             $this->_setField('spendLimit');
+        }
+        $this->creditLimit = $values['creditLimit'] ?? null;
+        if (array_key_exists('creditLimit', $values)) {
+            $this->_setField('creditLimit');
         }
         $this->paymentMethod = $values['paymentMethod'] ?? null;
         if (array_key_exists('paymentMethod', $values)) {

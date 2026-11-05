@@ -325,6 +325,8 @@ class RawDocumentsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[SignDocument]:
         """
+        An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+
         Parameters
         ----------
         id : str
@@ -867,6 +869,8 @@ class AsyncRawDocumentsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[SignDocument]:
         """
+        An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+
         Parameters
         ----------
         id : str

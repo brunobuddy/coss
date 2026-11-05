@@ -14,7 +14,7 @@ class SignTemplateDocumentsItemPagesItem extends JsonSerializableType
     public float $width;
 
     /**
-     * @var float $height
+     * @var float $height In PDF points (1/72 inch).
      */
     #[JsonProperty('height')]
     public float $height;

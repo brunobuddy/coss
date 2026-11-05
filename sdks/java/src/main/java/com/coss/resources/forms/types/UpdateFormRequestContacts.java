@@ -59,11 +59,17 @@ public final class UpdateFormRequestContacts {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Turn each accepted submission into a contact, from <code>submitter.email_field</code>. Default false.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
     }
 
+    /**
+     * @return Audiences the contact joins. They must exist in this environment.
+     */
     @JsonProperty("audience_ids")
     public Optional<List<String>> getAudienceIds() {
         return audienceIds;
@@ -90,7 +96,7 @@ public final class UpdateFormRequestContacts {
     }
 
     /**
-     * @return The <code>name</code> the form's input posts.
+     * @return The field holding the contact's first name. <code>null</code>: none.
      */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_name_field")
@@ -102,7 +108,7 @@ public final class UpdateFormRequestContacts {
     }
 
     /**
-     * @return The <code>name</code> the form's input posts.
+     * @return The field holding the contact's last name. <code>null</code>: none.
      */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_name_field")
@@ -213,6 +219,9 @@ public final class UpdateFormRequestContacts {
             return this;
         }
 
+        /**
+         * <p>Turn each accepted submission into a contact, from <code>submitter.email_field</code>. Default false.</p>
+         */
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public Builder enabled(Optional<Boolean> enabled) {
             this.enabled = enabled;
@@ -224,6 +233,9 @@ public final class UpdateFormRequestContacts {
             return this;
         }
 
+        /**
+         * <p>Audiences the contact joins. They must exist in this environment.</p>
+         */
         @JsonSetter(value = "audience_ids", nulls = Nulls.SKIP)
         public Builder audienceIds(Optional<List<String>> audienceIds) {
             this.audienceIds = audienceIds;
@@ -284,7 +296,7 @@ public final class UpdateFormRequestContacts {
         }
 
         /**
-         * <p>The <code>name</code> the form's input posts.</p>
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
          */
         @JsonSetter(value = "first_name_field", nulls = Nulls.SKIP)
         public Builder firstNameField(OptionalNullable<String> firstNameField) {
@@ -318,7 +330,7 @@ public final class UpdateFormRequestContacts {
         }
 
         /**
-         * <p>The <code>name</code> the form's input posts.</p>
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
          */
         @JsonSetter(value = "last_name_field", nulls = Nulls.SKIP)
         public Builder lastNameField(OptionalNullable<String> lastNameField) {

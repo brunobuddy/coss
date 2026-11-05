@@ -8,9 +8,21 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 class FormSubmissionFile(UniversalBaseModel):
     id: str
-    field: str
-    filename: str
-    content_type: str
+    field: str = pydantic.Field()
+    """
+    The form field it was uploaded through.
+    """
+
+    filename: str = pydantic.Field()
+    """
+    The file's name, made safe.
+    """
+
+    content_type: str = pydantic.Field()
+    """
+    The MIME type it was uploaded as.
+    """
+
     size: int = pydantic.Field()
     """
     Bytes.

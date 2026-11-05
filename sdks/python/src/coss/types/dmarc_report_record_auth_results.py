@@ -9,8 +9,19 @@ from .dmarc_report_record_auth_results_spf_item import DmarcReportRecordAuthResu
 
 
 class DmarcReportRecordAuthResults(UniversalBaseModel):
-    dkim: typing.List[DmarcReportRecordAuthResultsDkimItem]
-    spf: typing.List[DmarcReportRecordAuthResultsSpfItem]
+    """
+    What receivers saw for DKIM and SPF.
+    """
+
+    dkim: typing.List[DmarcReportRecordAuthResultsDkimItem] = pydantic.Field()
+    """
+    Each DKIM signature's result.
+    """
+
+    spf: typing.List[DmarcReportRecordAuthResultsSpfItem] = pydantic.Field()
+    """
+    Each SPF check's result.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

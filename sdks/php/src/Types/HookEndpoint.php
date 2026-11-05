@@ -23,37 +23,37 @@ class HookEndpoint extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $applicationId
+     * @var string $applicationId The id of the application it belongs to.
      */
     #[JsonProperty('application_id')]
     public string $applicationId;
 
     /**
-     * @var string $url
+     * @var string $url Where deliveries are sent.
      */
     #[JsonProperty('url')]
     public string $url;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var array<string> $filterTypes
+     * @var array<string> $filterTypes Only these event types are delivered. Empty: every type.
      */
     #[JsonProperty('filter_types'), ArrayType(['string'])]
     public array $filterTypes;
 
     /**
-     * @var ?int $rateLimitPerSecond
+     * @var ?int $rateLimitPerSecond At most this many requests per second to this endpoint. `null`: no limit of its own.
      */
     #[JsonProperty('rate_limit_per_second')]
     public ?int $rateLimitPerSecond;
 
     /**
-     * @var bool $enabled
+     * @var bool $enabled Whether new messages are delivered to it.
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
@@ -65,7 +65,7 @@ class HookEndpoint extends JsonSerializableType
     public ?string $disabledReason;
 
     /**
-     * @var ?DateTime $disabledAt
+     * @var ?DateTime $disabledAt When it was disabled. `null`: it's enabled.
      */
     #[JsonProperty('disabled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $disabledAt;
@@ -83,7 +83,7 @@ class HookEndpoint extends JsonSerializableType
     public ?DateTime $previousSecretExpiresAt;
 
     /**
-     * @var array<string, string> $metadata
+     * @var array<string, string> $metadata Your own key-value pairs.
      */
     #[JsonProperty('metadata'), ArrayType(['string' => 'string'])]
     public array $metadata;

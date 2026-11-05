@@ -11,12 +11,21 @@ public record TemplateVariableInputFieldsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Used inside `{{#each}}` as `{{name}}`.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The field's type.
+    /// </summary>
     [JsonPropertyName("type")]
     public required TemplateVariableInputFieldsItemType Type { get; set; }
 
+    /// <summary>
+    /// Whether each item must have it. Defaults to true.
+    /// </summary>
     [Optional]
     [JsonPropertyName("required")]
     public bool? Required { get; set; }

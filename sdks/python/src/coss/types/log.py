@@ -13,7 +13,11 @@ from .log_source import LogSource
 class Log(UniversalBaseModel):
     object: LogObject
     id: str
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
+
     source: LogSource
     level: LogLevel
     type: str = pydantic.Field()
@@ -31,9 +35,21 @@ class Log(UniversalBaseModel):
     The `X-Request-Id` of the API request this line belongs to.
     """
 
-    api_key_id: typing.Optional[str] = None
-    method: typing.Optional[str] = None
-    path: typing.Optional[str] = None
+    api_key_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The API key that made the request. `null`: not an API request.
+    """
+
+    method: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The HTTP method. `null`: not an HTTP line.
+    """
+
+    path: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The request's path. `null`: not an API request.
+    """
+
     route: typing.Optional[str] = pydantic.Field(default=None)
     """
     The matched route, e.g. `/v1/emails/:id`.
@@ -44,17 +60,41 @@ class Log(UniversalBaseModel):
     The API response status, or the webhook endpoint's response status.
     """
 
-    duration_ms: typing.Optional[int] = None
-    client_ip: typing.Optional[str] = None
-    user_agent: typing.Optional[str] = None
-    error_code: typing.Optional[str] = None
+    duration_ms: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    How long it took, in milliseconds. `null`: not timed.
+    """
+
+    client_ip: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The caller's address. `null`: not an API request.
+    """
+
+    user_agent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The caller's `User-Agent`. `null`: not sent.
+    """
+
+    error_code: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The error's `code`. `null`: no error.
+    """
+
     resource_type: typing.Optional[str] = pydantic.Field(default=None)
     """
     What the line is about: `email`, `domain`, `webhook_endpoint`…
     """
 
-    resource_id: typing.Optional[str] = None
-    recipient: typing.Optional[str] = None
+    resource_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The id of what it's about. `null`: nothing in particular.
+    """
+
+    recipient: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The recipient an email event is about. `null`: none.
+    """
+
     attributes: typing.Dict[str, typing.Any] = pydantic.Field()
     """
     Details: redacted request and response bodies for API requests (secrets, attachment contents and long strings are never stored), event data for emails and webhooks.

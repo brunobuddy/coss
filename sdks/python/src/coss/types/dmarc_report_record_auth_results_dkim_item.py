@@ -7,9 +7,20 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class DmarcReportRecordAuthResultsDkimItem(UniversalBaseModel):
-    domain: str
-    selector: typing.Optional[str] = None
-    result: str
+    domain: str = pydantic.Field()
+    """
+    The signing domain.
+    """
+
+    selector: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The selector.
+    """
+
+    result: str = pydantic.Field()
+    """
+    The result.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

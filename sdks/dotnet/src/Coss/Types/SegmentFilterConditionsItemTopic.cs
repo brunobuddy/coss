@@ -14,9 +14,15 @@ public record SegmentFilterConditionsItemTopic : IJsonOnDeserialized
     [JsonPropertyName("field")]
     public required SegmentFilterConditionsItemTopicField Field { get; set; }
 
+    /// <summary>
+    /// Whether emails about the topic reach the contact.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemTopicOp Op { get; set; }
 
+    /// <summary>
+    /// The topic's key.
+    /// </summary>
     [JsonPropertyName("topic")]
     public required string Topic { get; set; }
 

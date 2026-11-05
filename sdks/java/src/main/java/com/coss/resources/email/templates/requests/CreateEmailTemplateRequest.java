@@ -75,6 +75,9 @@ public final class CreateEmailTemplateRequest {
         return alias;
     }
 
+    /**
+     * @return Your note about it, shown in the dashboard.
+     */
     @JsonProperty("description")
     public Optional<String> getDescription() {
         return description;
@@ -177,6 +180,9 @@ public final class CreateEmailTemplateRequest {
 
         _FinalStage alias(String alias);
 
+        /**
+         * <p>Your note about it, shown in the dashboard.</p>
+         */
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
@@ -334,12 +340,19 @@ public final class CreateEmailTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Your note about it, shown in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = Optional.ofNullable(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it, shown in the dashboard.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(Optional<String> description) {

@@ -311,18 +311,30 @@ public class AsyncRawDocumentsClient {
         return future;
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<CossHttpResponse<SignDocument>> get(String id) {
         return get(id, GetDocumentsRequest.builder().build());
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<CossHttpResponse<SignDocument>> get(String id, RequestOptions requestOptions) {
         return get(id, GetDocumentsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<CossHttpResponse<SignDocument>> get(String id, GetDocumentsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<CossHttpResponse<SignDocument>> get(
             String id, GetDocumentsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

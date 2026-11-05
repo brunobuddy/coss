@@ -180,8 +180,9 @@ var (
 
 type UpdateHookApplicationRequest struct {
 	// The application's `id` (`happ_…`) or your `uid` for it.
-	Application string  `json:"-" url:"-"`
-	Name        *string `json:"name,omitempty" url:"-"`
+	Application string `json:"-" url:"-"`
+	// Shown to the application's users in the portal.
+	Name *string `json:"name,omitempty" url:"-"`
 	// `null` removes it.
 	UID *string `json:"uid,omitempty" url:"-"`
 	// Replaces the metadata.

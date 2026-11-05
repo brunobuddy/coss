@@ -3,6 +3,7 @@
 module Coss
   module Forms
     module Types
+      # Turning submissions into contacts. Only the fields given change.
       class UpdateFormRequestContacts < Internal::Types::Model
         field :enabled, -> { Internal::Types::Boolean }, optional: true, nullable: false
 

@@ -71,6 +71,8 @@ module Coss
         end
       end
 
+      # One event of the organization's audit log.
+      #
       # @param request_options [Hash]
       # @param params [Hash]
       # @option request_options [String] :base_url

@@ -14,6 +14,9 @@ public record EmailEventDataOpen : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The client's `User-Agent`. `null`: not sent.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("user_agent")]
     public string? UserAgent { get; set; }

@@ -6,6 +6,9 @@ namespace Coss.Email;
 [Serializable]
 public record CreateAudienceRequest
 {
+    /// <summary>
+    /// Your name for the list, unique in the environment.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

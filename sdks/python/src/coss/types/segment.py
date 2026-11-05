@@ -12,7 +12,11 @@ from .segment_object import SegmentObject
 class Segment(UniversalBaseModel):
     object: SegmentObject
     id: str
-    name: str
+    name: str = pydantic.Field()
+    """
+    Your name for the segment, unique in the environment.
+    """
+
     filter: SegmentFilter
     created_at: dt.datetime
     updated_at: dt.datetime

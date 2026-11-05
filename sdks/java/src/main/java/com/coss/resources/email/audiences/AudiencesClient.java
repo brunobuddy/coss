@@ -65,26 +65,44 @@ public class AudiencesClient {
         return this.rawClient.list(request, requestOptions).body();
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public Audience create(CreateAudienceRequest request) {
         return this.rawClient.create(request).body();
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public Audience create(CreateAudienceRequest request, RequestOptions requestOptions) {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public Audience get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public Audience get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public Audience get(String id, GetAudiencesRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public Audience get(String id, GetAudiencesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }
@@ -117,10 +135,16 @@ public class AudiencesClient {
         return this.rawClient.remove(id, request, requestOptions).body();
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public Audience update(String id, UpdateAudienceRequest request) {
         return this.rawClient.update(id, request).body();
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public Audience update(String id, UpdateAudienceRequest request, RequestOptions requestOptions) {
         return this.rawClient.update(id, request, requestOptions).body();
     }
@@ -168,19 +192,31 @@ public class AudiencesClient {
         return this.rawClient.addContacts(id, request, requestOptions).body();
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public RemoveContactAudiencesResponse removeContact(String id, String contactId) {
         return this.rawClient.removeContact(id, contactId).body();
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public RemoveContactAudiencesResponse removeContact(String id, String contactId, RequestOptions requestOptions) {
         return this.rawClient.removeContact(id, contactId, requestOptions).body();
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public RemoveContactAudiencesResponse removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request) {
         return this.rawClient.removeContact(id, contactId, request).body();
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public RemoveContactAudiencesResponse removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request, RequestOptions requestOptions) {
         return this.rawClient

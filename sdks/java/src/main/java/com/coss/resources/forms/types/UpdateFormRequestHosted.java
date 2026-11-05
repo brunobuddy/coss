@@ -58,6 +58,9 @@ public final class UpdateFormRequestHosted {
         return enabled;
     }
 
+    /**
+     * @return The page's heading. <code>null</code>: the form's name.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("title")
     public OptionalNullable<String> getTitle() {
@@ -67,6 +70,9 @@ public final class UpdateFormRequestHosted {
         return title;
     }
 
+    /**
+     * @return Text under the heading. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -76,6 +82,9 @@ public final class UpdateFormRequestHosted {
         return description;
     }
 
+    /**
+     * @return The submit button's label. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("submit_label")
     public OptionalNullable<String> getSubmitLabel() {
@@ -85,6 +94,9 @@ public final class UpdateFormRequestHosted {
         return submitLabel;
     }
 
+    /**
+     * @return Shown after a submission. <code>null</code>: the default.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("success_message")
     public OptionalNullable<String> getSuccessMessage() {
@@ -191,6 +203,9 @@ public final class UpdateFormRequestHosted {
             return this;
         }
 
+        /**
+         * <p>The page's heading. <code>null</code>: the form's name.</p>
+         */
         @JsonSetter(value = "title", nulls = Nulls.SKIP)
         public Builder title(OptionalNullable<String> title) {
             this.title = title;
@@ -222,6 +237,9 @@ public final class UpdateFormRequestHosted {
             return this;
         }
 
+        /**
+         * <p>Text under the heading. <code>null</code>: none.</p>
+         */
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public Builder description(OptionalNullable<String> description) {
             this.description = description;
@@ -253,6 +271,9 @@ public final class UpdateFormRequestHosted {
             return this;
         }
 
+        /**
+         * <p>The submit button's label. <code>null</code>: the default.</p>
+         */
         @JsonSetter(value = "submit_label", nulls = Nulls.SKIP)
         public Builder submitLabel(OptionalNullable<String> submitLabel) {
             this.submitLabel = submitLabel;
@@ -284,6 +305,9 @@ public final class UpdateFormRequestHosted {
             return this;
         }
 
+        /**
+         * <p>Shown after a submission. <code>null</code>: the default.</p>
+         */
         @JsonSetter(value = "success_message", nulls = Nulls.SKIP)
         public Builder successMessage(OptionalNullable<String> successMessage) {
             this.successMessage = successMessage;

@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// File uploads. Only the fields given change.
+/// </summary>
 [Serializable]
 public record UpdateFormRequestFiles : IJsonOnDeserialized
 {
@@ -18,10 +21,16 @@ public record UpdateFormRequestFiles : IJsonOnDeserialized
     [JsonPropertyName("enabled")]
     public bool? Enabled { get; set; }
 
+    /// <summary>
+    /// Most files per submission. Default 3.
+    /// </summary>
     [Optional]
     [JsonPropertyName("max_files")]
     public int? MaxFiles { get; set; }
 
+    /// <summary>
+    /// Largest file, in bytes. Default and maximum 10 MB.
+    /// </summary>
     [Optional]
     [JsonPropertyName("max_file_bytes")]
     public int? MaxFileBytes { get; set; }

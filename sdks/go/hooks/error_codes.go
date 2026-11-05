@@ -59,6 +59,11 @@ var ErrorCodes internal.ErrorCodes = internal.ErrorCodes{
 			APIError: apiError,
 		}
 	},
+	402: func(apiError *core.APIError) error {
+		return &coss.PaymentRequiredError{
+			APIError: apiError,
+		}
+	},
 	409: func(apiError *core.APIError) error {
 		return &coss.ConflictError{
 			APIError: apiError,

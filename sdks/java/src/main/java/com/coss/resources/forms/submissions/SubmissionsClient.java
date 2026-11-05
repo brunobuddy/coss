@@ -60,18 +60,30 @@ public class SubmissionsClient {
         return this.rawClient.list(id, request, requestOptions).body();
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public FormSubmission get(String id, String submissionId) {
         return this.rawClient.get(id, submissionId).body();
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public FormSubmission get(String id, String submissionId, RequestOptions requestOptions) {
         return this.rawClient.get(id, submissionId, requestOptions).body();
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public FormSubmission get(String id, String submissionId, GetSubmissionsRequest request) {
         return this.rawClient.get(id, submissionId, request).body();
     }
 
+    /**
+     * One submission of the form, with its data, files and Risk's assessment.
+     */
     public FormSubmission get(
             String id, String submissionId, GetSubmissionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, submissionId, request, requestOptions).body();

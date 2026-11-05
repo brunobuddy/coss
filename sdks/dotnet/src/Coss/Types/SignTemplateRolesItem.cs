@@ -11,9 +11,15 @@ public record SignTemplateRolesItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The role's id within the template.
+    /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// Shown in the builder, e.g. `Client`.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

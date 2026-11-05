@@ -17,6 +17,10 @@ from .email_event_data_unsubscribe import EmailEventDataUnsubscribe
 
 
 class EmailEventData(UniversalBaseModel):
+    """
+    Details of the event: only what its `type` has.
+    """
+
     bounce: typing.Optional[EmailEventDataBounce] = None
     complaint: typing.Optional[EmailEventDataComplaint] = None
     delay: typing.Optional[EmailEventDataDelay] = None

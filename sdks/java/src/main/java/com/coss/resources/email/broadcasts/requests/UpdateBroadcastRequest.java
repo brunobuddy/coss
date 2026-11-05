@@ -88,6 +88,9 @@ public final class UpdateBroadcastRequest {
         return name;
     }
 
+    /**
+     * @return Send to this audience. <code>null</code> clears it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("audience_id")
     public OptionalNullable<String> getAudienceId() {
@@ -97,6 +100,9 @@ public final class UpdateBroadcastRequest {
         return audienceId;
     }
 
+    /**
+     * @return Send to this segment. <code>null</code> clears it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("segment_id")
     public OptionalNullable<String> getSegmentId() {
@@ -106,6 +112,9 @@ public final class UpdateBroadcastRequest {
         return segmentId;
     }
 
+    /**
+     * @return The topic it's about (its key). <code>null</code> clears it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("topic")
     public OptionalNullable<String> getTopic() {
@@ -120,6 +129,9 @@ public final class UpdateBroadcastRequest {
         return from;
     }
 
+    /**
+     * @return Addresses replies go to.
+     */
     @JsonProperty("reply_to")
     public Optional<List<String>> getReplyTo() {
         return replyTo;
@@ -133,6 +145,9 @@ public final class UpdateBroadcastRequest {
         return subject;
     }
 
+    /**
+     * @return The inbox preview line. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("preview_text")
     public OptionalNullable<String> getPreviewText() {
@@ -142,6 +157,9 @@ public final class UpdateBroadcastRequest {
         return previewText;
     }
 
+    /**
+     * @return The HTML part. <code>null</code> removes it, if <code>text</code> remains.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("html")
     public OptionalNullable<String> getHtml() {
@@ -151,6 +169,9 @@ public final class UpdateBroadcastRequest {
         return html;
     }
 
+    /**
+     * @return The plain text part. <code>null</code> removes it, if <code>html</code> remains.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("text")
     public OptionalNullable<String> getText() {
@@ -160,11 +181,17 @@ public final class UpdateBroadcastRequest {
         return text;
     }
 
+    /**
+     * @return Which opens and clicks are tracked.
+     */
     @JsonProperty("tracking")
     public Optional<UpdateBroadcastRequestTracking> getTracking() {
         return tracking;
     }
 
+    /**
+     * @return Recipients per second. <code>null</code>: the plan's marketing rate.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("rate_per_second")
     public OptionalNullable<Integer> getRatePerSecond() {
@@ -329,6 +356,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Send to this audience. <code>null</code> clears it.</p>
+         */
         @JsonSetter(value = "audience_id", nulls = Nulls.SKIP)
         public Builder audienceId(OptionalNullable<String> audienceId) {
             this.audienceId = audienceId;
@@ -360,6 +390,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Send to this segment. <code>null</code> clears it.</p>
+         */
         @JsonSetter(value = "segment_id", nulls = Nulls.SKIP)
         public Builder segmentId(OptionalNullable<String> segmentId) {
             this.segmentId = segmentId;
@@ -391,6 +424,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>The topic it's about (its key). <code>null</code> clears it.</p>
+         */
         @JsonSetter(value = "topic", nulls = Nulls.SKIP)
         public Builder topic(OptionalNullable<String> topic) {
             this.topic = topic;
@@ -433,6 +469,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         */
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public Builder replyTo(Optional<List<String>> replyTo) {
             this.replyTo = replyTo;
@@ -458,6 +497,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>The inbox preview line. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "preview_text", nulls = Nulls.SKIP)
         public Builder previewText(OptionalNullable<String> previewText) {
             this.previewText = previewText;
@@ -489,6 +531,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>The HTML part. <code>null</code> removes it, if <code>text</code> remains.</p>
+         */
         @JsonSetter(value = "html", nulls = Nulls.SKIP)
         public Builder html(OptionalNullable<String> html) {
             this.html = html;
@@ -520,6 +565,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>The plain text part. <code>null</code> removes it, if <code>html</code> remains.</p>
+         */
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public Builder text(OptionalNullable<String> text) {
             this.text = text;
@@ -551,6 +599,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         */
         @JsonSetter(value = "tracking", nulls = Nulls.SKIP)
         public Builder tracking(Optional<UpdateBroadcastRequestTracking> tracking) {
             this.tracking = tracking;
@@ -562,6 +613,9 @@ public final class UpdateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Recipients per second. <code>null</code>: the plan's marketing rate.</p>
+         */
         @JsonSetter(value = "rate_per_second", nulls = Nulls.SKIP)
         public Builder ratePerSecond(OptionalNullable<Integer> ratePerSecond) {
             this.ratePerSecond = ratePerSecond;

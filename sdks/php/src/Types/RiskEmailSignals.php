@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * What the address says. `null` on an assessment with no email.
+ */
 class RiskEmailSignals extends JsonSerializableType
 {
     /**
@@ -14,13 +17,13 @@ class RiskEmailSignals extends JsonSerializableType
     public ?string $domain;
 
     /**
-     * @var bool $valid
+     * @var bool $valid Whether it's syntactically valid.
      */
     #[JsonProperty('valid')]
     public bool $valid;
 
     /**
-     * @var bool $disposable
+     * @var bool $disposable Whether its domain is a known burner service.
      */
     #[JsonProperty('disposable')]
     public bool $disposable;
@@ -32,19 +35,19 @@ class RiskEmailSignals extends JsonSerializableType
     public string $deliverability;
 
     /**
-     * @var bool $roleAccount
+     * @var bool $roleAccount Whether it's a role mailbox, like `info@`.
      */
     #[JsonProperty('role_account')]
     public bool $roleAccount;
 
     /**
-     * @var bool $freeProvider
+     * @var bool $freeProvider Whether its domain is a free mailbox provider.
      */
     #[JsonProperty('free_provider')]
     public bool $freeProvider;
 
     /**
-     * @var ?string $suggestion
+     * @var ?string $suggestion `email.typo`: the likely intended domain. `null` otherwise.
      */
     #[JsonProperty('suggestion')]
     public ?string $suggestion;

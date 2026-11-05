@@ -792,6 +792,9 @@ public partial class ListsClient : IListsClient
         );
     }
 
+    /// <summary>
+    /// One allow or block list entry of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Risk.Lists.GetAsync(new GetListsRequest { Id = "rskle_01k7c8m4q2f3e9v6t5r1n0p8yz" });
     /// </code></example>
@@ -806,6 +809,9 @@ public partial class ListsClient : IListsClient
         );
     }
 
+    /// <summary>
+    /// Removes an entry from its list. Later assessments no longer see it.
+    /// </summary>
     /// <example><code>
     /// await client.Risk.Lists.RemoveAsync(
     ///     new RemoveListsRequest { Id = "rskle_01k7c8m4q2f3e9v6t5r1n0p8yz" }

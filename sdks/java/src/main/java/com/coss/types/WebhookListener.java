@@ -88,6 +88,9 @@ public final class WebhookListener {
         return eventTypes;
     }
 
+    /**
+     * @return Your note about it, such as the machine it's on. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -202,6 +205,9 @@ public final class WebhookListener {
 
         _FinalStage addAllEventTypes(List<String> eventTypes);
 
+        /**
+         * <p>Your note about it, such as the machine it's on. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -288,6 +294,10 @@ public final class WebhookListener {
             return this;
         }
 
+        /**
+         * <p>Your note about it, such as the machine it's on. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -300,6 +310,10 @@ public final class WebhookListener {
             return this;
         }
 
+        /**
+         * <p>Your note about it, such as the machine it's on. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -310,12 +324,19 @@ public final class WebhookListener {
             return this;
         }
 
+        /**
+         * <p>Your note about it, such as the machine it's on. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it, such as the machine it's on. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

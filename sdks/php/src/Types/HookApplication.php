@@ -29,13 +29,13 @@ class HookApplication extends JsonSerializableType
     public ?string $uid;
 
     /**
-     * @var string $name
+     * @var string $name Shown to the application's users in the portal.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var array<string, string> $metadata
+     * @var array<string, string> $metadata Your own key-value pairs.
      */
     #[JsonProperty('metadata'), ArrayType(['string' => 'string'])]
     public array $metadata;

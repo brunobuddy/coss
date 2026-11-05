@@ -193,18 +193,30 @@ public class AsyncRawReceivedClient {
         return future;
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<ReceivedSms>> get(String id) {
         return get(id, GetReceivedRequest.builder().build());
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<ReceivedSms>> get(String id, RequestOptions requestOptions) {
         return get(id, GetReceivedRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<ReceivedSms>> get(String id, GetReceivedRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<ReceivedSms>> get(
             String id, GetReceivedRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

@@ -14,12 +14,21 @@ public record SignRequestDocumentsItem : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The file's name.
+    /// </summary>
     [JsonPropertyName("filename")]
     public required string Filename { get; set; }
 
+    /// <summary>
+    /// Hex SHA-256 of the uploaded bytes.
+    /// </summary>
     [JsonPropertyName("sha256")]
     public required string Sha256 { get; set; }
 
+    /// <summary>
+    /// How many pages it has.
+    /// </summary>
     [JsonPropertyName("page_count")]
     public required long PageCount { get; set; }
 

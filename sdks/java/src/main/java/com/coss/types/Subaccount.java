@@ -95,11 +95,17 @@ public final class Subaccount {
         return uid;
     }
 
+    /**
+     * @return Your name for it.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Your own key-value pairs.
+     */
     @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
@@ -198,6 +204,9 @@ public final class Subaccount {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for it.</p>
+         */
         StatusStage name(@NotNull String name);
     }
 
@@ -242,6 +251,9 @@ public final class Subaccount {
 
         _FinalStage uid(Nullable<String> uid);
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         _FinalStage metadata(Map<String, String> metadata);
 
         _FinalStage putAllMetadata(Map<String, String> metadata);
@@ -314,6 +326,10 @@ public final class Subaccount {
             return this;
         }
 
+        /**
+         * <p>Your name for it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public StatusStage name(@NotNull String name) {
@@ -360,12 +376,20 @@ public final class Subaccount {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage metadata(String key, String value) {
             this.metadata.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllMetadata(Map<String, String> metadata) {
             if (metadata != null) {
@@ -374,6 +398,9 @@ public final class Subaccount {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "metadata", nulls = Nulls.SKIP)
         public _FinalStage metadata(Map<String, String> metadata) {

@@ -10,7 +10,7 @@ use Coss\Core\Types\Date;
 class BillingWebhookEventTwoData extends JsonSerializableType
 {
     /**
-     * @var string $organizationId
+     * @var string $organizationId The organization's id.
      */
     #[JsonProperty('organization_id')]
     public string $organizationId;

@@ -28,31 +28,31 @@ class Topic extends JsonSerializableType
     public string $key;
 
     /**
-     * @var string $name
+     * @var string $name Shown in the preference center.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Shown in the preference center under its name. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var value-of<TopicDefaultSubscription> $defaultSubscription
+     * @var value-of<TopicDefaultSubscription> $defaultSubscription `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
      */
     #[JsonProperty('default_subscription')]
     public string $defaultSubscription;
 
     /**
-     * @var value-of<TopicVisibility> $visibility
+     * @var value-of<TopicVisibility> $visibility `private` topics never show in the preference center.
      */
     #[JsonProperty('visibility')]
     public string $visibility;
 
     /**
-     * @var int $position
+     * @var int $position Order in the preference center (ascending).
      */
     #[JsonProperty('position')]
     public int $position;

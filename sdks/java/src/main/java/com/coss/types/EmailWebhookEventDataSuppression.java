@@ -38,11 +38,17 @@ public final class EmailWebhookEventDataSuppression {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The suppression's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return What it covers: every email, every marketing email, or one category.
+     */
     @JsonProperty("scope")
     public String getScope() {
         return scope;
@@ -86,12 +92,18 @@ public final class EmailWebhookEventDataSuppression {
     }
 
     public interface IdStage {
+        /**
+         * <p>The suppression's id.</p>
+         */
         ScopeStage id(@NotNull String id);
 
         Builder from(EmailWebhookEventDataSuppression other);
     }
 
     public interface ScopeStage {
+        /**
+         * <p>What it covers: every email, every marketing email, or one category.</p>
+         */
         ReasonStage scope(@NotNull String scope);
     }
 
@@ -131,6 +143,10 @@ public final class EmailWebhookEventDataSuppression {
             return this;
         }
 
+        /**
+         * <p>The suppression's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public ScopeStage id(@NotNull String id) {
@@ -138,6 +154,10 @@ public final class EmailWebhookEventDataSuppression {
             return this;
         }
 
+        /**
+         * <p>What it covers: every email, every marketing email, or one category.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("scope")
         public ReasonStage scope(@NotNull String scope) {

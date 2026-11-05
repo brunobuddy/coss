@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The project it belongs to.
+/// </summary>
 [Serializable]
 public record EnvironmentProject : IJsonOnDeserialized
 {

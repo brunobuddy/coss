@@ -89,6 +89,9 @@ public final class RiskLimitBucket {
         return limit;
     }
 
+    /**
+     * @return How many seconds <code>limit</code> tokens take to be added.
+     */
     @JsonProperty("period_seconds")
     public long getPeriodSeconds() {
         return periodSeconds;
@@ -191,6 +194,9 @@ public final class RiskLimitBucket {
     }
 
     public interface PeriodSecondsStage {
+        /**
+         * <p>How many seconds <code>limit</code> tokens take to be added.</p>
+         */
         BurstStage periodSeconds(long periodSeconds);
     }
 
@@ -309,6 +315,10 @@ public final class RiskLimitBucket {
             return this;
         }
 
+        /**
+         * <p>How many seconds <code>limit</code> tokens take to be added.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period_seconds")
         public BurstStage periodSeconds(long periodSeconds) {

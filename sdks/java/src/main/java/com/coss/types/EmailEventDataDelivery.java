@@ -32,6 +32,9 @@ public final class EmailEventDataDelivery {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return What the receiving server answered. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("smtp_response")
     public OptionalNullable<String> getSmtpResponse() {
@@ -90,6 +93,9 @@ public final class EmailEventDataDelivery {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         */
         @JsonSetter(value = "smtp_response", nulls = Nulls.SKIP)
         public Builder smtpResponse(OptionalNullable<String> smtpResponse) {
             this.smtpResponse = smtpResponse;

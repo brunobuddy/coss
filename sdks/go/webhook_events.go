@@ -81,11 +81,14 @@ var (
 type BroadcastWebhookEvent struct {
 	ID     string                      `json:"id" url:"id"`
 	Object BroadcastWebhookEventObject `json:"object" url:"object"`
-	Type   BroadcastWebhookEventType   `json:"type" url:"type"`
+	// What happened to the broadcast.
+	Type BroadcastWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string                     `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                  `json:"created_at" url:"created_at"`
-	Data       *BroadcastWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The broadcast and how it fared.
+	Data *BroadcastWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -258,12 +261,16 @@ var broadcastWebhookEventDataNullableFields = map[string]*big.Int{
 	"error":        broadcastWebhookEventDataFieldError,
 }
 
+// The broadcast and how it fared.
 type BroadcastWebhookEventData struct {
-	Broadcast   *BroadcastWebhookEventDataBroadcast `json:"broadcast" url:"broadcast"`
-	PauseReason *string                             `json:"pause_reason,omitempty" url:"pause_reason,omitempty"`
-	Error       *BroadcastWebhookEventDataError     `json:"error,omitempty" url:"error,omitempty"`
-	Stats       *BroadcastStats                     `json:"stats" url:"stats"`
-	OccurredAt  time.Time                           `json:"occurred_at" url:"occurred_at"`
+	Broadcast *BroadcastWebhookEventDataBroadcast `json:"broadcast" url:"broadcast"`
+	// Why a paused broadcast waits. `null`: it isn't paused.
+	PauseReason *string `json:"pause_reason,omitempty" url:"pause_reason,omitempty"`
+	// Why it failed. `null`: it didn't.
+	Error *BroadcastWebhookEventDataError `json:"error,omitempty" url:"error,omitempty"`
+	Stats *BroadcastStats                 `json:"stats" url:"stats"`
+	// When this happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -422,8 +429,11 @@ var (
 )
 
 type BroadcastWebhookEventDataBroadcast struct {
-	ID     string                                   `json:"id" url:"id"`
-	Name   string                                   `json:"name" url:"name"`
+	// The broadcast's id.
+	ID string `json:"id" url:"id"`
+	// Its name.
+	Name string `json:"name" url:"name"`
+	// Its status after this event.
 	Status BroadcastWebhookEventDataBroadcastStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -533,6 +543,7 @@ func (b *BroadcastWebhookEventDataBroadcast) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+// Its status after this event.
 type BroadcastWebhookEventDataBroadcastStatus string
 
 const (
@@ -575,8 +586,11 @@ var (
 	broadcastWebhookEventDataErrorFieldMessage = big.NewInt(1 << 1)
 )
 
+// Why it failed. `null`: it didn't.
 type BroadcastWebhookEventDataError struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -691,6 +705,7 @@ func (b BroadcastWebhookEventObject) Ptr() *BroadcastWebhookEventObject {
 	return &b
 }
 
+// What happened to the broadcast.
 type BroadcastWebhookEventType string
 
 const (
@@ -735,11 +750,14 @@ type ContactWebhookEvent struct {
 	// The event id, and the `webhook-id` header.
 	ID     string                    `json:"id" url:"id"`
 	Object ContactWebhookEventObject `json:"object" url:"object"`
-	Type   ContactWebhookEventType   `json:"type" url:"type"`
+	// What happened to the contact.
+	Type ContactWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string                   `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                `json:"created_at" url:"created_at"`
-	Data       *ContactWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The contact, without its properties.
+	Data *ContactWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -910,11 +928,14 @@ var contactWebhookEventDataNullableFields = map[string]*big.Int{
 	"topic": contactWebhookEventDataFieldTopic,
 }
 
+// The contact, without its properties.
 type ContactWebhookEventData struct {
 	Contact *ContactWebhookEventDataContact `json:"contact" url:"contact"`
-	Source  ContactWebhookEventDataSource   `json:"source" url:"source"`
+	// How the contact was created.
+	Source ContactWebhookEventDataSource `json:"source" url:"source"`
 	// `contact.unsubscribed` from one topic (its key); `null`: from marketing altogether.
-	Topic      *string   `json:"topic,omitempty" url:"topic,omitempty"`
+	Topic *string `json:"topic,omitempty" url:"topic,omitempty"`
+	// When this happened.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1060,8 +1081,11 @@ var (
 )
 
 type ContactWebhookEventDataContact struct {
-	ID     string                               `json:"id" url:"id"`
-	Email  string                               `json:"email" url:"email"`
+	// The contact's id.
+	ID string `json:"id" url:"id"`
+	// The contact's address.
+	Email string `json:"email" url:"email"`
+	// Its consent after this event.
 	Status ContactWebhookEventDataContactStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1171,6 +1195,7 @@ func (c *ContactWebhookEventDataContact) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// Its consent after this event.
 type ContactWebhookEventDataContactStatus string
 
 const (
@@ -1196,6 +1221,7 @@ func (c ContactWebhookEventDataContactStatus) Ptr() *ContactWebhookEventDataCont
 	return &c
 }
 
+// How the contact was created.
 type ContactWebhookEventDataSource string
 
 const (
@@ -1246,6 +1272,7 @@ func (c ContactWebhookEventObject) Ptr() *ContactWebhookEventObject {
 	return &c
 }
 
+// What happened to the contact.
 type ContactWebhookEventType string
 
 const (
@@ -1474,6 +1501,7 @@ var (
 	emailWebhookEventDataFieldRecipient    = big.NewInt(1 << 17)
 	emailWebhookEventDataFieldOccurredAt   = big.NewInt(1 << 18)
 	emailWebhookEventDataFieldSubaccountID = big.NewInt(1 << 19)
+	emailWebhookEventDataFieldTraceparent  = big.NewInt(1 << 20)
 )
 
 // emailWebhookEventDataNullableFields maps the wire names of EmailWebhookEventData's nullable fields (required or optional) to their field bits.
@@ -1509,6 +1537,8 @@ type EmailWebhookEventData struct {
 	OccurredAt time.Time                        `json:"occurred_at" url:"occurred_at"`
 	// Only for an email sent for a sub-account: its id.
 	SubaccountID *string `json:"subaccount_id,omitempty" url:"subaccount_id,omitempty"`
+	// Only for an email sent with a W3C `traceparent` header: that trace context (normalized to version `00`), also sent as this request's `traceparent` header, so handling the event joins the sender's trace.
+	Traceparent *string `json:"traceparent,omitempty" url:"traceparent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1655,6 +1685,13 @@ func (e *EmailWebhookEventData) GetSubaccountID() *string {
 		return nil
 	}
 	return e.SubaccountID
+}
+
+func (e *EmailWebhookEventData) GetTraceparent() *string {
+	if e == nil {
+		return nil
+	}
+	return e.Traceparent
 }
 
 func (e *EmailWebhookEventData) GetExtraProperties() map[string]interface{} {
@@ -1813,6 +1850,13 @@ func (e *EmailWebhookEventData) SetSubaccountID(subaccountID *string) {
 	e.require(emailWebhookEventDataFieldSubaccountID)
 }
 
+// SetTraceparent sets the Traceparent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (e *EmailWebhookEventData) SetTraceparent(traceparent *string) {
+	e.Traceparent = traceparent
+	e.require(emailWebhookEventDataFieldTraceparent)
+}
+
 func (e *EmailWebhookEventData) UnmarshalJSON(data []byte) error {
 	type embed EmailWebhookEventData
 	var unmarshaler = struct {
@@ -1882,9 +1926,12 @@ var emailWebhookEventDataBounceNullableFields = map[string]*big.Int{
 }
 
 type EmailWebhookEventDataBounce struct {
-	Type           EmailWebhookEventDataBounceType `json:"type" url:"type"`
-	SubType        string                          `json:"sub_type" url:"sub_type"`
-	DiagnosticCode *string                         `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
+	// `permanent`, `transient` or `undetermined`.
+	Type EmailWebhookEventDataBounceType `json:"type" url:"type"`
+	// The provider's finer classification of the bounce.
+	SubType string `json:"sub_type" url:"sub_type"`
+	// What the receiving server answered. `null`: not reported.
+	DiagnosticCode *string `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2000,6 +2047,7 @@ func (e *EmailWebhookEventDataBounce) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+// `permanent`, `transient` or `undetermined`.
 type EmailWebhookEventDataBounceType string
 
 const (
@@ -2041,8 +2089,9 @@ type EmailWebhookEventDataClick struct {
 	// The original link that was clicked.
 	URL string `json:"url" url:"url"`
 	// Index of the link among the email's tracked links.
-	LinkPosition int64   `json:"link_position" url:"link_position"`
-	UserAgent    *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	LinkPosition int64 `json:"link_position" url:"link_position"`
+	// The client's `User-Agent`. `null`: not sent.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2170,8 +2219,10 @@ var emailWebhookEventDataComplaintNullableFields = map[string]*big.Int{
 }
 
 type EmailWebhookEventDataComplaint struct {
+	// The kind of complaint the mailbox provider reported. `null`: not reported.
 	FeedbackType *string `json:"feedback_type,omitempty" url:"feedback_type,omitempty"`
-	SubType      *string `json:"sub_type,omitempty" url:"sub_type,omitempty"`
+	// The provider's finer classification. `null`: not reported.
+	SubType *string `json:"sub_type,omitempty" url:"sub_type,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2286,9 +2337,12 @@ var emailWebhookEventDataDelayNullableFields = map[string]*big.Int{
 }
 
 type EmailWebhookEventDataDelay struct {
-	Type           string     `json:"type" url:"type"`
-	ExpiresAt      *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	DiagnosticCode *string    `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
+	// The provider's reason for the delay.
+	Type string `json:"type" url:"type"`
+	// When the provider stops trying. `null`: not reported.
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+	// What the receiving server answered. `null`: not reported.
+	DiagnosticCode *string `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2422,6 +2476,7 @@ var emailWebhookEventDataDeliveryNullableFields = map[string]*big.Int{
 }
 
 type EmailWebhookEventDataDelivery struct {
+	// What the receiving server answered. `null`: not reported.
 	SMTPResponse *string `json:"smtp_response,omitempty" url:"smtp_response,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2516,7 +2571,9 @@ var (
 )
 
 type EmailWebhookEventDataFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2623,6 +2680,7 @@ var emailWebhookEventDataOpenNullableFields = map[string]*big.Int{
 
 // Only for `email.opened`.
 type EmailWebhookEventDataOpen struct {
+	// The client's `User-Agent`. `null`: not sent.
 	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2836,7 +2894,9 @@ var (
 
 // Only for `email.suppressed`: the entry that matched the recipient.
 type EmailWebhookEventDataSuppression struct {
-	ID    string `json:"id" url:"id"`
+	// The suppression's id.
+	ID string `json:"id" url:"id"`
+	// What it covers: every email, every marketing email, or one category.
 	Scope string `json:"scope" url:"scope"`
 	// `bounce`: added after a permanent bounce. `complaint`: added after a spam complaint. `manual`: added one by one through the API or dashboard. `import`: added by a bulk import. `unsubscribe`: added by the recipient's one-click unsubscribe, scoped to the email's category.
 	Reason EmailWebhookEventDataSuppressionReason `json:"reason" url:"reason"`
@@ -3095,8 +3155,10 @@ var emailWebhookEventDataUnsubscribeNullableFields = map[string]*big.Int{
 
 // Only for `email.suppressed` without `suppression`: the recipient is a contact who unsubscribed (from marketing, or from the email's topic, `topic`).
 type EmailWebhookEventDataUnsubscribe struct {
+	// The contact who unsubscribed. `null`: none.
 	ContactID *string `json:"contact_id,omitempty" url:"contact_id,omitempty"`
-	Topic     *string `json:"topic,omitempty" url:"topic,omitempty"`
+	// The topic they left. `null`: marketing altogether.
+	Topic *string `json:"topic,omitempty" url:"topic,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3288,9 +3350,11 @@ type FormSubmissionWebhookEvent struct {
 	// `received`: a submission was accepted (at once, after the submitter confirmed, or released from review). `flagged`: Risk held it for review or refused it (honeypot catches send nothing).
 	Type FormSubmissionWebhookEventType `json:"type" url:"type"`
 	// The API version the payload is rendered in (your endpoint's version).
-	APIVersion string                          `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                       `json:"created_at" url:"created_at"`
-	Data       *FormSubmissionWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The submission.
+	Data *FormSubmissionWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3468,19 +3532,28 @@ var formSubmissionWebhookEventDataNullableFields = map[string]*big.Int{
 	"spam_reason":     formSubmissionWebhookEventDataFieldSpamReason,
 }
 
+// The submission.
 type FormSubmissionWebhookEventData struct {
-	FormID       string                               `json:"form_id" url:"form_id"`
-	FormName     string                               `json:"form_name" url:"form_name"`
-	SubmissionID string                               `json:"submission_id" url:"submission_id"`
-	Status       FormSubmissionWebhookEventDataStatus `json:"status" url:"status"`
+	// The form's id.
+	FormID string `json:"form_id" url:"form_id"`
+	// The form's name.
+	FormName string `json:"form_name" url:"form_name"`
+	// The submission's id.
+	SubmissionID string `json:"submission_id" url:"submission_id"`
+	// The submission's status after this event.
+	Status FormSubmissionWebhookEventDataStatus `json:"status" url:"status"`
 	// Field name → value; a field posted several times has an array.
-	Data           map[string]*FormSubmissionWebhookEventDataDataValue `json:"data" url:"data"`
-	SubmitterEmail *string                                             `json:"submitter_email,omitempty" url:"submitter_email,omitempty"`
+	Data map[string]*FormSubmissionWebhookEventDataDataValue `json:"data" url:"data"`
+	// The value of the form's `submitter.email_field`. `null` when it has none.
+	SubmitterEmail *string `json:"submitter_email,omitempty" url:"submitter_email,omitempty"`
 	// Uploaded files (download them with the API; never their bytes here).
-	Files      []*FormSubmissionFile                     `json:"files" url:"files"`
+	Files []*FormSubmissionFile `json:"files" url:"files"`
+	// Why it was flagged. `null`: not flagged.
 	SpamReason *FormSubmissionWebhookEventDataSpamReason `json:"spam_reason,omitempty" url:"spam_reason,omitempty"`
-	Sandbox    bool                                      `json:"sandbox" url:"sandbox"`
-	OccurredAt time.Time                                 `json:"occurred_at" url:"occurred_at"`
+	// Whether it belongs to a sandbox environment.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When this happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -3764,6 +3837,7 @@ func (f *FormSubmissionWebhookEventDataDataValue) Accept(visitor FormSubmissionW
 	return fmt.Errorf("type %T does not include a non-empty union type", f)
 }
 
+// Why it was flagged. `null`: not flagged.
 type FormSubmissionWebhookEventDataSpamReason string
 
 const (
@@ -3792,6 +3866,7 @@ func (f FormSubmissionWebhookEventDataSpamReason) Ptr() *FormSubmissionWebhookEv
 	return &f
 }
 
+// The submission's status after this event.
 type FormSubmissionWebhookEventDataStatus string
 
 const (
@@ -5289,13 +5364,16 @@ var (
 )
 
 type ReceivedSmsWebhookEvent struct {
+	// The event id.
 	ID     string                        `json:"id" url:"id"`
 	Object ReceivedSmsWebhookEventObject `json:"object" url:"object"`
-	Type   ReceivedSmsWebhookEventType   `json:"type" url:"type"`
+	// `sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.
+	Type ReceivedSmsWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string                       `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                    `json:"created_at" url:"created_at"`
-	Data       *ReceivedSmsWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time                    `json:"created_at" url:"created_at"`
+	Data      *ReceivedSmsWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -5471,12 +5549,17 @@ var receivedSmsWebhookEventDataNullableFields = map[string]*big.Int{
 
 type ReceivedSmsWebhookEventData struct {
 	// The received message; `null` for an opt-out to a number whose replies go to no environment.
-	ReceivedSmsID *string                             `json:"received_sms_id,omitempty" url:"received_sms_id,omitempty"`
-	From          string                              `json:"from" url:"from"`
-	To            string                              `json:"to" url:"to"`
-	Keyword       *ReceivedSmsWebhookEventDataKeyword `json:"keyword,omitempty" url:"keyword,omitempty"`
-	Sandbox       bool                                `json:"sandbox" url:"sandbox"`
-	OccurredAt    time.Time                           `json:"occurred_at" url:"occurred_at"`
+	ReceivedSmsID *string `json:"received_sms_id,omitempty" url:"received_sms_id,omitempty"`
+	// Who sent it.
+	From string `json:"from" url:"from"`
+	// Your number that received it.
+	To string `json:"to" url:"to"`
+	// The keyword it is, if any: `stop`, `start` or `help`. `null`: none.
+	Keyword *ReceivedSmsWebhookEventDataKeyword `json:"keyword,omitempty" url:"keyword,omitempty"`
+	// Whether it's a simulated message of a sandbox environment.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -5642,6 +5725,7 @@ func (r *ReceivedSmsWebhookEventData) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// The keyword it is, if any: `stop`, `start` or `help`. `null`: none.
 type ReceivedSmsWebhookEventDataKeyword string
 
 const (
@@ -5686,6 +5770,7 @@ func (r ReceivedSmsWebhookEventObject) Ptr() *ReceivedSmsWebhookEventObject {
 	return &r
 }
 
+// `sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.
 type ReceivedSmsWebhookEventType string
 
 const (
@@ -5724,11 +5809,13 @@ type RiskWebhookEvent struct {
 	// The event id, also sent as the `webhook-id` header.
 	ID     string                 `json:"id" url:"id"`
 	Object RiskWebhookEventObject `json:"object" url:"object"`
-	Type   RiskWebhookEventType   `json:"type" url:"type"`
+	// What happened to the assessment.
+	Type RiskWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string                `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time             `json:"created_at" url:"created_at"`
-	Data       *RiskWebhookEventData `json:"data" url:"data"`
+	APIVersion string    `json:"api_version" url:"api_version"`
+	CreatedAt  time.Time `json:"created_at" url:"created_at"`
+	// The assessment, without its signals.
+	Data *RiskWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -5906,17 +5993,24 @@ var riskWebhookEventDataNullableFields = map[string]*big.Int{
 	"outcome":    riskWebhookEventDataFieldOutcome,
 }
 
+// The assessment, without its signals.
 type RiskWebhookEventData struct {
-	AssessmentID string        `json:"assessment_id" url:"assessment_id"`
-	Event        RiskEvent     `json:"event" url:"event"`
-	EventName    *string       `json:"event_name,omitempty" url:"event_name,omitempty"`
-	Decision     RiskDecision  `json:"decision" url:"decision"`
-	Score        float64       `json:"score" url:"score"`
-	Reasons      []*RiskReason `json:"reasons" url:"reasons"`
-	UserID       *string       `json:"user_id,omitempty" url:"user_id,omitempty"`
+	// The assessment's id.
+	AssessmentID string    `json:"assessment_id" url:"assessment_id"`
+	Event        RiskEvent `json:"event" url:"event"`
+	// Your name for a `custom` event. `null`: none.
+	EventName *string      `json:"event_name,omitempty" url:"event_name,omitempty"`
+	Decision  RiskDecision `json:"decision" url:"decision"`
+	// 0-1: how risky the signals are together.
+	Score float64 `json:"score" url:"score"`
+	// Why, most significant first.
+	Reasons []*RiskReason `json:"reasons" url:"reasons"`
+	// Your user id. `null`: none given.
+	UserID *string `json:"user_id,omitempty" url:"user_id,omitempty"`
 	// `risk.assessment.reviewed`: the outcome that resolved the review.
-	Outcome    *RiskOutcome `json:"outcome,omitempty" url:"outcome,omitempty"`
-	OccurredAt time.Time    `json:"occurred_at" url:"occurred_at"`
+	Outcome *RiskOutcome `json:"outcome,omitempty" url:"outcome,omitempty"`
+	// When this happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6143,6 +6237,7 @@ func (r RiskWebhookEventObject) Ptr() *RiskWebhookEventObject {
 	return &r
 }
 
+// What happened to the assessment.
 type RiskWebhookEventType string
 
 const (
@@ -6166,6 +6261,1515 @@ func (r RiskWebhookEventType) Ptr() *RiskWebhookEventType {
 }
 
 var (
+	schedulingBookingWebhookDataFieldBookingID     = big.NewInt(1 << 0)
+	schedulingBookingWebhookDataFieldEventTypeID   = big.NewInt(1 << 1)
+	schedulingBookingWebhookDataFieldStatus        = big.NewInt(1 << 2)
+	schedulingBookingWebhookDataFieldStart         = big.NewInt(1 << 3)
+	schedulingBookingWebhookDataFieldEnd           = big.NewInt(1 << 4)
+	schedulingBookingWebhookDataFieldHostIDs       = big.NewInt(1 << 5)
+	schedulingBookingWebhookDataFieldAttendeeUIDs  = big.NewInt(1 << 6)
+	schedulingBookingWebhookDataFieldSeriesID      = big.NewInt(1 << 7)
+	schedulingBookingWebhookDataFieldPreviousStart = big.NewInt(1 << 8)
+	schedulingBookingWebhookDataFieldReminder      = big.NewInt(1 << 9)
+	schedulingBookingWebhookDataFieldOccurredAt    = big.NewInt(1 << 10)
+)
+
+// schedulingBookingWebhookDataNullableFields maps the wire names of SchedulingBookingWebhookData's nullable fields (required or optional) to their field bits.
+var schedulingBookingWebhookDataNullableFields = map[string]*big.Int{
+	"series_id": schedulingBookingWebhookDataFieldSeriesID,
+}
+
+// Ids, times and statuses only. Retrieve the booking for anything about the person.
+type SchedulingBookingWebhookData struct {
+	// The booking's id.
+	BookingID string `json:"booking_id" url:"booking_id"`
+	// The booked event type's id.
+	EventTypeID string `json:"event_type_id" url:"event_type_id"`
+	// The booking's status after this event.
+	Status SchedulingBookingWebhookDataStatus `json:"status" url:"status"`
+	// When the booking starts.
+	Start string `json:"start" url:"start"`
+	// When the booking ends.
+	End string `json:"end" url:"end"`
+	// The ids of the hosts taking it.
+	HostIDs []string `json:"host_ids" url:"host_ids"`
+	// Your uids of its attendees.
+	AttendeeUIDs []string `json:"attendee_uids" url:"attendee_uids"`
+	// The id of its series. `null`: not part of one.
+	SeriesID *string `json:"series_id,omitempty" url:"series_id,omitempty"`
+	// `scheduling.booking.rescheduled`: when it used to start.
+	PreviousStart *string `json:"previous_start,omitempty" url:"previous_start,omitempty"`
+	// `scheduling.booking.reminder`: which reminder this is.
+	Reminder *SchedulingBookingWebhookDataReminder `json:"reminder,omitempty" url:"reminder,omitempty"`
+	// When this happened.
+	OccurredAt string `json:"occurred_at" url:"occurred_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingWebhookData) GetBookingID() string {
+	if s == nil {
+		return ""
+	}
+	return s.BookingID
+}
+
+func (s *SchedulingBookingWebhookData) GetEventTypeID() string {
+	if s == nil {
+		return ""
+	}
+	return s.EventTypeID
+}
+
+func (s *SchedulingBookingWebhookData) GetStatus() SchedulingBookingWebhookDataStatus {
+	if s == nil {
+		return ""
+	}
+	return s.Status
+}
+
+func (s *SchedulingBookingWebhookData) GetStart() string {
+	if s == nil {
+		return ""
+	}
+	return s.Start
+}
+
+func (s *SchedulingBookingWebhookData) GetEnd() string {
+	if s == nil {
+		return ""
+	}
+	return s.End
+}
+
+func (s *SchedulingBookingWebhookData) GetHostIDs() []string {
+	if s == nil {
+		return nil
+	}
+	return s.HostIDs
+}
+
+func (s *SchedulingBookingWebhookData) GetAttendeeUIDs() []string {
+	if s == nil {
+		return nil
+	}
+	return s.AttendeeUIDs
+}
+
+func (s *SchedulingBookingWebhookData) GetSeriesID() *string {
+	if s == nil {
+		return nil
+	}
+	return s.SeriesID
+}
+
+func (s *SchedulingBookingWebhookData) GetPreviousStart() *string {
+	if s == nil {
+		return nil
+	}
+	return s.PreviousStart
+}
+
+func (s *SchedulingBookingWebhookData) GetReminder() *SchedulingBookingWebhookDataReminder {
+	if s == nil {
+		return nil
+	}
+	return s.Reminder
+}
+
+func (s *SchedulingBookingWebhookData) GetOccurredAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.OccurredAt
+}
+
+func (s *SchedulingBookingWebhookData) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingWebhookData) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetBookingID sets the BookingID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetBookingID(bookingID string) {
+	s.BookingID = bookingID
+	s.require(schedulingBookingWebhookDataFieldBookingID)
+}
+
+// SetEventTypeID sets the EventTypeID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetEventTypeID(eventTypeID string) {
+	s.EventTypeID = eventTypeID
+	s.require(schedulingBookingWebhookDataFieldEventTypeID)
+}
+
+// SetStatus sets the Status field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetStatus(status SchedulingBookingWebhookDataStatus) {
+	s.Status = status
+	s.require(schedulingBookingWebhookDataFieldStatus)
+}
+
+// SetStart sets the Start field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetStart(start string) {
+	s.Start = start
+	s.require(schedulingBookingWebhookDataFieldStart)
+}
+
+// SetEnd sets the End field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetEnd(end string) {
+	s.End = end
+	s.require(schedulingBookingWebhookDataFieldEnd)
+}
+
+// SetHostIDs sets the HostIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetHostIDs(hostIDs []string) {
+	s.HostIDs = hostIDs
+	s.require(schedulingBookingWebhookDataFieldHostIDs)
+}
+
+// SetAttendeeUIDs sets the AttendeeUIDs field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetAttendeeUIDs(attendeeUIDs []string) {
+	s.AttendeeUIDs = attendeeUIDs
+	s.require(schedulingBookingWebhookDataFieldAttendeeUIDs)
+}
+
+// SetSeriesID sets the SeriesID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetSeriesID(seriesID *string) {
+	s.SeriesID = seriesID
+	s.require(schedulingBookingWebhookDataFieldSeriesID)
+}
+
+// SetPreviousStart sets the PreviousStart field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetPreviousStart(previousStart *string) {
+	s.PreviousStart = previousStart
+	s.require(schedulingBookingWebhookDataFieldPreviousStart)
+}
+
+// SetReminder sets the Reminder field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetReminder(reminder *SchedulingBookingWebhookDataReminder) {
+	s.Reminder = reminder
+	s.require(schedulingBookingWebhookDataFieldReminder)
+}
+
+// SetOccurredAt sets the OccurredAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookData) SetOccurredAt(occurredAt string) {
+	s.OccurredAt = occurredAt
+	s.require(schedulingBookingWebhookDataFieldOccurredAt)
+}
+
+func (s *SchedulingBookingWebhookData) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingWebhookData
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingWebhookData(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingWebhookDataNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingWebhookData) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingWebhookData
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingWebhookData) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingBookingWebhookDataReminderFieldKey           = big.NewInt(1 << 0)
+	schedulingBookingWebhookDataReminderFieldAnchor        = big.NewInt(1 << 1)
+	schedulingBookingWebhookDataReminderFieldBeforeMinutes = big.NewInt(1 << 2)
+	schedulingBookingWebhookDataReminderFieldAfterMinutes  = big.NewInt(1 << 3)
+	schedulingBookingWebhookDataReminderFieldScheduledFor  = big.NewInt(1 << 4)
+)
+
+// schedulingBookingWebhookDataReminderNullableFields maps the wire names of SchedulingBookingWebhookDataReminder's nullable fields (required or optional) to their field bits.
+var schedulingBookingWebhookDataReminderNullableFields = map[string]*big.Int{
+	"before_minutes": schedulingBookingWebhookDataReminderFieldBeforeMinutes,
+	"after_minutes":  schedulingBookingWebhookDataReminderFieldAfterMinutes,
+}
+
+// `scheduling.booking.reminder`: which reminder this is.
+type SchedulingBookingWebhookDataReminder struct {
+	// Which reminder this is.
+	Key string `json:"key" url:"key"`
+	// The moment it's timed from.
+	Anchor SchedulingBookingWebhookDataReminderAnchor `json:"anchor" url:"anchor"`
+	// How long before the anchor. `null` when it's after.
+	BeforeMinutes *float64 `json:"before_minutes,omitempty" url:"before_minutes,omitempty"`
+	// How long after the anchor. `null` when it's before.
+	AfterMinutes *float64 `json:"after_minutes,omitempty" url:"after_minutes,omitempty"`
+	// When it was due.
+	ScheduledFor string `json:"scheduled_for" url:"scheduled_for"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetKey() string {
+	if s == nil {
+		return ""
+	}
+	return s.Key
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetAnchor() SchedulingBookingWebhookDataReminderAnchor {
+	if s == nil {
+		return ""
+	}
+	return s.Anchor
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetBeforeMinutes() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.BeforeMinutes
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetAfterMinutes() *float64 {
+	if s == nil {
+		return nil
+	}
+	return s.AfterMinutes
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetScheduledFor() string {
+	if s == nil {
+		return ""
+	}
+	return s.ScheduledFor
+}
+
+func (s *SchedulingBookingWebhookDataReminder) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingWebhookDataReminder) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetKey sets the Key field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookDataReminder) SetKey(key string) {
+	s.Key = key
+	s.require(schedulingBookingWebhookDataReminderFieldKey)
+}
+
+// SetAnchor sets the Anchor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookDataReminder) SetAnchor(anchor SchedulingBookingWebhookDataReminderAnchor) {
+	s.Anchor = anchor
+	s.require(schedulingBookingWebhookDataReminderFieldAnchor)
+}
+
+// SetBeforeMinutes sets the BeforeMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookDataReminder) SetBeforeMinutes(beforeMinutes *float64) {
+	s.BeforeMinutes = beforeMinutes
+	s.require(schedulingBookingWebhookDataReminderFieldBeforeMinutes)
+}
+
+// SetAfterMinutes sets the AfterMinutes field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookDataReminder) SetAfterMinutes(afterMinutes *float64) {
+	s.AfterMinutes = afterMinutes
+	s.require(schedulingBookingWebhookDataReminderFieldAfterMinutes)
+}
+
+// SetScheduledFor sets the ScheduledFor field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookDataReminder) SetScheduledFor(scheduledFor string) {
+	s.ScheduledFor = scheduledFor
+	s.require(schedulingBookingWebhookDataReminderFieldScheduledFor)
+}
+
+func (s *SchedulingBookingWebhookDataReminder) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingBookingWebhookDataReminder
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingBookingWebhookDataReminder(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingBookingWebhookDataReminderNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingWebhookDataReminder) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingWebhookDataReminder
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingWebhookDataReminder) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+// The moment it's timed from.
+type SchedulingBookingWebhookDataReminderAnchor string
+
+const (
+	SchedulingBookingWebhookDataReminderAnchorStart           SchedulingBookingWebhookDataReminderAnchor = "start"
+	SchedulingBookingWebhookDataReminderAnchorEnd             SchedulingBookingWebhookDataReminderAnchor = "end"
+	SchedulingBookingWebhookDataReminderAnchorConfirmed       SchedulingBookingWebhookDataReminderAnchor = "confirmed"
+	SchedulingBookingWebhookDataReminderAnchorRescheduled     SchedulingBookingWebhookDataReminderAnchor = "rescheduled"
+	SchedulingBookingWebhookDataReminderAnchorCancelled       SchedulingBookingWebhookDataReminderAnchor = "cancelled"
+	SchedulingBookingWebhookDataReminderAnchorDeclined        SchedulingBookingWebhookDataReminderAnchor = "declined"
+	SchedulingBookingWebhookDataReminderAnchorPendingApproval SchedulingBookingWebhookDataReminderAnchor = "pending_approval"
+	SchedulingBookingWebhookDataReminderAnchorNoShow          SchedulingBookingWebhookDataReminderAnchor = "no_show"
+)
+
+func NewSchedulingBookingWebhookDataReminderAnchorFromString(s string) (SchedulingBookingWebhookDataReminderAnchor, error) {
+	switch s {
+	case "start":
+		return SchedulingBookingWebhookDataReminderAnchorStart, nil
+	case "end":
+		return SchedulingBookingWebhookDataReminderAnchorEnd, nil
+	case "confirmed":
+		return SchedulingBookingWebhookDataReminderAnchorConfirmed, nil
+	case "rescheduled":
+		return SchedulingBookingWebhookDataReminderAnchorRescheduled, nil
+	case "cancelled":
+		return SchedulingBookingWebhookDataReminderAnchorCancelled, nil
+	case "declined":
+		return SchedulingBookingWebhookDataReminderAnchorDeclined, nil
+	case "pending_approval":
+		return SchedulingBookingWebhookDataReminderAnchorPendingApproval, nil
+	case "no_show":
+		return SchedulingBookingWebhookDataReminderAnchorNoShow, nil
+	}
+	var t SchedulingBookingWebhookDataReminderAnchor
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWebhookDataReminderAnchor) Ptr() *SchedulingBookingWebhookDataReminderAnchor {
+	return &s
+}
+
+// The booking's status after this event.
+type SchedulingBookingWebhookDataStatus string
+
+const (
+	SchedulingBookingWebhookDataStatusHeld            SchedulingBookingWebhookDataStatus = "held"
+	SchedulingBookingWebhookDataStatusPendingApproval SchedulingBookingWebhookDataStatus = "pending_approval"
+	SchedulingBookingWebhookDataStatusConfirmed       SchedulingBookingWebhookDataStatus = "confirmed"
+	SchedulingBookingWebhookDataStatusCancelled       SchedulingBookingWebhookDataStatus = "cancelled"
+	SchedulingBookingWebhookDataStatusDeclined        SchedulingBookingWebhookDataStatus = "declined"
+)
+
+func NewSchedulingBookingWebhookDataStatusFromString(s string) (SchedulingBookingWebhookDataStatus, error) {
+	switch s {
+	case "held":
+		return SchedulingBookingWebhookDataStatusHeld, nil
+	case "pending_approval":
+		return SchedulingBookingWebhookDataStatusPendingApproval, nil
+	case "confirmed":
+		return SchedulingBookingWebhookDataStatusConfirmed, nil
+	case "cancelled":
+		return SchedulingBookingWebhookDataStatusCancelled, nil
+	case "declined":
+		return SchedulingBookingWebhookDataStatusDeclined, nil
+	}
+	var t SchedulingBookingWebhookDataStatus
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWebhookDataStatus) Ptr() *SchedulingBookingWebhookDataStatus {
+	return &s
+}
+
+var (
+	schedulingBookingWebhookEventFieldID         = big.NewInt(1 << 0)
+	schedulingBookingWebhookEventFieldObject     = big.NewInt(1 << 1)
+	schedulingBookingWebhookEventFieldAPIVersion = big.NewInt(1 << 2)
+	schedulingBookingWebhookEventFieldCreatedAt  = big.NewInt(1 << 3)
+	schedulingBookingWebhookEventFieldType       = big.NewInt(1 << 4)
+	schedulingBookingWebhookEventFieldData       = big.NewInt(1 << 5)
+)
+
+type SchedulingBookingWebhookEvent struct {
+	// The event id.
+	ID     string                              `json:"id" url:"id"`
+	Object SchedulingBookingWebhookEventObject `json:"object" url:"object"`
+	// The API version this payload is rendered in: the endpoint's.
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// What happened to the booking.
+	Type SchedulingBookingWebhookEventType `json:"type" url:"type"`
+	Data *SchedulingBookingWebhookData     `json:"data" url:"data"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingBookingWebhookEvent) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingBookingWebhookEvent) GetObject() SchedulingBookingWebhookEventObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingBookingWebhookEvent) GetAPIVersion() string {
+	if s == nil {
+		return ""
+	}
+	return s.APIVersion
+}
+
+func (s *SchedulingBookingWebhookEvent) GetCreatedAt() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingBookingWebhookEvent) GetType() SchedulingBookingWebhookEventType {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingBookingWebhookEvent) GetData() *SchedulingBookingWebhookData {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingBookingWebhookEvent) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingBookingWebhookEvent) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetID(id string) {
+	s.ID = id
+	s.require(schedulingBookingWebhookEventFieldID)
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetObject(object SchedulingBookingWebhookEventObject) {
+	s.Object = object
+	s.require(schedulingBookingWebhookEventFieldObject)
+}
+
+// SetAPIVersion sets the APIVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetAPIVersion(apiVersion string) {
+	s.APIVersion = apiVersion
+	s.require(schedulingBookingWebhookEventFieldAPIVersion)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetCreatedAt(createdAt time.Time) {
+	s.CreatedAt = createdAt
+	s.require(schedulingBookingWebhookEventFieldCreatedAt)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetType(type_ SchedulingBookingWebhookEventType) {
+	s.Type = type_
+	s.require(schedulingBookingWebhookEventFieldType)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingBookingWebhookEvent) SetData(data *SchedulingBookingWebhookData) {
+	s.Data = data
+	s.require(schedulingBookingWebhookEventFieldData)
+}
+
+func (s *SchedulingBookingWebhookEvent) UnmarshalJSON(data []byte) error {
+	type embed SchedulingBookingWebhookEvent
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SchedulingBookingWebhookEvent(unmarshaler.embed)
+	s.CreatedAt = unmarshaler.CreatedAt.Time()
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingBookingWebhookEvent) MarshalJSON() ([]byte, error) {
+	type embed SchedulingBookingWebhookEvent
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed:     embed(*s),
+		CreatedAt: internal.NewDateTime(s.CreatedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingBookingWebhookEvent) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingBookingWebhookEventObject string
+
+const (
+	SchedulingBookingWebhookEventObjectEvent SchedulingBookingWebhookEventObject = "event"
+)
+
+func NewSchedulingBookingWebhookEventObjectFromString(s string) (SchedulingBookingWebhookEventObject, error) {
+	switch s {
+	case "event":
+		return SchedulingBookingWebhookEventObjectEvent, nil
+	}
+	var t SchedulingBookingWebhookEventObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWebhookEventObject) Ptr() *SchedulingBookingWebhookEventObject {
+	return &s
+}
+
+// What happened to the booking.
+type SchedulingBookingWebhookEventType string
+
+const (
+	SchedulingBookingWebhookEventTypeSchedulingBookingCreated             SchedulingBookingWebhookEventType = "scheduling.booking.created"
+	SchedulingBookingWebhookEventTypeSchedulingBookingPendingApproval     SchedulingBookingWebhookEventType = "scheduling.booking.pending_approval"
+	SchedulingBookingWebhookEventTypeSchedulingBookingConfirmed           SchedulingBookingWebhookEventType = "scheduling.booking.confirmed"
+	SchedulingBookingWebhookEventTypeSchedulingBookingRescheduled         SchedulingBookingWebhookEventType = "scheduling.booking.rescheduled"
+	SchedulingBookingWebhookEventTypeSchedulingBookingCancelled           SchedulingBookingWebhookEventType = "scheduling.booking.cancelled"
+	SchedulingBookingWebhookEventTypeSchedulingBookingDeclined            SchedulingBookingWebhookEventType = "scheduling.booking.declined"
+	SchedulingBookingWebhookEventTypeSchedulingBookingNoShow              SchedulingBookingWebhookEventType = "scheduling.booking.no_show"
+	SchedulingBookingWebhookEventTypeSchedulingBookingExternalConflict    SchedulingBookingWebhookEventType = "scheduling.booking.external_conflict"
+	SchedulingBookingWebhookEventTypeSchedulingBookingCalendarWriteFailed SchedulingBookingWebhookEventType = "scheduling.booking.calendar_write_failed"
+	SchedulingBookingWebhookEventTypeSchedulingBookingLocationReady       SchedulingBookingWebhookEventType = "scheduling.booking.location_ready"
+	SchedulingBookingWebhookEventTypeSchedulingBookingStarted             SchedulingBookingWebhookEventType = "scheduling.booking.started"
+	SchedulingBookingWebhookEventTypeSchedulingBookingEnded               SchedulingBookingWebhookEventType = "scheduling.booking.ended"
+	SchedulingBookingWebhookEventTypeSchedulingBookingReminder            SchedulingBookingWebhookEventType = "scheduling.booking.reminder"
+)
+
+func NewSchedulingBookingWebhookEventTypeFromString(s string) (SchedulingBookingWebhookEventType, error) {
+	switch s {
+	case "scheduling.booking.created":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingCreated, nil
+	case "scheduling.booking.pending_approval":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingPendingApproval, nil
+	case "scheduling.booking.confirmed":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingConfirmed, nil
+	case "scheduling.booking.rescheduled":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingRescheduled, nil
+	case "scheduling.booking.cancelled":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingCancelled, nil
+	case "scheduling.booking.declined":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingDeclined, nil
+	case "scheduling.booking.no_show":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingNoShow, nil
+	case "scheduling.booking.external_conflict":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingExternalConflict, nil
+	case "scheduling.booking.calendar_write_failed":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingCalendarWriteFailed, nil
+	case "scheduling.booking.location_ready":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingLocationReady, nil
+	case "scheduling.booking.started":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingStarted, nil
+	case "scheduling.booking.ended":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingEnded, nil
+	case "scheduling.booking.reminder":
+		return SchedulingBookingWebhookEventTypeSchedulingBookingReminder, nil
+	}
+	var t SchedulingBookingWebhookEventType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingBookingWebhookEventType) Ptr() *SchedulingBookingWebhookEventType {
+	return &s
+}
+
+var (
+	schedulingCalendarDelegationWebhookEventFieldID         = big.NewInt(1 << 0)
+	schedulingCalendarDelegationWebhookEventFieldObject     = big.NewInt(1 << 1)
+	schedulingCalendarDelegationWebhookEventFieldAPIVersion = big.NewInt(1 << 2)
+	schedulingCalendarDelegationWebhookEventFieldCreatedAt  = big.NewInt(1 << 3)
+	schedulingCalendarDelegationWebhookEventFieldType       = big.NewInt(1 << 4)
+	schedulingCalendarDelegationWebhookEventFieldData       = big.NewInt(1 << 5)
+)
+
+type SchedulingCalendarDelegationWebhookEvent struct {
+	// The event id.
+	ID     string                                         `json:"id" url:"id"`
+	Object SchedulingCalendarDelegationWebhookEventObject `json:"object" url:"object"`
+	// The API version this payload is rendered in: the endpoint's.
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time                                     `json:"created_at" url:"created_at"`
+	Type      SchedulingCalendarDelegationWebhookEventType  `json:"type" url:"type"`
+	Data      *SchedulingCalendarDelegationWebhookEventData `json:"data" url:"data"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetObject() SchedulingCalendarDelegationWebhookEventObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetAPIVersion() string {
+	if s == nil {
+		return ""
+	}
+	return s.APIVersion
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetCreatedAt() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetType() SchedulingCalendarDelegationWebhookEventType {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetData() *SchedulingCalendarDelegationWebhookEventData {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetID(id string) {
+	s.ID = id
+	s.require(schedulingCalendarDelegationWebhookEventFieldID)
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetObject(object SchedulingCalendarDelegationWebhookEventObject) {
+	s.Object = object
+	s.require(schedulingCalendarDelegationWebhookEventFieldObject)
+}
+
+// SetAPIVersion sets the APIVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetAPIVersion(apiVersion string) {
+	s.APIVersion = apiVersion
+	s.require(schedulingCalendarDelegationWebhookEventFieldAPIVersion)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetCreatedAt(createdAt time.Time) {
+	s.CreatedAt = createdAt
+	s.require(schedulingCalendarDelegationWebhookEventFieldCreatedAt)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetType(type_ SchedulingCalendarDelegationWebhookEventType) {
+	s.Type = type_
+	s.require(schedulingCalendarDelegationWebhookEventFieldType)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEvent) SetData(data *SchedulingCalendarDelegationWebhookEventData) {
+	s.Data = data
+	s.require(schedulingCalendarDelegationWebhookEventFieldData)
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) UnmarshalJSON(data []byte) error {
+	type embed SchedulingCalendarDelegationWebhookEvent
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarDelegationWebhookEvent(unmarshaler.embed)
+	s.CreatedAt = unmarshaler.CreatedAt.Time()
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarDelegationWebhookEvent
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed:     embed(*s),
+		CreatedAt: internal.NewDateTime(s.CreatedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarDelegationWebhookEvent) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingCalendarDelegationWebhookEventDataFieldDelegationID = big.NewInt(1 << 0)
+	schedulingCalendarDelegationWebhookEventDataFieldProvider     = big.NewInt(1 << 1)
+	schedulingCalendarDelegationWebhookEventDataFieldDomain       = big.NewInt(1 << 2)
+	schedulingCalendarDelegationWebhookEventDataFieldCode         = big.NewInt(1 << 3)
+	schedulingCalendarDelegationWebhookEventDataFieldOccurredAt   = big.NewInt(1 << 4)
+)
+
+// schedulingCalendarDelegationWebhookEventDataNullableFields maps the wire names of SchedulingCalendarDelegationWebhookEventData's nullable fields (required or optional) to their field bits.
+var schedulingCalendarDelegationWebhookEventDataNullableFields = map[string]*big.Int{
+	"code": schedulingCalendarDelegationWebhookEventDataFieldCode,
+}
+
+type SchedulingCalendarDelegationWebhookEventData struct {
+	DelegationID string `json:"delegation_id" url:"delegation_id"`
+	Provider     string `json:"provider" url:"provider"`
+	Domain       string `json:"domain" url:"domain"`
+	// What the provider said, when it refused.
+	Code       *string `json:"code,omitempty" url:"code,omitempty"`
+	OccurredAt string  `json:"occurred_at" url:"occurred_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetDelegationID() string {
+	if s == nil {
+		return ""
+	}
+	return s.DelegationID
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetProvider() string {
+	if s == nil {
+		return ""
+	}
+	return s.Provider
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetDomain() string {
+	if s == nil {
+		return ""
+	}
+	return s.Domain
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetCode() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Code
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetOccurredAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.OccurredAt
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetDelegationID sets the DelegationID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEventData) SetDelegationID(delegationID string) {
+	s.DelegationID = delegationID
+	s.require(schedulingCalendarDelegationWebhookEventDataFieldDelegationID)
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEventData) SetProvider(provider string) {
+	s.Provider = provider
+	s.require(schedulingCalendarDelegationWebhookEventDataFieldProvider)
+}
+
+// SetDomain sets the Domain field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEventData) SetDomain(domain string) {
+	s.Domain = domain
+	s.require(schedulingCalendarDelegationWebhookEventDataFieldDomain)
+}
+
+// SetCode sets the Code field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEventData) SetCode(code *string) {
+	s.Code = code
+	s.require(schedulingCalendarDelegationWebhookEventDataFieldCode)
+}
+
+// SetOccurredAt sets the OccurredAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarDelegationWebhookEventData) SetOccurredAt(occurredAt string) {
+	s.OccurredAt = occurredAt
+	s.require(schedulingCalendarDelegationWebhookEventDataFieldOccurredAt)
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarDelegationWebhookEventData
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarDelegationWebhookEventData(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, schedulingCalendarDelegationWebhookEventDataNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarDelegationWebhookEventData
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarDelegationWebhookEventData) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCalendarDelegationWebhookEventObject string
+
+const (
+	SchedulingCalendarDelegationWebhookEventObjectEvent SchedulingCalendarDelegationWebhookEventObject = "event"
+)
+
+func NewSchedulingCalendarDelegationWebhookEventObjectFromString(s string) (SchedulingCalendarDelegationWebhookEventObject, error) {
+	switch s {
+	case "event":
+		return SchedulingCalendarDelegationWebhookEventObjectEvent, nil
+	}
+	var t SchedulingCalendarDelegationWebhookEventObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationWebhookEventObject) Ptr() *SchedulingCalendarDelegationWebhookEventObject {
+	return &s
+}
+
+type SchedulingCalendarDelegationWebhookEventType string
+
+const (
+	SchedulingCalendarDelegationWebhookEventTypeSchedulingCalendarDelegationFailing  SchedulingCalendarDelegationWebhookEventType = "scheduling.calendar_delegation.failing"
+	SchedulingCalendarDelegationWebhookEventTypeSchedulingCalendarDelegationRestored SchedulingCalendarDelegationWebhookEventType = "scheduling.calendar_delegation.restored"
+)
+
+func NewSchedulingCalendarDelegationWebhookEventTypeFromString(s string) (SchedulingCalendarDelegationWebhookEventType, error) {
+	switch s {
+	case "scheduling.calendar_delegation.failing":
+		return SchedulingCalendarDelegationWebhookEventTypeSchedulingCalendarDelegationFailing, nil
+	case "scheduling.calendar_delegation.restored":
+		return SchedulingCalendarDelegationWebhookEventTypeSchedulingCalendarDelegationRestored, nil
+	}
+	var t SchedulingCalendarDelegationWebhookEventType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarDelegationWebhookEventType) Ptr() *SchedulingCalendarDelegationWebhookEventType {
+	return &s
+}
+
+var (
+	schedulingCalendarWebhookEventFieldID         = big.NewInt(1 << 0)
+	schedulingCalendarWebhookEventFieldObject     = big.NewInt(1 << 1)
+	schedulingCalendarWebhookEventFieldAPIVersion = big.NewInt(1 << 2)
+	schedulingCalendarWebhookEventFieldCreatedAt  = big.NewInt(1 << 3)
+	schedulingCalendarWebhookEventFieldType       = big.NewInt(1 << 4)
+	schedulingCalendarWebhookEventFieldData       = big.NewInt(1 << 5)
+)
+
+type SchedulingCalendarWebhookEvent struct {
+	// The event id.
+	ID     string                               `json:"id" url:"id"`
+	Object SchedulingCalendarWebhookEventObject `json:"object" url:"object"`
+	// The API version this payload is rendered in: the endpoint's.
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// `connected`: a calendar account was connected. `needs_reauth`: access was lost, and the host isn't offered until it's back. `disconnected`: the connection was removed.
+	Type SchedulingCalendarWebhookEventType `json:"type" url:"type"`
+	// The host and calendar connection this is about.
+	Data *SchedulingCalendarWebhookEventData `json:"data" url:"data"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ID
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetObject() SchedulingCalendarWebhookEventObject {
+	if s == nil {
+		return ""
+	}
+	return s.Object
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetAPIVersion() string {
+	if s == nil {
+		return ""
+	}
+	return s.APIVersion
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetCreatedAt() time.Time {
+	if s == nil {
+		return time.Time{}
+	}
+	return s.CreatedAt
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetType() SchedulingCalendarWebhookEventType {
+	if s == nil {
+		return ""
+	}
+	return s.Type
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetData() *SchedulingCalendarWebhookEventData {
+	if s == nil {
+		return nil
+	}
+	return s.Data
+}
+
+func (s *SchedulingCalendarWebhookEvent) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarWebhookEvent) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetID sets the ID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetID(id string) {
+	s.ID = id
+	s.require(schedulingCalendarWebhookEventFieldID)
+}
+
+// SetObject sets the Object field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetObject(object SchedulingCalendarWebhookEventObject) {
+	s.Object = object
+	s.require(schedulingCalendarWebhookEventFieldObject)
+}
+
+// SetAPIVersion sets the APIVersion field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetAPIVersion(apiVersion string) {
+	s.APIVersion = apiVersion
+	s.require(schedulingCalendarWebhookEventFieldAPIVersion)
+}
+
+// SetCreatedAt sets the CreatedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetCreatedAt(createdAt time.Time) {
+	s.CreatedAt = createdAt
+	s.require(schedulingCalendarWebhookEventFieldCreatedAt)
+}
+
+// SetType sets the Type field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetType(type_ SchedulingCalendarWebhookEventType) {
+	s.Type = type_
+	s.require(schedulingCalendarWebhookEventFieldType)
+}
+
+// SetData sets the Data field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEvent) SetData(data *SchedulingCalendarWebhookEventData) {
+	s.Data = data
+	s.require(schedulingCalendarWebhookEventFieldData)
+}
+
+func (s *SchedulingCalendarWebhookEvent) UnmarshalJSON(data []byte) error {
+	type embed SchedulingCalendarWebhookEvent
+	var unmarshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed: embed(*s),
+	}
+	if err := json.Unmarshal(data, &unmarshaler); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarWebhookEvent(unmarshaler.embed)
+	s.CreatedAt = unmarshaler.CreatedAt.Time()
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarWebhookEvent) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarWebhookEvent
+	var marshaler = struct {
+		embed
+		CreatedAt *internal.DateTime `json:"created_at"`
+	}{
+		embed:     embed(*s),
+		CreatedAt: internal.NewDateTime(s.CreatedAt),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarWebhookEvent) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+var (
+	schedulingCalendarWebhookEventDataFieldHostID       = big.NewInt(1 << 0)
+	schedulingCalendarWebhookEventDataFieldConnectionID = big.NewInt(1 << 1)
+	schedulingCalendarWebhookEventDataFieldProvider     = big.NewInt(1 << 2)
+	schedulingCalendarWebhookEventDataFieldOccurredAt   = big.NewInt(1 << 3)
+)
+
+// The host and calendar connection this is about.
+type SchedulingCalendarWebhookEventData struct {
+	// The host's id.
+	HostID string `json:"host_id" url:"host_id"`
+	// The calendar connection's id.
+	ConnectionID string `json:"connection_id" url:"connection_id"`
+	// The calendar provider, such as `google`.
+	Provider string `json:"provider" url:"provider"`
+	// When this happened.
+	OccurredAt string `json:"occurred_at" url:"occurred_at"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *SchedulingCalendarWebhookEventData) GetHostID() string {
+	if s == nil {
+		return ""
+	}
+	return s.HostID
+}
+
+func (s *SchedulingCalendarWebhookEventData) GetConnectionID() string {
+	if s == nil {
+		return ""
+	}
+	return s.ConnectionID
+}
+
+func (s *SchedulingCalendarWebhookEventData) GetProvider() string {
+	if s == nil {
+		return ""
+	}
+	return s.Provider
+}
+
+func (s *SchedulingCalendarWebhookEventData) GetOccurredAt() string {
+	if s == nil {
+		return ""
+	}
+	return s.OccurredAt
+}
+
+func (s *SchedulingCalendarWebhookEventData) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *SchedulingCalendarWebhookEventData) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetHostID sets the HostID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEventData) SetHostID(hostID string) {
+	s.HostID = hostID
+	s.require(schedulingCalendarWebhookEventDataFieldHostID)
+}
+
+// SetConnectionID sets the ConnectionID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEventData) SetConnectionID(connectionID string) {
+	s.ConnectionID = connectionID
+	s.require(schedulingCalendarWebhookEventDataFieldConnectionID)
+}
+
+// SetProvider sets the Provider field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEventData) SetProvider(provider string) {
+	s.Provider = provider
+	s.require(schedulingCalendarWebhookEventDataFieldProvider)
+}
+
+// SetOccurredAt sets the OccurredAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SchedulingCalendarWebhookEventData) SetOccurredAt(occurredAt string) {
+	s.OccurredAt = occurredAt
+	s.require(schedulingCalendarWebhookEventDataFieldOccurredAt)
+}
+
+func (s *SchedulingCalendarWebhookEventData) UnmarshalJSON(data []byte) error {
+	type unmarshaler SchedulingCalendarWebhookEventData
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = SchedulingCalendarWebhookEventData(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *SchedulingCalendarWebhookEventData) MarshalJSON() ([]byte, error) {
+	type embed SchedulingCalendarWebhookEventData
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *SchedulingCalendarWebhookEventData) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
+}
+
+type SchedulingCalendarWebhookEventObject string
+
+const (
+	SchedulingCalendarWebhookEventObjectEvent SchedulingCalendarWebhookEventObject = "event"
+)
+
+func NewSchedulingCalendarWebhookEventObjectFromString(s string) (SchedulingCalendarWebhookEventObject, error) {
+	switch s {
+	case "event":
+		return SchedulingCalendarWebhookEventObjectEvent, nil
+	}
+	var t SchedulingCalendarWebhookEventObject
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarWebhookEventObject) Ptr() *SchedulingCalendarWebhookEventObject {
+	return &s
+}
+
+// `connected`: a calendar account was connected. `needs_reauth`: access was lost, and the host isn't offered until it's back. `disconnected`: the connection was removed.
+type SchedulingCalendarWebhookEventType string
+
+const (
+	SchedulingCalendarWebhookEventTypeSchedulingCalendarConnected    SchedulingCalendarWebhookEventType = "scheduling.calendar.connected"
+	SchedulingCalendarWebhookEventTypeSchedulingCalendarNeedsReauth  SchedulingCalendarWebhookEventType = "scheduling.calendar.needs_reauth"
+	SchedulingCalendarWebhookEventTypeSchedulingCalendarDisconnected SchedulingCalendarWebhookEventType = "scheduling.calendar.disconnected"
+)
+
+func NewSchedulingCalendarWebhookEventTypeFromString(s string) (SchedulingCalendarWebhookEventType, error) {
+	switch s {
+	case "scheduling.calendar.connected":
+		return SchedulingCalendarWebhookEventTypeSchedulingCalendarConnected, nil
+	case "scheduling.calendar.needs_reauth":
+		return SchedulingCalendarWebhookEventTypeSchedulingCalendarNeedsReauth, nil
+	case "scheduling.calendar.disconnected":
+		return SchedulingCalendarWebhookEventTypeSchedulingCalendarDisconnected, nil
+	}
+	var t SchedulingCalendarWebhookEventType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (s SchedulingCalendarWebhookEventType) Ptr() *SchedulingCalendarWebhookEventType {
+	return &s
+}
+
+var (
 	signRequestWebhookEventFieldID         = big.NewInt(1 << 0)
 	signRequestWebhookEventFieldObject     = big.NewInt(1 << 1)
 	signRequestWebhookEventFieldType       = big.NewInt(1 << 2)
@@ -6178,11 +7782,14 @@ type SignRequestWebhookEvent struct {
 	// The event id: the same as the audit trail's `SignEvent.id`.
 	ID     string                        `json:"id" url:"id"`
 	Object SignRequestWebhookEventObject `json:"object" url:"object"`
-	Type   SignRequestWebhookEventType   `json:"type" url:"type"`
+	// `sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.
+	Type SignRequestWebhookEventType `json:"type" url:"type"`
 	// The API version the payload is rendered in (your endpoint's version).
-	APIVersion string                       `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                    `json:"created_at" url:"created_at"`
-	Data       *SignRequestWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The request. Never documents or field values.
+	Data *SignRequestWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6358,17 +7965,23 @@ var signRequestWebhookEventDataNullableFields = map[string]*big.Int{
 	"reason": signRequestWebhookEventDataFieldReason,
 }
 
+// The request. Never documents or field values.
 type SignRequestWebhookEventData struct {
+	// The signature request's id.
 	SignRequestID string `json:"sign_request_id" url:"sign_request_id"`
 	// The request's status after the event.
-	Status   SignRequestWebhookEventDataStatus `json:"status" url:"status"`
-	Title    string                            `json:"title" url:"title"`
-	Metadata map[string]string                 `json:"metadata" url:"metadata"`
+	Status SignRequestWebhookEventDataStatus `json:"status" url:"status"`
+	// The request's title.
+	Title string `json:"title" url:"title"`
+	// Your own key-value pairs.
+	Metadata map[string]string `json:"metadata" url:"metadata"`
 	// The signer who viewed, signed or declined; `null` otherwise.
 	Signer *SignRequestWebhookEventDataSigner `json:"signer,omitempty" url:"signer,omitempty"`
 	// A decline's reason, if the signer gave one.
-	Reason     *string   `json:"reason,omitempty" url:"reason,omitempty"`
-	Sandbox    bool      `json:"sandbox" url:"sandbox"`
+	Reason *string `json:"reason,omitempty" url:"reason,omitempty"`
+	// Whether it belongs to a sandbox environment.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it happened.
 	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -6578,11 +8191,16 @@ var signRequestWebhookEventDataSignerNullableFields = map[string]*big.Int{
 
 // The signer who viewed, signed or declined; `null` otherwise.
 type SignRequestWebhookEventDataSigner struct {
-	ID        string                                  `json:"id" url:"id"`
-	Name      string                                  `json:"name" url:"name"`
-	Email     string                                  `json:"email" url:"email"`
-	ClientRef *string                                 `json:"client_ref,omitempty" url:"client_ref,omitempty"`
-	Status    SignRequestWebhookEventDataSignerStatus `json:"status" url:"status"`
+	// The signer's id.
+	ID string `json:"id" url:"id"`
+	// The signer's name.
+	Name string `json:"name" url:"name"`
+	// The signer's email address.
+	Email string `json:"email" url:"email"`
+	// Your own id for the signer. `null`: none given.
+	ClientRef *string `json:"client_ref,omitempty" url:"client_ref,omitempty"`
+	// The signer's status after the event.
+	Status SignRequestWebhookEventDataSignerStatus `json:"status" url:"status"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -6726,6 +8344,7 @@ func (s *SignRequestWebhookEventDataSigner) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// The signer's status after the event.
 type SignRequestWebhookEventDataSignerStatus string
 
 const (
@@ -6811,6 +8430,7 @@ func (s SignRequestWebhookEventObject) Ptr() *SignRequestWebhookEventObject {
 	return &s
 }
 
+// `sent`: sent to signers. `viewed`: a signer opened it. `signer_signed`: a signer signed. `declined`: a signer declined. `completed`: the sealed document is ready to download. `canceled` and `expired`: it ended unsigned.
 type SignRequestWebhookEventType string
 
 const (
@@ -6861,11 +8481,13 @@ type SmsWebhookEvent struct {
 	// The event id: the same as `SmsEvent.id`.
 	ID     string                `json:"id" url:"id"`
 	Object SmsWebhookEventObject `json:"object" url:"object"`
-	Type   SmsWebhookEventType   `json:"type" url:"type"`
+	// What happened to the message.
+	Type SmsWebhookEventType `json:"type" url:"type"`
 	// The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
-	APIVersion string               `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time            `json:"created_at" url:"created_at"`
-	Data       *SmsWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time            `json:"created_at" url:"created_at"`
+	Data      *SmsWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7036,6 +8658,7 @@ var (
 	smsWebhookEventDataFieldTags              = big.NewInt(1 << 8)
 	smsWebhookEventDataFieldSandbox           = big.NewInt(1 << 9)
 	smsWebhookEventDataFieldOccurredAt        = big.NewInt(1 << 10)
+	smsWebhookEventDataFieldTraceparent       = big.NewInt(1 << 11)
 )
 
 // smsWebhookEventDataNullableFields maps the wire names of SmsWebhookEventData's nullable fields (required or optional) to their field bits.
@@ -7050,14 +8673,24 @@ type SmsWebhookEventData struct {
 	ProviderErrorCode *string `json:"provider_error_code,omitempty" url:"provider_error_code,omitempty"`
 	// `sms.suppressed`: the entry that made coss.com skip the number.
 	Suppression *SmsWebhookEventDataSuppression `json:"suppression,omitempty" url:"suppression,omitempty"`
-	SmsID       string                          `json:"sms_id" url:"sms_id"`
-	From        string                          `json:"from" url:"from"`
-	To          string                          `json:"to" url:"to"`
-	Country     string                          `json:"country" url:"country"`
-	Segments    int64                           `json:"segments" url:"segments"`
-	Tags        []*SmsWebhookEventDataTagsItem  `json:"tags" url:"tags"`
-	Sandbox     bool                            `json:"sandbox" url:"sandbox"`
-	OccurredAt  time.Time                       `json:"occurred_at" url:"occurred_at"`
+	// The id of the message.
+	SmsID string `json:"sms_id" url:"sms_id"`
+	// The number it's sent from.
+	From string `json:"from" url:"from"`
+	// The recipient's number.
+	To string `json:"to" url:"to"`
+	// The recipient's country (ISO 3166-1 alpha-2).
+	Country string `json:"country" url:"country"`
+	// Segments the body takes (what is billed).
+	Segments int64 `json:"segments" url:"segments"`
+	// Your tags on the message.
+	Tags []*SmsWebhookEventDataTagsItem `json:"tags" url:"tags"`
+	// Whether it was sent from a sandbox environment: simulated.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When it happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
+	// Only for a message sent with a W3C `traceparent` header: that trace context (normalized to version `00`), also sent as this request's `traceparent` header, so handling the event joins the sender's trace.
+	Traceparent *string `json:"traceparent,omitempty" url:"traceparent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7141,6 +8774,13 @@ func (s *SmsWebhookEventData) GetOccurredAt() time.Time {
 		return time.Time{}
 	}
 	return s.OccurredAt
+}
+
+func (s *SmsWebhookEventData) GetTraceparent() *string {
+	if s == nil {
+		return nil
+	}
+	return s.Traceparent
 }
 
 func (s *SmsWebhookEventData) GetExtraProperties() map[string]interface{} {
@@ -7236,6 +8876,13 @@ func (s *SmsWebhookEventData) SetOccurredAt(occurredAt time.Time) {
 	s.require(smsWebhookEventDataFieldOccurredAt)
 }
 
+// SetTraceparent sets the Traceparent field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *SmsWebhookEventData) SetTraceparent(traceparent *string) {
+	s.Traceparent = traceparent
+	s.require(smsWebhookEventDataFieldTraceparent)
+}
+
 func (s *SmsWebhookEventData) UnmarshalJSON(data []byte) error {
 	type embed SmsWebhookEventData
 	var unmarshaler = struct {
@@ -7300,7 +8947,9 @@ var (
 
 // Why the message failed or wasn't delivered.
 type SmsWebhookEventDataFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7403,7 +9052,9 @@ var (
 
 // `sms.suppressed`: the entry that made coss.com skip the number.
 type SmsWebhookEventDataSuppression struct {
-	ID     string                               `json:"id" url:"id"`
+	// The suppression's id.
+	ID string `json:"id" url:"id"`
+	// Why the number is suppressed.
 	Reason SmsWebhookEventDataSuppressionReason `json:"reason" url:"reason"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7499,6 +9150,7 @@ func (s *SmsWebhookEventDataSuppression) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Why the number is suppressed.
 type SmsWebhookEventDataSuppressionReason string
 
 const (
@@ -7530,7 +9182,9 @@ var (
 )
 
 type SmsWebhookEventDataTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -7645,6 +9299,7 @@ func (s SmsWebhookEventObject) Ptr() *SmsWebhookEventObject {
 	return &s
 }
 
+// What happened to the message.
 type SmsWebhookEventType string
 
 const (
@@ -7694,11 +9349,14 @@ var (
 type VerificationWebhookEvent struct {
 	ID     string                         `json:"id" url:"id"`
 	Object VerificationWebhookEventObject `json:"object" url:"object"`
-	Type   VerificationWebhookEventType   `json:"type" url:"type"`
+	// What happened to the verification.
+	Type VerificationWebhookEventType `json:"type" url:"type"`
 	// The API version the payload is rendered in (your endpoint's version).
-	APIVersion string                        `json:"api_version" url:"api_version"`
-	CreatedAt  time.Time                     `json:"created_at" url:"created_at"`
-	Data       *VerificationWebhookEventData `json:"data" url:"data"`
+	APIVersion string `json:"api_version" url:"api_version"`
+	// When the event was created.
+	CreatedAt time.Time `json:"created_at" url:"created_at"`
+	// The verification. Never its code.
+	Data *VerificationWebhookEventData `json:"data" url:"data"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -7874,16 +9532,26 @@ var verificationWebhookEventDataNullableFields = map[string]*big.Int{
 	"failure": verificationWebhookEventDataFieldFailure,
 }
 
+// The verification. Never its code.
 type VerificationWebhookEventData struct {
-	VerificationID string                                     `json:"verification_id" url:"verification_id"`
-	Channel        VerificationWebhookEventDataChannel        `json:"channel" url:"channel"`
-	To             string                                     `json:"to" url:"to"`
-	Status         VerificationWebhookEventDataStatus         `json:"status" url:"status"`
-	Failure        *VerificationWebhookEventDataFailure       `json:"failure,omitempty" url:"failure,omitempty"`
-	Reasons        []*VerificationWebhookEventDataReasonsItem `json:"reasons" url:"reasons"`
-	Tags           []*VerificationWebhookEventDataTagsItem    `json:"tags" url:"tags"`
-	Sandbox        bool                                       `json:"sandbox" url:"sandbox"`
-	OccurredAt     time.Time                                  `json:"occurred_at" url:"occurred_at"`
+	// The verification's id.
+	VerificationID string `json:"verification_id" url:"verification_id"`
+	// `sms` or `email`.
+	Channel VerificationWebhookEventDataChannel `json:"channel" url:"channel"`
+	// The phone number (E.164) or address the code goes to.
+	To string `json:"to" url:"to"`
+	// Its status after this event.
+	Status VerificationWebhookEventDataStatus `json:"status" url:"status"`
+	// Why it `failed`. `null` otherwise.
+	Failure *VerificationWebhookEventDataFailure `json:"failure,omitempty" url:"failure,omitempty"`
+	// Why it was `blocked`. Empty otherwise.
+	Reasons []*VerificationWebhookEventDataReasonsItem `json:"reasons" url:"reasons"`
+	// Your tags on the verification.
+	Tags []*VerificationWebhookEventDataTagsItem `json:"tags" url:"tags"`
+	// Whether it's made in a sandbox environment: simulated.
+	Sandbox bool `json:"sandbox" url:"sandbox"`
+	// When this happened.
+	OccurredAt time.Time `json:"occurred_at" url:"occurred_at"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -8091,6 +9759,7 @@ func (v *VerificationWebhookEventData) String() string {
 	return fmt.Sprintf("%#v", v)
 }
 
+// `sms` or `email`.
 type VerificationWebhookEventDataChannel string
 
 const (
@@ -8118,8 +9787,11 @@ var (
 	verificationWebhookEventDataFailureFieldMessage = big.NewInt(1 << 1)
 )
 
+// Why it `failed`. `null` otherwise.
 type VerificationWebhookEventDataFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8318,6 +9990,7 @@ func (v *VerificationWebhookEventDataReasonsItem) String() string {
 	return fmt.Sprintf("%#v", v)
 }
 
+// Its status after this event.
 type VerificationWebhookEventDataStatus string
 
 const (
@@ -8358,7 +10031,9 @@ var (
 )
 
 type VerificationWebhookEventDataTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -8473,6 +10148,7 @@ func (v VerificationWebhookEventObject) Ptr() *VerificationWebhookEventObject {
 	return &v
 }
 
+// What happened to the verification.
 type VerificationWebhookEventType string
 
 const (
@@ -8637,18 +10313,21 @@ func (w *WebhookTestEvent) String() string {
 
 // The event, as an endpoint on the request's API version receives it. Its `webhook-id` header is `event.id`.
 type WebhookTestEventEvent struct {
-	EmailWebhookEvent                *EmailWebhookEvent
-	ReceivedEmailWebhookEvent        *ReceivedEmailWebhookEvent
-	HookEndpointWebhookEvent         *HookEndpointWebhookEvent
-	RiskWebhookEvent                 *RiskWebhookEvent
-	ContactWebhookEvent              *ContactWebhookEvent
-	BroadcastWebhookEvent            *BroadcastWebhookEvent
-	InboxMessageReceivedWebhookEvent *InboxMessageReceivedWebhookEvent
-	SmsWebhookEvent                  *SmsWebhookEvent
-	ReceivedSmsWebhookEvent          *ReceivedSmsWebhookEvent
-	SignRequestWebhookEvent          *SignRequestWebhookEvent
-	VerificationWebhookEvent         *VerificationWebhookEvent
-	FormSubmissionWebhookEvent       *FormSubmissionWebhookEvent
+	EmailWebhookEvent                        *EmailWebhookEvent
+	ReceivedEmailWebhookEvent                *ReceivedEmailWebhookEvent
+	HookEndpointWebhookEvent                 *HookEndpointWebhookEvent
+	RiskWebhookEvent                         *RiskWebhookEvent
+	ContactWebhookEvent                      *ContactWebhookEvent
+	BroadcastWebhookEvent                    *BroadcastWebhookEvent
+	InboxMessageReceivedWebhookEvent         *InboxMessageReceivedWebhookEvent
+	SmsWebhookEvent                          *SmsWebhookEvent
+	ReceivedSmsWebhookEvent                  *ReceivedSmsWebhookEvent
+	SignRequestWebhookEvent                  *SignRequestWebhookEvent
+	VerificationWebhookEvent                 *VerificationWebhookEvent
+	FormSubmissionWebhookEvent               *FormSubmissionWebhookEvent
+	SchedulingBookingWebhookEvent            *SchedulingBookingWebhookEvent
+	SchedulingCalendarWebhookEvent           *SchedulingCalendarWebhookEvent
+	SchedulingCalendarDelegationWebhookEvent *SchedulingCalendarDelegationWebhookEvent
 
 	typ string
 }
@@ -8735,6 +10414,27 @@ func (w *WebhookTestEventEvent) GetFormSubmissionWebhookEvent() *FormSubmissionW
 		return nil
 	}
 	return w.FormSubmissionWebhookEvent
+}
+
+func (w *WebhookTestEventEvent) GetSchedulingBookingWebhookEvent() *SchedulingBookingWebhookEvent {
+	if w == nil {
+		return nil
+	}
+	return w.SchedulingBookingWebhookEvent
+}
+
+func (w *WebhookTestEventEvent) GetSchedulingCalendarWebhookEvent() *SchedulingCalendarWebhookEvent {
+	if w == nil {
+		return nil
+	}
+	return w.SchedulingCalendarWebhookEvent
+}
+
+func (w *WebhookTestEventEvent) GetSchedulingCalendarDelegationWebhookEvent() *SchedulingCalendarDelegationWebhookEvent {
+	if w == nil {
+		return nil
+	}
+	return w.SchedulingCalendarDelegationWebhookEvent
 }
 
 func (w *WebhookTestEventEvent) UnmarshalJSON(data []byte) error {
@@ -8834,6 +10534,30 @@ func (w *WebhookTestEventEvent) UnmarshalJSON(data []byte) error {
 			return nil
 		}
 	}
+	if internal.MatchesObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingBookingWebhookEvent := new(SchedulingBookingWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWebhookEvent); err == nil {
+			w.typ = "SchedulingBookingWebhookEvent"
+			w.SchedulingBookingWebhookEvent = valueSchedulingBookingWebhookEvent
+			return nil
+		}
+	}
+	if internal.MatchesObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingCalendarWebhookEvent := new(SchedulingCalendarWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingCalendarWebhookEvent); err == nil {
+			w.typ = "SchedulingCalendarWebhookEvent"
+			w.SchedulingCalendarWebhookEvent = valueSchedulingCalendarWebhookEvent
+			return nil
+		}
+	}
+	if internal.MatchesObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingCalendarDelegationWebhookEvent := new(SchedulingCalendarDelegationWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingCalendarDelegationWebhookEvent); err == nil {
+			w.typ = "SchedulingCalendarDelegationWebhookEvent"
+			w.SchedulingCalendarDelegationWebhookEvent = valueSchedulingCalendarDelegationWebhookEvent
+			return nil
+		}
+	}
 	if internal.HasObjectKeys(data, []string{"id", "object", "type", "api_version", "created_at", "data"}) {
 		valueEmailWebhookEvent := new(EmailWebhookEvent)
 		if err := json.Unmarshal(data, &valueEmailWebhookEvent); err == nil {
@@ -8930,6 +10654,30 @@ func (w *WebhookTestEventEvent) UnmarshalJSON(data []byte) error {
 			return nil
 		}
 	}
+	if internal.HasObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingBookingWebhookEvent := new(SchedulingBookingWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingBookingWebhookEvent); err == nil {
+			w.typ = "SchedulingBookingWebhookEvent"
+			w.SchedulingBookingWebhookEvent = valueSchedulingBookingWebhookEvent
+			return nil
+		}
+	}
+	if internal.HasObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingCalendarWebhookEvent := new(SchedulingCalendarWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingCalendarWebhookEvent); err == nil {
+			w.typ = "SchedulingCalendarWebhookEvent"
+			w.SchedulingCalendarWebhookEvent = valueSchedulingCalendarWebhookEvent
+			return nil
+		}
+	}
+	if internal.HasObjectKeys(data, []string{"id", "object", "api_version", "created_at", "type", "data"}) {
+		valueSchedulingCalendarDelegationWebhookEvent := new(SchedulingCalendarDelegationWebhookEvent)
+		if err := json.Unmarshal(data, &valueSchedulingCalendarDelegationWebhookEvent); err == nil {
+			w.typ = "SchedulingCalendarDelegationWebhookEvent"
+			w.SchedulingCalendarDelegationWebhookEvent = valueSchedulingCalendarDelegationWebhookEvent
+			return nil
+		}
+	}
 	valueEmailWebhookEvent := new(EmailWebhookEvent)
 	if err := json.Unmarshal(data, &valueEmailWebhookEvent); err == nil {
 		w.typ = "EmailWebhookEvent"
@@ -9002,6 +10750,24 @@ func (w *WebhookTestEventEvent) UnmarshalJSON(data []byte) error {
 		w.FormSubmissionWebhookEvent = valueFormSubmissionWebhookEvent
 		return nil
 	}
+	valueSchedulingBookingWebhookEvent := new(SchedulingBookingWebhookEvent)
+	if err := json.Unmarshal(data, &valueSchedulingBookingWebhookEvent); err == nil {
+		w.typ = "SchedulingBookingWebhookEvent"
+		w.SchedulingBookingWebhookEvent = valueSchedulingBookingWebhookEvent
+		return nil
+	}
+	valueSchedulingCalendarWebhookEvent := new(SchedulingCalendarWebhookEvent)
+	if err := json.Unmarshal(data, &valueSchedulingCalendarWebhookEvent); err == nil {
+		w.typ = "SchedulingCalendarWebhookEvent"
+		w.SchedulingCalendarWebhookEvent = valueSchedulingCalendarWebhookEvent
+		return nil
+	}
+	valueSchedulingCalendarDelegationWebhookEvent := new(SchedulingCalendarDelegationWebhookEvent)
+	if err := json.Unmarshal(data, &valueSchedulingCalendarDelegationWebhookEvent); err == nil {
+		w.typ = "SchedulingCalendarDelegationWebhookEvent"
+		w.SchedulingCalendarDelegationWebhookEvent = valueSchedulingCalendarDelegationWebhookEvent
+		return nil
+	}
 	return fmt.Errorf("%s cannot be deserialized as a %T", data, w)
 }
 
@@ -9042,6 +10808,15 @@ func (w WebhookTestEventEvent) MarshalJSON() ([]byte, error) {
 	if w.typ == "FormSubmissionWebhookEvent" || w.FormSubmissionWebhookEvent != nil {
 		return json.Marshal(w.FormSubmissionWebhookEvent)
 	}
+	if w.typ == "SchedulingBookingWebhookEvent" || w.SchedulingBookingWebhookEvent != nil {
+		return json.Marshal(w.SchedulingBookingWebhookEvent)
+	}
+	if w.typ == "SchedulingCalendarWebhookEvent" || w.SchedulingCalendarWebhookEvent != nil {
+		return json.Marshal(w.SchedulingCalendarWebhookEvent)
+	}
+	if w.typ == "SchedulingCalendarDelegationWebhookEvent" || w.SchedulingCalendarDelegationWebhookEvent != nil {
+		return json.Marshal(w.SchedulingCalendarDelegationWebhookEvent)
+	}
 	return nil, fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
@@ -9058,6 +10833,9 @@ type WebhookTestEventEventVisitor interface {
 	VisitSignRequestWebhookEvent(*SignRequestWebhookEvent) error
 	VisitVerificationWebhookEvent(*VerificationWebhookEvent) error
 	VisitFormSubmissionWebhookEvent(*FormSubmissionWebhookEvent) error
+	VisitSchedulingBookingWebhookEvent(*SchedulingBookingWebhookEvent) error
+	VisitSchedulingCalendarWebhookEvent(*SchedulingCalendarWebhookEvent) error
+	VisitSchedulingCalendarDelegationWebhookEvent(*SchedulingCalendarDelegationWebhookEvent) error
 }
 
 func (w *WebhookTestEventEvent) Accept(visitor WebhookTestEventEventVisitor) error {
@@ -9097,6 +10875,15 @@ func (w *WebhookTestEventEvent) Accept(visitor WebhookTestEventEventVisitor) err
 	if w.typ == "FormSubmissionWebhookEvent" || w.FormSubmissionWebhookEvent != nil {
 		return visitor.VisitFormSubmissionWebhookEvent(w.FormSubmissionWebhookEvent)
 	}
+	if w.typ == "SchedulingBookingWebhookEvent" || w.SchedulingBookingWebhookEvent != nil {
+		return visitor.VisitSchedulingBookingWebhookEvent(w.SchedulingBookingWebhookEvent)
+	}
+	if w.typ == "SchedulingCalendarWebhookEvent" || w.SchedulingCalendarWebhookEvent != nil {
+		return visitor.VisitSchedulingCalendarWebhookEvent(w.SchedulingCalendarWebhookEvent)
+	}
+	if w.typ == "SchedulingCalendarDelegationWebhookEvent" || w.SchedulingCalendarDelegationWebhookEvent != nil {
+		return visitor.VisitSchedulingCalendarDelegationWebhookEvent(w.SchedulingCalendarDelegationWebhookEvent)
+	}
 	return fmt.Errorf("type %T does not include a non-empty union type", w)
 }
 
@@ -9123,79 +10910,97 @@ func (w WebhookTestEventObject) Ptr() *WebhookTestEventObject {
 type CreateTestWebhookEventRequestType string
 
 const (
-	CreateTestWebhookEventRequestTypeEmailSent                     CreateTestWebhookEventRequestType = "email.sent"
-	CreateTestWebhookEventRequestTypeEmailDelivered                CreateTestWebhookEventRequestType = "email.delivered"
-	CreateTestWebhookEventRequestTypeEmailDeliveryDelayed          CreateTestWebhookEventRequestType = "email.delivery_delayed"
-	CreateTestWebhookEventRequestTypeEmailBounced                  CreateTestWebhookEventRequestType = "email.bounced"
-	CreateTestWebhookEventRequestTypeEmailComplained               CreateTestWebhookEventRequestType = "email.complained"
-	CreateTestWebhookEventRequestTypeEmailFailed                   CreateTestWebhookEventRequestType = "email.failed"
-	CreateTestWebhookEventRequestTypeEmailSuppressed               CreateTestWebhookEventRequestType = "email.suppressed"
-	CreateTestWebhookEventRequestTypeEmailScheduled                CreateTestWebhookEventRequestType = "email.scheduled"
-	CreateTestWebhookEventRequestTypeEmailCanceled                 CreateTestWebhookEventRequestType = "email.canceled"
-	CreateTestWebhookEventRequestTypeEmailOpened                   CreateTestWebhookEventRequestType = "email.opened"
-	CreateTestWebhookEventRequestTypeEmailClicked                  CreateTestWebhookEventRequestType = "email.clicked"
-	CreateTestWebhookEventRequestTypeEmailRescheduled              CreateTestWebhookEventRequestType = "email.rescheduled"
-	CreateTestWebhookEventRequestTypeEmailUnsubscribed             CreateTestWebhookEventRequestType = "email.unsubscribed"
-	CreateTestWebhookEventRequestTypeEmailReceived                 CreateTestWebhookEventRequestType = "email.received"
-	CreateTestWebhookEventRequestTypeDomainDmarcReportReceived     CreateTestWebhookEventRequestType = "domain.dmarc_report_received"
-	CreateTestWebhookEventRequestTypeAccountReputationWarning      CreateTestWebhookEventRequestType = "account.reputation_warning"
-	CreateTestWebhookEventRequestTypeAccountReputationRecovered    CreateTestWebhookEventRequestType = "account.reputation_recovered"
-	CreateTestWebhookEventRequestTypeAccountSuspended              CreateTestWebhookEventRequestType = "account.suspended"
-	CreateTestWebhookEventRequestTypeAccountReinstated             CreateTestWebhookEventRequestType = "account.reinstated"
-	CreateTestWebhookEventRequestTypeAccountMarketingPaused        CreateTestWebhookEventRequestType = "account.marketing_paused"
-	CreateTestWebhookEventRequestTypeAccountMarketingReinstated    CreateTestWebhookEventRequestType = "account.marketing_reinstated"
-	CreateTestWebhookEventRequestTypeSubaccountReputationWarning   CreateTestWebhookEventRequestType = "subaccount.reputation_warning"
-	CreateTestWebhookEventRequestTypeSubaccountReputationRecovered CreateTestWebhookEventRequestType = "subaccount.reputation_recovered"
-	CreateTestWebhookEventRequestTypeSubaccountPaused              CreateTestWebhookEventRequestType = "subaccount.paused"
-	CreateTestWebhookEventRequestTypeSubaccountReinstated          CreateTestWebhookEventRequestType = "subaccount.reinstated"
-	CreateTestWebhookEventRequestTypeHookEndpointDisabled          CreateTestWebhookEventRequestType = "hook_endpoint.disabled"
-	CreateTestWebhookEventRequestTypeBillingInvoiceFinalized       CreateTestWebhookEventRequestType = "billing.invoice_finalized"
-	CreateTestWebhookEventRequestTypeBillingInvoicePaid            CreateTestWebhookEventRequestType = "billing.invoice_paid"
-	CreateTestWebhookEventRequestTypeBillingInvoicePaymentFailed   CreateTestWebhookEventRequestType = "billing.invoice_payment_failed"
-	CreateTestWebhookEventRequestTypeBillingInvoiceVoided          CreateTestWebhookEventRequestType = "billing.invoice_voided"
-	CreateTestWebhookEventRequestTypeBillingPlanChanged            CreateTestWebhookEventRequestType = "billing.plan_changed"
-	CreateTestWebhookEventRequestTypeBillingUsageThresholdReached  CreateTestWebhookEventRequestType = "billing.usage_threshold_reached"
-	CreateTestWebhookEventRequestTypeBillingHoldPlaced             CreateTestWebhookEventRequestType = "billing.hold_placed"
-	CreateTestWebhookEventRequestTypeBillingHoldLifted             CreateTestWebhookEventRequestType = "billing.hold_lifted"
-	CreateTestWebhookEventRequestTypeBillingCreditGranted          CreateTestWebhookEventRequestType = "billing.credit_granted"
-	CreateTestWebhookEventRequestTypeBillingBudgetThresholdReached CreateTestWebhookEventRequestType = "billing.budget_threshold_reached"
-	CreateTestWebhookEventRequestTypeBillingBudgetHoldPlaced       CreateTestWebhookEventRequestType = "billing.budget_hold_placed"
-	CreateTestWebhookEventRequestTypeBillingBudgetHoldLifted       CreateTestWebhookEventRequestType = "billing.budget_hold_lifted"
-	CreateTestWebhookEventRequestTypeRiskAssessmentReview          CreateTestWebhookEventRequestType = "risk.assessment.review"
-	CreateTestWebhookEventRequestTypeRiskAssessmentReviewed        CreateTestWebhookEventRequestType = "risk.assessment.reviewed"
-	CreateTestWebhookEventRequestTypeContactCreated                CreateTestWebhookEventRequestType = "contact.created"
-	CreateTestWebhookEventRequestTypeContactUpdated                CreateTestWebhookEventRequestType = "contact.updated"
-	CreateTestWebhookEventRequestTypeContactDeleted                CreateTestWebhookEventRequestType = "contact.deleted"
-	CreateTestWebhookEventRequestTypeContactUnsubscribed           CreateTestWebhookEventRequestType = "contact.unsubscribed"
-	CreateTestWebhookEventRequestTypeContactConfirmed              CreateTestWebhookEventRequestType = "contact.confirmed"
-	CreateTestWebhookEventRequestTypeBroadcastSending              CreateTestWebhookEventRequestType = "broadcast.sending"
-	CreateTestWebhookEventRequestTypeBroadcastSent                 CreateTestWebhookEventRequestType = "broadcast.sent"
-	CreateTestWebhookEventRequestTypeBroadcastPaused               CreateTestWebhookEventRequestType = "broadcast.paused"
-	CreateTestWebhookEventRequestTypeBroadcastCanceled             CreateTestWebhookEventRequestType = "broadcast.canceled"
-	CreateTestWebhookEventRequestTypeBroadcastFailed               CreateTestWebhookEventRequestType = "broadcast.failed"
-	CreateTestWebhookEventRequestTypeInboxMessageReceived          CreateTestWebhookEventRequestType = "inbox.message.received"
-	CreateTestWebhookEventRequestTypeSmsScheduled                  CreateTestWebhookEventRequestType = "sms.scheduled"
-	CreateTestWebhookEventRequestTypeSmsSent                       CreateTestWebhookEventRequestType = "sms.sent"
-	CreateTestWebhookEventRequestTypeSmsDelivered                  CreateTestWebhookEventRequestType = "sms.delivered"
-	CreateTestWebhookEventRequestTypeSmsUndelivered                CreateTestWebhookEventRequestType = "sms.undelivered"
-	CreateTestWebhookEventRequestTypeSmsFailed                     CreateTestWebhookEventRequestType = "sms.failed"
-	CreateTestWebhookEventRequestTypeSmsSuppressed                 CreateTestWebhookEventRequestType = "sms.suppressed"
-	CreateTestWebhookEventRequestTypeSmsCanceled                   CreateTestWebhookEventRequestType = "sms.canceled"
-	CreateTestWebhookEventRequestTypeSmsReceived                   CreateTestWebhookEventRequestType = "sms.received"
-	CreateTestWebhookEventRequestTypeSmsOptedOut                   CreateTestWebhookEventRequestType = "sms.opted_out"
-	CreateTestWebhookEventRequestTypeSmsOptedIn                    CreateTestWebhookEventRequestType = "sms.opted_in"
-	CreateTestWebhookEventRequestTypeSignRequestSent               CreateTestWebhookEventRequestType = "sign_request.sent"
-	CreateTestWebhookEventRequestTypeSignRequestViewed             CreateTestWebhookEventRequestType = "sign_request.viewed"
-	CreateTestWebhookEventRequestTypeSignRequestSignerSigned       CreateTestWebhookEventRequestType = "sign_request.signer_signed"
-	CreateTestWebhookEventRequestTypeSignRequestDeclined           CreateTestWebhookEventRequestType = "sign_request.declined"
-	CreateTestWebhookEventRequestTypeSignRequestCompleted          CreateTestWebhookEventRequestType = "sign_request.completed"
-	CreateTestWebhookEventRequestTypeSignRequestCanceled           CreateTestWebhookEventRequestType = "sign_request.canceled"
-	CreateTestWebhookEventRequestTypeSignRequestExpired            CreateTestWebhookEventRequestType = "sign_request.expired"
-	CreateTestWebhookEventRequestTypeVerificationApproved          CreateTestWebhookEventRequestType = "verification.approved"
-	CreateTestWebhookEventRequestTypeVerificationFailed            CreateTestWebhookEventRequestType = "verification.failed"
-	CreateTestWebhookEventRequestTypeVerificationBlocked           CreateTestWebhookEventRequestType = "verification.blocked"
-	CreateTestWebhookEventRequestTypeFormSubmissionReceived        CreateTestWebhookEventRequestType = "form.submission.received"
-	CreateTestWebhookEventRequestTypeFormSubmissionFlagged         CreateTestWebhookEventRequestType = "form.submission.flagged"
+	CreateTestWebhookEventRequestTypeEmailSent                            CreateTestWebhookEventRequestType = "email.sent"
+	CreateTestWebhookEventRequestTypeEmailDelivered                       CreateTestWebhookEventRequestType = "email.delivered"
+	CreateTestWebhookEventRequestTypeEmailDeliveryDelayed                 CreateTestWebhookEventRequestType = "email.delivery_delayed"
+	CreateTestWebhookEventRequestTypeEmailBounced                         CreateTestWebhookEventRequestType = "email.bounced"
+	CreateTestWebhookEventRequestTypeEmailComplained                      CreateTestWebhookEventRequestType = "email.complained"
+	CreateTestWebhookEventRequestTypeEmailFailed                          CreateTestWebhookEventRequestType = "email.failed"
+	CreateTestWebhookEventRequestTypeEmailSuppressed                      CreateTestWebhookEventRequestType = "email.suppressed"
+	CreateTestWebhookEventRequestTypeEmailScheduled                       CreateTestWebhookEventRequestType = "email.scheduled"
+	CreateTestWebhookEventRequestTypeEmailCanceled                        CreateTestWebhookEventRequestType = "email.canceled"
+	CreateTestWebhookEventRequestTypeEmailOpened                          CreateTestWebhookEventRequestType = "email.opened"
+	CreateTestWebhookEventRequestTypeEmailClicked                         CreateTestWebhookEventRequestType = "email.clicked"
+	CreateTestWebhookEventRequestTypeEmailRescheduled                     CreateTestWebhookEventRequestType = "email.rescheduled"
+	CreateTestWebhookEventRequestTypeEmailUnsubscribed                    CreateTestWebhookEventRequestType = "email.unsubscribed"
+	CreateTestWebhookEventRequestTypeEmailReceived                        CreateTestWebhookEventRequestType = "email.received"
+	CreateTestWebhookEventRequestTypeDomainDmarcReportReceived            CreateTestWebhookEventRequestType = "domain.dmarc_report_received"
+	CreateTestWebhookEventRequestTypeAccountReputationWarning             CreateTestWebhookEventRequestType = "account.reputation_warning"
+	CreateTestWebhookEventRequestTypeAccountReputationRecovered           CreateTestWebhookEventRequestType = "account.reputation_recovered"
+	CreateTestWebhookEventRequestTypeAccountSuspended                     CreateTestWebhookEventRequestType = "account.suspended"
+	CreateTestWebhookEventRequestTypeAccountReinstated                    CreateTestWebhookEventRequestType = "account.reinstated"
+	CreateTestWebhookEventRequestTypeAccountMarketingPaused               CreateTestWebhookEventRequestType = "account.marketing_paused"
+	CreateTestWebhookEventRequestTypeAccountMarketingReinstated           CreateTestWebhookEventRequestType = "account.marketing_reinstated"
+	CreateTestWebhookEventRequestTypeSubaccountReputationWarning          CreateTestWebhookEventRequestType = "subaccount.reputation_warning"
+	CreateTestWebhookEventRequestTypeSubaccountReputationRecovered        CreateTestWebhookEventRequestType = "subaccount.reputation_recovered"
+	CreateTestWebhookEventRequestTypeSubaccountPaused                     CreateTestWebhookEventRequestType = "subaccount.paused"
+	CreateTestWebhookEventRequestTypeSubaccountReinstated                 CreateTestWebhookEventRequestType = "subaccount.reinstated"
+	CreateTestWebhookEventRequestTypeHookEndpointDisabled                 CreateTestWebhookEventRequestType = "hook_endpoint.disabled"
+	CreateTestWebhookEventRequestTypeBillingInvoiceFinalized              CreateTestWebhookEventRequestType = "billing.invoice_finalized"
+	CreateTestWebhookEventRequestTypeBillingInvoicePaid                   CreateTestWebhookEventRequestType = "billing.invoice_paid"
+	CreateTestWebhookEventRequestTypeBillingInvoicePaymentFailed          CreateTestWebhookEventRequestType = "billing.invoice_payment_failed"
+	CreateTestWebhookEventRequestTypeBillingInvoiceVoided                 CreateTestWebhookEventRequestType = "billing.invoice_voided"
+	CreateTestWebhookEventRequestTypeBillingPlanChanged                   CreateTestWebhookEventRequestType = "billing.plan_changed"
+	CreateTestWebhookEventRequestTypeBillingUsageThresholdReached         CreateTestWebhookEventRequestType = "billing.usage_threshold_reached"
+	CreateTestWebhookEventRequestTypeBillingHoldPlaced                    CreateTestWebhookEventRequestType = "billing.hold_placed"
+	CreateTestWebhookEventRequestTypeBillingHoldLifted                    CreateTestWebhookEventRequestType = "billing.hold_lifted"
+	CreateTestWebhookEventRequestTypeBillingCreditGranted                 CreateTestWebhookEventRequestType = "billing.credit_granted"
+	CreateTestWebhookEventRequestTypeBillingBudgetThresholdReached        CreateTestWebhookEventRequestType = "billing.budget_threshold_reached"
+	CreateTestWebhookEventRequestTypeBillingBudgetHoldPlaced              CreateTestWebhookEventRequestType = "billing.budget_hold_placed"
+	CreateTestWebhookEventRequestTypeBillingBudgetHoldLifted              CreateTestWebhookEventRequestType = "billing.budget_hold_lifted"
+	CreateTestWebhookEventRequestTypeRiskAssessmentReview                 CreateTestWebhookEventRequestType = "risk.assessment.review"
+	CreateTestWebhookEventRequestTypeRiskAssessmentReviewed               CreateTestWebhookEventRequestType = "risk.assessment.reviewed"
+	CreateTestWebhookEventRequestTypeContactCreated                       CreateTestWebhookEventRequestType = "contact.created"
+	CreateTestWebhookEventRequestTypeContactUpdated                       CreateTestWebhookEventRequestType = "contact.updated"
+	CreateTestWebhookEventRequestTypeContactDeleted                       CreateTestWebhookEventRequestType = "contact.deleted"
+	CreateTestWebhookEventRequestTypeContactUnsubscribed                  CreateTestWebhookEventRequestType = "contact.unsubscribed"
+	CreateTestWebhookEventRequestTypeContactConfirmed                     CreateTestWebhookEventRequestType = "contact.confirmed"
+	CreateTestWebhookEventRequestTypeBroadcastSending                     CreateTestWebhookEventRequestType = "broadcast.sending"
+	CreateTestWebhookEventRequestTypeBroadcastSent                        CreateTestWebhookEventRequestType = "broadcast.sent"
+	CreateTestWebhookEventRequestTypeBroadcastPaused                      CreateTestWebhookEventRequestType = "broadcast.paused"
+	CreateTestWebhookEventRequestTypeBroadcastCanceled                    CreateTestWebhookEventRequestType = "broadcast.canceled"
+	CreateTestWebhookEventRequestTypeBroadcastFailed                      CreateTestWebhookEventRequestType = "broadcast.failed"
+	CreateTestWebhookEventRequestTypeInboxMessageReceived                 CreateTestWebhookEventRequestType = "inbox.message.received"
+	CreateTestWebhookEventRequestTypeSmsScheduled                         CreateTestWebhookEventRequestType = "sms.scheduled"
+	CreateTestWebhookEventRequestTypeSmsSent                              CreateTestWebhookEventRequestType = "sms.sent"
+	CreateTestWebhookEventRequestTypeSmsDelivered                         CreateTestWebhookEventRequestType = "sms.delivered"
+	CreateTestWebhookEventRequestTypeSmsUndelivered                       CreateTestWebhookEventRequestType = "sms.undelivered"
+	CreateTestWebhookEventRequestTypeSmsFailed                            CreateTestWebhookEventRequestType = "sms.failed"
+	CreateTestWebhookEventRequestTypeSmsSuppressed                        CreateTestWebhookEventRequestType = "sms.suppressed"
+	CreateTestWebhookEventRequestTypeSmsCanceled                          CreateTestWebhookEventRequestType = "sms.canceled"
+	CreateTestWebhookEventRequestTypeSmsReceived                          CreateTestWebhookEventRequestType = "sms.received"
+	CreateTestWebhookEventRequestTypeSmsOptedOut                          CreateTestWebhookEventRequestType = "sms.opted_out"
+	CreateTestWebhookEventRequestTypeSmsOptedIn                           CreateTestWebhookEventRequestType = "sms.opted_in"
+	CreateTestWebhookEventRequestTypeSignRequestSent                      CreateTestWebhookEventRequestType = "sign_request.sent"
+	CreateTestWebhookEventRequestTypeSignRequestViewed                    CreateTestWebhookEventRequestType = "sign_request.viewed"
+	CreateTestWebhookEventRequestTypeSignRequestSignerSigned              CreateTestWebhookEventRequestType = "sign_request.signer_signed"
+	CreateTestWebhookEventRequestTypeSignRequestDeclined                  CreateTestWebhookEventRequestType = "sign_request.declined"
+	CreateTestWebhookEventRequestTypeSignRequestCompleted                 CreateTestWebhookEventRequestType = "sign_request.completed"
+	CreateTestWebhookEventRequestTypeSignRequestCanceled                  CreateTestWebhookEventRequestType = "sign_request.canceled"
+	CreateTestWebhookEventRequestTypeSignRequestExpired                   CreateTestWebhookEventRequestType = "sign_request.expired"
+	CreateTestWebhookEventRequestTypeVerificationApproved                 CreateTestWebhookEventRequestType = "verification.approved"
+	CreateTestWebhookEventRequestTypeVerificationFailed                   CreateTestWebhookEventRequestType = "verification.failed"
+	CreateTestWebhookEventRequestTypeVerificationBlocked                  CreateTestWebhookEventRequestType = "verification.blocked"
+	CreateTestWebhookEventRequestTypeFormSubmissionReceived               CreateTestWebhookEventRequestType = "form.submission.received"
+	CreateTestWebhookEventRequestTypeFormSubmissionFlagged                CreateTestWebhookEventRequestType = "form.submission.flagged"
+	CreateTestWebhookEventRequestTypeSchedulingBookingCreated             CreateTestWebhookEventRequestType = "scheduling.booking.created"
+	CreateTestWebhookEventRequestTypeSchedulingBookingPendingApproval     CreateTestWebhookEventRequestType = "scheduling.booking.pending_approval"
+	CreateTestWebhookEventRequestTypeSchedulingBookingConfirmed           CreateTestWebhookEventRequestType = "scheduling.booking.confirmed"
+	CreateTestWebhookEventRequestTypeSchedulingBookingRescheduled         CreateTestWebhookEventRequestType = "scheduling.booking.rescheduled"
+	CreateTestWebhookEventRequestTypeSchedulingBookingCancelled           CreateTestWebhookEventRequestType = "scheduling.booking.cancelled"
+	CreateTestWebhookEventRequestTypeSchedulingBookingDeclined            CreateTestWebhookEventRequestType = "scheduling.booking.declined"
+	CreateTestWebhookEventRequestTypeSchedulingBookingNoShow              CreateTestWebhookEventRequestType = "scheduling.booking.no_show"
+	CreateTestWebhookEventRequestTypeSchedulingBookingExternalConflict    CreateTestWebhookEventRequestType = "scheduling.booking.external_conflict"
+	CreateTestWebhookEventRequestTypeSchedulingBookingCalendarWriteFailed CreateTestWebhookEventRequestType = "scheduling.booking.calendar_write_failed"
+	CreateTestWebhookEventRequestTypeSchedulingBookingLocationReady       CreateTestWebhookEventRequestType = "scheduling.booking.location_ready"
+	CreateTestWebhookEventRequestTypeSchedulingBookingStarted             CreateTestWebhookEventRequestType = "scheduling.booking.started"
+	CreateTestWebhookEventRequestTypeSchedulingBookingEnded               CreateTestWebhookEventRequestType = "scheduling.booking.ended"
+	CreateTestWebhookEventRequestTypeSchedulingBookingReminder            CreateTestWebhookEventRequestType = "scheduling.booking.reminder"
+	CreateTestWebhookEventRequestTypeSchedulingCalendarConnected          CreateTestWebhookEventRequestType = "scheduling.calendar.connected"
+	CreateTestWebhookEventRequestTypeSchedulingCalendarNeedsReauth        CreateTestWebhookEventRequestType = "scheduling.calendar.needs_reauth"
+	CreateTestWebhookEventRequestTypeSchedulingCalendarDisconnected       CreateTestWebhookEventRequestType = "scheduling.calendar.disconnected"
+	CreateTestWebhookEventRequestTypeSchedulingCalendarDelegationFailing  CreateTestWebhookEventRequestType = "scheduling.calendar_delegation.failing"
+	CreateTestWebhookEventRequestTypeSchedulingCalendarDelegationRestored CreateTestWebhookEventRequestType = "scheduling.calendar_delegation.restored"
 )
 
 func NewCreateTestWebhookEventRequestTypeFromString(s string) (CreateTestWebhookEventRequestType, error) {
@@ -9346,6 +11151,42 @@ func NewCreateTestWebhookEventRequestTypeFromString(s string) (CreateTestWebhook
 		return CreateTestWebhookEventRequestTypeFormSubmissionReceived, nil
 	case "form.submission.flagged":
 		return CreateTestWebhookEventRequestTypeFormSubmissionFlagged, nil
+	case "scheduling.booking.created":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingCreated, nil
+	case "scheduling.booking.pending_approval":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingPendingApproval, nil
+	case "scheduling.booking.confirmed":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingConfirmed, nil
+	case "scheduling.booking.rescheduled":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingRescheduled, nil
+	case "scheduling.booking.cancelled":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingCancelled, nil
+	case "scheduling.booking.declined":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingDeclined, nil
+	case "scheduling.booking.no_show":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingNoShow, nil
+	case "scheduling.booking.external_conflict":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingExternalConflict, nil
+	case "scheduling.booking.calendar_write_failed":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingCalendarWriteFailed, nil
+	case "scheduling.booking.location_ready":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingLocationReady, nil
+	case "scheduling.booking.started":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingStarted, nil
+	case "scheduling.booking.ended":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingEnded, nil
+	case "scheduling.booking.reminder":
+		return CreateTestWebhookEventRequestTypeSchedulingBookingReminder, nil
+	case "scheduling.calendar.connected":
+		return CreateTestWebhookEventRequestTypeSchedulingCalendarConnected, nil
+	case "scheduling.calendar.needs_reauth":
+		return CreateTestWebhookEventRequestTypeSchedulingCalendarNeedsReauth, nil
+	case "scheduling.calendar.disconnected":
+		return CreateTestWebhookEventRequestTypeSchedulingCalendarDisconnected, nil
+	case "scheduling.calendar_delegation.failing":
+		return CreateTestWebhookEventRequestTypeSchedulingCalendarDelegationFailing, nil
+	case "scheduling.calendar_delegation.restored":
+		return CreateTestWebhookEventRequestTypeSchedulingCalendarDelegationRestored, nil
 	}
 	var t CreateTestWebhookEventRequestType
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

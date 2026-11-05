@@ -70,6 +70,9 @@ public final class ContactProperty {
         return id;
     }
 
+    /**
+     * @return How contacts and templates name it (<code>{{{contact.&lt;key&gt;}}}</code>). Can't change.
+     */
     @JsonProperty("key")
     public String getKey() {
         return key;
@@ -157,6 +160,9 @@ public final class ContactProperty {
     }
 
     public interface KeyStage {
+        /**
+         * <p>How contacts and templates name it (<code>{{{contact.&lt;key&gt;}}}</code>). Can't change.</p>
+         */
         TypeStage key(@NotNull String key);
     }
 
@@ -242,6 +248,10 @@ public final class ContactProperty {
             return this;
         }
 
+        /**
+         * <p>How contacts and templates name it (<code>{{{contact.&lt;key&gt;}}}</code>). Can't change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("key")
         public TypeStage key(@NotNull String key) {

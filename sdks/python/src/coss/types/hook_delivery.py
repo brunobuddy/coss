@@ -12,20 +12,51 @@ from .hook_delivery_status import HookDeliveryStatus
 class HookDelivery(UniversalBaseModel):
     object: HookDeliveryObject
     id: str
-    application_id: str
-    message_id: str
-    endpoint_id: str
+    application_id: str = pydantic.Field()
+    """
+    The id of the application.
+    """
+
+    message_id: str = pydantic.Field()
+    """
+    The id of the message being delivered.
+    """
+
+    endpoint_id: str = pydantic.Field()
+    """
+    The id of the endpoint it's delivered to.
+    """
+
     status: HookDeliveryStatus = pydantic.Field()
     """
     `pending`: waiting for its next attempt. `succeeded`: the endpoint answered 2xx. `failed`: every attempt failed, or the endpoint was disabled or deleted.
     """
 
-    attempt_count: int
-    next_attempt_at: typing.Optional[dt.datetime] = None
-    last_status_code: typing.Optional[int] = None
-    last_error: typing.Optional[str] = None
+    attempt_count: int = pydantic.Field()
+    """
+    How many attempts were made so far.
+    """
+
+    next_attempt_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the next attempt runs. `null`: none is due, because it finished.
+    """
+
+    last_status_code: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    """
+
+    last_error: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    """
+
     created_at: dt.datetime
-    finished_at: typing.Optional[dt.datetime] = None
+    finished_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it `succeeded` or `failed`. `null`: still `pending`.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

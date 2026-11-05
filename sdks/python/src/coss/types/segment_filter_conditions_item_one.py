@@ -10,8 +10,15 @@ from .segment_filter_conditions_item_one_op import SegmentFilterConditionsItemOn
 
 class SegmentFilterConditionsItemOne(UniversalBaseModel):
     field: SegmentFilterConditionsItemOneField
-    op: SegmentFilterConditionsItemOneOp
-    value: str
+    op: SegmentFilterConditionsItemOneOp = pydantic.Field()
+    """
+    How to compare the contact's address.
+    """
+
+    value: str = pydantic.Field()
+    """
+    What to compare it with.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

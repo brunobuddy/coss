@@ -14,7 +14,7 @@ class BillingUsageItem extends JsonSerializableType
     public string $meter;
 
     /**
-     * @var int $quantity
+     * @var int $quantity Units used so far this month.
      */
     #[JsonProperty('quantity')]
     public int $quantity;

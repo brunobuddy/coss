@@ -133,6 +133,8 @@ module Coss
           end
         end
 
+        # A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

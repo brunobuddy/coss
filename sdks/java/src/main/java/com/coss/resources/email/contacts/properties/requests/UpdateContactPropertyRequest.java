@@ -34,6 +34,9 @@ public final class UpdateContactPropertyRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Used in templates for contacts without a value. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("fallback")
     public OptionalNullable<UpdateContactPropertyRequestFallback> getFallback() {
@@ -92,6 +95,9 @@ public final class UpdateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>Used in templates for contacts without a value. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "fallback", nulls = Nulls.SKIP)
         public Builder fallback(OptionalNullable<UpdateContactPropertyRequestFallback> fallback) {
             this.fallback = fallback;

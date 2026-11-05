@@ -9,7 +9,7 @@ use Coss\Types\RiskListEntryType;
 class ListListsRequest extends JsonSerializableType
 {
     /**
-     * @var ?value-of<RiskList> $list
+     * @var ?value-of<RiskList> $list Which list: `allow` or `block`.
      */
     public ?string $list;
 

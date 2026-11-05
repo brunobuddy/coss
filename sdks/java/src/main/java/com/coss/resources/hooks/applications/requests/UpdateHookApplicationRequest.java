@@ -42,6 +42,9 @@ public final class UpdateHookApplicationRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Shown to the application's users in the portal.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -122,6 +125,9 @@ public final class UpdateHookApplicationRequest {
             return this;
         }
 
+        /**
+         * <p>Shown to the application's users in the portal.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;

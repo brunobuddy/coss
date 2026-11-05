@@ -78,6 +78,8 @@ class SubmissionsClient:
         self, id: str, submission_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> FormSubmission:
         """
+        One submission of the form, with its data, files and Risk's assessment.
+
         Parameters
         ----------
         id : str
@@ -307,6 +309,8 @@ class AsyncSubmissionsClient:
         self, id: str, submission_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> FormSubmission:
         """
+        One submission of the form, with its data, files and Risk's assessment.
+
         Parameters
         ----------
         id : str

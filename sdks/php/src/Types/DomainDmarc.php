@@ -17,7 +17,7 @@ class DomainDmarc extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $domainId
+     * @var string $domainId The domain's id.
      */
     #[JsonProperty('domain_id')]
     public string $domainId;
@@ -89,13 +89,13 @@ class DomainDmarc extends JsonSerializableType
     public array $checks;
 
     /**
-     * @var array<string> $warnings
+     * @var array<string> $warnings Things to look at before tightening the policy.
      */
     #[JsonProperty('warnings'), ArrayType(['string'])]
     public array $warnings;
 
     /**
-     * @var DomainDmarcReportSummary $reportSummary
+     * @var DomainDmarcReportSummary $reportSummary What the aggregate reports of this period say.
      */
     #[JsonProperty('report_summary')]
     public DomainDmarcReportSummary $reportSummary;

@@ -7,7 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class RiskAssessmentUser(UniversalBaseModel):
-    id: typing.Optional[str] = None
+    """
+    Who it's about.
+    """
+
+    id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your user id. `null`: none given.
+    """
+
     email: typing.Optional[str] = pydantic.Field(default=None)
     """
     `null` once removed (90 days after the assessment) or when none was given.

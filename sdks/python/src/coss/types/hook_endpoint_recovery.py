@@ -12,9 +12,21 @@ from .hook_endpoint_recovery_status import HookEndpointRecoveryStatus
 class HookEndpointRecovery(UniversalBaseModel):
     object: HookEndpointRecoveryObject
     id: str
-    endpoint_id: str
-    since: dt.datetime
-    until: dt.datetime
+    endpoint_id: str = pydantic.Field()
+    """
+    The id of the endpoint being recovered.
+    """
+
+    since: dt.datetime = pydantic.Field()
+    """
+    Deliveries of messages sent from this time on are requeued.
+    """
+
+    until: dt.datetime = pydantic.Field()
+    """
+    Up to this time: when the recovery was asked for.
+    """
+
     status: HookEndpointRecoveryStatus = pydantic.Field()
     """
     `pending` while coss.com is still requeueing deliveries (in the background).
@@ -26,7 +38,10 @@ class HookEndpointRecovery(UniversalBaseModel):
     """
 
     created_at: dt.datetime
-    completed_at: typing.Optional[dt.datetime] = None
+    completed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When requeueing finished. `null`: still `pending`.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

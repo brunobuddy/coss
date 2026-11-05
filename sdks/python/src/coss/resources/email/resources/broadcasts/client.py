@@ -122,6 +122,7 @@ class BroadcastsClient:
             The topic the broadcast is about (its key): only contacts it reaches get it, and its unsubscribe link leaves just that topic. It is the emails' `category`.
 
         reply_to : typing.Optional[typing.Sequence[str]]
+            Addresses replies go to.
 
         preview_text : typing.Optional[str]
             The inbox preview line (a hidden preheader at the start of the HTML).
@@ -130,8 +131,10 @@ class BroadcastsClient:
             `{{{contact.<key>|fallback}}}` for contact fields and properties (escaped), and `{{{unsubscribe_url}}}`, `{{{preferences_url}}}`, `{{{mailing_address}}}`; a footer with the postal address and an unsubscribe link is added unless they are there.
 
         text : typing.Optional[str]
+            The plain text part. Takes the same placeholders as `html`.
 
         tracking : typing.Optional[CreateBroadcastRequestTracking]
+            Which opens and clicks are tracked.
 
         rate_per_second : typing.Optional[int]
             Recipients per second, at most the plan's marketing rate (the default).
@@ -195,6 +198,8 @@ class BroadcastsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Broadcast:
         """
+        One broadcast of the API key's environment, with its status and stats.
+
         Parameters
         ----------
         id : str
@@ -285,27 +290,36 @@ class BroadcastsClient:
             Shown only to you.
 
         audience_id : typing.Optional[str]
+            Send to this audience. `null` clears it.
 
         segment_id : typing.Optional[str]
+            Send to this segment. `null` clears it.
 
         topic : typing.Optional[str]
+            The topic it's about (its key). `null` clears it.
 
         from_ : typing.Optional[str]
 
         reply_to : typing.Optional[typing.Sequence[str]]
+            Addresses replies go to.
 
         subject : typing.Optional[str]
             May use `{{{contact.<key>|fallback}}}` (e.g. `{{{contact.first_name|there}}}`).
 
         preview_text : typing.Optional[str]
+            The inbox preview line. `null` removes it.
 
         html : typing.Optional[str]
+            The HTML part. `null` removes it, if `text` remains.
 
         text : typing.Optional[str]
+            The plain text part. `null` removes it, if `html` remains.
 
         tracking : typing.Optional[UpdateBroadcastRequestTracking]
+            Which opens and clicks are tracked.
 
         rate_per_second : typing.Optional[int]
+            Recipients per second. `null`: the plan's marketing rate.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -505,6 +519,7 @@ class BroadcastsClient:
             The broadcast's id.
 
         to : typing.Sequence[str]
+            Who gets the test, at most 5 addresses.
 
         contact : typing.Optional[str]
             A contact (id or address) whose values fill the template; default: fallbacks.
@@ -692,6 +707,7 @@ class AsyncBroadcastsClient:
             The topic the broadcast is about (its key): only contacts it reaches get it, and its unsubscribe link leaves just that topic. It is the emails' `category`.
 
         reply_to : typing.Optional[typing.Sequence[str]]
+            Addresses replies go to.
 
         preview_text : typing.Optional[str]
             The inbox preview line (a hidden preheader at the start of the HTML).
@@ -700,8 +716,10 @@ class AsyncBroadcastsClient:
             `{{{contact.<key>|fallback}}}` for contact fields and properties (escaped), and `{{{unsubscribe_url}}}`, `{{{preferences_url}}}`, `{{{mailing_address}}}`; a footer with the postal address and an unsubscribe link is added unless they are there.
 
         text : typing.Optional[str]
+            The plain text part. Takes the same placeholders as `html`.
 
         tracking : typing.Optional[CreateBroadcastRequestTracking]
+            Which opens and clicks are tracked.
 
         rate_per_second : typing.Optional[int]
             Recipients per second, at most the plan's marketing rate (the default).
@@ -772,6 +790,8 @@ class AsyncBroadcastsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Broadcast:
         """
+        One broadcast of the API key's environment, with its status and stats.
+
         Parameters
         ----------
         id : str
@@ -878,27 +898,36 @@ class AsyncBroadcastsClient:
             Shown only to you.
 
         audience_id : typing.Optional[str]
+            Send to this audience. `null` clears it.
 
         segment_id : typing.Optional[str]
+            Send to this segment. `null` clears it.
 
         topic : typing.Optional[str]
+            The topic it's about (its key). `null` clears it.
 
         from_ : typing.Optional[str]
 
         reply_to : typing.Optional[typing.Sequence[str]]
+            Addresses replies go to.
 
         subject : typing.Optional[str]
             May use `{{{contact.<key>|fallback}}}` (e.g. `{{{contact.first_name|there}}}`).
 
         preview_text : typing.Optional[str]
+            The inbox preview line. `null` removes it.
 
         html : typing.Optional[str]
+            The HTML part. `null` removes it, if `text` remains.
 
         text : typing.Optional[str]
+            The plain text part. `null` removes it, if `html` remains.
 
         tracking : typing.Optional[UpdateBroadcastRequestTracking]
+            Which opens and clicks are tracked.
 
         rate_per_second : typing.Optional[int]
+            Recipients per second. `null`: the plan's marketing rate.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1137,6 +1166,7 @@ class AsyncBroadcastsClient:
             The broadcast's id.
 
         to : typing.Sequence[str]
+            Who gets the test, at most 5 addresses.
 
         contact : typing.Optional[str]
             A contact (id or address) whose values fill the template; default: fallbacks.

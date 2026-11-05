@@ -46,6 +46,7 @@ class ListsClient:
         Parameters
         ----------
         list_ : typing.Optional[RiskList]
+            Which list: `allow` or `block`.
 
         type : typing.Optional[RiskListEntryType]
             `email` (matched by mailbox, dots and `+tags` folded), `domain` (subdomains included), `ip` (an address or CIDR range), `asn`, `country` (ISO 3166-1 alpha-2), `user` (your user id).
@@ -99,8 +100,10 @@ class ListsClient:
         type : RiskListEntryType
 
         value : str
+            What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
 
         note : typing.Optional[str]
+            Your note about it.
 
         expires_at : typing.Optional[dt.datetime]
             The entry stops matching at this time (it is kept until deleted).
@@ -135,6 +138,8 @@ class ListsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> RiskListEntry:
         """
+        One allow or block list entry of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -165,6 +170,8 @@ class ListsClient:
 
     def remove(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> DeletedRiskListEntry:
         """
+        Removes an entry from its list. Later assessments no longer see it.
+
         Parameters
         ----------
         id : str
@@ -224,6 +231,7 @@ class AsyncListsClient:
         Parameters
         ----------
         list_ : typing.Optional[RiskList]
+            Which list: `allow` or `block`.
 
         type : typing.Optional[RiskListEntryType]
             `email` (matched by mailbox, dots and `+tags` folded), `domain` (subdomains included), `ip` (an address or CIDR range), `asn`, `country` (ISO 3166-1 alpha-2), `user` (your user id).
@@ -285,8 +293,10 @@ class AsyncListsClient:
         type : RiskListEntryType
 
         value : str
+            What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
 
         note : typing.Optional[str]
+            Your note about it.
 
         expires_at : typing.Optional[dt.datetime]
             The entry stops matching at this time (it is kept until deleted).
@@ -329,6 +339,8 @@ class AsyncListsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> RiskListEntry:
         """
+        One allow or block list entry of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -367,6 +379,8 @@ class AsyncListsClient:
 
     async def remove(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> DeletedRiskListEntry:
         """
+        Removes an entry from its list. Later assessments no longer see it.
+
         Parameters
         ----------
         id : str

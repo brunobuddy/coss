@@ -12,6 +12,9 @@ public record TestBroadcastRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Who gets the test, at most 5 addresses.
+    /// </summary>
     [JsonPropertyName("to")]
     public IEnumerable<string> To { get; set; } = new List<string>();
 

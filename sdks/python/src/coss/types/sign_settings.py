@@ -20,8 +20,16 @@ class SignSettings(UniversalBaseModel):
     The requester's name signers see. `null`: the organization's name.
     """
 
-    accent_color: typing.Optional[str] = None
-    theme: SignSettingsTheme
+    accent_color: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The signing page's accent color, as `#RRGGBB`. `null`: the default.
+    """
+
+    theme: SignSettingsTheme = pydantic.Field()
+    """
+    The signing page's theme. `system` follows the signer's device.
+    """
+
     disclosure: typing.Optional[str] = pydantic.Field(default=None)
     """
     Your own consent text signers accept before they see a document. `null`: coss.com's default, which covers ESIGN's consumer disclosure. Have your counsel review a replacement.

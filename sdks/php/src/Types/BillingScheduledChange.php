@@ -13,13 +13,13 @@ use Coss\Core\Types\Date;
 class BillingScheduledChange extends JsonSerializableType
 {
     /**
-     * @var DateTime $effectiveAt
+     * @var DateTime $effectiveAt When it takes effect.
      */
     #[JsonProperty('effective_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $effectiveAt;
 
     /**
-     * @var value-of<BillingScheduledChangePlan> $plan
+     * @var value-of<BillingScheduledChangePlan> $plan The plan it changes to.
      */
     #[JsonProperty('plan')]
     public string $plan;

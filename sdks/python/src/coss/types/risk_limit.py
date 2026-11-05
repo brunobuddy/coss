@@ -9,7 +9,11 @@ from .risk_limit_object import RiskLimitObject
 
 class RiskLimit(UniversalBaseModel):
     object: RiskLimitObject
-    bucket: str
+    bucket: str = pydantic.Field()
+    """
+    The bucket's name.
+    """
+
     allowed: bool = pydantic.Field()
     """
     Whether to let the request through. Denied requests take no tokens.

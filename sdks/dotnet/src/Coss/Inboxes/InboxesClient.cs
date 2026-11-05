@@ -974,6 +974,9 @@ public partial class InboxesClient : IInboxesClient
         return new WithRawResponseTask<Inbox>(CreateAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// One inbox of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Inboxes.GetAsync(
     ///     new GetInboxesRequest { InboxId = "inbox_01k7c8m4q2f3e9v6t5r1n0p8yz" }

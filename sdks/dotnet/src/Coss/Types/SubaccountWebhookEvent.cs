@@ -20,6 +20,9 @@ public record SubaccountWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required SubaccountWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What changed for the sub-account.
+    /// </summary>
     [JsonPropertyName("type")]
     public required SubaccountWebhookEventType Type { get; set; }
 
@@ -29,9 +32,15 @@ public record SubaccountWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The sub-account's standing.
+    /// </summary>
     [JsonPropertyName("data")]
     public required SubaccountWebhookEventData Data { get; set; }
 

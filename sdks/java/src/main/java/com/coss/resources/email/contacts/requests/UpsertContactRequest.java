@@ -75,6 +75,9 @@ public final class UpsertContactRequest {
         return email;
     }
 
+    /**
+     * @return Their first name. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_name")
     public OptionalNullable<String> getFirstName() {
@@ -84,6 +87,9 @@ public final class UpsertContactRequest {
         return firstName;
     }
 
+    /**
+     * @return Their last name. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_name")
     public OptionalNullable<String> getLastName() {
@@ -205,6 +211,9 @@ public final class UpsertContactRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         */
         _FinalStage firstName(OptionalNullable<String> firstName);
 
         _FinalStage firstName(String firstName);
@@ -213,6 +222,9 @@ public final class UpsertContactRequest {
 
         _FinalStage firstName(Nullable<String> firstName);
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         */
         _FinalStage lastName(OptionalNullable<String> lastName);
 
         _FinalStage lastName(String lastName);
@@ -406,6 +418,10 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(Nullable<String> lastName) {
             if (lastName.isNull()) {
@@ -418,6 +434,10 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(Optional<String> lastName) {
             if (lastName.isPresent()) {
@@ -428,12 +448,19 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(String lastName) {
             this.lastName = OptionalNullable.of(lastName);
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_name", nulls = Nulls.SKIP)
         public _FinalStage lastName(OptionalNullable<String> lastName) {
@@ -441,6 +468,10 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(Nullable<String> firstName) {
             if (firstName.isNull()) {
@@ -453,6 +484,10 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(Optional<String> firstName) {
             if (firstName.isPresent()) {
@@ -463,12 +498,19 @@ public final class UpsertContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(String firstName) {
             this.firstName = OptionalNullable.of(firstName);
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_name", nulls = Nulls.SKIP)
         public _FinalStage firstName(OptionalNullable<String> firstName) {

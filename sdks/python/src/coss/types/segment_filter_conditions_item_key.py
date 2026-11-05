@@ -11,8 +11,16 @@ from .segment_filter_conditions_item_key_value import SegmentFilterConditionsIte
 
 class SegmentFilterConditionsItemKey(UniversalBaseModel):
     field: SegmentFilterConditionsItemKeyField
-    key: str
-    op: SegmentFilterConditionsItemKeyOp
+    key: str = pydantic.Field()
+    """
+    The custom property to test.
+    """
+
+    op: SegmentFilterConditionsItemKeyOp = pydantic.Field()
+    """
+    How to compare: `eq`, `neq`, `in`, `not_in`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, or `exists` and `not_exists`, which take no value.
+    """
+
     value: typing.Optional[SegmentFilterConditionsItemKeyValue] = pydantic.Field(default=None)
     """
     A list for `in`/`not_in`; none for `exists`/`not_exists`.

@@ -10,13 +10,20 @@ from .sms_suppression_check_suppression import SmsSuppressionCheckSuppression
 
 class SmsSuppressionCheck(UniversalBaseModel):
     object: SmsSuppressionCheckObject
-    phone_number: str
+    phone_number: str = pydantic.Field()
+    """
+    The number checked, in E.164.
+    """
+
     suppressed: bool = pydantic.Field()
     """
     Whether a send to this number would be skipped.
     """
 
-    suppression: typing.Optional[SmsSuppressionCheckSuppression] = None
+    suppression: typing.Optional[SmsSuppressionCheckSuppression] = pydantic.Field(default=None)
+    """
+    A number sends skip.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

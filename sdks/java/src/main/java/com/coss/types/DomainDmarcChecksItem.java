@@ -35,16 +35,25 @@ public final class DomainDmarcChecksItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Which check this is.
+     */
     @JsonProperty("id")
     public DomainDmarcChecksItemId getId() {
         return id;
     }
 
+    /**
+     * @return Whether it passes.
+     */
     @JsonProperty("ok")
     public boolean getOk() {
         return ok;
     }
 
+    /**
+     * @return What it found.
+     */
     @JsonProperty("message")
     public String getMessage() {
         return message;
@@ -80,16 +89,25 @@ public final class DomainDmarcChecksItem {
     }
 
     public interface IdStage {
+        /**
+         * <p>Which check this is.</p>
+         */
         OkStage id(@NotNull DomainDmarcChecksItemId id);
 
         Builder from(DomainDmarcChecksItem other);
     }
 
     public interface OkStage {
+        /**
+         * <p>Whether it passes.</p>
+         */
         MessageStage ok(boolean ok);
     }
 
     public interface MessageStage {
+        /**
+         * <p>What it found.</p>
+         */
         _FinalStage message(@NotNull String message);
     }
 
@@ -122,6 +140,10 @@ public final class DomainDmarcChecksItem {
             return this;
         }
 
+        /**
+         * <p>Which check this is.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public OkStage id(@NotNull DomainDmarcChecksItemId id) {
@@ -129,6 +151,10 @@ public final class DomainDmarcChecksItem {
             return this;
         }
 
+        /**
+         * <p>Whether it passes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("ok")
         public MessageStage ok(boolean ok) {
@@ -136,6 +162,10 @@ public final class DomainDmarcChecksItem {
             return this;
         }
 
+        /**
+         * <p>What it found.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message")
         public _FinalStage message(@NotNull String message) {

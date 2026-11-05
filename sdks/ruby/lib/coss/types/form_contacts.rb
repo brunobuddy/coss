@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Turning submissions into contacts.
     class FormContacts < Internal::Types::Model
       field :enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false
 

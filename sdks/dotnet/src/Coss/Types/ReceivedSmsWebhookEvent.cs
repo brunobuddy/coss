@@ -11,12 +11,18 @@ public record ReceivedSmsWebhookEvent : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The event id.
+    /// </summary>
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
     [JsonPropertyName("object")]
     public required ReceivedSmsWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// `sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.
+    /// </summary>
     [JsonPropertyName("type")]
     public required ReceivedSmsWebhookEventType Type { get; set; }
 
@@ -26,6 +32,9 @@ public record ReceivedSmsWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 

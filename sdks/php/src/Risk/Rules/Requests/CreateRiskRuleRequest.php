@@ -13,13 +13,13 @@ use Coss\Types\RiskDecision;
 class CreateRiskRuleRequest extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name Your name for the rule, returned with reasons when it decides.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?bool $enabled
+     * @var ?bool $enabled Default `true`.
      */
     #[JsonProperty('enabled')]
     public ?bool $enabled;
@@ -31,7 +31,7 @@ class CreateRiskRuleRequest extends JsonSerializableType
     public ?int $position;
 
     /**
-     * @var ?array<value-of<RiskEvent>> $events
+     * @var ?array<value-of<RiskEvent>> $events Events it applies to. Default: every event.
      */
     #[JsonProperty('events'), ArrayType(['string'])]
     public ?array $events;
@@ -43,7 +43,7 @@ class CreateRiskRuleRequest extends JsonSerializableType
     public ?string $match;
 
     /**
-     * @var array<RiskRuleCondition> $conditions
+     * @var array<RiskRuleCondition> $conditions What must hold, by `match`.
      */
     #[JsonProperty('conditions'), ArrayType([RiskRuleCondition::class])]
     public array $conditions;

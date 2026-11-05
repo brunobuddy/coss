@@ -17,9 +17,15 @@ public record SignSession : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The signature request's id.
+    /// </summary>
     [JsonPropertyName("request_id")]
     public required string RequestId { get; set; }
 
+    /// <summary>
+    /// The signer's id.
+    /// </summary>
     [JsonPropertyName("signer_id")]
     public required string SignerId { get; set; }
 
@@ -35,6 +41,9 @@ public record SignSession : IJsonOnDeserialized
     [JsonPropertyName("token")]
     public required string Token { get; set; }
 
+    /// <summary>
+    /// When the link stops working.
+    /// </summary>
     [JsonPropertyName("expires_at")]
     public required DateTime ExpiresAt { get; set; }
 

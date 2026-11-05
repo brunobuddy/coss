@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What the address says. `null` on an assessment with no email.
     class RiskEmailSignals < Internal::Types::Model
       field :domain, -> { String }, optional: false, nullable: true
 

@@ -32,6 +32,9 @@ public final class UpdateContactTopicsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The contact's choices per topic. Topics not listed keep theirs.
+     */
     @JsonProperty("topics")
     public List<UpdateContactTopicsRequestTopicsItem> getTopics() {
         return topics;
@@ -80,6 +83,9 @@ public final class UpdateContactTopicsRequest {
             return this;
         }
 
+        /**
+         * <p>The contact's choices per topic. Topics not listed keep theirs.</p>
+         */
         @JsonSetter(value = "topics", nulls = Nulls.SKIP)
         public Builder topics(List<UpdateContactTopicsRequestTopicsItem> topics) {
             this.topics.clear();

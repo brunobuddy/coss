@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * What the address says. `null` on an assessment with no IP.
+ */
 class RiskIpSignals extends JsonSerializableType
 {
     /**
@@ -14,43 +17,43 @@ class RiskIpSignals extends JsonSerializableType
     public float $version;
 
     /**
-     * @var bool $private
+     * @var bool $private Whether it's a private or reserved address.
      */
     #[JsonProperty('private')]
     public bool $private;
 
     /**
-     * @var bool $tor
+     * @var bool $tor Whether it's a Tor exit.
      */
     #[JsonProperty('tor')]
     public bool $tor;
 
     /**
-     * @var bool $hosting
+     * @var bool $hosting Whether it's in a cloud, hosting or VPN network.
      */
     #[JsonProperty('hosting')]
     public bool $hosting;
 
     /**
-     * @var ?string $hostingProvider
+     * @var ?string $hostingProvider That network's operator. `null` when it isn't one.
      */
     #[JsonProperty('hosting_provider')]
     public ?string $hostingProvider;
 
     /**
-     * @var ?value-of<RiskIpSignalsHostingKind> $hostingKind
+     * @var ?value-of<RiskIpSignalsHostingKind> $hostingKind `cloud`, `hosting` or `vpn`. `null` when it isn't one.
      */
     #[JsonProperty('hosting_kind')]
     public ?string $hostingKind;
 
     /**
-     * @var ?int $asn
+     * @var ?int $asn The network's autonomous system number. `null` when unknown.
      */
     #[JsonProperty('asn')]
     public ?int $asn;
 
     /**
-     * @var ?string $asName
+     * @var ?string $asName The network's name. `null` when unknown.
      */
     #[JsonProperty('as_name')]
     public ?string $asName;

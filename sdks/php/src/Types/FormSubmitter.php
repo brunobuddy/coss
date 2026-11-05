@@ -5,22 +5,25 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Who the submitter is, and whether they must confirm by email.
+ */
 class FormSubmitter extends JsonSerializableType
 {
     /**
-     * @var string $emailField
+     * @var string $emailField The field holding the submitter's email address.
      */
     #[JsonProperty('email_field')]
     public string $emailField;
 
     /**
-     * @var bool $verify
+     * @var bool $verify Whether submissions wait until the submitter clicks a link emailed to them.
      */
     #[JsonProperty('verify')]
     public bool $verify;
 
     /**
-     * @var ?string $confirmationFrom
+     * @var ?string $confirmationFrom The verification email's sender. `null`: none set.
      */
     #[JsonProperty('confirmation_from')]
     public ?string $confirmationFrom;

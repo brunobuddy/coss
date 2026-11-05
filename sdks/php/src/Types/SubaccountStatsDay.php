@@ -10,7 +10,7 @@ use Coss\Core\Types\Date;
 class SubaccountStatsDay extends JsonSerializableType
 {
     /**
-     * @var DateTime $date
+     * @var DateTime $date The UTC date.
      */
     #[JsonProperty('date'), Date(Date::TYPE_DATE)]
     public DateTime $date;
@@ -28,25 +28,25 @@ class SubaccountStatsDay extends JsonSerializableType
     public int $sent;
 
     /**
-     * @var int $delivered
+     * @var int $delivered Deliveries that day.
      */
     #[JsonProperty('delivered')]
     public int $delivered;
 
     /**
-     * @var int $bounced
+     * @var int $bounced Bounces that day.
      */
     #[JsonProperty('bounced')]
     public int $bounced;
 
     /**
-     * @var int $complained
+     * @var int $complained Complaints that day.
      */
     #[JsonProperty('complained')]
     public int $complained;
 
     /**
-     * @var int $failed
+     * @var int $failed Failures that day.
      */
     #[JsonProperty('failed')]
     public int $failed;

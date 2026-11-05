@@ -8,10 +8,13 @@ use Coss\Core\Types\ArrayType;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * The assessment, without its signals.
+ */
 class RiskWebhookEventData extends JsonSerializableType
 {
     /**
-     * @var string $assessmentId
+     * @var string $assessmentId The assessment's id.
      */
     #[JsonProperty('assessment_id')]
     public string $assessmentId;
@@ -23,7 +26,7 @@ class RiskWebhookEventData extends JsonSerializableType
     public string $event;
 
     /**
-     * @var ?string $eventName
+     * @var ?string $eventName Your name for a `custom` event. `null`: none.
      */
     #[JsonProperty('event_name')]
     public ?string $eventName;
@@ -35,19 +38,19 @@ class RiskWebhookEventData extends JsonSerializableType
     public string $decision;
 
     /**
-     * @var float $score
+     * @var float $score 0-1: how risky the signals are together.
      */
     #[JsonProperty('score')]
     public float $score;
 
     /**
-     * @var array<RiskReason> $reasons
+     * @var array<RiskReason> $reasons Why, most significant first.
      */
     #[JsonProperty('reasons'), ArrayType([RiskReason::class])]
     public array $reasons;
 
     /**
-     * @var ?string $userId
+     * @var ?string $userId Your user id. `null`: none given.
      */
     #[JsonProperty('user_id')]
     public ?string $userId;
@@ -59,7 +62,7 @@ class RiskWebhookEventData extends JsonSerializableType
     public ?string $outcome;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When this happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

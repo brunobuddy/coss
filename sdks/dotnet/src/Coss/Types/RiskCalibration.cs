@@ -17,6 +17,9 @@ public record RiskCalibration : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required RiskCalibrationObject Object { get; set; }
 
+    /// <summary>
+    /// How many days back it looks.
+    /// </summary>
     [JsonPropertyName("window_days")]
     public required long WindowDays { get; set; }
 
@@ -32,10 +35,16 @@ public record RiskCalibration : IJsonOnDeserialized
     [JsonPropertyName("labeled")]
     public required long Labeled { get; set; }
 
+    /// <summary>
+    /// How each reason did against your feedback.
+    /// </summary>
     [JsonPropertyName("reasons")]
     public IEnumerable<RiskCalibrationReason> Reasons { get; set; } =
         new List<RiskCalibrationReason>();
 
+    /// <summary>
+    /// How each rule did against your feedback.
+    /// </summary>
     [JsonPropertyName("rules")]
     public IEnumerable<RiskCalibrationRule> Rules { get; set; } = new List<RiskCalibrationRule>();
 

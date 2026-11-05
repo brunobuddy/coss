@@ -17,8 +17,16 @@ class Inbox(UniversalBaseModel):
     The inbox's email address (`username@domain`).
     """
 
-    username: str
-    domain: str
+    username: str = pydantic.Field()
+    """
+    The part of the address before the `@`.
+    """
+
+    domain: str = pydantic.Field()
+    """
+    The part of the address after the `@`.
+    """
+
     kind: InboxKind = pydantic.Field()
     """
     `managed`: at the environment's own domain under coss.com's inbound domain (no DNS setup). `domain`: at one of the environment's receiving domains.

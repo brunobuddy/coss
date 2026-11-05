@@ -43,16 +43,25 @@ public final class FormSubmitter {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The field holding the submitter's email address.
+     */
     @JsonProperty("email_field")
     public String getEmailField() {
         return emailField;
     }
 
+    /**
+     * @return Whether submissions wait until the submitter clicks a link emailed to them.
+     */
     @JsonProperty("verify")
     public boolean getVerify() {
         return verify;
     }
 
+    /**
+     * @return The verification email's sender. <code>null</code>: none set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("confirmation_from")
     public OptionalNullable<String> getConfirmationFrom() {
@@ -100,12 +109,18 @@ public final class FormSubmitter {
     }
 
     public interface EmailFieldStage {
+        /**
+         * <p>The field holding the submitter's email address.</p>
+         */
         VerifyStage emailField(@NotNull String emailField);
 
         Builder from(FormSubmitter other);
     }
 
     public interface VerifyStage {
+        /**
+         * <p>Whether submissions wait until the submitter clicks a link emailed to them.</p>
+         */
         _FinalStage verify(boolean verify);
     }
 
@@ -116,6 +131,9 @@ public final class FormSubmitter {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The verification email's sender. <code>null</code>: none set.</p>
+         */
         _FinalStage confirmationFrom(OptionalNullable<String> confirmationFrom);
 
         _FinalStage confirmationFrom(String confirmationFrom);
@@ -146,6 +164,10 @@ public final class FormSubmitter {
             return this;
         }
 
+        /**
+         * <p>The field holding the submitter's email address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email_field")
         public VerifyStage emailField(@NotNull String emailField) {
@@ -153,6 +175,10 @@ public final class FormSubmitter {
             return this;
         }
 
+        /**
+         * <p>Whether submissions wait until the submitter clicks a link emailed to them.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("verify")
         public _FinalStage verify(boolean verify) {
@@ -160,6 +186,10 @@ public final class FormSubmitter {
             return this;
         }
 
+        /**
+         * <p>The verification email's sender. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmationFrom(Nullable<String> confirmationFrom) {
             if (confirmationFrom.isNull()) {
@@ -172,6 +202,10 @@ public final class FormSubmitter {
             return this;
         }
 
+        /**
+         * <p>The verification email's sender. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmationFrom(Optional<String> confirmationFrom) {
             if (confirmationFrom.isPresent()) {
@@ -182,12 +216,19 @@ public final class FormSubmitter {
             return this;
         }
 
+        /**
+         * <p>The verification email's sender. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage confirmationFrom(String confirmationFrom) {
             this.confirmationFrom = OptionalNullable.of(confirmationFrom);
             return this;
         }
 
+        /**
+         * <p>The verification email's sender. <code>null</code>: none set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "confirmation_from", nulls = Nulls.SKIP)
         public _FinalStage confirmationFrom(OptionalNullable<String> confirmationFrom) {

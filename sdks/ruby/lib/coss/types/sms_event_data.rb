@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Details of the event, where it has any.
     class SmsEventData < Internal::Types::Model
       field :failure, -> { Coss::Types::SmsEventDataFailure }, optional: true, nullable: false
 

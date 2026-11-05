@@ -7,9 +7,24 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class FormSubmitter(UniversalBaseModel):
-    email_field: str
-    verify: bool
-    confirmation_from: typing.Optional[str] = None
+    """
+    Who the submitter is, and whether they must confirm by email.
+    """
+
+    email_field: str = pydantic.Field()
+    """
+    The field holding the submitter's email address.
+    """
+
+    verify: bool = pydantic.Field()
+    """
+    Whether submissions wait until the submitter clicks a link emailed to them.
+    """
+
+    confirmation_from: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The verification email's sender. `null`: none set.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -72,9 +72,12 @@ class AudiencesClient:
 
     def create(self, *, name: str, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+
         Parameters
         ----------
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -101,6 +104,8 @@ class AudiencesClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        One audience of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -163,12 +168,15 @@ class AudiencesClient:
 
     def update(self, id: str, *, name: str, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        Renames an audience. Its members stay.
+
         Parameters
         ----------
         id : str
             The audience's id.
 
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -281,6 +289,8 @@ class AudiencesClient:
         self, id: str, contact_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> RemoveContactAudiencesResponse:
         """
+        Takes a contact out of the audience. The contact itself stays.
+
         Parameters
         ----------
         id : str
@@ -378,9 +388,12 @@ class AsyncAudiencesClient:
 
     async def create(self, *, name: str, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+
         Parameters
         ----------
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -415,6 +428,8 @@ class AsyncAudiencesClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        One audience of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -493,12 +508,15 @@ class AsyncAudiencesClient:
 
     async def update(self, id: str, *, name: str, request_options: typing.Optional[RequestOptions] = None) -> Audience:
         """
+        Renames an audience. Its members stay.
+
         Parameters
         ----------
         id : str
             The audience's id.
 
         name : str
+            Your name for the list, unique in the environment.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -635,6 +653,8 @@ class AsyncAudiencesClient:
         self, id: str, contact_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> RemoveContactAudiencesResponse:
         """
+        Takes a contact out of the audience. The contact itself stays.
+
         Parameters
         ----------
         id : str

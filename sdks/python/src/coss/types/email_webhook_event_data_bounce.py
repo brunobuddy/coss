@@ -8,9 +8,20 @@ from .email_webhook_event_data_bounce_type import EmailWebhookEventDataBounceTyp
 
 
 class EmailWebhookEventDataBounce(UniversalBaseModel):
-    type: EmailWebhookEventDataBounceType
-    sub_type: str
-    diagnostic_code: typing.Optional[str] = None
+    type: EmailWebhookEventDataBounceType = pydantic.Field()
+    """
+    `permanent`, `transient` or `undetermined`.
+    """
+
+    sub_type: str = pydantic.Field()
+    """
+    The provider's finer classification of the bounce.
+    """
+
+    diagnostic_code: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What the receiving server answered. `null`: not reported.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -126,6 +126,9 @@ public final class InvoiceSummary {
         return id;
     }
 
+    /**
+     * @return The invoice number. <code>null</code> until it's finalized.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("number")
     public OptionalNullable<String> getNumber() {
@@ -135,21 +138,33 @@ public final class InvoiceSummary {
         return number;
     }
 
+    /**
+     * @return <code>period</code>: a billing month. <code>plan_change</code>: a change of plan. <code>one_off</code>: a single charge. <code>final</code>: the last invoice of an account. <code>threshold</code>: usage charged early, taken off the month's invoice.
+     */
     @JsonProperty("kind")
     public InvoiceSummaryKind getKind() {
         return kind;
     }
 
+    /**
+     * @return <code>open</code>: not paid yet. <code>paid</code>: settled. <code>void</code>: canceled. <code>uncollectible</code>: written off.
+     */
     @JsonProperty("status")
     public InvoiceSummaryStatus getStatus() {
         return status;
     }
 
+    /**
+     * @return Always <code>usd</code>.
+     */
     @JsonProperty("currency")
     public InvoiceSummaryCurrency getCurrency() {
         return currency;
     }
 
+    /**
+     * @return What period it covers.
+     */
     @JsonProperty("period")
     public InvoiceSummaryPeriod getPeriod() {
         return period;
@@ -211,11 +226,17 @@ public final class InvoiceSummary {
         return amountDue;
     }
 
+    /**
+     * @return <code>charge_automatically</code>: charged to the payment method. <code>send_invoice</code>: paid by <code>due_at</code>.
+     */
     @JsonProperty("collection_method")
     public InvoiceSummaryCollectionMethod getCollectionMethod() {
         return collectionMethod;
     }
 
+    /**
+     * @return When payment is due. <code>null</code>: not set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("due_at")
     public OptionalNullable<OffsetDateTime> getDueAt() {
@@ -225,6 +246,9 @@ public final class InvoiceSummary {
         return dueAt;
     }
 
+    /**
+     * @return When it was finalized. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("finalized_at")
     public OptionalNullable<OffsetDateTime> getFinalizedAt() {
@@ -234,6 +258,9 @@ public final class InvoiceSummary {
         return finalizedAt;
     }
 
+    /**
+     * @return When it was paid. <code>null</code>: not paid.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("paid_at")
     public OptionalNullable<OffsetDateTime> getPaidAt() {
@@ -243,6 +270,9 @@ public final class InvoiceSummary {
         return paidAt;
     }
 
+    /**
+     * @return When it was voided. <code>null</code>: it wasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("voided_at")
     public OptionalNullable<OffsetDateTime> getVoidedAt() {
@@ -264,6 +294,9 @@ public final class InvoiceSummary {
         return hostedUrl;
     }
 
+    /**
+     * @return The invoice as a PDF. <code>null</code>: not available.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("pdf_url")
     public OptionalNullable<String> getPdfUrl() {
@@ -396,18 +429,30 @@ public final class InvoiceSummary {
     }
 
     public interface KindStage {
+        /**
+         * <p><code>period</code>: a billing month. <code>plan_change</code>: a change of plan. <code>one_off</code>: a single charge. <code>final</code>: the last invoice of an account. <code>threshold</code>: usage charged early, taken off the month's invoice.</p>
+         */
         StatusStage kind(@NotNull InvoiceSummaryKind kind);
     }
 
     public interface StatusStage {
+        /**
+         * <p><code>open</code>: not paid yet. <code>paid</code>: settled. <code>void</code>: canceled. <code>uncollectible</code>: written off.</p>
+         */
         CurrencyStage status(@NotNull InvoiceSummaryStatus status);
     }
 
     public interface CurrencyStage {
+        /**
+         * <p>Always <code>usd</code>.</p>
+         */
         PeriodStage currency(@NotNull InvoiceSummaryCurrency currency);
     }
 
     public interface PeriodStage {
+        /**
+         * <p>What period it covers.</p>
+         */
         SubtotalStage period(@NotNull InvoiceSummaryPeriod period);
     }
 
@@ -461,6 +506,9 @@ public final class InvoiceSummary {
     }
 
     public interface CollectionMethodStage {
+        /**
+         * <p><code>charge_automatically</code>: charged to the payment method. <code>send_invoice</code>: paid by <code>due_at</code>.</p>
+         */
         _FinalStage collectionMethod(@NotNull InvoiceSummaryCollectionMethod collectionMethod);
     }
 
@@ -471,6 +519,9 @@ public final class InvoiceSummary {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The invoice number. <code>null</code> until it's finalized.</p>
+         */
         _FinalStage number(OptionalNullable<String> number);
 
         _FinalStage number(String number);
@@ -479,6 +530,9 @@ public final class InvoiceSummary {
 
         _FinalStage number(Nullable<String> number);
 
+        /**
+         * <p>When payment is due. <code>null</code>: not set.</p>
+         */
         _FinalStage dueAt(OptionalNullable<OffsetDateTime> dueAt);
 
         _FinalStage dueAt(OffsetDateTime dueAt);
@@ -487,6 +541,9 @@ public final class InvoiceSummary {
 
         _FinalStage dueAt(Nullable<OffsetDateTime> dueAt);
 
+        /**
+         * <p>When it was finalized. <code>null</code>: not yet.</p>
+         */
         _FinalStage finalizedAt(OptionalNullable<OffsetDateTime> finalizedAt);
 
         _FinalStage finalizedAt(OffsetDateTime finalizedAt);
@@ -495,6 +552,9 @@ public final class InvoiceSummary {
 
         _FinalStage finalizedAt(Nullable<OffsetDateTime> finalizedAt);
 
+        /**
+         * <p>When it was paid. <code>null</code>: not paid.</p>
+         */
         _FinalStage paidAt(OptionalNullable<OffsetDateTime> paidAt);
 
         _FinalStage paidAt(OffsetDateTime paidAt);
@@ -503,6 +563,9 @@ public final class InvoiceSummary {
 
         _FinalStage paidAt(Nullable<OffsetDateTime> paidAt);
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         */
         _FinalStage voidedAt(OptionalNullable<OffsetDateTime> voidedAt);
 
         _FinalStage voidedAt(OffsetDateTime voidedAt);
@@ -522,6 +585,9 @@ public final class InvoiceSummary {
 
         _FinalStage hostedUrl(Nullable<String> hostedUrl);
 
+        /**
+         * <p>The invoice as a PDF. <code>null</code>: not available.</p>
+         */
         _FinalStage pdfUrl(OptionalNullable<String> pdfUrl);
 
         _FinalStage pdfUrl(String pdfUrl);
@@ -635,6 +701,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p><code>period</code>: a billing month. <code>plan_change</code>: a change of plan. <code>one_off</code>: a single charge. <code>final</code>: the last invoice of an account. <code>threshold</code>: usage charged early, taken off the month's invoice.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("kind")
         public StatusStage kind(@NotNull InvoiceSummaryKind kind) {
@@ -642,6 +712,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p><code>open</code>: not paid yet. <code>paid</code>: settled. <code>void</code>: canceled. <code>uncollectible</code>: written off.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public CurrencyStage status(@NotNull InvoiceSummaryStatus status) {
@@ -649,6 +723,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>Always <code>usd</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("currency")
         public PeriodStage currency(@NotNull InvoiceSummaryCurrency currency) {
@@ -656,6 +734,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>What period it covers.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period")
         public SubtotalStage period(@NotNull InvoiceSummaryPeriod period) {
@@ -740,6 +822,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p><code>charge_automatically</code>: charged to the payment method. <code>send_invoice</code>: paid by <code>due_at</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("collection_method")
         public _FinalStage collectionMethod(@NotNull InvoiceSummaryCollectionMethod collectionMethod) {
@@ -747,6 +833,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice as a PDF. <code>null</code>: not available.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pdfUrl(Nullable<String> pdfUrl) {
             if (pdfUrl.isNull()) {
@@ -759,6 +849,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice as a PDF. <code>null</code>: not available.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pdfUrl(Optional<String> pdfUrl) {
             if (pdfUrl.isPresent()) {
@@ -769,12 +863,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice as a PDF. <code>null</code>: not available.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pdfUrl(String pdfUrl) {
             this.pdfUrl = OptionalNullable.of(pdfUrl);
             return this;
         }
 
+        /**
+         * <p>The invoice as a PDF. <code>null</code>: not available.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "pdf_url", nulls = Nulls.SKIP)
         public _FinalStage pdfUrl(OptionalNullable<String> pdfUrl) {
@@ -832,6 +933,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(Nullable<OffsetDateTime> voidedAt) {
             if (voidedAt.isNull()) {
@@ -844,6 +949,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(Optional<OffsetDateTime> voidedAt) {
             if (voidedAt.isPresent()) {
@@ -854,12 +963,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage voidedAt(OffsetDateTime voidedAt) {
             this.voidedAt = OptionalNullable.of(voidedAt);
             return this;
         }
 
+        /**
+         * <p>When it was voided. <code>null</code>: it wasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "voided_at", nulls = Nulls.SKIP)
         public _FinalStage voidedAt(OptionalNullable<OffsetDateTime> voidedAt) {
@@ -867,6 +983,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was paid. <code>null</code>: not paid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paidAt(Nullable<OffsetDateTime> paidAt) {
             if (paidAt.isNull()) {
@@ -879,6 +999,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was paid. <code>null</code>: not paid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paidAt(Optional<OffsetDateTime> paidAt) {
             if (paidAt.isPresent()) {
@@ -889,12 +1013,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was paid. <code>null</code>: not paid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paidAt(OffsetDateTime paidAt) {
             this.paidAt = OptionalNullable.of(paidAt);
             return this;
         }
 
+        /**
+         * <p>When it was paid. <code>null</code>: not paid.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "paid_at", nulls = Nulls.SKIP)
         public _FinalStage paidAt(OptionalNullable<OffsetDateTime> paidAt) {
@@ -902,6 +1033,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was finalized. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finalizedAt(Nullable<OffsetDateTime> finalizedAt) {
             if (finalizedAt.isNull()) {
@@ -914,6 +1049,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was finalized. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finalizedAt(Optional<OffsetDateTime> finalizedAt) {
             if (finalizedAt.isPresent()) {
@@ -924,12 +1063,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When it was finalized. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage finalizedAt(OffsetDateTime finalizedAt) {
             this.finalizedAt = OptionalNullable.of(finalizedAt);
             return this;
         }
 
+        /**
+         * <p>When it was finalized. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "finalized_at", nulls = Nulls.SKIP)
         public _FinalStage finalizedAt(OptionalNullable<OffsetDateTime> finalizedAt) {
@@ -937,6 +1083,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When payment is due. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dueAt(Nullable<OffsetDateTime> dueAt) {
             if (dueAt.isNull()) {
@@ -949,6 +1099,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When payment is due. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dueAt(Optional<OffsetDateTime> dueAt) {
             if (dueAt.isPresent()) {
@@ -959,12 +1113,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>When payment is due. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage dueAt(OffsetDateTime dueAt) {
             this.dueAt = OptionalNullable.of(dueAt);
             return this;
         }
 
+        /**
+         * <p>When payment is due. <code>null</code>: not set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "due_at", nulls = Nulls.SKIP)
         public _FinalStage dueAt(OptionalNullable<OffsetDateTime> dueAt) {
@@ -972,6 +1133,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice number. <code>null</code> until it's finalized.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage number(Nullable<String> number) {
             if (number.isNull()) {
@@ -984,6 +1149,10 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice number. <code>null</code> until it's finalized.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage number(Optional<String> number) {
             if (number.isPresent()) {
@@ -994,12 +1163,19 @@ public final class InvoiceSummary {
             return this;
         }
 
+        /**
+         * <p>The invoice number. <code>null</code> until it's finalized.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage number(String number) {
             this.number = OptionalNullable.of(number);
             return this;
         }
 
+        /**
+         * <p>The invoice number. <code>null</code> until it's finalized.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "number", nulls = Nulls.SKIP)
         public _FinalStage number(OptionalNullable<String> number) {

@@ -17,6 +17,9 @@ public record Audience : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Your name for the list, unique in the environment.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 

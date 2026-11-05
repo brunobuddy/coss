@@ -20,6 +20,9 @@ public record ContactWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required ContactWebhookEventObject Object { get; set; }
 
+    /// <summary>
+    /// What happened to the contact.
+    /// </summary>
     [JsonPropertyName("type")]
     public required ContactWebhookEventType Type { get; set; }
 
@@ -29,9 +32,15 @@ public record ContactWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The contact, without its properties.
+    /// </summary>
     [JsonPropertyName("data")]
     public required ContactWebhookEventData Data { get; set; }
 

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The request. Never documents or field values.
     class SignRequestWebhookEventData < Internal::Types::Model
       field :sign_request_id, -> { String }, optional: false, nullable: false
 

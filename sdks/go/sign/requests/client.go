@@ -130,6 +130,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+//
 // Example:
 //
 //	request := &sign.GetRequestsRequest{

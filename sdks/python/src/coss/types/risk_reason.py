@@ -10,8 +10,16 @@ from .risk_reason_window import RiskReasonWindow
 
 
 class RiskReason(UniversalBaseModel):
-    code: RiskReasonCode
-    message: str
+    code: RiskReasonCode = pydantic.Field()
+    """
+    The reason's code, listed under Risk's reasons in the docs.
+    """
+
+    message: str = pydantic.Field()
+    """
+    What it means, in words. May change.
+    """
+
     value: typing.Optional[float] = pydantic.Field(default=None)
     """
     The count behind a `velocity.*` reason, or the score behind a `content.*` one.
@@ -22,7 +30,11 @@ class RiskReason(UniversalBaseModel):
     What a `velocity.*` or `content.*` reason fires at.
     """
 
-    window: typing.Optional[RiskReasonWindow] = None
+    window: typing.Optional[RiskReasonWindow] = pydantic.Field(default=None)
+    """
+    `velocity.*`: the window it's counted over.
+    """
+
     suggestion: typing.Optional[str] = pydantic.Field(default=None)
     """
     `email.typo`: the likely domain.

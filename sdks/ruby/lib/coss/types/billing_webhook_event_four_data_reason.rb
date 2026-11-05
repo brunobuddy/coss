@@ -7,6 +7,7 @@ module Coss
 
       DELINQUENT = "delinquent"
       SPEND_LIMIT = "spend_limit"
+      CREDIT_LIMIT = "credit_limit"
       ADMIN = "admin"
     end
   end

@@ -6,16 +6,19 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * Emails about accepted submissions.
+ */
 class FormNotifications extends JsonSerializableType
 {
     /**
-     * @var array<string> $recipients
+     * @var array<string> $recipients Who gets an email for each accepted submission.
      */
     #[JsonProperty('recipients'), ArrayType(['string'])]
     public array $recipients;
 
     /**
-     * @var ?string $from
+     * @var ?string $from The notification's sender. `null`: coss.com, as "<form name> via coss.com".
      */
     #[JsonProperty('from')]
     public ?string $from;

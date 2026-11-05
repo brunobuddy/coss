@@ -6,10 +6,13 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * What this event recorded, depending on its type.
+ */
 class SignEventDetails extends JsonSerializableType
 {
     /**
-     * @var ?string $reason
+     * @var ?string $reason `declined`: the signer's reason.
      */
     #[JsonProperty('reason')]
     public ?string $reason;
@@ -27,7 +30,7 @@ class SignEventDetails extends JsonSerializableType
     public ?string $disclosureSha256;
 
     /**
-     * @var ?array<string> $fieldIds
+     * @var ?array<string> $fieldIds `signed`: the fields the signer filled.
      */
     #[JsonProperty('field_ids'), ArrayType(['string'])]
     public ?array $fieldIds;
@@ -39,7 +42,7 @@ class SignEventDetails extends JsonSerializableType
     public ?string $signatureSha256;
 
     /**
-     * @var ?string $initialsSha256
+     * @var ?string $initialsSha256 SHA-256 of the initials image the signer adopted.
      */
     #[JsonProperty('initials_sha256')]
     public ?string $initialsSha256;

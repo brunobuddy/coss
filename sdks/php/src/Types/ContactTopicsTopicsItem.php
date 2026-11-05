@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class ContactTopicsTopicsItem extends JsonSerializableType
 {
     /**
-     * @var string $topic
+     * @var string $topic The topic's key.
      */
     #[JsonProperty('topic')]
     public string $topic;
 
     /**
-     * @var string $name
+     * @var string $name The topic's name.
      */
     #[JsonProperty('name')]
     public string $name;

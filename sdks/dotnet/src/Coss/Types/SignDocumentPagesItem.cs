@@ -17,6 +17,9 @@ public record SignDocumentPagesItem : IJsonOnDeserialized
     [JsonPropertyName("width")]
     public required double Width { get; set; }
 
+    /// <summary>
+    /// In PDF points (1/72 inch).
+    /// </summary>
     [JsonPropertyName("height")]
     public required double Height { get; set; }
 

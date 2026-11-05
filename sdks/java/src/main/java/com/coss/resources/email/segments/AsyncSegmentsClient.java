@@ -76,51 +76,87 @@ public class AsyncSegmentsClient {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CompletableFuture<Segment> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CompletableFuture<Segment> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CompletableFuture<Segment> get(String id, GetSegmentsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CompletableFuture<Segment> get(String id, GetSegmentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CompletableFuture<DeletedSegment> remove(String id) {
         return this.rawClient.remove(id).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CompletableFuture<DeletedSegment> remove(String id, RequestOptions requestOptions) {
         return this.rawClient.remove(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CompletableFuture<DeletedSegment> remove(String id, RemoveSegmentsRequest request) {
         return this.rawClient.remove(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CompletableFuture<DeletedSegment> remove(
             String id, RemoveSegmentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.remove(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CompletableFuture<Segment> update(String id) {
         return this.rawClient.update(id).thenApply(response -> response.body());
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CompletableFuture<Segment> update(String id, RequestOptions requestOptions) {
         return this.rawClient.update(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CompletableFuture<Segment> update(String id, UpdateSegmentRequest request) {
         return this.rawClient.update(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CompletableFuture<Segment> update(String id, UpdateSegmentRequest request, RequestOptions requestOptions) {
         return this.rawClient.update(id, request, requestOptions).thenApply(response -> response.body());
     }

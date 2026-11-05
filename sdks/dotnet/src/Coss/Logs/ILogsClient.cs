@@ -11,6 +11,9 @@ public partial interface ILogsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One line of the API key's environment log.
+    /// </summary>
     WithRawResponseTask<Log> GetAsync(
         GetLogsRequest request,
         RequestOptions? options = null,

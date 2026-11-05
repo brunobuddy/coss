@@ -196,6 +196,8 @@ class FormsClient
     }
 
     /**
+     * A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+     *
      * Example:
      * ```php
      * $client->forms->get(

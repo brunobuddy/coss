@@ -7,8 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EmailWebhookEventDataComplaint(UniversalBaseModel):
-    feedback_type: typing.Optional[str] = None
-    sub_type: typing.Optional[str] = None
+    feedback_type: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The kind of complaint the mailbox provider reported. `null`: not reported.
+    """
+
+    sub_type: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The provider's finer classification. `null`: not reported.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

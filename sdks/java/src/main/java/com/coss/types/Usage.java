@@ -145,16 +145,25 @@ public final class Usage {
         return userId;
     }
 
+    /**
+     * @return When this bucket starts (inclusive).
+     */
     @JsonProperty("start")
     public OffsetDateTime getStart() {
         return start;
     }
 
+    /**
+     * @return When this bucket ends (exclusive).
+     */
     @JsonProperty("end")
     public OffsetDateTime getEnd() {
         return end;
     }
 
+    /**
+     * @return Units used in this bucket.
+     */
     @JsonProperty("quantity")
     public long getQuantity() {
         return quantity;
@@ -252,14 +261,23 @@ public final class Usage {
     }
 
     public interface StartStage {
+        /**
+         * <p>When this bucket starts (inclusive).</p>
+         */
         EndStage start(@NotNull OffsetDateTime start);
     }
 
     public interface EndStage {
+        /**
+         * <p>When this bucket ends (exclusive).</p>
+         */
         QuantityStage end(@NotNull OffsetDateTime end);
     }
 
     public interface QuantityStage {
+        /**
+         * <p>Units used in this bucket.</p>
+         */
         _FinalStage quantity(long quantity);
     }
 
@@ -387,6 +405,10 @@ public final class Usage {
             return this;
         }
 
+        /**
+         * <p>When this bucket starts (inclusive).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("start")
         public EndStage start(@NotNull OffsetDateTime start) {
@@ -394,6 +416,10 @@ public final class Usage {
             return this;
         }
 
+        /**
+         * <p>When this bucket ends (exclusive).</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("end")
         public QuantityStage end(@NotNull OffsetDateTime end) {
@@ -401,6 +427,10 @@ public final class Usage {
             return this;
         }
 
+        /**
+         * <p>Units used in this bucket.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("quantity")
         public _FinalStage quantity(long quantity) {

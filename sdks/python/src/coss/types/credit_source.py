@@ -2,4 +2,6 @@
 
 import typing
 
-CreditSource = typing.Union[typing.Literal["fee", "commitment", "support", "promotion", "refund", "sla"], typing.Any]
+CreditSource = typing.Union[
+    typing.Literal["fee", "commitment", "support", "promotion", "refund", "sla", "threshold"], typing.Any
+]

@@ -4,6 +4,7 @@ module Coss
   module Inboxes
     module Messages
       module Types
+        # Who it goes to.
         class SendInboxMessageRequestTo < Internal::Types::Model
           extend Coss::Internal::Types::Union
 

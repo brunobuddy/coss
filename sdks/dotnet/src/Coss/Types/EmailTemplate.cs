@@ -17,13 +17,22 @@ public record EmailTemplate : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// A name to send the template by instead of its id. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("alias")]
     public string? Alias { get; set; }
 
+    /// <summary>
+    /// Shown in the dashboard.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// Your note about it. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
@@ -35,6 +44,9 @@ public record EmailTemplate : IJsonOnDeserialized
     [JsonPropertyName("published_version")]
     public long? PublishedVersion { get; set; }
 
+    /// <summary>
+    /// When the published version was published. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("published_at")]
     public DateTime? PublishedAt { get; set; }

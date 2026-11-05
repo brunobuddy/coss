@@ -29,28 +29,28 @@ public class AsyncBatchesClient {
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CompletableFuture<LogDrainBatchList> list(String id) {
         return this.rawClient.list(id).thenApply(response -> response.body());
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CompletableFuture<LogDrainBatchList> list(String id, RequestOptions requestOptions) {
         return this.rawClient.list(id, requestOptions).thenApply(response -> response.body());
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CompletableFuture<LogDrainBatchList> list(String id, ListBatchesRequest request) {
         return this.rawClient.list(id, request).thenApply(response -> response.body());
     }
 
     /**
-     * The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
+     * The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last <code>id</code> as <code>after</code> to get the next page while <code>has_more</code> is true.
      */
     public CompletableFuture<LogDrainBatchList> list(
             String id, ListBatchesRequest request, RequestOptions requestOptions) {

@@ -73,18 +73,30 @@ public class AsyncDocumentsClient {
         return this.rawClient.upload(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<SignDocument> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<SignDocument> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<SignDocument> get(String id, GetDocumentsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+     */
     public CompletableFuture<SignDocument> get(String id, GetDocumentsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

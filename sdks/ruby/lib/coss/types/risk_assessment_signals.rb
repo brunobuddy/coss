@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # What the assessment saw, by group. A group is `null` when it had nothing to go on.
     class RiskAssessmentSignals < Internal::Types::Model
       field :email, -> { Coss::Types::RiskEmailSignals }, optional: false, nullable: true
 

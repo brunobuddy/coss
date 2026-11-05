@@ -40,6 +40,9 @@ public final class UpdateContactTopicsRequestTopicsItem {
         return topic;
     }
 
+    /**
+     * @return <code>opted_in</code> or <code>opted_out</code> of the topic.
+     */
     @JsonProperty("status")
     public UpdateContactTopicsRequestTopicsItemStatus getStatus() {
         return status;
@@ -85,6 +88,9 @@ public final class UpdateContactTopicsRequestTopicsItem {
     }
 
     public interface StatusStage {
+        /**
+         * <p><code>opted_in</code> or <code>opted_out</code> of the topic.</p>
+         */
         _FinalStage status(@NotNull UpdateContactTopicsRequestTopicsItemStatus status);
     }
 
@@ -125,6 +131,10 @@ public final class UpdateContactTopicsRequestTopicsItem {
             return this;
         }
 
+        /**
+         * <p><code>opted_in</code> or <code>opted_out</code> of the topic.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public _FinalStage status(@NotNull UpdateContactTopicsRequestTopicsItemStatus status) {

@@ -41,7 +41,7 @@ class Domain extends JsonSerializableType
     public bool $canSend;
 
     /**
-     * @var ?string $region
+     * @var ?string $region The provider region it sends from. `null`: not set up there.
      */
     #[JsonProperty('region')]
     public ?string $region;
@@ -53,7 +53,7 @@ class Domain extends JsonSerializableType
     public string $mailFromDomain;
 
     /**
-     * @var value-of<DomainMailFromStatus> $mailFromStatus
+     * @var value-of<DomainMailFromStatus> $mailFromStatus How setting up its bounce-handling `MAIL FROM` domain went.
      */
     #[JsonProperty('mail_from_status')]
     public string $mailFromStatus;
@@ -71,19 +71,19 @@ class Domain extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var ?DateTime $lastCheckedAt
+     * @var ?DateTime $lastCheckedAt When DNS was last checked. `null`: not yet.
      */
     #[JsonProperty('last_checked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastCheckedAt;
 
     /**
-     * @var ?DateTime $verifiedAt
+     * @var ?DateTime $verifiedAt When it was verified. `null`: it isn't.
      */
     #[JsonProperty('verified_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $verifiedAt;
 
     /**
-     * @var ?DateTime $failedAt
+     * @var ?DateTime $failedAt When verification failed. `null`: it hasn't.
      */
     #[JsonProperty('failed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $failedAt;

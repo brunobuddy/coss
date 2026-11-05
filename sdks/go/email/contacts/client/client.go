@@ -239,6 +239,8 @@ func (c *Client) Export(
 	return response.Body, nil
 }
 
+// One contact of the API key's environment.
+//
 // Example:
 //
 //	request := &email.GetContactsRequest{

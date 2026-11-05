@@ -63,11 +63,17 @@ public final class DmarcReportPolicyPublished {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The domain the policy was published for.
+     */
     @JsonProperty("domain")
     public String getDomain() {
         return domain;
     }
 
+    /**
+     * @return The domain's policy tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("p")
     public OptionalNullable<String> getP() {
@@ -77,6 +83,9 @@ public final class DmarcReportPolicyPublished {
         return p;
     }
 
+    /**
+     * @return The subdomain policy tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("sp")
     public OptionalNullable<String> getSp() {
@@ -86,6 +95,9 @@ public final class DmarcReportPolicyPublished {
         return sp;
     }
 
+    /**
+     * @return The policy tag for non-existent subdomains.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("np")
     public OptionalNullable<String> getNp() {
@@ -95,6 +107,9 @@ public final class DmarcReportPolicyPublished {
         return np;
     }
 
+    /**
+     * @return The DKIM alignment tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("adkim")
     public OptionalNullable<String> getAdkim() {
@@ -104,6 +119,9 @@ public final class DmarcReportPolicyPublished {
         return adkim;
     }
 
+    /**
+     * @return The SPF alignment tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("aspf")
     public OptionalNullable<String> getAspf() {
@@ -113,6 +131,9 @@ public final class DmarcReportPolicyPublished {
         return aspf;
     }
 
+    /**
+     * @return The percentage tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("pct")
     public OptionalNullable<Long> getPct() {
@@ -122,6 +143,9 @@ public final class DmarcReportPolicyPublished {
         return pct;
     }
 
+    /**
+     * @return The testing tag.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("testing")
     public OptionalNullable<String> getTesting() {
@@ -210,6 +234,9 @@ public final class DmarcReportPolicyPublished {
     }
 
     public interface DomainStage {
+        /**
+         * <p>The domain the policy was published for.</p>
+         */
         _FinalStage domain(@NotNull String domain);
 
         Builder from(DmarcReportPolicyPublished other);
@@ -222,6 +249,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The domain's policy tag.</p>
+         */
         _FinalStage p(OptionalNullable<String> p);
 
         _FinalStage p(String p);
@@ -230,6 +260,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage p(Nullable<String> p);
 
+        /**
+         * <p>The subdomain policy tag.</p>
+         */
         _FinalStage sp(OptionalNullable<String> sp);
 
         _FinalStage sp(String sp);
@@ -238,6 +271,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage sp(Nullable<String> sp);
 
+        /**
+         * <p>The policy tag for non-existent subdomains.</p>
+         */
         _FinalStage np(OptionalNullable<String> np);
 
         _FinalStage np(String np);
@@ -246,6 +282,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage np(Nullable<String> np);
 
+        /**
+         * <p>The DKIM alignment tag.</p>
+         */
         _FinalStage adkim(OptionalNullable<String> adkim);
 
         _FinalStage adkim(String adkim);
@@ -254,6 +293,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage adkim(Nullable<String> adkim);
 
+        /**
+         * <p>The SPF alignment tag.</p>
+         */
         _FinalStage aspf(OptionalNullable<String> aspf);
 
         _FinalStage aspf(String aspf);
@@ -262,6 +304,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage aspf(Nullable<String> aspf);
 
+        /**
+         * <p>The percentage tag.</p>
+         */
         _FinalStage pct(OptionalNullable<Long> pct);
 
         _FinalStage pct(Long pct);
@@ -270,6 +315,9 @@ public final class DmarcReportPolicyPublished {
 
         _FinalStage pct(Nullable<Long> pct);
 
+        /**
+         * <p>The testing tag.</p>
+         */
         _FinalStage testing(OptionalNullable<String> testing);
 
         _FinalStage testing(String testing);
@@ -315,6 +363,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The domain the policy was published for.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain")
         public _FinalStage domain(@NotNull String domain) {
@@ -322,6 +374,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The testing tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage testing(Nullable<String> testing) {
             if (testing.isNull()) {
@@ -334,6 +390,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The testing tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage testing(Optional<String> testing) {
             if (testing.isPresent()) {
@@ -344,12 +404,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The testing tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage testing(String testing) {
             this.testing = OptionalNullable.of(testing);
             return this;
         }
 
+        /**
+         * <p>The testing tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "testing", nulls = Nulls.SKIP)
         public _FinalStage testing(OptionalNullable<String> testing) {
@@ -357,6 +424,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The percentage tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pct(Nullable<Long> pct) {
             if (pct.isNull()) {
@@ -369,6 +440,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The percentage tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pct(Optional<Long> pct) {
             if (pct.isPresent()) {
@@ -379,12 +454,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The percentage tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pct(Long pct) {
             this.pct = OptionalNullable.of(pct);
             return this;
         }
 
+        /**
+         * <p>The percentage tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "pct", nulls = Nulls.SKIP)
         public _FinalStage pct(OptionalNullable<Long> pct) {
@@ -392,6 +474,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The SPF alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage aspf(Nullable<String> aspf) {
             if (aspf.isNull()) {
@@ -404,6 +490,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The SPF alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage aspf(Optional<String> aspf) {
             if (aspf.isPresent()) {
@@ -414,12 +504,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The SPF alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage aspf(String aspf) {
             this.aspf = OptionalNullable.of(aspf);
             return this;
         }
 
+        /**
+         * <p>The SPF alignment tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "aspf", nulls = Nulls.SKIP)
         public _FinalStage aspf(OptionalNullable<String> aspf) {
@@ -427,6 +524,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The DKIM alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage adkim(Nullable<String> adkim) {
             if (adkim.isNull()) {
@@ -439,6 +540,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The DKIM alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage adkim(Optional<String> adkim) {
             if (adkim.isPresent()) {
@@ -449,12 +554,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The DKIM alignment tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage adkim(String adkim) {
             this.adkim = OptionalNullable.of(adkim);
             return this;
         }
 
+        /**
+         * <p>The DKIM alignment tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "adkim", nulls = Nulls.SKIP)
         public _FinalStage adkim(OptionalNullable<String> adkim) {
@@ -462,6 +574,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The policy tag for non-existent subdomains.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage np(Nullable<String> np) {
             if (np.isNull()) {
@@ -474,6 +590,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The policy tag for non-existent subdomains.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage np(Optional<String> np) {
             if (np.isPresent()) {
@@ -484,12 +604,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The policy tag for non-existent subdomains.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage np(String np) {
             this.np = OptionalNullable.of(np);
             return this;
         }
 
+        /**
+         * <p>The policy tag for non-existent subdomains.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "np", nulls = Nulls.SKIP)
         public _FinalStage np(OptionalNullable<String> np) {
@@ -497,6 +624,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The subdomain policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sp(Nullable<String> sp) {
             if (sp.isNull()) {
@@ -509,6 +640,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The subdomain policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sp(Optional<String> sp) {
             if (sp.isPresent()) {
@@ -519,12 +654,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The subdomain policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage sp(String sp) {
             this.sp = OptionalNullable.of(sp);
             return this;
         }
 
+        /**
+         * <p>The subdomain policy tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "sp", nulls = Nulls.SKIP)
         public _FinalStage sp(OptionalNullable<String> sp) {
@@ -532,6 +674,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The domain's policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage p(Nullable<String> p) {
             if (p.isNull()) {
@@ -544,6 +690,10 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The domain's policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage p(Optional<String> p) {
             if (p.isPresent()) {
@@ -554,12 +704,19 @@ public final class DmarcReportPolicyPublished {
             return this;
         }
 
+        /**
+         * <p>The domain's policy tag.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage p(String p) {
             this.p = OptionalNullable.of(p);
             return this;
         }
 
+        /**
+         * <p>The domain's policy tag.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "p", nulls = Nulls.SKIP)
         public _FinalStage p(OptionalNullable<String> p) {

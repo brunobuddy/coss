@@ -8,10 +8,13 @@ from ...core.client_wrapper import AsyncClientWrapper, SyncClientWrapper
 from ...core.request_options import RequestOptions
 from ...types.deleted_log_drain import DeletedLogDrain
 from ...types.log_drain import LogDrain
+from ...types.log_drain_auth_header import LogDrainAuthHeader
+from ...types.log_drain_format import LogDrainFormat
 from ...types.log_drain_list import LogDrainList
 from ...types.log_drain_source import LogDrainSource
 from ...types.log_drain_with_secret import LogDrainWithSecret
 from .raw_client import AsyncRawLogDrainsClient, RawLogDrainsClient
+from .types.create_log_drain_request_format import CreateLogDrainRequestFormat
 
 if typing.TYPE_CHECKING:
     from .resources.batches.client import AsyncBatchesClient, BatchesClient
@@ -69,10 +72,12 @@ class LogDrainsClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         sources: typing.Optional[typing.Sequence[LogDrainSource]] = OMIT,
+        format: typing.Optional[CreateLogDrainRequestFormat] = OMIT,
+        auth_header: typing.Optional[LogDrainAuthHeader] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LogDrainWithSecret:
         """
-        Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+        Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 
         Parameters
         ----------
@@ -84,6 +89,11 @@ class LogDrainsClient:
 
         sources : typing.Optional[typing.Sequence[LogDrainSource]]
             What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
+
+        format : typing.Optional[CreateLogDrainRequestFormat]
+            How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+
+        auth_header : typing.Optional[LogDrainAuthHeader]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -108,7 +118,12 @@ class LogDrainsClient:
         )
         """
         _response = self._raw_client.create(
-            url=url, description=description, sources=sources, request_options=request_options
+            url=url,
+            description=description,
+            sources=sources,
+            format=format,
+            auth_header=auth_header,
+            request_options=request_options,
         )
         return _response.data
 
@@ -183,11 +198,13 @@ class LogDrainsClient:
         url: typing.Optional[str] = OMIT,
         description: typing.Optional[str] = OMIT,
         sources: typing.Optional[typing.Sequence[LogDrainSource]] = OMIT,
+        format: typing.Optional[LogDrainFormat] = OMIT,
+        auth_header: typing.Optional[LogDrainAuthHeader] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LogDrain:
         """
-        Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+        Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 
         Parameters
         ----------
@@ -203,7 +220,12 @@ class LogDrainsClient:
         sources : typing.Optional[typing.Sequence[LogDrainSource]]
             What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later.
 
+        format : typing.Optional[LogDrainFormat]
+
+        auth_header : typing.Optional[LogDrainAuthHeader]
+
         enabled : typing.Optional[bool]
+            `false` disables it, and `true` enables it again.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -227,7 +249,14 @@ class LogDrainsClient:
         )
         """
         _response = self._raw_client.update(
-            id, url=url, description=description, sources=sources, enabled=enabled, request_options=request_options
+            id,
+            url=url,
+            description=description,
+            sources=sources,
+            format=format,
+            auth_header=auth_header,
+            enabled=enabled,
+            request_options=request_options,
         )
         return _response.data
 
@@ -298,10 +327,12 @@ class AsyncLogDrainsClient:
         url: str,
         description: typing.Optional[str] = OMIT,
         sources: typing.Optional[typing.Sequence[LogDrainSource]] = OMIT,
+        format: typing.Optional[CreateLogDrainRequestFormat] = OMIT,
+        auth_header: typing.Optional[LogDrainAuthHeader] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LogDrainWithSecret:
         """
-        Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+        Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 
         Parameters
         ----------
@@ -313,6 +344,11 @@ class AsyncLogDrainsClient:
 
         sources : typing.Optional[typing.Sequence[LogDrainSource]]
             What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
+
+        format : typing.Optional[CreateLogDrainRequestFormat]
+            How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+
+        auth_header : typing.Optional[LogDrainAuthHeader]
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -345,7 +381,12 @@ class AsyncLogDrainsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.create(
-            url=url, description=description, sources=sources, request_options=request_options
+            url=url,
+            description=description,
+            sources=sources,
+            format=format,
+            auth_header=auth_header,
+            request_options=request_options,
         )
         return _response.data
 
@@ -436,11 +477,13 @@ class AsyncLogDrainsClient:
         url: typing.Optional[str] = OMIT,
         description: typing.Optional[str] = OMIT,
         sources: typing.Optional[typing.Sequence[LogDrainSource]] = OMIT,
+        format: typing.Optional[LogDrainFormat] = OMIT,
+        auth_header: typing.Optional[LogDrainAuthHeader] = OMIT,
         enabled: typing.Optional[bool] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> LogDrain:
         """
-        Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+        Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 
         Parameters
         ----------
@@ -456,7 +499,12 @@ class AsyncLogDrainsClient:
         sources : typing.Optional[typing.Sequence[LogDrainSource]]
             What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later.
 
+        format : typing.Optional[LogDrainFormat]
+
+        auth_header : typing.Optional[LogDrainAuthHeader]
+
         enabled : typing.Optional[bool]
+            `false` disables it, and `true` enables it again.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -488,7 +536,14 @@ class AsyncLogDrainsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.update(
-            id, url=url, description=description, sources=sources, enabled=enabled, request_options=request_options
+            id,
+            url=url,
+            description=description,
+            sources=sources,
+            format=format,
+            auth_header=auth_header,
+            enabled=enabled,
+            request_options=request_options,
         )
         return _response.data
 

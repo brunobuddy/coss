@@ -30,11 +30,17 @@ public final class BroadcastTracking {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether opens are tracked.
+     */
     @JsonProperty("opens")
     public boolean getOpens() {
         return opens;
     }
 
+    /**
+     * @return Whether clicks are tracked.
+     */
     @JsonProperty("clicks")
     public boolean getClicks() {
         return clicks;
@@ -70,12 +76,18 @@ public final class BroadcastTracking {
     }
 
     public interface OpensStage {
+        /**
+         * <p>Whether opens are tracked.</p>
+         */
         ClicksStage opens(boolean opens);
 
         Builder from(BroadcastTracking other);
     }
 
     public interface ClicksStage {
+        /**
+         * <p>Whether clicks are tracked.</p>
+         */
         _FinalStage clicks(boolean clicks);
     }
 
@@ -105,6 +117,10 @@ public final class BroadcastTracking {
             return this;
         }
 
+        /**
+         * <p>Whether opens are tracked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("opens")
         public ClicksStage opens(boolean opens) {
@@ -112,6 +128,10 @@ public final class BroadcastTracking {
             return this;
         }
 
+        /**
+         * <p>Whether clicks are tracked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("clicks")
         public _FinalStage clicks(boolean clicks) {

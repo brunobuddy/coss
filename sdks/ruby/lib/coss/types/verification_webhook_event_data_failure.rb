@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Why it `failed`. `null` otherwise.
     class VerificationWebhookEventDataFailure < Internal::Types::Model
       field :code, -> { String }, optional: false, nullable: false
 

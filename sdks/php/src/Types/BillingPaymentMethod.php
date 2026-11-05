@@ -5,22 +5,25 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * The payment method on file. `null`: none.
+ */
 class BillingPaymentMethod extends JsonSerializableType
 {
     /**
-     * @var string $type
+     * @var string $type Its type, such as `card`.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?string $brand
+     * @var ?string $brand The card's brand. `null` for other types.
      */
     #[JsonProperty('brand')]
     public ?string $brand;
 
     /**
-     * @var ?string $last4
+     * @var ?string $last4 The card's last four digits. `null` for other types.
      */
     #[JsonProperty('last4')]
     public ?string $last4;

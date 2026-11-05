@@ -26,6 +26,9 @@ public partial interface ISmsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One message sent from the API key's environment, with its current status.
+    /// </summary>
     WithRawResponseTask<Sms> GetAsync(
         GetSmsRequest request,
         RequestOptions? options = null,

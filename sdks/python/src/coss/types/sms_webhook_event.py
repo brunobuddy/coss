@@ -17,13 +17,21 @@ class SmsWebhookEvent(UniversalBaseModel):
     """
 
     object: SmsWebhookEventObject
-    type: SmsWebhookEventType
+    type: SmsWebhookEventType = pydantic.Field()
+    """
+    What happened to the message.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
     """
 
-    created_at: dt.datetime
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
     data: SmsWebhookEventData
 
     if IS_PYDANTIC_V2:

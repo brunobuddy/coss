@@ -45,16 +45,25 @@ public final class CreateContactPropertyRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return How contacts and templates name it. Lower-case letters, digits and <code>_</code>, starting with a letter. Can't change.
+     */
     @JsonProperty("key")
     public String getKey() {
         return key;
     }
 
+    /**
+     * @return What values it takes. <code>date</code> values are ISO 8601 strings. Can't change.
+     */
     @JsonProperty("type")
     public CreateContactPropertyRequestType getType() {
         return type;
     }
 
+    /**
+     * @return Used in templates for contacts without a value.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("fallback")
     public OptionalNullable<CreateContactPropertyRequestFallback> getFallback() {
@@ -100,12 +109,18 @@ public final class CreateContactPropertyRequest {
     }
 
     public interface KeyStage {
+        /**
+         * <p>How contacts and templates name it. Lower-case letters, digits and <code>_</code>, starting with a letter. Can't change.</p>
+         */
         TypeStage key(@NotNull String key);
 
         Builder from(CreateContactPropertyRequest other);
     }
 
     public interface TypeStage {
+        /**
+         * <p>What values it takes. <code>date</code> values are ISO 8601 strings. Can't change.</p>
+         */
         _FinalStage type(@NotNull CreateContactPropertyRequestType type);
     }
 
@@ -116,6 +131,9 @@ public final class CreateContactPropertyRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Used in templates for contacts without a value.</p>
+         */
         _FinalStage fallback(OptionalNullable<CreateContactPropertyRequestFallback> fallback);
 
         _FinalStage fallback(CreateContactPropertyRequestFallback fallback);
@@ -146,6 +164,10 @@ public final class CreateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>How contacts and templates name it. Lower-case letters, digits and <code>_</code>, starting with a letter. Can't change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("key")
         public TypeStage key(@NotNull String key) {
@@ -153,6 +175,10 @@ public final class CreateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>What values it takes. <code>date</code> values are ISO 8601 strings. Can't change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public _FinalStage type(@NotNull CreateContactPropertyRequestType type) {
@@ -160,6 +186,10 @@ public final class CreateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>Used in templates for contacts without a value.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fallback(Nullable<CreateContactPropertyRequestFallback> fallback) {
             if (fallback.isNull()) {
@@ -172,6 +202,10 @@ public final class CreateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>Used in templates for contacts without a value.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fallback(Optional<CreateContactPropertyRequestFallback> fallback) {
             if (fallback.isPresent()) {
@@ -182,12 +216,19 @@ public final class CreateContactPropertyRequest {
             return this;
         }
 
+        /**
+         * <p>Used in templates for contacts without a value.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage fallback(CreateContactPropertyRequestFallback fallback) {
             this.fallback = OptionalNullable.of(fallback);
             return this;
         }
 
+        /**
+         * <p>Used in templates for contacts without a value.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "fallback", nulls = Nulls.SKIP)
         public _FinalStage fallback(OptionalNullable<CreateContactPropertyRequestFallback> fallback) {

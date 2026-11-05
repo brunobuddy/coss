@@ -14,12 +14,21 @@ public record FormSubmissionFile : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The form field it was uploaded through.
+    /// </summary>
     [JsonPropertyName("field")]
     public required string Field { get; set; }
 
+    /// <summary>
+    /// The file's name, made safe.
+    /// </summary>
     [JsonPropertyName("filename")]
     public required string Filename { get; set; }
 
+    /// <summary>
+    /// The MIME type it was uploaded as.
+    /// </summary>
     [JsonPropertyName("content_type")]
     public required string ContentType { get; set; }
 

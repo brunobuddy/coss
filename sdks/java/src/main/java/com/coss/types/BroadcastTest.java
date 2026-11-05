@@ -39,6 +39,9 @@ public final class BroadcastTest {
         return object;
     }
 
+    /**
+     * @return The ids of the test emails.
+     */
     @JsonProperty("email_ids")
     public List<String> getEmailIds() {
         return emailIds;
@@ -86,6 +89,9 @@ public final class BroadcastTest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The ids of the test emails.</p>
+         */
         _FinalStage emailIds(List<String> emailIds);
 
         _FinalStage addEmailIds(String emailIds);
@@ -118,6 +124,10 @@ public final class BroadcastTest {
             return this;
         }
 
+        /**
+         * <p>The ids of the test emails.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllEmailIds(List<String> emailIds) {
             if (emailIds != null) {
@@ -126,12 +136,19 @@ public final class BroadcastTest {
             return this;
         }
 
+        /**
+         * <p>The ids of the test emails.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addEmailIds(String emailIds) {
             this.emailIds.add(emailIds);
             return this;
         }
 
+        /**
+         * <p>The ids of the test emails.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "email_ids", nulls = Nulls.SKIP)
         public _FinalStage emailIds(List<String> emailIds) {

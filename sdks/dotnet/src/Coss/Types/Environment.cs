@@ -23,9 +23,15 @@ public record Environment : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The environment's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The environment's slug, as in dashboard URLs.
+    /// </summary>
     [JsonPropertyName("slug")]
     public required string Slug { get; set; }
 
@@ -35,9 +41,15 @@ public record Environment : IJsonOnDeserialized
     [JsonPropertyName("mode")]
     public required EnvironmentMode Mode { get; set; }
 
+    /// <summary>
+    /// The project it belongs to.
+    /// </summary>
     [JsonPropertyName("project")]
     public required EnvironmentProject Project { get; set; }
 
+    /// <summary>
+    /// The organization it belongs to.
+    /// </summary>
     [JsonPropertyName("organization")]
     public required EnvironmentOrganization Organization { get; set; }
 

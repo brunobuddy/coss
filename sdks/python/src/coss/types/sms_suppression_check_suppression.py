@@ -10,9 +10,17 @@ from .sms_suppression_check_suppression_reason import SmsSuppressionCheckSuppres
 
 
 class SmsSuppressionCheckSuppression(UniversalBaseModel):
+    """
+    A number sends skip.
+    """
+
     object: SmsSuppressionCheckSuppressionObject
     id: str
-    phone_number: str
+    phone_number: str = pydantic.Field()
+    """
+    The suppressed number, in E.164.
+    """
+
     reason: SmsSuppressionCheckSuppressionReason = pydantic.Field()
     """
     `opt_out`: the number replied STOP (or the carrier says it opted out). `invalid_number`: not a number that can receive SMS. `manual`: added by you.

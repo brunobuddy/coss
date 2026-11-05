@@ -12,10 +12,16 @@ public record UpdateTopicRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }
 
+    /// <summary>
+    /// Shown in the preference center under its name. `null`: none.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("description")]
     public Optional<string?> Description { get; set; }

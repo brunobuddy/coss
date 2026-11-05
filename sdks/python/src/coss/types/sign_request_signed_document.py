@@ -13,7 +13,10 @@ class SignRequestSignedDocument(UniversalBaseModel):
     Hex SHA-256 of the sealed PDF.
     """
 
-    sealed_at: dt.datetime
+    sealed_at: dt.datetime = pydantic.Field()
+    """
+    When it was sealed.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

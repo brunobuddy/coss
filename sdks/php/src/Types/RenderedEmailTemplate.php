@@ -14,7 +14,7 @@ class RenderedEmailTemplate extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $templateId
+     * @var string $templateId The template's id.
      */
     #[JsonProperty('template_id')]
     public string $templateId;
@@ -32,19 +32,19 @@ class RenderedEmailTemplate extends JsonSerializableType
     public string $locale;
 
     /**
-     * @var string $subject
+     * @var string $subject The rendered subject.
      */
     #[JsonProperty('subject')]
     public string $subject;
 
     /**
-     * @var ?string $html
+     * @var ?string $html The rendered HTML. `null`: the template has none.
      */
     #[JsonProperty('html')]
     public ?string $html;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The rendered plain text. `null`: the template has none.
      */
     #[JsonProperty('text')]
     public ?string $text;

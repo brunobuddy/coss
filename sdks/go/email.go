@@ -624,12 +624,15 @@ var emailEventNullableFields = map[string]*big.Int{
 }
 
 type EmailEvent struct {
-	Object  EmailEventObject `json:"object" url:"object"`
-	ID      string           `json:"id" url:"id"`
-	EmailID string           `json:"email_id" url:"email_id"`
-	Type    EmailEventType   `json:"type" url:"type"`
+	Object EmailEventObject `json:"object" url:"object"`
+	ID     string           `json:"id" url:"id"`
+	// The email's id.
+	EmailID string `json:"email_id" url:"email_id"`
+	// What happened, such as `email.delivered` or `email.bounced`.
+	Type EmailEventType `json:"type" url:"type"`
 	// The recipient this event is about; `null` for the whole email.
-	Recipient  *string         `json:"recipient,omitempty" url:"recipient,omitempty"`
+	Recipient *string `json:"recipient,omitempty" url:"recipient,omitempty"`
+	// When it happened.
 	OccurredAt time.Time       `json:"occurred_at" url:"occurred_at"`
 	Data       *EmailEventData `json:"data" url:"data"`
 
@@ -824,6 +827,7 @@ var (
 	emailEventDataFieldReschedule  = big.NewInt(1 << 9)
 )
 
+// Details of the event: only what its `type` has.
 type EmailEventData struct {
 	Bounce    *EmailEventDataBounce    `json:"bounce,omitempty" url:"bounce,omitempty"`
 	Complaint *EmailEventDataComplaint `json:"complaint,omitempty" url:"complaint,omitempty"`
@@ -1058,9 +1062,12 @@ var emailEventDataBounceNullableFields = map[string]*big.Int{
 }
 
 type EmailEventDataBounce struct {
-	Type           EmailEventDataBounceType `json:"type" url:"type"`
-	SubType        string                   `json:"sub_type" url:"sub_type"`
-	DiagnosticCode *string                  `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
+	// `permanent`, `transient` or `undetermined`.
+	Type EmailEventDataBounceType `json:"type" url:"type"`
+	// The provider's finer classification of the bounce.
+	SubType string `json:"sub_type" url:"sub_type"`
+	// What the receiving server answered. `null`: not reported.
+	DiagnosticCode *string `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1176,6 +1183,7 @@ func (e *EmailEventDataBounce) String() string {
 	return fmt.Sprintf("%#v", e)
 }
 
+// `permanent`, `transient` or `undetermined`.
 type EmailEventDataBounceType string
 
 const (
@@ -1217,8 +1225,9 @@ type EmailEventDataClick struct {
 	// The original link that was clicked.
 	URL string `json:"url" url:"url"`
 	// Index of the link among the email's tracked links.
-	LinkPosition int64   `json:"link_position" url:"link_position"`
-	UserAgent    *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	LinkPosition int64 `json:"link_position" url:"link_position"`
+	// The client's `User-Agent`. `null`: not sent.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1346,8 +1355,10 @@ var emailEventDataComplaintNullableFields = map[string]*big.Int{
 }
 
 type EmailEventDataComplaint struct {
+	// The kind of complaint the mailbox provider reported. `null`: not reported.
 	FeedbackType *string `json:"feedback_type,omitempty" url:"feedback_type,omitempty"`
-	SubType      *string `json:"sub_type,omitempty" url:"sub_type,omitempty"`
+	// The provider's finer classification. `null`: not reported.
+	SubType *string `json:"sub_type,omitempty" url:"sub_type,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1462,9 +1473,12 @@ var emailEventDataDelayNullableFields = map[string]*big.Int{
 }
 
 type EmailEventDataDelay struct {
-	Type           string     `json:"type" url:"type"`
-	ExpiresAt      *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
-	DiagnosticCode *string    `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
+	// The provider's reason for the delay.
+	Type string `json:"type" url:"type"`
+	// When the provider stops trying. `null`: not reported.
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"expires_at,omitempty"`
+	// What the receiving server answered. `null`: not reported.
+	DiagnosticCode *string `json:"diagnostic_code,omitempty" url:"diagnostic_code,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1598,6 +1612,7 @@ var emailEventDataDeliveryNullableFields = map[string]*big.Int{
 }
 
 type EmailEventDataDelivery struct {
+	// What the receiving server answered. `null`: not reported.
 	SMTPResponse *string `json:"smtp_response,omitempty" url:"smtp_response,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1692,7 +1707,9 @@ var (
 )
 
 type EmailEventDataFailure struct {
-	Code    string `json:"code" url:"code"`
+	// Machine-readable reason.
+	Code string `json:"code" url:"code"`
+	// Human-readable explanation.
 	Message string `json:"message" url:"message"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1799,6 +1816,7 @@ var emailEventDataOpenNullableFields = map[string]*big.Int{
 
 // Only for `email.opened`.
 type EmailEventDataOpen struct {
+	// The client's `User-Agent`. `null`: not sent.
 	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -2012,7 +2030,9 @@ var (
 
 // Only for `email.suppressed`: the entry that matched the recipient.
 type EmailEventDataSuppression struct {
-	ID    string `json:"id" url:"id"`
+	// The suppression's id.
+	ID string `json:"id" url:"id"`
+	// What it covers: every email, every marketing email, or one category.
 	Scope string `json:"scope" url:"scope"`
 	// `bounce`: added after a permanent bounce. `complaint`: added after a spam complaint. `manual`: added one by one through the API or dashboard. `import`: added by a bulk import. `unsubscribe`: added by the recipient's one-click unsubscribe, scoped to the email's category.
 	Reason EmailEventDataSuppressionReason `json:"reason" url:"reason"`
@@ -2169,8 +2189,10 @@ var emailEventDataUnsubscribeNullableFields = map[string]*big.Int{
 
 // Only for `email.suppressed` without `suppression`: the recipient is a contact who unsubscribed (from marketing, or from the email's topic, `topic`).
 type EmailEventDataUnsubscribe struct {
+	// The contact who unsubscribed. `null`: none.
 	ContactID *string `json:"contact_id,omitempty" url:"contact_id,omitempty"`
-	Topic     *string `json:"topic,omitempty" url:"topic,omitempty"`
+	// The topic they left. `null`: marketing altogether.
+	Topic *string `json:"topic,omitempty" url:"topic,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2428,6 +2450,7 @@ func (e EmailEventObject) Ptr() *EmailEventObject {
 	return &e
 }
 
+// What happened, such as `email.delivered` or `email.bounced`.
 type EmailEventType string
 
 const (
@@ -2501,15 +2524,20 @@ var emailLinkNullableFields = map[string]*big.Int{
 }
 
 type EmailLink struct {
-	Object  EmailLinkObject `json:"object" url:"object"`
-	ID      string          `json:"id" url:"id"`
-	EmailID string          `json:"email_id" url:"email_id"`
+	Object EmailLinkObject `json:"object" url:"object"`
+	ID     string          `json:"id" url:"id"`
+	// The email's id.
+	EmailID string `json:"email_id" url:"email_id"`
 	// Index of the link among the tracked links.
-	Position       int64      `json:"position" url:"position"`
-	URL            string     `json:"url" url:"url"`
-	ClickCount     int64      `json:"click_count" url:"click_count"`
+	Position int64 `json:"position" url:"position"`
+	// The original link.
+	URL string `json:"url" url:"url"`
+	// Times it was clicked. Link scanners inflate it.
+	ClickCount int64 `json:"click_count" url:"click_count"`
+	// When it was first clicked. `null`: not yet.
 	FirstClickedAt *time.Time `json:"first_clicked_at,omitempty" url:"first_clicked_at,omitempty"`
-	LastClickedAt  *time.Time `json:"last_clicked_at,omitempty" url:"last_clicked_at,omitempty"`
+	// When it was last clicked. `null`: not yet.
+	LastClickedAt *time.Time `json:"last_clicked_at,omitempty" url:"last_clicked_at,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2904,27 +2932,38 @@ var emailSummaryNullableFields = map[string]*big.Int{
 
 // An email without its content. Retrieve the email for `html`, `text`, `headers` and `attachments`.
 type EmailSummary struct {
-	Object   EmailSummaryObject      `json:"object" url:"object"`
-	ID       string                  `json:"id" url:"id"`
-	From     string                  `json:"from" url:"from"`
-	To       []string                `json:"to" url:"to"`
-	Cc       []string                `json:"cc" url:"cc"`
-	Bcc      []string                `json:"bcc" url:"bcc"`
-	ReplyTo  []string                `json:"reply_to" url:"reply_to"`
-	Subject  string                  `json:"subject" url:"subject"`
-	Tags     []*EmailSummaryTagsItem `json:"tags" url:"tags"`
-	Category *string                 `json:"category,omitempty" url:"category,omitempty"`
-	Stream   EmailSummaryStream      `json:"stream" url:"stream"`
+	Object EmailSummaryObject `json:"object" url:"object"`
+	ID     string             `json:"id" url:"id"`
+	// Who it's sent from.
+	From string `json:"from" url:"from"`
+	// The `To` addresses.
+	To []string `json:"to" url:"to"`
+	// The `Cc` addresses.
+	Cc []string `json:"cc" url:"cc"`
+	// The `Bcc` addresses.
+	Bcc []string `json:"bcc" url:"bcc"`
+	// The `Reply-To` addresses.
+	ReplyTo []string `json:"reply_to" url:"reply_to"`
+	// The subject, rendered if it came from a template.
+	Subject string `json:"subject" url:"subject"`
+	// Your tags on the email.
+	Tags []*EmailSummaryTagsItem `json:"tags" url:"tags"`
+	// The email's category, which suppressions and tracking rules can scope to. `null`: none.
+	Category *string `json:"category,omitempty" url:"category,omitempty"`
+	// `transactional` or `marketing`.
+	Stream EmailSummaryStream `json:"stream" url:"stream"`
 	// Whether the email was handed to the delivery provider. `scheduled` emails wait for `scheduled_at`; `canceled` ones were canceled before that. Per-recipient delivery is in `recipients`.
 	Status EmailSummaryStatus `json:"status" url:"status"`
 	// Why the email failed; `null` unless `status` is `failed`.
-	Failure    *EmailFailure     `json:"failure,omitempty" url:"failure,omitempty"`
+	Failure *EmailFailure `json:"failure,omitempty" url:"failure,omitempty"`
+	// Each recipient, with how delivery to them went.
 	Recipients []*EmailRecipient `json:"recipients" url:"recipients"`
 	// True when sent from a sandbox environment (never delivered).
 	Sandbox   bool           `json:"sandbox" url:"sandbox"`
 	Tracking  *EmailTracking `json:"tracking" url:"tracking"`
 	CreatedAt time.Time      `json:"created_at" url:"created_at"`
-	SentAt    *time.Time     `json:"sent_at,omitempty" url:"sent_at,omitempty"`
+	// When it was handed to the provider. `null`: not yet.
+	SentAt *time.Time `json:"sent_at,omitempty" url:"sent_at,omitempty"`
 	// When the email was scheduled to be sent; `null` if it was not.
 	ScheduledAt *time.Time `json:"scheduled_at,omitempty" url:"scheduled_at,omitempty"`
 	// The batch that sent the email; `null` if it was sent on its own.
@@ -3549,6 +3588,7 @@ func (e EmailSummaryStatus) Ptr() *EmailSummaryStatus {
 	return &e
 }
 
+// `transactional` or `marketing`.
 type EmailSummaryStream string
 
 const (
@@ -3577,7 +3617,9 @@ var (
 )
 
 type EmailSummaryTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -3698,10 +3740,14 @@ var (
 
 type SendEmailRequest struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
-	From    string                   `json:"from" url:"from"`
-	To      *SendEmailRequestTo      `json:"to" url:"to"`
-	Cc      *SendEmailRequestCc      `json:"cc,omitempty" url:"cc,omitempty"`
-	Bcc     *SendEmailRequestBcc     `json:"bcc,omitempty" url:"bcc,omitempty"`
+	From string `json:"from" url:"from"`
+	// Who it goes to.
+	To *SendEmailRequestTo `json:"to" url:"to"`
+	// Who it's copied to.
+	Cc *SendEmailRequestCc `json:"cc,omitempty" url:"cc,omitempty"`
+	// Who it's blind copied to.
+	Bcc *SendEmailRequestBcc `json:"bcc,omitempty" url:"bcc,omitempty"`
+	// Where replies go.
 	ReplyTo *SendEmailRequestReplyTo `json:"reply_to,omitempty" url:"reply_to,omitempty"`
 	// Required unless the email is sent from a template (`template_id`).
 	Subject *string `json:"subject,omitempty" url:"subject,omitempty"`
@@ -3718,8 +3764,9 @@ type SendEmailRequest struct {
 	// Values for the template's variables, keyed by name.
 	Variables map[string]any `json:"variables,omitempty" url:"variables,omitempty"`
 	// Up to 15 custom headers. Names are case-insensitive.
-	Headers map[string]string           `json:"headers,omitempty" url:"headers,omitempty"`
-	Tags    []*SendEmailRequestTagsItem `json:"tags,omitempty" url:"tags,omitempty"`
+	Headers map[string]string `json:"headers,omitempty" url:"headers,omitempty"`
+	// Your tags on the email.
+	Tags []*SendEmailRequestTagsItem `json:"tags,omitempty" url:"tags,omitempty"`
 	// What kind of email this is, e.g. "marketing". Recipients suppressed for this category (or for every email) are skipped.
 	Category *string `json:"category,omitempty" url:"category,omitempty"`
 	// Send the email at this time instead of now (ISO 8601 with an offset, at most 30 days ahead). A time that is not in the future sends immediately. Scheduled emails can be rescheduled or canceled until they are sent.
@@ -4085,6 +4132,7 @@ func (s *SendEmailRequest) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Who it's blind copied to.
 type SendEmailRequestBcc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -4148,6 +4196,7 @@ func (s *SendEmailRequestBcc) Accept(visitor SendEmailRequestBccVisitor) error {
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
+// Who it's copied to.
 type SendEmailRequestCc struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -4211,6 +4260,7 @@ func (s *SendEmailRequestCc) Accept(visitor SendEmailRequestCcVisitor) error {
 	return fmt.Errorf("type %T does not include a non-empty union type", s)
 }
 
+// Where replies go.
 type SendEmailRequestReplyTo struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string
@@ -4303,7 +4353,9 @@ var (
 )
 
 type SendEmailRequestTagsItem struct {
-	Name  string `json:"name" url:"name"`
+	// The tag's name, unique on the email.
+	Name string `json:"name" url:"name"`
+	// The tag's value.
 	Value string `json:"value" url:"value"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -4399,6 +4451,7 @@ func (s *SendEmailRequestTagsItem) String() string {
 	return fmt.Sprintf("%#v", s)
 }
 
+// Who it goes to.
 type SendEmailRequestTo struct {
 	// An email address, optionally with a display name: "Acme <hello@acme.com>".
 	String     string

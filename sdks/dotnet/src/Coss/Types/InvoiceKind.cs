@@ -16,6 +16,8 @@ public readonly record struct InvoiceKind : IStringEnum
 
     public static readonly InvoiceKind Final = new(Values.Final);
 
+    public static readonly InvoiceKind Threshold = new(Values.Threshold);
+
     public InvoiceKind(string value)
     {
         Value = value;
@@ -119,5 +121,7 @@ public readonly record struct InvoiceKind : IStringEnum
         public const string OneOff = "one_off";
 
         public const string Final = "final";
+
+        public const string Threshold = "threshold";
     }
 }

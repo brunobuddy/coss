@@ -75,27 +75,45 @@ public class AsyncSuppressionsClient {
         return this.rawClient.add(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public CompletableFuture<SmsSuppressionCheck> check(CheckSuppressionsRequest request) {
         return this.rawClient.check(request).thenApply(response -> response.body());
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public CompletableFuture<SmsSuppressionCheck> check(
             CheckSuppressionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.check(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<SmsSuppression> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<SmsSuppression> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<SmsSuppression> get(String id, GetSuppressionsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public CompletableFuture<SmsSuppression> get(
             String id, GetSuppressionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());

@@ -95,11 +95,17 @@ public final class Contact {
         return id;
     }
 
+    /**
+     * @return The contact's address. Unique in the environment, case-insensitively.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @return Their first name. <code>null</code>: not set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_name")
     public OptionalNullable<String> getFirstName() {
@@ -109,6 +115,9 @@ public final class Contact {
         return firstName;
     }
 
+    /**
+     * @return Their last name. <code>null</code>: not set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_name")
     public OptionalNullable<String> getLastName() {
@@ -126,6 +135,9 @@ public final class Contact {
         return status;
     }
 
+    /**
+     * @return Custom properties by key.
+     */
     @JsonProperty("properties")
     public Map<String, ContactPropertiesValue> getProperties() {
         return properties;
@@ -139,6 +151,9 @@ public final class Contact {
         return source;
     }
 
+    /**
+     * @return When it last became <code>subscribed</code>. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("subscribed_at")
     public OptionalNullable<OffsetDateTime> getSubscribedAt() {
@@ -148,6 +163,9 @@ public final class Contact {
         return subscribedAt;
     }
 
+    /**
+     * @return When it became <code>unsubscribed</code>. <code>null</code> unless it is.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("unsubscribed_at")
     public OptionalNullable<OffsetDateTime> getUnsubscribedAt() {
@@ -274,6 +292,9 @@ public final class Contact {
     }
 
     public interface EmailStage {
+        /**
+         * <p>The contact's address. Unique in the environment, case-insensitively.</p>
+         */
         StatusStage email(@NotNull String email);
     }
 
@@ -306,6 +327,9 @@ public final class Contact {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Their first name. <code>null</code>: not set.</p>
+         */
         _FinalStage firstName(OptionalNullable<String> firstName);
 
         _FinalStage firstName(String firstName);
@@ -314,6 +338,9 @@ public final class Contact {
 
         _FinalStage firstName(Nullable<String> firstName);
 
+        /**
+         * <p>Their last name. <code>null</code>: not set.</p>
+         */
         _FinalStage lastName(OptionalNullable<String> lastName);
 
         _FinalStage lastName(String lastName);
@@ -322,12 +349,18 @@ public final class Contact {
 
         _FinalStage lastName(Nullable<String> lastName);
 
+        /**
+         * <p>Custom properties by key.</p>
+         */
         _FinalStage properties(Map<String, ContactPropertiesValue> properties);
 
         _FinalStage putAllProperties(Map<String, ContactPropertiesValue> properties);
 
         _FinalStage properties(String key, ContactPropertiesValue value);
 
+        /**
+         * <p>When it last became <code>subscribed</code>. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage subscribedAt(OptionalNullable<OffsetDateTime> subscribedAt);
 
         _FinalStage subscribedAt(OffsetDateTime subscribedAt);
@@ -336,6 +369,9 @@ public final class Contact {
 
         _FinalStage subscribedAt(Nullable<OffsetDateTime> subscribedAt);
 
+        /**
+         * <p>When it became <code>unsubscribed</code>. <code>null</code> unless it is.</p>
+         */
         _FinalStage unsubscribedAt(OptionalNullable<OffsetDateTime> unsubscribedAt);
 
         _FinalStage unsubscribedAt(OffsetDateTime unsubscribedAt);
@@ -429,6 +465,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>The contact's address. Unique in the environment, case-insensitively.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public StatusStage email(@NotNull String email) {
@@ -522,6 +562,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it became <code>unsubscribed</code>. <code>null</code> unless it is.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage unsubscribedAt(Nullable<OffsetDateTime> unsubscribedAt) {
             if (unsubscribedAt.isNull()) {
@@ -534,6 +578,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it became <code>unsubscribed</code>. <code>null</code> unless it is.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage unsubscribedAt(Optional<OffsetDateTime> unsubscribedAt) {
             if (unsubscribedAt.isPresent()) {
@@ -544,12 +592,19 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it became <code>unsubscribed</code>. <code>null</code> unless it is.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage unsubscribedAt(OffsetDateTime unsubscribedAt) {
             this.unsubscribedAt = OptionalNullable.of(unsubscribedAt);
             return this;
         }
 
+        /**
+         * <p>When it became <code>unsubscribed</code>. <code>null</code> unless it is.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "unsubscribed_at", nulls = Nulls.SKIP)
         public _FinalStage unsubscribedAt(OptionalNullable<OffsetDateTime> unsubscribedAt) {
@@ -557,6 +612,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it last became <code>subscribed</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subscribedAt(Nullable<OffsetDateTime> subscribedAt) {
             if (subscribedAt.isNull()) {
@@ -569,6 +628,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it last became <code>subscribed</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subscribedAt(Optional<OffsetDateTime> subscribedAt) {
             if (subscribedAt.isPresent()) {
@@ -579,12 +642,19 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>When it last became <code>subscribed</code>. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subscribedAt(OffsetDateTime subscribedAt) {
             this.subscribedAt = OptionalNullable.of(subscribedAt);
             return this;
         }
 
+        /**
+         * <p>When it last became <code>subscribed</code>. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "subscribed_at", nulls = Nulls.SKIP)
         public _FinalStage subscribedAt(OptionalNullable<OffsetDateTime> subscribedAt) {
@@ -592,12 +662,20 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Custom properties by key.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage properties(String key, ContactPropertiesValue value) {
             this.properties.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Custom properties by key.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllProperties(Map<String, ContactPropertiesValue> properties) {
             if (properties != null) {
@@ -606,6 +684,9 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Custom properties by key.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "properties", nulls = Nulls.SKIP)
         public _FinalStage properties(Map<String, ContactPropertiesValue> properties) {
@@ -616,6 +697,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(Nullable<String> lastName) {
             if (lastName.isNull()) {
@@ -628,6 +713,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(Optional<String> lastName) {
             if (lastName.isPresent()) {
@@ -638,12 +727,19 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastName(String lastName) {
             this.lastName = OptionalNullable.of(lastName);
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code>: not set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_name", nulls = Nulls.SKIP)
         public _FinalStage lastName(OptionalNullable<String> lastName) {
@@ -651,6 +747,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(Nullable<String> firstName) {
             if (firstName.isNull()) {
@@ -663,6 +763,10 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(Optional<String> firstName) {
             if (firstName.isPresent()) {
@@ -673,12 +777,19 @@ public final class Contact {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code>: not set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstName(String firstName) {
             this.firstName = OptionalNullable.of(firstName);
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code>: not set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_name", nulls = Nulls.SKIP)
         public _FinalStage firstName(OptionalNullable<String> firstName) {

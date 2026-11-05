@@ -17,14 +17,25 @@ class SubaccountWebhookEvent(UniversalBaseModel):
     """
 
     object: SubaccountWebhookEventObject
-    type: SubaccountWebhookEventType
+    type: SubaccountWebhookEventType = pydantic.Field()
+    """
+    What changed for the sub-account.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
     """
 
-    created_at: dt.datetime
-    data: SubaccountWebhookEventData
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
+    data: SubaccountWebhookEventData = pydantic.Field()
+    """
+    The sub-account's standing.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

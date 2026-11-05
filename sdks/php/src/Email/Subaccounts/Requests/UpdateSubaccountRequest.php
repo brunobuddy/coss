@@ -11,7 +11,7 @@ use Coss\Email\Subaccounts\Types\UpdateSubaccountRequestQuotas;
 class UpdateSubaccountRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Your name for it.
      */
     #[JsonProperty('name')]
     public ?string $name;

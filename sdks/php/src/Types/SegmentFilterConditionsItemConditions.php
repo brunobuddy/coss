@@ -9,13 +9,13 @@ use Coss\Core\Types\ArrayType;
 class SegmentFilterConditionsItemConditions extends JsonSerializableType
 {
     /**
-     * @var value-of<SegmentFilterConditionsItemConditionsMatch> $match
+     * @var value-of<SegmentFilterConditionsItemConditionsMatch> $match `all`: every condition must hold; `any`: one is enough.
      */
     #[JsonProperty('match')]
     public string $match;
 
     /**
-     * @var array<SegmentFilterConditionsItemConditionsConditionsItem> $conditions
+     * @var array<SegmentFilterConditionsItemConditionsConditionsItem> $conditions The group's conditions.
      */
     #[JsonProperty('conditions'), ArrayType([SegmentFilterConditionsItemConditionsConditionsItem::class])]
     public array $conditions;

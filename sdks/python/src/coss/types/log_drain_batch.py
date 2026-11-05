@@ -17,11 +17,15 @@ class LogDrainBatch(UniversalBaseModel):
     The batch's id: the `webhook-id` header, the same on every attempt.
     """
 
-    drain_id: str
+    drain_id: str = pydantic.Field()
+    """
+    The id of the drain it's posted to.
+    """
+
     status: LogDrainBatchStatus
     line_count: int = pydantic.Field()
     """
-    Lines in the batch (one per NDJSON line).
+    Lines in the batch.
     """
 
     byte_size: int = pydantic.Field()
@@ -29,14 +33,26 @@ class LogDrainBatch(UniversalBaseModel):
     Size of the request body in bytes.
     """
 
-    attempt_count: int
+    attempt_count: int = pydantic.Field()
+    """
+    How many attempts were made so far.
+    """
+
     next_attempt_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the next attempt is due; `null` once the batch is finished.
     """
 
-    last_status_code: typing.Optional[int] = None
-    last_error: typing.Optional[str] = None
+    last_status_code: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    """
+
+    last_error: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    """
+
     attempts: typing.List[LogDrainAttempt] = pydantic.Field()
     """
     Every HTTP attempt of this batch, oldest first.

@@ -55,11 +55,17 @@ public final class RiskCalibrationRule {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The rule's id.
+     */
     @JsonProperty("rule")
     public String getRule() {
         return rule;
     }
 
+    /**
+     * @return The rule's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -142,12 +148,18 @@ public final class RiskCalibrationRule {
     }
 
     public interface RuleStage {
+        /**
+         * <p>The rule's id.</p>
+         */
         NameStage rule(@NotNull String rule);
 
         Builder from(RiskCalibrationRule other);
     }
 
     public interface NameStage {
+        /**
+         * <p>The rule's name.</p>
+         */
         MatchedStage name(@NotNull String name);
     }
 
@@ -222,6 +234,10 @@ public final class RiskCalibrationRule {
             return this;
         }
 
+        /**
+         * <p>The rule's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("rule")
         public NameStage rule(@NotNull String rule) {
@@ -229,6 +245,10 @@ public final class RiskCalibrationRule {
             return this;
         }
 
+        /**
+         * <p>The rule's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public MatchedStage name(@NotNull String name) {

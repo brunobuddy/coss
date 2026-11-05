@@ -46,11 +46,17 @@ public final class ContactTopics {
         return object;
     }
 
+    /**
+     * @return The contact's id.
+     */
     @JsonProperty("contact_id")
     public String getContactId() {
         return contactId;
     }
 
+    /**
+     * @return Every topic of the environment, with this contact's standing.
+     */
     @JsonProperty("topics")
     public List<ContactTopicsTopicsItem> getTopics() {
         return topics;
@@ -92,6 +98,9 @@ public final class ContactTopics {
     }
 
     public interface ContactIdStage {
+        /**
+         * <p>The contact's id.</p>
+         */
         _FinalStage contactId(@NotNull String contactId);
     }
 
@@ -102,6 +111,9 @@ public final class ContactTopics {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Every topic of the environment, with this contact's standing.</p>
+         */
         _FinalStage topics(List<ContactTopicsTopicsItem> topics);
 
         _FinalStage addTopics(ContactTopicsTopicsItem topics);
@@ -137,6 +149,10 @@ public final class ContactTopics {
             return this;
         }
 
+        /**
+         * <p>The contact's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("contact_id")
         public _FinalStage contactId(@NotNull String contactId) {
@@ -144,6 +160,10 @@ public final class ContactTopics {
             return this;
         }
 
+        /**
+         * <p>Every topic of the environment, with this contact's standing.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTopics(List<ContactTopicsTopicsItem> topics) {
             if (topics != null) {
@@ -152,12 +172,19 @@ public final class ContactTopics {
             return this;
         }
 
+        /**
+         * <p>Every topic of the environment, with this contact's standing.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTopics(ContactTopicsTopicsItem topics) {
             this.topics.add(topics);
             return this;
         }
 
+        /**
+         * <p>Every topic of the environment, with this contact's standing.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "topics", nulls = Nulls.SKIP)
         public _FinalStage topics(List<ContactTopicsTopicsItem> topics) {

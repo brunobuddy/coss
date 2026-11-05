@@ -15,7 +15,11 @@ class RiskCalibration(UniversalBaseModel):
     """
 
     object: RiskCalibrationObject
-    window_days: int
+    window_days: int = pydantic.Field()
+    """
+    How many days back it looks.
+    """
+
     assessments: int = pydantic.Field()
     """
     Assessments in the window.
@@ -26,8 +30,15 @@ class RiskCalibration(UniversalBaseModel):
     Of those, with feedback.
     """
 
-    reasons: typing.List[RiskCalibrationReason]
-    rules: typing.List[RiskCalibrationRule]
+    reasons: typing.List[RiskCalibrationReason] = pydantic.Field()
+    """
+    How each reason did against your feedback.
+    """
+
+    rules: typing.List[RiskCalibrationRule] = pydantic.Field()
+    """
+    How each rule did against your feedback.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

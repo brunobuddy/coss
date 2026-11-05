@@ -56,18 +56,30 @@ public class AsyncAuditEventsClient {
         return this.rawClient.list(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<AuditEvent> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<AuditEvent> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<AuditEvent> get(String id, GetAuditEventsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<AuditEvent> get(String id, GetAuditEventsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

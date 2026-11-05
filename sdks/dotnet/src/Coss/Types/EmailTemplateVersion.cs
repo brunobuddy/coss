@@ -14,6 +14,9 @@ public record EmailTemplateVersion : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required EmailTemplateVersionObject Object { get; set; }
 
+    /// <summary>
+    /// The template's id.
+    /// </summary>
     [JsonPropertyName("template_id")]
     public required string TemplateId { get; set; }
 
@@ -30,16 +33,28 @@ public record EmailTemplateVersion : IJsonOnDeserialized
     [JsonPropertyName("revision")]
     public required long Revision { get; set; }
 
+    /// <summary>
+    /// The locale sends fall back to when they ask for none, or for one without content.
+    /// </summary>
     [JsonPropertyName("default_locale")]
     public required string DefaultLocale { get; set; }
 
+    /// <summary>
+    /// The variables the template uses, with their types.
+    /// </summary>
     [JsonPropertyName("variables")]
     public IEnumerable<TemplateVariable> Variables { get; set; } = new List<TemplateVariable>();
 
+    /// <summary>
+    /// Example values for previews and test sends in the dashboard.
+    /// </summary>
     [JsonPropertyName("sample_variables")]
     public Dictionary<string, object?> SampleVariables { get; set; } =
         new Dictionary<string, object?>();
 
+    /// <summary>
+    /// The subject, HTML and text per locale.
+    /// </summary>
     [JsonPropertyName("contents")]
     public IEnumerable<TemplateContent> Contents { get; set; } = new List<TemplateContent>();
 
@@ -49,6 +64,9 @@ public record EmailTemplateVersion : IJsonOnDeserialized
     [JsonPropertyName("problems")]
     public IEnumerable<TemplateProblem> Problems { get; set; } = new List<TemplateProblem>();
 
+    /// <summary>
+    /// When this version was published. `null` for the draft.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("published_at")]
     public DateTime? PublishedAt { get; set; }

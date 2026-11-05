@@ -79,18 +79,30 @@ public class FormsClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public Form get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public Form get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public Form get(String id, GetFormsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public Form get(String id, GetFormsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

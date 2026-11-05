@@ -163,17 +163,21 @@ class RawRulesClient:
         Parameters
         ----------
         name : str
+            Your name for the rule, returned with reasons when it decides.
 
         conditions : typing.Sequence[RiskRuleCondition]
+            What must hold, by `match`.
 
         action : RiskDecision
 
         enabled : typing.Optional[bool]
+            Default `true`.
 
         position : typing.Optional[int]
             Default 0.
 
         events : typing.Optional[typing.Sequence[RiskEvent]]
+            Events it applies to. Default: every event.
 
         match : typing.Optional[CreateRiskRuleRequestMatch]
             Default `all`.
@@ -330,6 +334,8 @@ class RawRulesClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[RiskRule]:
         """
+        One rule of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -448,6 +454,8 @@ class RawRulesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[DeletedRiskRule]:
         """
+        Deletes a rule. Later assessments no longer apply it.
+
         Parameters
         ----------
         id : str
@@ -584,16 +592,22 @@ class RawRulesClient:
             The rule's id.
 
         name : typing.Optional[str]
+            Your name for the rule.
 
         enabled : typing.Optional[bool]
+            `false` keeps it, and stops applying it.
 
         position : typing.Optional[int]
+            Rules are tried in ascending order.
 
         events : typing.Optional[typing.Sequence[RiskEvent]]
+            Events it applies to. Empty: every event.
 
         match : typing.Optional[UpdateRiskRuleRequestMatch]
+            `all`: every condition must hold. `any`: one is enough.
 
         conditions : typing.Optional[typing.Sequence[RiskRuleCondition]]
+            What must hold, by `match`.
 
         action : typing.Optional[RiskDecision]
 
@@ -881,17 +895,21 @@ class AsyncRawRulesClient:
         Parameters
         ----------
         name : str
+            Your name for the rule, returned with reasons when it decides.
 
         conditions : typing.Sequence[RiskRuleCondition]
+            What must hold, by `match`.
 
         action : RiskDecision
 
         enabled : typing.Optional[bool]
+            Default `true`.
 
         position : typing.Optional[int]
             Default 0.
 
         events : typing.Optional[typing.Sequence[RiskEvent]]
+            Events it applies to. Default: every event.
 
         match : typing.Optional[CreateRiskRuleRequestMatch]
             Default `all`.
@@ -1050,6 +1068,8 @@ class AsyncRawRulesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[RiskRule]:
         """
+        One rule of the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -1168,6 +1188,8 @@ class AsyncRawRulesClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[DeletedRiskRule]:
         """
+        Deletes a rule. Later assessments no longer apply it.
+
         Parameters
         ----------
         id : str
@@ -1304,16 +1326,22 @@ class AsyncRawRulesClient:
             The rule's id.
 
         name : typing.Optional[str]
+            Your name for the rule.
 
         enabled : typing.Optional[bool]
+            `false` keeps it, and stops applying it.
 
         position : typing.Optional[int]
+            Rules are tried in ascending order.
 
         events : typing.Optional[typing.Sequence[RiskEvent]]
+            Events it applies to. Empty: every event.
 
         match : typing.Optional[UpdateRiskRuleRequestMatch]
+            `all`: every condition must hold. `any`: one is enough.
 
         conditions : typing.Optional[typing.Sequence[RiskRuleCondition]]
+            What must hold, by `match`.
 
         action : typing.Optional[RiskDecision]
 

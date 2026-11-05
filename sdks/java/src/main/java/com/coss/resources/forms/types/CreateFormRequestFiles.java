@@ -52,11 +52,17 @@ public final class CreateFormRequestFiles {
         return enabled;
     }
 
+    /**
+     * @return Most files per submission. Default 3.
+     */
     @JsonProperty("max_files")
     public Optional<Integer> getMaxFiles() {
         return maxFiles;
     }
 
+    /**
+     * @return Largest file, in bytes. Default and maximum 10 MB.
+     */
     @JsonProperty("max_file_bytes")
     public Optional<Integer> getMaxFileBytes() {
         return maxFileBytes;
@@ -139,6 +145,9 @@ public final class CreateFormRequestFiles {
             return this;
         }
 
+        /**
+         * <p>Most files per submission. Default 3.</p>
+         */
         @JsonSetter(value = "max_files", nulls = Nulls.SKIP)
         public Builder maxFiles(Optional<Integer> maxFiles) {
             this.maxFiles = maxFiles;
@@ -150,6 +159,9 @@ public final class CreateFormRequestFiles {
             return this;
         }
 
+        /**
+         * <p>Largest file, in bytes. Default and maximum 10 MB.</p>
+         */
         @JsonSetter(value = "max_file_bytes", nulls = Nulls.SKIP)
         public Builder maxFileBytes(Optional<Integer> maxFileBytes) {
             this.maxFileBytes = maxFileBytes;

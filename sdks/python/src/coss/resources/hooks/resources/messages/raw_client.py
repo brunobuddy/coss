@@ -17,6 +17,7 @@ from .....errors.content_too_large_error import ContentTooLargeError
 from .....errors.forbidden_error import ForbiddenError
 from .....errors.internal_server_error import InternalServerError
 from .....errors.not_found_error import NotFoundError
+from .....errors.payment_required_error import PaymentRequiredError
 from .....errors.service_unavailable_error import ServiceUnavailableError
 from .....errors.too_many_requests_error import TooManyRequestsError
 from .....errors.unauthorized_error import UnauthorizedError
@@ -186,7 +187,7 @@ class RawMessagesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[HookMessage]:
         """
-        Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+        Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 
         Parameters
         ----------
@@ -247,6 +248,17 @@ class RawMessagesClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,
@@ -763,7 +775,7 @@ class AsyncRawMessagesClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[HookMessage]:
         """
-        Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+        Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 
         Parameters
         ----------
@@ -824,6 +836,17 @@ class AsyncRawMessagesClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,

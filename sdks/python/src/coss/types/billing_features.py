@@ -7,12 +7,39 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class BillingFeatures(UniversalBaseModel):
-    tracking_domains: bool
-    audit_log: bool
-    log_drains: bool
-    sso: bool
-    scim: bool
-    dedicated_ips: bool
+    """
+    Which features the plan includes.
+    """
+
+    tracking_domains: bool = pydantic.Field()
+    """
+    Custom tracking domains.
+    """
+
+    audit_log: bool = pydantic.Field()
+    """
+    The organization's audit log.
+    """
+
+    log_drains: bool = pydantic.Field()
+    """
+    Log drains.
+    """
+
+    sso: bool = pydantic.Field()
+    """
+    Single sign-on.
+    """
+
+    scim: bool = pydantic.Field()
+    """
+    Directory sync (SCIM).
+    """
+
+    dedicated_ips: bool = pydantic.Field()
+    """
+    Dedicated IP pools.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

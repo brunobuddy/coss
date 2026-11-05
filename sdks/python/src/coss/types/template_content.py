@@ -7,10 +7,25 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class TemplateContent(UniversalBaseModel):
-    locale: str
-    subject: str
-    html: typing.Optional[str] = None
-    text: typing.Optional[str] = None
+    locale: str = pydantic.Field()
+    """
+    The BCP 47 language tag this content is for.
+    """
+
+    subject: str = pydantic.Field()
+    """
+    The subject template.
+    """
+
+    html: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The HTML template. `null`: text only.
+    """
+
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The plain-text template. `null`: HTML only.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -11,6 +11,7 @@ module Coss
       PROMOTION = "promotion"
       REFUND = "refund"
       SLA = "sla"
+      THRESHOLD = "threshold"
     end
   end
 end

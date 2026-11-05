@@ -7,8 +7,19 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class BroadcastTracking(UniversalBaseModel):
-    opens: bool
-    clicks: bool
+    """
+    Which opens and clicks are tracked.
+    """
+
+    opens: bool = pydantic.Field()
+    """
+    Whether opens are tracked.
+    """
+
+    clicks: bool = pydantic.Field()
+    """
+    Whether clicks are tracked.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

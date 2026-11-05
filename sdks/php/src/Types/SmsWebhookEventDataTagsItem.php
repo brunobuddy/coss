@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class SmsWebhookEventDataTagsItem extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The tag's name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $value
+     * @var string $value The tag's value.
      */
     #[JsonProperty('value')]
     public string $value;

@@ -255,18 +255,30 @@ public class RawInboxesClient {
         }
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CossHttpResponse<Inbox> get(String inboxId) {
         return get(inboxId, GetInboxesRequest.builder().build());
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CossHttpResponse<Inbox> get(String inboxId, RequestOptions requestOptions) {
         return get(inboxId, GetInboxesRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CossHttpResponse<Inbox> get(String inboxId, GetInboxesRequest request) {
         return get(inboxId, request, null);
     }
 
+    /**
+     * One inbox of the API key's environment.
+     */
     public CossHttpResponse<Inbox> get(String inboxId, GetInboxesRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

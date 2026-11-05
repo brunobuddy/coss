@@ -8,4 +8,5 @@ enum InvoiceSummaryKind: string
     case PlanChange = "plan_change";
     case OneOff = "one_off";
     case Final_ = "final";
+    case Threshold = "threshold";
 }

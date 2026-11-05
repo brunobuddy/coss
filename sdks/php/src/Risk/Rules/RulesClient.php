@@ -185,6 +185,8 @@ class RulesClient
     }
 
     /**
+     * One rule of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->risk->rules->get(
@@ -238,6 +240,8 @@ class RulesClient
     }
 
     /**
+     * Deletes a rule. Later assessments no longer apply it.
+     *
      * Example:
      * ```php
      * $client->risk->rules->delete(

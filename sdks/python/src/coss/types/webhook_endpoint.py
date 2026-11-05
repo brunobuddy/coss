@@ -12,8 +12,16 @@ from .webhook_endpoint_object import WebhookEndpointObject
 class WebhookEndpoint(UniversalBaseModel):
     object: WebhookEndpointObject
     id: str
-    url: str
-    description: typing.Optional[str] = None
+    url: str = pydantic.Field()
+    """
+    Where events are posted.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your note about it. `null`: none.
+    """
+
     event_types: typing.List[str] = pydantic.Field()
     """
     Event types delivered to this endpoint. An empty array means every event type, including ones added later.
@@ -34,7 +42,11 @@ class WebhookEndpoint(UniversalBaseModel):
     `manual`: someone disabled it. `failing`: its deliveries failed every attempt for five days, so coss.com disabled it. `null` while enabled.
     """
 
-    disabled_at: typing.Optional[dt.datetime] = None
+    disabled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was disabled. `null` while enabled.
+    """
+
     failing_since: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the endpoint's current run of failed deliveries began (a delivery that failed every attempt); cleared by the next successful delivery. An endpoint failing for five days is disabled. `null` while healthy.

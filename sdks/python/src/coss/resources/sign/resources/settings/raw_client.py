@@ -151,18 +151,25 @@ class RawSettingsClient:
         Parameters
         ----------
         allowed_origins : typing.Optional[typing.Sequence[str]]
+            Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
 
         display_name : typing.Optional[str]
+            The requester's name signers see. `null`: the organization's name.
 
         accent_color : typing.Optional[str]
+            The signing page's accent color, as `#RRGGBB`. `null`: the default.
 
         theme : typing.Optional[UpdateSignSettingsRequestTheme]
+            The signing page's theme. `system` follows the signer's device.
 
         disclosure : typing.Optional[str]
+            Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
 
         email_from : typing.Optional[str]
+            Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
 
         reminder_interval_days : typing.Optional[int]
+            The default days between reminders for new requests. `null`: none.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -413,18 +420,25 @@ class AsyncRawSettingsClient:
         Parameters
         ----------
         allowed_origins : typing.Optional[typing.Sequence[str]]
+            Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
 
         display_name : typing.Optional[str]
+            The requester's name signers see. `null`: the organization's name.
 
         accent_color : typing.Optional[str]
+            The signing page's accent color, as `#RRGGBB`. `null`: the default.
 
         theme : typing.Optional[UpdateSignSettingsRequestTheme]
+            The signing page's theme. `system` follows the signer's device.
 
         disclosure : typing.Optional[str]
+            Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
 
         email_from : typing.Optional[str]
+            Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
 
         reminder_interval_days : typing.Optional[int]
+            The default days between reminders for new requests. `null`: none.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

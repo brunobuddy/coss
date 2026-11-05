@@ -92,6 +92,8 @@ module Coss
             end
           end
 
+          # One contact property of the API key's environment: its key, type and fallback.
+          #
           # @param request_options [Hash]
           # @param params [Hash]
           # @option request_options [String] :base_url
@@ -165,6 +167,8 @@ module Coss
             end
           end
 
+          # Changes the value used when a contact has none for this property. Its key and type can't change.
+          #
           # @param request_options [Hash]
           # @param params [Coss::Email::Contacts::Properties::Types::UpdateContactPropertyRequest]
           # @option request_options [String] :base_url

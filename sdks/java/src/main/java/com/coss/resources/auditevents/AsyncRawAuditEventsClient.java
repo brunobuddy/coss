@@ -211,18 +211,30 @@ public class AsyncRawAuditEventsClient {
         return future;
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<CossHttpResponse<AuditEvent>> get(String id) {
         return get(id, GetAuditEventsRequest.builder().build());
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<CossHttpResponse<AuditEvent>> get(String id, RequestOptions requestOptions) {
         return get(id, GetAuditEventsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<CossHttpResponse<AuditEvent>> get(String id, GetAuditEventsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One event of the organization's audit log.
+     */
     public CompletableFuture<CossHttpResponse<AuditEvent>> get(
             String id, GetAuditEventsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

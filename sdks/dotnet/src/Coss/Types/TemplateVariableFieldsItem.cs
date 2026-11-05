@@ -11,12 +11,21 @@ public record TemplateVariableFieldsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Used inside `{{#each}}` as `{{name}}`.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The field's type.
+    /// </summary>
     [JsonPropertyName("type")]
     public required TemplateVariableFieldsItemType Type { get; set; }
 
+    /// <summary>
+    /// Whether each item must have it.
+    /// </summary>
     [JsonPropertyName("required")]
     public required bool Required { get; set; }
 

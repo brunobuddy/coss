@@ -8,8 +8,16 @@ from .contact_topics_topics_item_choice import ContactTopicsTopicsItemChoice
 
 
 class ContactTopicsTopicsItem(UniversalBaseModel):
-    topic: str
-    name: str
+    topic: str = pydantic.Field()
+    """
+    The topic's key.
+    """
+
+    name: str = pydantic.Field()
+    """
+    The topic's name.
+    """
+
     subscribed: bool = pydantic.Field()
     """
     Whether emails about the topic reach the contact (its choice, else the topic's default; an unsubscribed contact gets no marketing email at all).

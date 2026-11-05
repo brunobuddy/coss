@@ -67,6 +67,8 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// One event of the organization's audit log.
+//
 // Example:
 //
 //	request := &coss.GetAuditEventsRequest{

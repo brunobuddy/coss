@@ -14,13 +14,13 @@ class SegmentFilterConditionsItemTopic extends JsonSerializableType
     public string $field;
 
     /**
-     * @var value-of<SegmentFilterConditionsItemTopicOp> $op
+     * @var value-of<SegmentFilterConditionsItemTopicOp> $op Whether emails about the topic reach the contact.
      */
     #[JsonProperty('op')]
     public string $op;
 
     /**
-     * @var string $topic
+     * @var string $topic The topic's key.
      */
     #[JsonProperty('topic')]
     public string $topic;

@@ -27,6 +27,9 @@ public record Reputation : IJsonOnDeserialized
     [JsonPropertyName("reason")]
     public string? Reason { get; set; }
 
+    /// <summary>
+    /// When `status` last changed. `null`: it never has.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("status_changed_at")]
     public DateTime? StatusChangedAt { get; set; }
@@ -45,6 +48,9 @@ public record Reputation : IJsonOnDeserialized
     [JsonPropertyName("window")]
     public ReputationWindow? Window { get; set; }
 
+    /// <summary>
+    /// The measurements behind `status`.
+    /// </summary>
     [JsonPropertyName("checks")]
     public IEnumerable<ReputationCheck> Checks { get; set; } = new List<ReputationCheck>();
 

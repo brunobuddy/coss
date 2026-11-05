@@ -51,21 +51,33 @@ public final class SignRequestWebhookEventDataSigner {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The signer's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return The signer's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return The signer's email address.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @return Your own id for the signer. <code>null</code>: none given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("client_ref")
     public OptionalNullable<String> getClientRef() {
@@ -75,6 +87,9 @@ public final class SignRequestWebhookEventDataSigner {
         return clientRef;
     }
 
+    /**
+     * @return The signer's status after the event.
+     */
     @JsonProperty("status")
     public SignRequestWebhookEventDataSignerStatus getStatus() {
         return status;
@@ -120,20 +135,32 @@ public final class SignRequestWebhookEventDataSigner {
     }
 
     public interface IdStage {
+        /**
+         * <p>The signer's id.</p>
+         */
         NameStage id(@NotNull String id);
 
         Builder from(SignRequestWebhookEventDataSigner other);
     }
 
     public interface NameStage {
+        /**
+         * <p>The signer's name.</p>
+         */
         EmailStage name(@NotNull String name);
     }
 
     public interface EmailStage {
+        /**
+         * <p>The signer's email address.</p>
+         */
         StatusStage email(@NotNull String email);
     }
 
     public interface StatusStage {
+        /**
+         * <p>The signer's status after the event.</p>
+         */
         _FinalStage status(@NotNull SignRequestWebhookEventDataSignerStatus status);
     }
 
@@ -144,6 +171,9 @@ public final class SignRequestWebhookEventDataSigner {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         */
         _FinalStage clientRef(OptionalNullable<String> clientRef);
 
         _FinalStage clientRef(String clientRef);
@@ -180,6 +210,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>The signer's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public NameStage id(@NotNull String id) {
@@ -187,6 +221,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>The signer's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public EmailStage name(@NotNull String name) {
@@ -194,6 +232,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>The signer's email address.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public StatusStage email(@NotNull String email) {
@@ -201,6 +243,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>The signer's status after the event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public _FinalStage status(@NotNull SignRequestWebhookEventDataSignerStatus status) {
@@ -208,6 +254,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(Nullable<String> clientRef) {
             if (clientRef.isNull()) {
@@ -220,6 +270,10 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(Optional<String> clientRef) {
             if (clientRef.isPresent()) {
@@ -230,12 +284,19 @@ public final class SignRequestWebhookEventDataSigner {
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientRef(String clientRef) {
             this.clientRef = OptionalNullable.of(clientRef);
             return this;
         }
 
+        /**
+         * <p>Your own id for the signer. <code>null</code>: none given.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "client_ref", nulls = Nulls.SKIP)
         public _FinalStage clientRef(OptionalNullable<String> clientRef) {

@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class ContactWebhookEventDataContact extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The contact's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var string $email
+     * @var string $email The contact's address.
      */
     #[JsonProperty('email')]
     public string $email;
 
     /**
-     * @var value-of<ContactWebhookEventDataContactStatus> $status
+     * @var value-of<ContactWebhookEventDataContactStatus> $status Its consent after this event.
      */
     #[JsonProperty('status')]
     public string $status;

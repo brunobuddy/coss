@@ -146,16 +146,25 @@ public final class InboxMessageSummary {
         return from;
     }
 
+    /**
+     * @return Addresses in the <code>To</code> header.
+     */
     @JsonProperty("to")
     public List<String> getTo() {
         return to;
     }
 
+    /**
+     * @return Addresses in the <code>Cc</code> header.
+     */
     @JsonProperty("cc")
     public List<String> getCc() {
         return cc;
     }
 
+    /**
+     * @return The subject. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("subject")
     public OptionalNullable<String> getSubject() {
@@ -379,18 +388,27 @@ public final class InboxMessageSummary {
 
         _FinalStage from(Nullable<String> from);
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         */
         _FinalStage to(List<String> to);
 
         _FinalStage addTo(String to);
 
         _FinalStage addAllTo(List<String> to);
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         */
         _FinalStage cc(List<String> cc);
 
         _FinalStage addCc(String cc);
 
         _FinalStage addAllCc(List<String> cc);
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         */
         _FinalStage subject(OptionalNullable<String> subject);
 
         _FinalStage subject(String subject);
@@ -768,6 +786,10 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Nullable<String> subject) {
             if (subject.isNull()) {
@@ -780,6 +802,10 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(Optional<String> subject) {
             if (subject.isPresent()) {
@@ -790,12 +816,19 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage subject(String subject) {
             this.subject = OptionalNullable.of(subject);
             return this;
         }
 
+        /**
+         * <p>The subject. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "subject", nulls = Nulls.SKIP)
         public _FinalStage subject(OptionalNullable<String> subject) {
@@ -803,6 +836,10 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllCc(List<String> cc) {
             if (cc != null) {
@@ -811,12 +848,19 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addCc(String cc) {
             this.cc.add(cc);
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>Cc</code> header.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public _FinalStage cc(List<String> cc) {
@@ -827,6 +871,10 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTo(List<String> to) {
             if (to != null) {
@@ -835,12 +883,19 @@ public final class InboxMessageSummary {
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTo(String to) {
             this.to.add(to);
             return this;
         }
 
+        /**
+         * <p>Addresses in the <code>To</code> header.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "to", nulls = Nulls.SKIP)
         public _FinalStage to(List<String> to) {

@@ -11,9 +11,15 @@ public record RiskReason : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The reason's code, listed under Risk's reasons in the docs.
+    /// </summary>
     [JsonPropertyName("code")]
     public required RiskReasonCode Code { get; set; }
 
+    /// <summary>
+    /// What it means, in words. May change.
+    /// </summary>
     [JsonPropertyName("message")]
     public required string Message { get; set; }
 
@@ -31,6 +37,9 @@ public record RiskReason : IJsonOnDeserialized
     [JsonPropertyName("threshold")]
     public double? Threshold { get; set; }
 
+    /// <summary>
+    /// `velocity.*`: the window it's counted over.
+    /// </summary>
     [Optional]
     [JsonPropertyName("window")]
     public RiskReasonWindow? Window { get; set; }

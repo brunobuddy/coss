@@ -102,6 +102,8 @@ module Coss
           end
         end
 
+        # One rule of the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -137,6 +139,8 @@ module Coss
           end
         end
 
+        # Deletes a rule. Later assessments no longer apply it.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

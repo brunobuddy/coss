@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Details of the event: only what its `type` has.
     class EmailEventData < Internal::Types::Model
       field :bounce, -> { Coss::Types::EmailEventDataBounce }, optional: true, nullable: false
 

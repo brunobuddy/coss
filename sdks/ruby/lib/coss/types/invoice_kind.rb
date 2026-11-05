@@ -9,6 +9,7 @@ module Coss
       PLAN_CHANGE = "plan_change"
       ONE_OFF = "one_off"
       FINAL = "final"
+      THRESHOLD = "threshold"
     end
   end
 end

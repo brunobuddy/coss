@@ -9,6 +9,10 @@ from .sms_event_data_suppression import SmsEventDataSuppression
 
 
 class SmsEventData(UniversalBaseModel):
+    """
+    Details of the event, where it has any.
+    """
+
     failure: typing.Optional[SmsEventDataFailure] = pydantic.Field(default=None)
     """
     Why the message failed or wasn't delivered.

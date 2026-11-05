@@ -93,51 +93,81 @@ public final class SignField {
         return id;
     }
 
+    /**
+     * @return The id of the signer who fills it.
+     */
     @JsonProperty("signer_id")
     public String getSignerId() {
         return signerId;
     }
 
+    /**
+     * @return The id of the document it's on.
+     */
     @JsonProperty("document_id")
     public String getDocumentId() {
         return documentId;
     }
 
+    /**
+     * @return <code>signature</code> and <code>initials</code> take the signer's adopted signature, <code>date_signed</code> is filled with the signing date, <code>name</code> and <code>email</code> with the signer's, <code>text</code> and <code>checkbox</code> by the signer.
+     */
     @JsonProperty("type")
     public SignFieldType getType() {
         return type;
     }
 
+    /**
+     * @return 1-based page number.
+     */
     @JsonProperty("page")
     public long getPage() {
         return page;
     }
 
+    /**
+     * @return Left edge, in PDF points from the page's left.
+     */
     @JsonProperty("x")
     public double getX() {
         return x;
     }
 
+    /**
+     * @return Top edge, in PDF points from the page's top.
+     */
     @JsonProperty("y")
     public double getY() {
         return y;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("width")
     public double getWidth() {
         return width;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("height")
     public double getHeight() {
         return height;
     }
 
+    /**
+     * @return Whether a signer can finish with it empty.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
     }
 
+    /**
+     * @return Shown to the signer. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("label")
     public OptionalNullable<String> getLabel() {
@@ -147,6 +177,9 @@ public final class SignField {
         return label;
     }
 
+    /**
+     * @return The text anchor it was placed by. <code>null</code>: placed by position.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("anchor")
     public OptionalNullable<String> getAnchor() {
@@ -233,38 +266,65 @@ public final class SignField {
     }
 
     public interface SignerIdStage {
+        /**
+         * <p>The id of the signer who fills it.</p>
+         */
         DocumentIdStage signerId(@NotNull String signerId);
     }
 
     public interface DocumentIdStage {
+        /**
+         * <p>The id of the document it's on.</p>
+         */
         TypeStage documentId(@NotNull String documentId);
     }
 
     public interface TypeStage {
+        /**
+         * <p><code>signature</code> and <code>initials</code> take the signer's adopted signature, <code>date_signed</code> is filled with the signing date, <code>name</code> and <code>email</code> with the signer's, <code>text</code> and <code>checkbox</code> by the signer.</p>
+         */
         PageStage type(@NotNull SignFieldType type);
     }
 
     public interface PageStage {
+        /**
+         * <p>1-based page number.</p>
+         */
         XStage page(long page);
     }
 
     public interface XStage {
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         */
         YStage x(double x);
     }
 
     public interface YStage {
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         */
         WidthStage y(double y);
     }
 
     public interface WidthStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         HeightStage width(double width);
     }
 
     public interface HeightStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         RequiredStage height(double height);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether a signer can finish with it empty.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -275,6 +335,9 @@ public final class SignField {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         */
         _FinalStage label(OptionalNullable<String> label);
 
         _FinalStage label(String label);
@@ -283,6 +346,9 @@ public final class SignField {
 
         _FinalStage label(Nullable<String> label);
 
+        /**
+         * <p>The text anchor it was placed by. <code>null</code>: placed by position.</p>
+         */
         _FinalStage anchor(OptionalNullable<String> anchor);
 
         _FinalStage anchor(String anchor);
@@ -369,6 +435,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>The id of the signer who fills it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("signer_id")
         public DocumentIdStage signerId(@NotNull String signerId) {
@@ -376,6 +446,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>The id of the document it's on.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("document_id")
         public TypeStage documentId(@NotNull String documentId) {
@@ -383,6 +457,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p><code>signature</code> and <code>initials</code> take the signer's adopted signature, <code>date_signed</code> is filled with the signing date, <code>name</code> and <code>email</code> with the signer's, <code>text</code> and <code>checkbox</code> by the signer.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public PageStage type(@NotNull SignFieldType type) {
@@ -390,6 +468,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>1-based page number.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("page")
         public XStage page(long page) {
@@ -397,6 +479,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Left edge, in PDF points from the page's left.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("x")
         public YStage x(double x) {
@@ -404,6 +490,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Top edge, in PDF points from the page's top.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("y")
         public WidthStage y(double y) {
@@ -411,6 +501,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("width")
         public HeightStage width(double width) {
@@ -418,6 +512,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("height")
         public RequiredStage height(double height) {
@@ -425,6 +523,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Whether a signer can finish with it empty.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {
@@ -432,6 +534,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>The text anchor it was placed by. <code>null</code>: placed by position.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage anchor(Nullable<String> anchor) {
             if (anchor.isNull()) {
@@ -444,6 +550,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>The text anchor it was placed by. <code>null</code>: placed by position.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage anchor(Optional<String> anchor) {
             if (anchor.isPresent()) {
@@ -454,12 +564,19 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>The text anchor it was placed by. <code>null</code>: placed by position.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage anchor(String anchor) {
             this.anchor = OptionalNullable.of(anchor);
             return this;
         }
 
+        /**
+         * <p>The text anchor it was placed by. <code>null</code>: placed by position.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "anchor", nulls = Nulls.SKIP)
         public _FinalStage anchor(OptionalNullable<String> anchor) {
@@ -467,6 +584,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Nullable<String> label) {
             if (label.isNull()) {
@@ -479,6 +600,10 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(Optional<String> label) {
             if (label.isPresent()) {
@@ -489,12 +614,19 @@ public final class SignField {
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage label(String label) {
             this.label = OptionalNullable.of(label);
             return this;
         }
 
+        /**
+         * <p>Shown to the signer. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "label", nulls = Nulls.SKIP)
         public _FinalStage label(OptionalNullable<String> label) {

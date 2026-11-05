@@ -32,9 +32,15 @@ public record FormSubmissionWebhookEvent : IJsonOnDeserialized
     [JsonPropertyName("api_version")]
     public required string ApiVersion { get; set; }
 
+    /// <summary>
+    /// When the event was created.
+    /// </summary>
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// The submission.
+    /// </summary>
     [JsonPropertyName("data")]
     public required FormSubmissionWebhookEventData Data { get; set; }
 

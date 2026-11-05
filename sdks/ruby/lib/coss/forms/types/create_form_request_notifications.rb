@@ -3,6 +3,7 @@
 module Coss
   module Forms
     module Types
+      # Emails about accepted submissions. Only the fields given change.
       class CreateFormRequestNotifications < Internal::Types::Model
         field :recipients, -> { Internal::Types::Array[String] }, optional: true, nullable: false
 

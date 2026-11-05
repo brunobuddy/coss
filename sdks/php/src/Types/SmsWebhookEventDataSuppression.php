@@ -11,13 +11,13 @@ use Coss\Core\Json\JsonProperty;
 class SmsWebhookEventDataSuppression extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The suppression's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var value-of<SmsWebhookEventDataSuppressionReason> $reason
+     * @var value-of<SmsWebhookEventDataSuppressionReason> $reason Why the number is suppressed.
      */
     #[JsonProperty('reason')]
     public string $reason;

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Its own sending standing.
     class SubaccountReputation < Internal::Types::Model
       field :status, -> { Coss::Types::SubaccountReputationStatus }, optional: false, nullable: false
 

@@ -52,6 +52,9 @@ public final class VerificationSend {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return <code>sms</code> or <code>email</code>.
+     */
     @JsonProperty("channel")
     public VerificationSendChannel getChannel() {
         return channel;
@@ -140,6 +143,9 @@ public final class VerificationSend {
     }
 
     public interface ChannelStage {
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         */
         RouteStage channel(@NotNull VerificationSendChannel channel);
 
         Builder from(VerificationSend other);
@@ -213,6 +219,10 @@ public final class VerificationSend {
             return this;
         }
 
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("channel")
         public RouteStage channel(@NotNull VerificationSendChannel channel) {

@@ -10,19 +10,19 @@ use Coss\Core\Types\ArrayType;
 class TemplateVariable extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name Used in the template as `{{name}}`.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var value-of<TemplateVariableType> $type
+     * @var value-of<TemplateVariableType> $type `string`, `number`, `boolean`, or `list` (an array of objects with the declared `fields`).
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var bool $required
+     * @var bool $required Whether sends must pass it, unless it has a `default`.
      */
     #[JsonProperty('required')]
     public bool $required;
@@ -32,19 +32,19 @@ class TemplateVariable extends JsonSerializableType
      *    string
      *   |float
      *   |bool
-     * )|null $default
+     * )|null $default Used when a send leaves it out.
      */
     #[JsonProperty('default'), Union('string', 'float', 'bool', 'null')]
     public string|float|bool|null $default;
 
     /**
-     * @var ?string $description
+     * @var ?string $description What it's for, shown in the dashboard.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var ?array<TemplateVariableFieldsItem> $fields
+     * @var ?array<TemplateVariableFieldsItem> $fields A list's item fields.
      */
     #[JsonProperty('fields'), ArrayType([TemplateVariableFieldsItem::class])]
     public ?array $fields;

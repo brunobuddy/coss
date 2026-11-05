@@ -9,6 +9,10 @@ from .create_form_request_spam_on_review import CreateFormRequestSpamOnReview
 
 
 class CreateFormRequestSpam(UniversalBaseModel):
+    """
+    How submissions are screened. Only the fields given change.
+    """
+
     honeypot_field: typing.Optional[str] = pydantic.Field(default=None)
     """
     A field people leave empty (hide it with CSS); a submission that fills it is spam. Default `_gotcha`.

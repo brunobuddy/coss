@@ -17,7 +17,11 @@ class EnvironmentApiKey(UniversalBaseModel):
     The key's id.
     """
 
-    name: typing.Optional[str] = None
+    name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The key's name. `null`: none.
+    """
+
     start: typing.Optional[str] = pydantic.Field(default=None)
     """
     The key's first characters, as shown in the dashboard.

@@ -18,8 +18,16 @@ public readonly record struct BillingWebhookEventThreeDataMeter : IStringEnum
         Values.EmailDedicatedIp
     );
 
+    public static readonly BillingWebhookEventThreeDataMeter EmailAttachmentData = new(
+        Values.EmailAttachmentData
+    );
+
     public static readonly BillingWebhookEventThreeDataMeter EmailReceived = new(
         Values.EmailReceived
+    );
+
+    public static readonly BillingWebhookEventThreeDataMeter EmailReceivedData = new(
+        Values.EmailReceivedData
     );
 
     public static readonly BillingWebhookEventThreeDataMeter EmailInboxes = new(
@@ -46,6 +54,14 @@ public readonly record struct BillingWebhookEventThreeDataMeter : IStringEnum
         Values.RiskPhoneChecks
     );
 
+    public static readonly BillingWebhookEventThreeDataMeter RiskAssessments = new(
+        Values.RiskAssessments
+    );
+
+    public static readonly BillingWebhookEventThreeDataMeter RiskContentChecks = new(
+        Values.RiskContentChecks
+    );
+
     public static readonly BillingWebhookEventThreeDataMeter VerifyVerifications = new(
         Values.VerifyVerifications
     );
@@ -56,12 +72,20 @@ public readonly record struct BillingWebhookEventThreeDataMeter : IStringEnum
         Values.FormsSubmissions
     );
 
-    public static readonly BillingWebhookEventThreeDataMeter VideoParticipantMinutes = new(
-        Values.VideoParticipantMinutes
+    public static readonly BillingWebhookEventThreeDataMeter FormsFileUploads = new(
+        Values.FormsFileUploads
     );
 
     public static readonly BillingWebhookEventThreeDataMeter SchedulingBookings = new(
         Values.SchedulingBookings
+    );
+
+    public static readonly BillingWebhookEventThreeDataMeter SchedulingHosts = new(
+        Values.SchedulingHosts
+    );
+
+    public static readonly BillingWebhookEventThreeDataMeter HooksMessages = new(
+        Values.HooksMessages
     );
 
     public BillingWebhookEventThreeDataMeter(string value)
@@ -165,7 +189,11 @@ public readonly record struct BillingWebhookEventThreeDataMeter : IStringEnum
 
         public const string EmailDedicatedIp = "email.dedicated_ip";
 
+        public const string EmailAttachmentData = "email.attachment_data";
+
         public const string EmailReceived = "email.received";
+
+        public const string EmailReceivedData = "email.received_data";
 
         public const string EmailInboxes = "email.inboxes";
 
@@ -181,14 +209,22 @@ public readonly record struct BillingWebhookEventThreeDataMeter : IStringEnum
 
         public const string RiskPhoneChecks = "risk.phone_checks";
 
+        public const string RiskAssessments = "risk.assessments";
+
+        public const string RiskContentChecks = "risk.content_checks";
+
         public const string VerifyVerifications = "verify.verifications";
 
         public const string VerifySms = "verify.sms";
 
         public const string FormsSubmissions = "forms.submissions";
 
-        public const string VideoParticipantMinutes = "video.participant_minutes";
+        public const string FormsFileUploads = "forms.file_uploads";
 
         public const string SchedulingBookings = "scheduling.bookings";
+
+        public const string SchedulingHosts = "scheduling.hosts";
+
+        public const string HooksMessages = "hooks.messages";
     }
 }

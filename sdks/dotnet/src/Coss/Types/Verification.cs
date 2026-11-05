@@ -17,9 +17,15 @@ public record Verification : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// `sms` or `email`.
+    /// </summary>
     [JsonPropertyName("channel")]
     public required VerificationChannel Channel { get; set; }
 
+    /// <summary>
+    /// The phone number (E.164) or address the code goes to.
+    /// </summary>
     [JsonPropertyName("to")]
     public required string To { get; set; }
 
@@ -56,6 +62,9 @@ public record Verification : IJsonOnDeserialized
     [JsonPropertyName("attempts")]
     public required long Attempts { get; set; }
 
+    /// <summary>
+    /// How many wrong codes end it.
+    /// </summary>
     [JsonPropertyName("max_attempts")]
     public required long MaxAttempts { get; set; }
 
@@ -65,6 +74,9 @@ public record Verification : IJsonOnDeserialized
     [JsonPropertyName("sends")]
     public IEnumerable<VerificationSend> Sends { get; set; } = new List<VerificationSend>();
 
+    /// <summary>
+    /// Your tags on the verification.
+    /// </summary>
     [JsonPropertyName("tags")]
     public IEnumerable<VerificationTagsItem> Tags { get; set; } = new List<VerificationTagsItem>();
 
@@ -74,9 +86,15 @@ public record Verification : IJsonOnDeserialized
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
+    /// <summary>
+    /// When the code stops working.
+    /// </summary>
     [JsonPropertyName("expires_at")]
     public required DateTime ExpiresAt { get; set; }
 
+    /// <summary>
+    /// When the right code was checked. `null`: it wasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("approved_at")]
     public DateTime? ApprovedAt { get; set; }

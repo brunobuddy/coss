@@ -22,7 +22,7 @@ class BroadcastWebhookEvent extends JsonSerializableType
     public string $object;
 
     /**
-     * @var value-of<BroadcastWebhookEventType> $type
+     * @var value-of<BroadcastWebhookEventType> $type What happened to the broadcast.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -34,13 +34,13 @@ class BroadcastWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var BroadcastWebhookEventData $data
+     * @var BroadcastWebhookEventData $data The broadcast and how it fared.
      */
     #[JsonProperty('data')]
     public BroadcastWebhookEventData $data;

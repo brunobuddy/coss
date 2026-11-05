@@ -21,6 +21,8 @@ public final class LogDrainSource {
 
     public static final LogDrainSource VERIFY = new LogDrainSource(Value.VERIFY, "verify");
 
+    public static final LogDrainSource SCHEDULING = new LogDrainSource(Value.SCHEDULING, "scheduling");
+
     public static final LogDrainSource FORMS = new LogDrainSource(Value.FORMS, "forms");
 
     public static final LogDrainSource API = new LogDrainSource(Value.API, "api");
@@ -73,6 +75,8 @@ public final class LogDrainSource {
                 return visitor.visitSms();
             case VERIFY:
                 return visitor.visitVerify();
+            case SCHEDULING:
+                return visitor.visitScheduling();
             case FORMS:
                 return visitor.visitForms();
             case API:
@@ -102,6 +106,8 @@ public final class LogDrainSource {
                 return SMS;
             case "verify":
                 return VERIFY;
+            case "scheduling":
+                return SCHEDULING;
             case "forms":
                 return FORMS;
             case "api":
@@ -132,6 +138,8 @@ public final class LogDrainSource {
 
         FORMS,
 
+        SCHEDULING,
+
         AUDIT,
 
         UNKNOWN
@@ -155,6 +163,8 @@ public final class LogDrainSource {
         T visitVerify();
 
         T visitForms();
+
+        T visitScheduling();
 
         T visitAudit();
 

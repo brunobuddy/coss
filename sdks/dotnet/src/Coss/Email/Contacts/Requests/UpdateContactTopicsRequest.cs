@@ -12,6 +12,9 @@ public record UpdateContactTopicsRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The contact's choices per topic. Topics not listed keep theirs.
+    /// </summary>
     [JsonPropertyName("topics")]
     public IEnumerable<UpdateContactTopicsRequestTopicsItem> Topics { get; set; } =
         new List<UpdateContactTopicsRequestTopicsItem>();

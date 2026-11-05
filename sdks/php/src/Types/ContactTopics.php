@@ -15,13 +15,13 @@ class ContactTopics extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $contactId
+     * @var string $contactId The contact's id.
      */
     #[JsonProperty('contact_id')]
     public string $contactId;
 
     /**
-     * @var array<ContactTopicsTopicsItem> $topics
+     * @var array<ContactTopicsTopicsItem> $topics Every topic of the environment, with this contact's standing.
      */
     #[JsonProperty('topics'), ArrayType([ContactTopicsTopicsItem::class])]
     public array $topics;

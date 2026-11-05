@@ -22,13 +22,13 @@ class EmailEvent extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $emailId
+     * @var string $emailId The email's id.
      */
     #[JsonProperty('email_id')]
     public string $emailId;
 
     /**
-     * @var value-of<EmailEventType> $type
+     * @var value-of<EmailEventType> $type What happened, such as `email.delivered` or `email.bounced`.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -40,7 +40,7 @@ class EmailEvent extends JsonSerializableType
     public ?string $recipient;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When it happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

@@ -36,6 +36,9 @@ public final class RiskAssessmentUser {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your user id. <code>null</code>: none given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("id")
     public OptionalNullable<String> getId() {
@@ -115,6 +118,9 @@ public final class RiskAssessmentUser {
             return this;
         }
 
+        /**
+         * <p>Your user id. <code>null</code>: none given.</p>
+         */
         @JsonSetter(value = "id", nulls = Nulls.SKIP)
         public Builder id(OptionalNullable<String> id) {
             this.id = id;

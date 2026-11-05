@@ -121,6 +121,8 @@ module Coss
           end
         end
 
+        # One segment of the API key's environment, with its filter.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -156,6 +158,8 @@ module Coss
           end
         end
 
+        # Deletes a segment. The contacts it matched stay.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url
@@ -191,6 +195,8 @@ module Coss
           end
         end
 
+        # Changes a segment's name or filter. Only the fields given change.
+        #
         # @param request_options [Hash]
         # @param params [Coss::Email::Segments::Types::UpdateSegmentRequest]
         # @option request_options [String] :base_url

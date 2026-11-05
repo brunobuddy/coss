@@ -30,11 +30,17 @@ public final class RiskLoginSignals {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether this user never logged in from this country in this environment.
+     */
     @JsonProperty("new_country")
     public boolean getNewCountry() {
         return newCountry;
     }
 
+    /**
+     * @return Whether this user never logged in from this network (ASN) in this environment.
+     */
     @JsonProperty("new_network")
     public boolean getNewNetwork() {
         return newNetwork;
@@ -70,12 +76,18 @@ public final class RiskLoginSignals {
     }
 
     public interface NewCountryStage {
+        /**
+         * <p>Whether this user never logged in from this country in this environment.</p>
+         */
         NewNetworkStage newCountry(boolean newCountry);
 
         Builder from(RiskLoginSignals other);
     }
 
     public interface NewNetworkStage {
+        /**
+         * <p>Whether this user never logged in from this network (ASN) in this environment.</p>
+         */
         _FinalStage newNetwork(boolean newNetwork);
     }
 
@@ -105,6 +117,10 @@ public final class RiskLoginSignals {
             return this;
         }
 
+        /**
+         * <p>Whether this user never logged in from this country in this environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("new_country")
         public NewNetworkStage newCountry(boolean newCountry) {
@@ -112,6 +128,10 @@ public final class RiskLoginSignals {
             return this;
         }
 
+        /**
+         * <p>Whether this user never logged in from this network (ASN) in this environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("new_network")
         public _FinalStage newNetwork(boolean newNetwork) {

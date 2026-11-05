@@ -13,6 +13,9 @@ public record UpdateSignTemplateRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Your name for the template.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }
@@ -31,10 +34,16 @@ public record UpdateSignTemplateRequest
     [JsonPropertyName("message")]
     public Optional<string?> Message { get; set; }
 
+    /// <summary>
+    /// `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
+    /// </summary>
     [Optional]
     [JsonPropertyName("signing_order")]
     public UpdateSignTemplateRequestSigningOrder? SigningOrder { get; set; }
 
+    /// <summary>
+    /// Uploaded documents by id, or PDFs inline (base64).
+    /// </summary>
     [Optional]
     [JsonPropertyName("documents")]
     public IEnumerable<

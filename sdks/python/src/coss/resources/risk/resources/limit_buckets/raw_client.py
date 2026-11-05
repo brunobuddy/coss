@@ -319,6 +319,8 @@ class RawLimitBucketsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[RiskLimitBucket]:
         """
+        One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+
         Parameters
         ----------
         id : str
@@ -572,12 +574,16 @@ class RawLimitBucketsClient:
             The bucket's id.
 
         limit : typing.Optional[int]
+            Tokens added per `period_seconds`.
 
         period_seconds : typing.Optional[int]
+            How many seconds `limit` tokens take to be added.
 
         burst : typing.Optional[int]
+            The bucket's size: how many requests a key can make at once.
 
         on_failure : typing.Optional[UpdateRiskLimitBucketRequestOnFailure]
+            The answer while coss.com can't count: `allow` or `deny`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1022,6 +1028,8 @@ class AsyncRawLimitBucketsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[RiskLimitBucket]:
         """
+        One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+
         Parameters
         ----------
         id : str
@@ -1275,12 +1283,16 @@ class AsyncRawLimitBucketsClient:
             The bucket's id.
 
         limit : typing.Optional[int]
+            Tokens added per `period_seconds`.
 
         period_seconds : typing.Optional[int]
+            How many seconds `limit` tokens take to be added.
 
         burst : typing.Optional[int]
+            The bucket's size: how many requests a key can make at once.
 
         on_failure : typing.Optional[UpdateRiskLimitBucketRequestOnFailure]
+            The answer while coss.com can't count: `allow` or `deny`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

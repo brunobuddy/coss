@@ -78,18 +78,30 @@ public class AsyncTemplatesClient {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CompletableFuture<SignTemplate> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CompletableFuture<SignTemplate> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CompletableFuture<SignTemplate> get(String id, GetTemplatesRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * A template with its documents, roles and fields. <code>ready</code> says whether requests can be made from it.
+     */
     public CompletableFuture<SignTemplate> get(String id, GetTemplatesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

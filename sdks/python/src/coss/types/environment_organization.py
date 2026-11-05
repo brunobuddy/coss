@@ -7,6 +7,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EnvironmentOrganization(UniversalBaseModel):
+    """
+    The organization it belongs to.
+    """
+
     id: str = pydantic.Field()
     """
     The organization's id.
@@ -25,6 +29,11 @@ class EnvironmentOrganization(UniversalBaseModel):
     api_version: str = pydantic.Field()
     """
     The organization's pinned API version: what requests without a `Coss-Version` header and new webhook endpoints get.
+    """
+
+    hipaa_mode: bool = pydantic.Field()
+    """
+    Whether the organization is in HIPAA mode, which refuses some requests with `hipaa_mode_restriction`. Its compliance settings page lists what the mode changes.
     """
 
     if IS_PYDANTIC_V2:

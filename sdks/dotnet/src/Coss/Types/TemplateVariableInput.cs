@@ -38,6 +38,9 @@ public record TemplateVariableInput : IJsonOnDeserialized
     [JsonPropertyName("default")]
     public OneOf<string, double, bool>? Default { get; set; }
 
+    /// <summary>
+    /// What it's for, shown in the dashboard.
+    /// </summary>
     [Optional]
     [JsonPropertyName("description")]
     public string? Description { get; set; }

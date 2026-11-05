@@ -274,9 +274,12 @@ var createSubaccountRequestQuotasNullableFields = map[string]*big.Int{
 
 // Fields left out keep their value; `null` removes a quota.
 type CreateSubaccountRequestQuotas struct {
-	RecipientsPerDay    *int `json:"recipients_per_day,omitempty" url:"recipients_per_day,omitempty"`
+	// Most recipients a day. `null` removes the limit.
+	RecipientsPerDay *int `json:"recipients_per_day,omitempty" url:"recipients_per_day,omitempty"`
+	// Most recipients a second. `null` removes the limit.
 	RecipientsPerSecond *int `json:"recipients_per_second,omitempty" url:"recipients_per_second,omitempty"`
-	Burst               *int `json:"burst,omitempty" url:"burst,omitempty"`
+	// How many recipients a moment may take before the per-second rate applies. `null` removes it.
+	Burst *int `json:"burst,omitempty" url:"burst,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -407,9 +410,12 @@ var updateSubaccountRequestQuotasNullableFields = map[string]*big.Int{
 
 // Fields left out keep their value; `null` removes a quota.
 type UpdateSubaccountRequestQuotas struct {
-	RecipientsPerDay    *int `json:"recipients_per_day,omitempty" url:"recipients_per_day,omitempty"`
+	// Most recipients a day. `null` removes the limit.
+	RecipientsPerDay *int `json:"recipients_per_day,omitempty" url:"recipients_per_day,omitempty"`
+	// Most recipients a second. `null` removes the limit.
 	RecipientsPerSecond *int `json:"recipients_per_second,omitempty" url:"recipients_per_second,omitempty"`
-	Burst               *int `json:"burst,omitempty" url:"burst,omitempty"`
+	// How many recipients a moment may take before the per-second rate applies. `null` removes it.
+	Burst *int `json:"burst,omitempty" url:"burst,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -559,8 +565,9 @@ var (
 
 type UpdateSubaccountRequest struct {
 	// The sub-account's `id` (`sub_…`) or your `uid` for it.
-	Subaccount string  `json:"-" url:"-"`
-	Name       *string `json:"name,omitempty" url:"-"`
+	Subaccount string `json:"-" url:"-"`
+	// Your name for it.
+	Name *string `json:"name,omitempty" url:"-"`
 	// `null` removes it.
 	UID *string `json:"uid,omitempty" url:"-"`
 	// Replaces the metadata.

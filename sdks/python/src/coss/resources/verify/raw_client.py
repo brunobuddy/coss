@@ -517,6 +517,8 @@ class RawVerifyClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Verification]:
         """
+        A verification's status and destination. Its code is never returned.
+
         Parameters
         ----------
         id : str
@@ -1248,6 +1250,8 @@ class AsyncRawVerifyClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Verification]:
         """
+        A verification's status and destination. Its code is never returned.
+
         Parameters
         ----------
         id : str

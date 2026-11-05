@@ -23,9 +23,15 @@ public record Credit : IJsonOnDeserialized
     [JsonPropertyName("kind")]
     public required CreditKind Kind { get; set; }
 
+    /// <summary>
+    /// How much was granted: cents, or units for a `units` credit.
+    /// </summary>
     [JsonPropertyName("amount")]
     public required long Amount { get; set; }
 
+    /// <summary>
+    /// How much is left, in the same unit as `amount`.
+    /// </summary>
     [JsonPropertyName("remaining")]
     public required long Remaining { get; set; }
 
@@ -49,19 +55,34 @@ public record Credit : IJsonOnDeserialized
     [JsonPropertyName("applies_to")]
     public required CreditAppliesTo AppliesTo { get; set; }
 
+    /// <summary>
+    /// Where it came from: `fee`, `commitment`, `support`, `promotion`, `refund` or `sla`.
+    /// </summary>
     [JsonPropertyName("source")]
     public required CreditSource Source { get; set; }
 
+    /// <summary>
+    /// What it's for.
+    /// </summary>
     [JsonPropertyName("description")]
     public required string Description { get; set; }
 
+    /// <summary>
+    /// When it can start being used.
+    /// </summary>
     [JsonPropertyName("effective_at")]
     public required DateTime EffectiveAt { get; set; }
 
+    /// <summary>
+    /// When what's left expires. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }
 
+    /// <summary>
+    /// When it was voided. `null`: it wasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("voided_at")]
     public DateTime? VoidedAt { get; set; }

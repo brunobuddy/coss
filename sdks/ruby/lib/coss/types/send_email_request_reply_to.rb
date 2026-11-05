@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Where replies go.
     class SendEmailRequestReplyTo < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

@@ -28,14 +28,52 @@ class SmsWebhookEventData(UniversalBaseModel):
     `sms.suppressed`: the entry that made coss.com skip the number.
     """
 
-    sms_id: str
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: str
-    country: str
-    segments: int
-    tags: typing.List[SmsWebhookEventDataTagsItem]
-    sandbox: bool
-    occurred_at: dt.datetime
+    sms_id: str = pydantic.Field()
+    """
+    The id of the message.
+    """
+
+    from_: typing_extensions.Annotated[
+        str, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="The number it's sent from.")
+    ]
+    """
+    The number it's sent from.
+    """
+
+    to: str = pydantic.Field()
+    """
+    The recipient's number.
+    """
+
+    country: str = pydantic.Field()
+    """
+    The recipient's country (ISO 3166-1 alpha-2).
+    """
+
+    segments: int = pydantic.Field()
+    """
+    Segments the body takes (what is billed).
+    """
+
+    tags: typing.List[SmsWebhookEventDataTagsItem] = pydantic.Field()
+    """
+    Your tags on the message.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it was sent from a sandbox environment: simulated.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
+
+    traceparent: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Only for a message sent with a W3C `traceparent` header: that trace context (normalized to version `00`), also sent as this request's `traceparent` header, so handling the event joins the sender's trace.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

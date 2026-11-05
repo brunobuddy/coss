@@ -14,7 +14,11 @@ class TrackingSettings(UniversalBaseModel):
     """
 
     object: TrackingSettingsObject
-    default: typing.Optional[TrackingRule] = None
+    default: typing.Optional[TrackingRule] = pydantic.Field(default=None)
+    """
+    The environment's tracking default. `null`: none is set.
+    """
+
     categories: typing.List[TrackingRule] = pydantic.Field()
     """
     Category rules, by category name.

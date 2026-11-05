@@ -27,14 +27,22 @@ public final class EnvironmentOrganization {
 
     private final String apiVersion;
 
+    private final boolean hipaaMode;
+
     private final Map<String, Object> additionalProperties;
 
     private EnvironmentOrganization(
-            String id, String name, String slug, String apiVersion, Map<String, Object> additionalProperties) {
+            String id,
+            String name,
+            String slug,
+            String apiVersion,
+            boolean hipaaMode,
+            Map<String, Object> additionalProperties) {
         this.id = id;
         this.name = name;
         this.slug = slug;
         this.apiVersion = apiVersion;
+        this.hipaaMode = hipaaMode;
         this.additionalProperties = additionalProperties;
     }
 
@@ -70,6 +78,14 @@ public final class EnvironmentOrganization {
         return apiVersion;
     }
 
+    /**
+     * @return Whether the organization is in HIPAA mode, which refuses some requests with <code>hipaa_mode_restriction</code>. Its compliance settings page lists what the mode changes.
+     */
+    @JsonProperty("hipaa_mode")
+    public boolean getHipaaMode() {
+        return hipaaMode;
+    }
+
     @java.lang.Override
     public boolean equals(Object other) {
         if (this == other) return true;
@@ -85,12 +101,13 @@ public final class EnvironmentOrganization {
         return id.equals(other.id)
                 && name.equals(other.name)
                 && slug.equals(other.slug)
-                && apiVersion.equals(other.apiVersion);
+                && apiVersion.equals(other.apiVersion)
+                && hipaaMode == other.hipaaMode;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.id, this.name, this.slug, this.apiVersion);
+        return Objects.hash(this.id, this.name, this.slug, this.apiVersion, this.hipaaMode);
     }
 
     @java.lang.Override
@@ -129,7 +146,14 @@ public final class EnvironmentOrganization {
         /**
          * <p>The organization's pinned API version: what requests without a <code>Coss-Version</code> header and new webhook endpoints get.</p>
          */
-        _FinalStage apiVersion(@NotNull String apiVersion);
+        HipaaModeStage apiVersion(@NotNull String apiVersion);
+    }
+
+    public interface HipaaModeStage {
+        /**
+         * <p>Whether the organization is in HIPAA mode, which refuses some requests with <code>hipaa_mode_restriction</code>. Its compliance settings page lists what the mode changes.</p>
+         */
+        _FinalStage hipaaMode(boolean hipaaMode);
     }
 
     public interface _FinalStage {
@@ -141,7 +165,8 @@ public final class EnvironmentOrganization {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements IdStage, NameStage, SlugStage, ApiVersionStage, _FinalStage {
+    public static final class Builder
+            implements IdStage, NameStage, SlugStage, ApiVersionStage, HipaaModeStage, _FinalStage {
         private String id;
 
         private String name;
@@ -149,6 +174,8 @@ public final class EnvironmentOrganization {
         private String slug;
 
         private String apiVersion;
+
+        private boolean hipaaMode;
 
         @JsonAnySetter
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -161,6 +188,7 @@ public final class EnvironmentOrganization {
             name(other.getName());
             slug(other.getSlug());
             apiVersion(other.getApiVersion());
+            hipaaMode(other.getHipaaMode());
             return this;
         }
 
@@ -203,14 +231,25 @@ public final class EnvironmentOrganization {
          */
         @java.lang.Override
         @JsonSetter("api_version")
-        public _FinalStage apiVersion(@NotNull String apiVersion) {
+        public HipaaModeStage apiVersion(@NotNull String apiVersion) {
             this.apiVersion = Objects.requireNonNull(apiVersion, "apiVersion must not be null");
+            return this;
+        }
+
+        /**
+         * <p>Whether the organization is in HIPAA mode, which refuses some requests with <code>hipaa_mode_restriction</code>. Its compliance settings page lists what the mode changes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        @JsonSetter("hipaa_mode")
+        public _FinalStage hipaaMode(boolean hipaaMode) {
+            this.hipaaMode = hipaaMode;
             return this;
         }
 
         @java.lang.Override
         public EnvironmentOrganization build() {
-            return new EnvironmentOrganization(id, name, slug, apiVersion, additionalProperties);
+            return new EnvironmentOrganization(id, name, slug, apiVersion, hipaaMode, additionalProperties);
         }
 
         @java.lang.Override

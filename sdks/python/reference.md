@@ -2561,6 +2561,20 @@ client.sms.send(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message sent from the API key's environment, with its current status.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -3077,6 +3091,20 @@ client.verify.check(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A verification's status and destination. Its code is never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -3347,7 +3375,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -3395,7 +3423,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**spam:** `typing.Optional[CreateFormRequestSpam]` 
+**spam:** `typing.Optional[CreateFormRequestSpam]` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -3403,7 +3431,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**submitter:** `typing.Optional[CreateFormRequestSubmitter]` 
+**submitter:** `typing.Optional[CreateFormRequestSubmitter]` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -3411,7 +3439,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**notifications:** `typing.Optional[CreateFormRequestNotifications]` 
+**notifications:** `typing.Optional[CreateFormRequestNotifications]` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -3419,7 +3447,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**contacts:** `typing.Optional[CreateFormRequestContacts]` 
+**contacts:** `typing.Optional[CreateFormRequestContacts]` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -3427,7 +3455,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**files:** `typing.Optional[CreateFormRequestFiles]` 
+**files:** `typing.Optional[CreateFormRequestFiles]` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -3435,7 +3463,7 @@ client.forms.create(
 <dl>
 <dd>
 
-**hosted:** `typing.Optional[CreateFormRequestHosted]` 
+**hosted:** `typing.Optional[CreateFormRequestHosted]` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -3458,6 +3486,20 @@ client.forms.create(
 <details><summary><code>client.forms.<a href="src/coss/forms/client.py">get</a>(...) -> Form</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -3655,7 +3697,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Your name for the form, shown in the dashboard and in notifications.
     
 </dd>
 </dl>
@@ -3703,7 +3745,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**spam:** `typing.Optional[UpdateFormRequestSpam]` 
+**spam:** `typing.Optional[UpdateFormRequestSpam]` — How submissions are screened. Only the fields given change.
     
 </dd>
 </dl>
@@ -3711,7 +3753,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**submitter:** `typing.Optional[UpdateFormRequestSubmitter]` 
+**submitter:** `typing.Optional[UpdateFormRequestSubmitter]` — Who the submitter is, and whether they must confirm by email. Only the fields given change.
     
 </dd>
 </dl>
@@ -3719,7 +3761,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**notifications:** `typing.Optional[UpdateFormRequestNotifications]` 
+**notifications:** `typing.Optional[UpdateFormRequestNotifications]` — Emails about accepted submissions. Only the fields given change.
     
 </dd>
 </dl>
@@ -3727,7 +3769,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**contacts:** `typing.Optional[UpdateFormRequestContacts]` 
+**contacts:** `typing.Optional[UpdateFormRequestContacts]` — Turning submissions into contacts. Only the fields given change.
     
 </dd>
 </dl>
@@ -3735,7 +3777,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**files:** `typing.Optional[UpdateFormRequestFiles]` 
+**files:** `typing.Optional[UpdateFormRequestFiles]` — File uploads. Only the fields given change.
     
 </dd>
 </dl>
@@ -3743,7 +3785,7 @@ client.forms.update(
 <dl>
 <dd>
 
-**hosted:** `typing.Optional[UpdateFormRequestHosted]` 
+**hosted:** `typing.Optional[UpdateFormRequestHosted]` — The page coss.com can serve for this form. Only the fields given change.
     
 </dd>
 </dl>
@@ -4007,6 +4049,20 @@ client.logs.list()
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One line of the API key's environment log.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -4201,6 +4257,20 @@ client.audit_events.list()
 <details><summary><code>client.audit_events.<a href="src/coss/audit_events/client.py">get</a>(...) -> AuditEvent</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One event of the organization's audit log.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -4500,7 +4570,7 @@ client.log_drains.list()
 <dl>
 <dd>
 
-Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed NDJSON batches of up to 500 lines or 1 MB, usually within seconds. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every batch with it (`verifyLogDrainBatch` in the SDK).
+Streams the environment's logs to a URL: every line `GET /v1/logs` returns (API requests, email events, webhook attempts) and the environment's audit events, posted as signed batches of up to 500 lines or 1 MB, usually within seconds. `format` picks the body: NDJSON for your own endpoint, or the intake API of Loki (Grafana Cloud), Datadog or an OTLP/HTTP collector, with `auth_header` carrying its key. Log drains belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox drains, and a `coss_live_…` key only production ones. The response carries the signing secret, which is returned only here: store it, and verify every NDJSON batch with it (`verifyLogDrainBatch` in the SDK).
 </dd>
 </dl>
 </dd>
@@ -4563,6 +4633,22 @@ client.log_drains.create(
 <dd>
 
 **sources:** `typing.Optional[typing.List[LogDrainSource]]` — What the drain forwards: `api` (requests made with the environment's API keys), `email` (email events), `webhook` (webhook delivery attempts) and `audit` (changes to the environment, from the organization's audit log). An empty array means every source, including ones added later. Defaults to every source.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**format:** `typing.Optional[CreateLogDrainRequestFormat]` — How batches are encoded. `ndjson`: one JSON object per line (`application/x-ndjson`), for your own endpoint. `loki`: Loki's push API (`/loki/api/v1/push`, Grafana Cloud Logs). `datadog`: Datadog's log intake (`/api/v2/logs`). `otlp`: OTLP/HTTP logs in JSON (`/v1/logs`, Grafana Cloud, Honeycomb, an OpenTelemetry Collector…). Defaults to `ndjson`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**auth_header:** `typing.Optional[LogDrainAuthHeader]` 
     
 </dd>
 </dl>
@@ -4740,7 +4826,7 @@ client.log_drains.delete(
 <dl>
 <dd>
 
-Changes the URL, description, sources or `enabled` flag. Omitted fields keep their current value, and the signing secret stays the same. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
+Changes the URL, description, sources, format, auth header or `enabled` flag. Omitted fields keep their current value (`auth_header: null` removes the header), and the signing secret stays the same. A batch being retried goes out as the drain is when it is retried. Disabling a drain drops the lines still waiting for it, and nothing is kept for it while it is disabled; enabling it again (also after coss.com disabled it for failing) sends lines logged from then on.
 </dd>
 </dl>
 </dd>
@@ -4814,7 +4900,23 @@ client.log_drains.update(
 <dl>
 <dd>
 
-**enabled:** `typing.Optional[bool]` 
+**format:** `typing.Optional[LogDrainFormat]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**auth_header:** `typing.Optional[LogDrainAuthHeader]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**enabled:** `typing.Optional[bool]` — `false` disables it, and `true` enables it again.
     
 </dd>
 </dl>
@@ -5016,6 +5118,20 @@ client.inboxes.create(
 <details><summary><code>client.inboxes.<a href="src/coss/inboxes/client.py">get</a>(...) -> Inbox</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One inbox of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -5240,7 +5356,7 @@ client.inboxes.update(
 <dl>
 <dd>
 
-Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
+Assesses a sign-up, login or other event in the API key's environment and returns a decision (`allow`, `review` or `block`) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in `degraded`. Call it from your server, never from the browser, and treat errors as `allow` (fail open) so an outage never locks your users out. `review` decisions also fire a `risk.assessment.review` webhook. Live assessments are billed (`risk.assessments`; plans include some every month) unless they end in `block`. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (`usage_limit` in `degraded`); they never fail over billing. Sandbox (`coss_test_…`) keys accept documented test addresses (`192.0.2.x`, `@disposable.test`, `@undeliverable.test`).
 </dd>
 </dl>
 </dd>
@@ -5764,7 +5880,7 @@ client.risk.check_phone(
 <dl>
 <dd>
 
-Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
+Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (`risk.content_checks`; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: `[coss-test:phishing]` scores 0.99, `[coss-test:spam:0.4]` exactly 0.4, everything else 0.01.
 </dd>
 </dl>
 </dd>
@@ -6904,7 +7020,7 @@ client.email.templates.create(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Your note about it, shown in the dashboard.
     
 </dd>
 </dl>
@@ -7164,7 +7280,7 @@ client.email.templates.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Shown in the dashboard.
     
 </dd>
 </dl>
@@ -7180,7 +7296,7 @@ client.email.templates.update(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -8131,6 +8247,20 @@ client.email.suppressions.export()
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -8651,7 +8781,7 @@ client.email.subaccounts.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Your name for it.
     
 </dd>
 </dl>
@@ -9538,7 +9668,7 @@ client.email.contacts.upsert(
 <dl>
 <dd>
 
-**first_name:** `typing.Optional[str]` 
+**first_name:** `typing.Optional[str]` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -9546,7 +9676,7 @@ client.email.contacts.upsert(
 <dl>
 <dd>
 
-**last_name:** `typing.Optional[str]` 
+**last_name:** `typing.Optional[str]` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -9827,7 +9957,7 @@ client.email.contacts.import_(
 <dl>
 <dd>
 
-**contacts:** `typing.List[ImportContactsRequestContactsItem]` 
+**contacts:** `typing.List[ImportContactsRequestContactsItem]` — The contacts to create or update, at most 1,000.
     
 </dd>
 </dl>
@@ -9937,6 +10067,20 @@ client.email.contacts.export()
 <details><summary><code>client.email.contacts.<a href="src/coss/email/contacts/client.py">get</a>(...) -> Contact</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10131,7 +10275,7 @@ client.email.contacts.update(
 <dl>
 <dd>
 
-**first_name:** `typing.Optional[str]` 
+**first_name:** `typing.Optional[str]` — Their first name. `null` removes it.
     
 </dd>
 </dl>
@@ -10139,7 +10283,7 @@ client.email.contacts.update(
 <dl>
 <dd>
 
-**last_name:** `typing.Optional[str]` 
+**last_name:** `typing.Optional[str]` — Their last name. `null` removes it.
     
 </dd>
 </dl>
@@ -10324,7 +10468,7 @@ client.email.contacts.update_topics(
 <dl>
 <dd>
 
-**topics:** `typing.List[UpdateContactTopicsRequestTopicsItem]` 
+**topics:** `typing.List[UpdateContactTopicsRequestTopicsItem]` — The contact's choices per topic. Topics not listed keep theirs.
     
 </dd>
 </dl>
@@ -10549,7 +10693,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**reply_to:** `typing.Optional[typing.List[str]]` 
+**reply_to:** `typing.Optional[typing.List[str]]` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -10573,7 +10717,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**text:** `typing.Optional[str]` 
+**text:** `typing.Optional[str]` — The plain text part. Takes the same placeholders as `html`.
     
 </dd>
 </dl>
@@ -10581,7 +10725,7 @@ client.email.broadcasts.create(
 <dl>
 <dd>
 
-**tracking:** `typing.Optional[CreateBroadcastRequestTracking]` 
+**tracking:** `typing.Optional[CreateBroadcastRequestTracking]` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -10628,6 +10772,20 @@ client.email.broadcasts.create(
 <details><summary><code>client.email.broadcasts.<a href="src/coss/email/broadcasts/client.py">get</a>(...) -> Broadcast</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One broadcast of the API key's environment, with its status and stats.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -10827,7 +10985,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**audience_id:** `typing.Optional[str]` 
+**audience_id:** `typing.Optional[str]` — Send to this audience. `null` clears it.
     
 </dd>
 </dl>
@@ -10835,7 +10993,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**segment_id:** `typing.Optional[str]` 
+**segment_id:** `typing.Optional[str]` — Send to this segment. `null` clears it.
     
 </dd>
 </dl>
@@ -10843,7 +11001,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**topic:** `typing.Optional[str]` 
+**topic:** `typing.Optional[str]` — The topic it's about (its key). `null` clears it.
     
 </dd>
 </dl>
@@ -10859,7 +11017,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**reply_to:** `typing.Optional[typing.List[str]]` 
+**reply_to:** `typing.Optional[typing.List[str]]` — Addresses replies go to.
     
 </dd>
 </dl>
@@ -10875,7 +11033,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**preview_text:** `typing.Optional[str]` 
+**preview_text:** `typing.Optional[str]` — The inbox preview line. `null` removes it.
     
 </dd>
 </dl>
@@ -10883,7 +11041,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**html:** `typing.Optional[str]` 
+**html:** `typing.Optional[str]` — The HTML part. `null` removes it, if `text` remains.
     
 </dd>
 </dl>
@@ -10891,7 +11049,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**text:** `typing.Optional[str]` 
+**text:** `typing.Optional[str]` — The plain text part. `null` removes it, if `html` remains.
     
 </dd>
 </dl>
@@ -10899,7 +11057,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**tracking:** `typing.Optional[UpdateBroadcastRequestTracking]` 
+**tracking:** `typing.Optional[UpdateBroadcastRequestTracking]` — Which opens and clicks are tracked.
     
 </dd>
 </dl>
@@ -10907,7 +11065,7 @@ client.email.broadcasts.update(
 <dl>
 <dd>
 
-**rate_per_second:** `typing.Optional[int]` 
+**rate_per_second:** `typing.Optional[int]` — Recipients per second. `null`: the plan's marketing rate.
     
 </dd>
 </dl>
@@ -11293,7 +11451,7 @@ client.email.broadcasts.test(
 <dl>
 <dd>
 
-**to:** `typing.List[str]` 
+**to:** `typing.List[str]` — Who gets the test, at most 5 addresses.
     
 </dd>
 </dl>
@@ -11494,6 +11652,20 @@ client.email.audiences.list()
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -11529,7 +11701,7 @@ client.email.audiences.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -11552,6 +11724,20 @@ client.email.audiences.create(
 <details><summary><code>client.email.audiences.<a href="src/coss/email/audiences/client.py">get</a>(...) -> Audience</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One audience of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -11685,6 +11871,20 @@ client.email.audiences.remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Renames an audience. Its members stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -11729,7 +11929,7 @@ client.email.audiences.update(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the list, unique in the environment.
     
 </dd>
 </dl>
@@ -11926,6 +12126,20 @@ client.email.audiences.add_contacts(
 <details><summary><code>client.email.audiences.<a href="src/coss/email/audiences/client.py">remove_contact</a>(...) -> RemoveContactAudiencesResponse</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Takes a contact out of the audience. The contact itself stays.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12149,7 +12363,7 @@ client.email.segments.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -12180,6 +12394,20 @@ client.email.segments.create(
 <details><summary><code>client.email.segments.<a href="src/coss/email/segments/client.py">get</a>(...) -> Segment</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One segment of the API key's environment, with its filter.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12240,6 +12468,20 @@ client.email.segments.get(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a segment. The contacts it matched stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12299,6 +12541,20 @@ client.email.segments.remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes a segment's name or filter. Only the fields given change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -12343,7 +12599,7 @@ client.email.segments.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Your name for the segment, unique in the environment.
     
 </dd>
 </dl>
@@ -12595,7 +12851,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**key:** `str` 
+**key:** `str` — The `category` of the emails about this topic. Can't change.
     
 </dd>
 </dl>
@@ -12603,7 +12859,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -12619,7 +12875,7 @@ client.email.topics.create(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -12658,6 +12914,20 @@ client.email.topics.create(
 <details><summary><code>client.email.topics.<a href="src/coss/email/topics/client.py">get</a>(...) -> Topic</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One topic of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -12849,7 +13119,7 @@ client.email.topics.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Shown in the preference center.
     
 </dd>
 </dl>
@@ -12857,7 +13127,7 @@ client.email.topics.update(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Shown in the preference center under its name. `null`: none.
     
 </dd>
 </dl>
@@ -13018,7 +13288,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**display_name:** `typing.Optional[str]` 
+**display_name:** `typing.Optional[str]` — The sender's name in the preference center. `null`: the organization's.
     
 </dd>
 </dl>
@@ -13026,7 +13296,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**mailing_address:** `typing.Optional[str]` 
+**mailing_address:** `typing.Optional[str]` — The postal address every marketing email carries (CAN-SPAM). Marketing emails can't be sent without one.
     
 </dd>
 </dl>
@@ -13034,7 +13304,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**double_opt_in_default:** `typing.Optional[bool]` 
+**double_opt_in_default:** `typing.Optional[bool]` — Whether contacts upserted without `double_opt_in` must confirm first.
     
 </dd>
 </dl>
@@ -13042,7 +13312,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**confirmation_from:** `typing.Optional[str]` 
+**confirmation_from:** `typing.Optional[str]` — The sender of confirmation emails (a verified domain's address for live keys).
     
 </dd>
 </dl>
@@ -13050,7 +13320,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**confirmation_subject:** `typing.Optional[str]` 
+**confirmation_subject:** `typing.Optional[str]` — `null`: coss.com's default.
     
 </dd>
 </dl>
@@ -13058,7 +13328,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**confirmation_html:** `typing.Optional[str]` 
+**confirmation_html:** `typing.Optional[str]` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -13066,7 +13336,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**confirmation_text:** `typing.Optional[str]` 
+**confirmation_text:** `typing.Optional[str]` — `null`: coss.com's default. Must contain `{{{confirmation_url}}}`.
     
 </dd>
 </dl>
@@ -13074,7 +13344,7 @@ client.email.marketing_settings.update(
 <dl>
 <dd>
 
-**confirmed_redirect_url:** `typing.Optional[str]` 
+**confirmed_redirect_url:** `typing.Optional[str]` — Where a confirmed contact is sent, an https URL. `null`: coss.com's own page.
     
 </dd>
 </dl>
@@ -13657,7 +13927,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**key:** `str` 
+**key:** `str` — How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
     
 </dd>
 </dl>
@@ -13665,7 +13935,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**type:** `CreateContactPropertyRequestType` 
+**type:** `CreateContactPropertyRequestType` — What values it takes. `date` values are ISO 8601 strings. Can't change.
     
 </dd>
 </dl>
@@ -13673,7 +13943,7 @@ client.email.contacts.properties.create(
 <dl>
 <dd>
 
-**fallback:** `typing.Optional[CreateContactPropertyRequestFallback]` 
+**fallback:** `typing.Optional[CreateContactPropertyRequestFallback]` — Used in templates for contacts without a value.
     
 </dd>
 </dl>
@@ -13696,6 +13966,20 @@ client.email.contacts.properties.create(
 <details><summary><code>client.email.contacts.properties.<a href="src/coss/email/contacts/properties/client.py">get</a>(...) -> ContactProperty</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One contact property of the API key's environment: its key, type and fallback.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -13829,6 +14113,20 @@ client.email.contacts.properties.remove(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the value used when a contact has none for this property. Its key and type can't change.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -13873,7 +14171,7 @@ client.email.contacts.properties.update(
 <dl>
 <dd>
 
-**fallback:** `typing.Optional[UpdateContactPropertyRequestFallback]` 
+**fallback:** `typing.Optional[UpdateContactPropertyRequestFallback]` — Used in templates for contacts without a value. `null` removes it.
     
 </dd>
 </dl>
@@ -14248,6 +14546,20 @@ client.forms.submissions.list(
 <details><summary><code>client.forms.submissions.<a href="src/coss/forms/submissions/client.py">get</a>(...) -> FormSubmission</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One submission of the form, with its data, files and Risk's assessment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -14717,7 +15029,7 @@ client.hooks.event_types.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
     
 </dd>
 </dl>
@@ -14725,7 +15037,7 @@ client.hooks.event_types.create(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — What this event means, shown to your users.
     
 </dd>
 </dl>
@@ -14969,7 +15281,7 @@ client.hooks.event_types.update(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — What this event means, shown to your users. `null` removes it.
     
 </dd>
 </dl>
@@ -15394,7 +15706,7 @@ client.hooks.applications.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Shown to the application's users in the portal.
     
 </dd>
 </dl>
@@ -15577,7 +15889,7 @@ client.hooks.endpoints.create(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Your note about it.
     
 </dd>
 </dl>
@@ -15617,7 +15929,7 @@ client.hooks.endpoints.create(
 <dl>
 <dd>
 
-**enabled:** `typing.Optional[bool]` 
+**enabled:** `typing.Optional[bool]` — Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
     
 </dd>
 </dl>
@@ -15872,7 +16184,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**url:** `typing.Optional[str]` 
+**url:** `typing.Optional[str]` — Where deliveries are sent.
     
 </dd>
 </dl>
@@ -15880,7 +16192,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**description:** `typing.Optional[str]` 
+**description:** `typing.Optional[str]` — Your note about it. `null` removes it.
     
 </dd>
 </dl>
@@ -15912,7 +16224,7 @@ client.hooks.endpoints.update(
 <dl>
 <dd>
 
-**enabled:** `typing.Optional[bool]` 
+**enabled:** `typing.Optional[bool]` — `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
     
 </dd>
 </dl>
@@ -16359,7 +16671,7 @@ client.hooks.endpoints.send_test(
 <dl>
 <dd>
 
-**event_type:** `str` 
+**event_type:** `str` — The event type to send as.
     
 </dd>
 </dl>
@@ -16603,7 +16915,7 @@ client.hooks.messages.list(
 <dl>
 <dd>
 
-Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). Live sends are refused while the organization is suspended (`account_suspended`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
+Queues a message to the application: coss.com delivers it to each of its enabled endpoints subscribed to `event_type` within seconds, signed with each endpoint's secret, and retries failures with backoff for about a day. Each request's `webhook-id` header is the message's id. Counts against the send quota once per endpoint it goes to (at least once). A live message is billed once, whatever its fan-out; retries and sandbox are free. Live sends are refused while the organization is suspended (`account_suspended`), on a billing hold (`billing_hold`), over a budget (`budget_exceeded`) or past Free's monthly messages (`usage_limit_exceeded`). Hooks resources belong to the API key's own environment: a `coss_test_…` key only ever sees sandbox ones, a `coss_live_…` key only production ones.
 </dd>
 </dl>
 </dd>
@@ -17614,7 +17926,7 @@ client.inboxes.messages.send(
 <dl>
 <dd>
 
-**to:** `SendInboxMessageRequestTo` 
+**to:** `SendInboxMessageRequestTo` — Who it goes to.
     
 </dd>
 </dl>
@@ -17638,7 +17950,7 @@ client.inboxes.messages.send(
 <dl>
 <dd>
 
-**cc:** `typing.Optional[SendInboxMessageRequestCc]` 
+**cc:** `typing.Optional[SendInboxMessageRequestCc]` — Who it's copied to.
     
 </dd>
 </dl>
@@ -17646,7 +17958,7 @@ client.inboxes.messages.send(
 <dl>
 <dd>
 
-**bcc:** `typing.Optional[SendInboxMessageRequestBcc]` 
+**bcc:** `typing.Optional[SendInboxMessageRequestBcc]` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -17678,7 +17990,7 @@ client.inboxes.messages.send(
 <dl>
 <dd>
 
-**tags:** `typing.Optional[typing.List[SendInboxMessageRequestTagsItem]]` 
+**tags:** `typing.Optional[typing.List[SendInboxMessageRequestTagsItem]]` — Your tags on the email.
     
 </dd>
 </dl>
@@ -17959,7 +18271,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**cc:** `typing.Optional[ReplyInboxMessageRequestCc]` 
+**cc:** `typing.Optional[ReplyInboxMessageRequestCc]` — Who it's copied to.
     
 </dd>
 </dl>
@@ -17967,7 +18279,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**bcc:** `typing.Optional[ReplyInboxMessageRequestBcc]` 
+**bcc:** `typing.Optional[ReplyInboxMessageRequestBcc]` — Who it's blind copied to.
     
 </dd>
 </dl>
@@ -17999,7 +18311,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-**tags:** `typing.Optional[typing.List[ReplyInboxMessageRequestTagsItem]]` 
+**tags:** `typing.Optional[typing.List[ReplyInboxMessageRequestTagsItem]]` — Your tags on the email.
     
 </dd>
 </dl>
@@ -18032,7 +18344,7 @@ client.inboxes.messages.reply(
 <dl>
 <dd>
 
-The drain's delivery log, newest first: one batch per NDJSON request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
+The drain's delivery log, newest first: one batch per request, with every HTTP attempt. A failing batch is retried with backoff for about a day (10 attempts); if every attempt fails, the drain is disabled. Pass the last `id` as `after` to get the next page while `has_more` is true.
 </dd>
 </dl>
 </dd>
@@ -18436,7 +18748,7 @@ client.risk.lists.list()
 <dl>
 <dd>
 
-**list:** `typing.Optional[RiskList]` 
+**list:** `typing.Optional[RiskList]` — Which list: `allow` or `block`.
     
 </dd>
 </dl>
@@ -18552,7 +18864,7 @@ client.risk.lists.add(
 <dl>
 <dd>
 
-**value:** `str` 
+**value:** `str` — What to match: the address, domain, IP, CIDR range, ASN or other value of its `type`.
     
 </dd>
 </dl>
@@ -18560,7 +18872,7 @@ client.risk.lists.add(
 <dl>
 <dd>
 
-**note:** `typing.Optional[str]` 
+**note:** `typing.Optional[str]` — Your note about it.
     
 </dd>
 </dl>
@@ -18591,6 +18903,20 @@ client.risk.lists.add(
 <details><summary><code>client.risk.lists.<a href="src/coss/risk/lists/client.py">get</a>(...) -> RiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One allow or block list entry of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -18650,6 +18976,20 @@ client.risk.lists.get(
 <details><summary><code>client.risk.lists.<a href="src/coss/risk/lists/client.py">remove</a>(...) -> DeletedRiskListEntry</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes an entry from its list. Later assessments no longer see it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -18903,7 +19243,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**review_threshold:** `typing.Optional[float]` 
+**review_threshold:** `typing.Optional[float]` — Scores at or above it are `review`.
     
 </dd>
 </dl>
@@ -18911,7 +19251,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**block_threshold:** `typing.Optional[float]` 
+**block_threshold:** `typing.Optional[float]` — Scores at or above it are `block`.
     
 </dd>
 </dl>
@@ -18919,7 +19259,7 @@ client.risk.settings.update(
 <dl>
 <dd>
 
-**disabled_reasons:** `typing.Optional[typing.List[UpdateRiskSettingsRequestDisabledReasonsItem]]` 
+**disabled_reasons:** `typing.Optional[typing.List[UpdateRiskSettingsRequestDisabledReasonsItem]]` — Reasons that never fire in this environment. Replaces the list.
     
 </dd>
 </dl>
@@ -19096,7 +19436,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the rule, returned with reasons when it decides.
     
 </dd>
 </dl>
@@ -19104,7 +19444,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**conditions:** `typing.List[RiskRuleCondition]` 
+**conditions:** `typing.List[RiskRuleCondition]` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -19120,7 +19460,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**enabled:** `typing.Optional[bool]` 
+**enabled:** `typing.Optional[bool]` — Default `true`.
     
 </dd>
 </dl>
@@ -19136,7 +19476,7 @@ client.risk.rules.create(
 <dl>
 <dd>
 
-**events:** `typing.Optional[typing.List[RiskEvent]]` 
+**events:** `typing.Optional[typing.List[RiskEvent]]` — Events it applies to. Default: every event.
     
 </dd>
 </dl>
@@ -19167,6 +19507,20 @@ client.risk.rules.create(
 <details><summary><code>client.risk.rules.<a href="src/coss/risk/rules/client.py">get</a>(...) -> RiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One rule of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -19226,6 +19580,20 @@ client.risk.rules.get(
 <details><summary><code>client.risk.rules.<a href="src/coss/risk/rules/client.py">delete</a>(...) -> DeletedRiskRule</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Deletes a rule. Later assessments no longer apply it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -19344,7 +19712,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Your name for the rule.
     
 </dd>
 </dl>
@@ -19352,7 +19720,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**enabled:** `typing.Optional[bool]` 
+**enabled:** `typing.Optional[bool]` — `false` keeps it, and stops applying it.
     
 </dd>
 </dl>
@@ -19360,7 +19728,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**position:** `typing.Optional[int]` 
+**position:** `typing.Optional[int]` — Rules are tried in ascending order.
     
 </dd>
 </dl>
@@ -19368,7 +19736,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**events:** `typing.Optional[typing.List[RiskEvent]]` 
+**events:** `typing.Optional[typing.List[RiskEvent]]` — Events it applies to. Empty: every event.
     
 </dd>
 </dl>
@@ -19376,7 +19744,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**match:** `typing.Optional[UpdateRiskRuleRequestMatch]` 
+**match:** `typing.Optional[UpdateRiskRuleRequestMatch]` — `all`: every condition must hold. `any`: one is enough.
     
 </dd>
 </dl>
@@ -19384,7 +19752,7 @@ client.risk.rules.update(
 <dl>
 <dd>
 
-**conditions:** `typing.Optional[typing.List[RiskRuleCondition]]` 
+**conditions:** `typing.Optional[typing.List[RiskRuleCondition]]` — What must hold, by `match`.
     
 </dd>
 </dl>
@@ -19587,6 +19955,20 @@ client.risk.limit_buckets.create(
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -19778,6 +20160,102 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
+**limit:** `typing.Optional[int]` — Tokens added per `period_seconds`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**period_seconds:** `typing.Optional[int]` — How many seconds `limit` tokens take to be added.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**burst:** `typing.Optional[int]` — The bucket's size: how many requests a key can make at once.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**on_failure:** `typing.Optional[UpdateRiskLimitBucketRequestOnFailure]` — The answer while coss.com can't count: `allow` or `deny`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Hosts
+<details><summary><code>client.scheduling.hosts.<a href="src/coss/scheduling/hosts/client.py">list</a>(...) -> SchedulingHostList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's hosts, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.hosts.list()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
 **limit:** `typing.Optional[int]` 
     
 </dd>
@@ -19786,7 +20264,7 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**period_seconds:** `typing.Optional[int]` 
+**after:** `typing.Optional[str]` — The last id of the previous page.
     
 </dd>
 </dl>
@@ -19794,7 +20272,86 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**burst:** `typing.Optional[int]` 
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="src/coss/scheduling/hosts/client.py">create</a>(...) -> SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A person who can be booked: one of your users, such as a doctor or a tutor.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingHostLocation_InPerson
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.hosts.create(
+    uid="doctor_482",
+    name="Dr. Ana Reyes",
+    email="ana@example.com",
+    time_zone="America/New_York",
+    attributes={
+        "licensed_in": [
+            "NY",
+            "NJ"
+        ]
+    },
+    locations=[
+        SchedulingHostLocation_InPerson(
+            address="12 Main St, New York, NY",
+        )
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**name:** `str` — The host's name.
     
 </dd>
 </dl>
@@ -19802,7 +20359,5167 @@ client.risk.limit_buckets.update(
 <dl>
 <dd>
 
-**on_failure:** `typing.Optional[UpdateRiskLimitBucketRequestOnFailure]` 
+**time_zone:** `str` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `typing.Optional[str]` — Your own id for this host, unique in the environment.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email:** `typing.Optional[str]` — Where this host's notifications go. Not an identity, and need not be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**phone:** `typing.Optional[str]` — Where this host's SMS reminders go, in E.164.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_account:** `typing.Optional[str]` — The mailbox a calendar delegation connects for this host, when it isn't `email` or the delegation doesn't match on email. In Microsoft 365, their user principal name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locale:** `typing.Optional[str]` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, CreateHostRequestAttributesValue]]` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `typing.Optional[typing.List[SchedulingHostLocation]]` — This host's own office, meeting link and phone number. An event type's location that leaves its value blank uses them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="src/coss/scheduling/hosts/client.py">get</a>(...) -> SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.hosts.get(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="src/coss/scheduling/hosts/client.py">remove</a>(...) -> DeletedSchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes the host and its schedules and calendars. Refused while bookings are still to come (`host_has_live_bookings`): cancel them, or set the host's status to `disabled`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.hosts.remove(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.hosts.<a href="src/coss/scheduling/hosts/client.py">update</a>(...) -> SchedulingHost</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. A `disabled` host keeps its bookings but gets no new ones.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.hosts.update(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    status="disabled",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `typing.Optional[str]` — Your own id for this host, unique in the environment.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**name:** `typing.Optional[str]` — The host's name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email:** `typing.Optional[str]` — Where this host's notifications go. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**phone:** `typing.Optional[str]` — Where this host's SMS reminders go, in E.164. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_account:** `typing.Optional[str]` — Moves the host's delegated calendar to this mailbox. Refused while they have upcoming bookings or holds.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**time_zone:** `typing.Optional[str]` — An IANA time zone name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locale:** `typing.Optional[str]` — What this host's notifications are written in, such as `de`. Default: English. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, UpdateHostRequestAttributesValue]]` — What pools filter hosts by, such as `{ "licensed_in": ["CA", "NY"], "language": "es" }`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `typing.Optional[typing.List[SchedulingHostLocation]]` — Replaces this host's own locations. Existing bookings keep the location they have.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[UpdateHostRequestStatus]` — A `disabled` host isn't offered. Its existing bookings stay.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Schedules
+<details><summary><code>client.scheduling.schedules.<a href="src/coss/scheduling/schedules/client.py">list</a>(...) -> SchedulingScheduleList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+All of the host's schedules, oldest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.schedules.list(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="src/coss/scheduling/schedules/client.py">create</a>(...) -> SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A host's weekly hours and date overrides, in local time. The first one is the host's default.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingWeeklyRule, SchedulingScheduleOverride, SchedulingScheduleOverrideRangesItem
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.schedules.create(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    name="Clinic hours",
+    rules=[
+        SchedulingWeeklyRule(
+            days=[
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            start="09:00",
+            end="17:00",
+        )
+    ],
+    overrides=[
+        SchedulingScheduleOverride(
+            date="2027-12-24",
+            ranges=[
+                SchedulingScheduleOverrideRangesItem(
+                    start="start",
+                    end="end",
+                )
+            ],
+        )
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="src/coss/scheduling/schedules/client.py">get</a>(...) -> SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One of the host's schedules.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.schedules.get(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    schedule_id="sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `str` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="src/coss/scheduling/schedules/client.py">update</a>(...) -> SchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Replaces its weekly rules, and its overrides when given. Existing bookings stay: a schedule only decides what's offered next.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingWeeklyRule, SchedulingScheduleOverride, SchedulingScheduleOverrideRangesItem
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.schedules.update(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    schedule_id="sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    name="Clinic hours",
+    rules=[
+        SchedulingWeeklyRule(
+            days=[
+                1,
+                2,
+                3,
+                4,
+                5
+            ],
+            start="09:00",
+            end="17:00",
+        )
+    ],
+    overrides=[
+        SchedulingScheduleOverride(
+            date="2027-12-24",
+            ranges=[
+                SchedulingScheduleOverrideRangesItem(
+                    start="start",
+                    end="end",
+                )
+            ],
+        )
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `str` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `UpsertScheduleRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.schedules.<a href="src/coss/scheduling/schedules/client.py">remove</a>(...) -> DeletedSchedulingSchedule</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refused for the host's default schedule.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.schedules.remove(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    schedule_id="sched_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**schedule_id:** `str` — The schedule's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling EventTypes
+<details><summary><code>client.scheduling.event_types.<a href="src/coss/scheduling/event_types/client.py">list</a>(...) -> SchedulingEventTypeList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's event types, newest first.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.event_types.list()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `typing.Optional[str]` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="src/coss/scheduling/event_types/client.py">create</a>(...) -> SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What can be booked: `one_on_one` with one host, `pool` for any free host, `collective` when every required host must be free, or `group` for a session with seats.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingEventTypeHostInput
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.event_types.create(
+    kind="one_on_one",
+    title="Initial consultation",
+    duration_minutes=30,
+    buffer_after_minutes=10,
+    min_notice_minutes=120,
+    hosts=[
+        SchedulingEventTypeHostInput(
+            host="doctor_482",
+        )
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**title:** `str` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `int` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `typing.Optional[str]` — Your own id for this event type, unique in the environment, accepted wherever its id is.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**kind:** `typing.Optional[CreateEventTypeRequestKind]` — Who a booking needs. `one_on_one`: one host. `pool`: any one of its hosts. `collective`: every `required` host, plus at most one `member`. `group`: one host, with attendees taking seats up to `capacity`. Fixed once created.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `typing.Optional[str]` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_options:** `typing.Optional[typing.List[int]]` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**step_minutes:** `typing.Optional[int]` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**grid_time_zone:** `typing.Optional[str]` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_before_minutes:** `typing.Optional[int]` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_after_minutes:** `typing.Optional[int]` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**min_notice_minutes:** `typing.Optional[int]` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**booking_window:** `typing.Optional[SchedulingBookingWindow]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limits:** `typing.Optional[typing.List[SchedulingLimit]]` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**capacity:** `typing.Optional[int]` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requires_approval:** `typing.Optional[bool]` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_ttl_minutes:** `typing.Optional[int]` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hold_ttl_seconds:** `typing.Optional[int]` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cancel_notice_minutes:** `typing.Optional[int]` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reschedule_notice_minutes:** `typing.Optional[int]` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_guests:** `typing.Optional[int]` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_active_bookings_per_attendee:** `typing.Optional[int]` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_calendar_details:** `typing.Optional[CreateEventTypeRequestHostCalendarDetails]` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**questions:** `typing.Optional[typing.List[SchedulingQuestion]]` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `typing.Optional[typing.List[SchedulingLocation]]` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_filter:** `typing.Optional[typing.Dict[str, typing.Optional[CreateEventTypeRequestHostFilterValue]]]` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `typing.Optional[typing.Dict[str, typing.Optional[CreateEventTypeRequestNotificationsValue]]]` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `typing.Optional[typing.List[SchedulingReminderInput]]` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `typing.Optional[typing.List[SchedulingEventTypeHostInput]]` — Who can be booked. `one_on_one` and `group` take one; `collective` needs at least one `required` host.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="src/coss/scheduling/event_types/client.py">get</a>(...) -> SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An event type by its id or your uid.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.event_types.get(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.event_types.<a href="src/coss/scheduling/event_types/client.py">update</a>(...) -> SchedulingEventType</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given. Existing bookings keep what they were booked with. Set `status` to `archived` to stop new bookings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.event_types.update(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    min_notice_minutes=240,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**uid:** `typing.Optional[str]` — Your own id for this event type. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**description:** `typing.Optional[str]` — Plain text about the event type, shown on hosted booking pages and never in emails. Links, and anything shaped like a domain, must be on your organization's verified domains or their subdomains, and use `https`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**title:** `typing.Optional[str]` — Shown to attendees and in emails. Host calendars show it only with `host_calendar_details: full`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `typing.Optional[int]` — How long a booking lasts by default, in minutes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_options:** `typing.Optional[typing.List[int]]` — Other lengths an attendee may choose, in minutes. Empty: only `duration_minutes`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**step_minutes:** `typing.Optional[int]` — How far apart slots start. Default: the duration.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**grid_time_zone:** `typing.Optional[str]` — The zone slots align in. Default: each host's own.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_before_minutes:** `typing.Optional[int]` — Minutes kept free before each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**buffer_after_minutes:** `typing.Optional[int]` — Minutes kept free after each booking. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**min_notice_minutes:** `typing.Optional[int]` — Slots starting sooner than this many minutes from now aren't offered. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**booking_window:** `typing.Optional[SchedulingBookingWindow]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limits:** `typing.Optional[typing.List[SchedulingLimit]]` — Caps on bookings per day or week. Default: none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**capacity:** `typing.Optional[int]` — Attendees per session. Required for, and only allowed on, `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**requires_approval:** `typing.Optional[bool]` — Bookings start as `pending_approval`, holding the time until approved or declined. Default: `false`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**approval_ttl_minutes:** `typing.Optional[int]` — How long a booking can wait for approval before it's declined, in minutes. Default: 1440.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hold_ttl_seconds:** `typing.Optional[int]` — How long a hold keeps its slot, in seconds. Default: 600.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**cancel_notice_minutes:** `typing.Optional[int]` — Attendees can't cancel closer to the start than this. API keys can.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reschedule_notice_minutes:** `typing.Optional[int]` — Attendees can't reschedule closer to the start than this. API keys can. Default: 0.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_guests:** `typing.Optional[int]` — How many people an attendee can add to a booking. Default: 0. Guests are emailed about it. Not on `group`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_active_bookings_per_attendee:** `typing.Optional[int]` — How many upcoming bookings of this event type one person can have at a time, known by `uid` or email. Default: `null`, no limit. Past this, booking answers `attendee_limit_reached`. Guests don't count, and each occurrence of a series does.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_calendar_details:** `typing.Optional[UpdateEventTypeRequestHostCalendarDetails]` — What hosts' calendars say about a booking. `neutral` (the default): a private event titled "Appointment". `full`: a private event with this title and the attendee's name, plus names, emails and phone numbers in its description, which go to the host's calendar provider. Never answers. Refused in HIPAA mode.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**questions:** `typing.Optional[typing.List[SchedulingQuestion]]` — What attendees are asked when booking. Keys must be unique.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**locations:** `typing.Optional[typing.List[SchedulingLocation]]` — Where bookings can meet. A browser only chooses among these. A `group` event type can't use `zoom`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host_filter:** `typing.Optional[typing.Dict[str, typing.Optional[UpdateEventTypeRequestHostFilterValue]]]` — Pool members also include active hosts matching all of these attributes.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `typing.Optional[typing.Dict[str, typing.Optional[UpdateEventTypeRequestNotificationsValue]]]` — Per event, overriding your settings for this event type.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `typing.Optional[typing.List[SchedulingReminderInput]]` — Replaces your settings' `reminders` for this event type. `null` inherits them; an empty list means none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[UpdateEventTypeRequestStatus]` — `archived` stops new bookings, and keeps existing ones.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `typing.Optional[typing.List[SchedulingEventTypeHostInput]]` — Replaces the assigned hosts. Removed hosts keep their existing bookings.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Slots
+<details><summary><code>client.scheduling.slots.<a href="src/coss/scheduling/slots/client.py">list</a>(...) -> SchedulingSlotList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Starts an attendee can book between `start` and `end` (at most 62 days), as UTC instants to show in their own time zone. A host whose calendar can't be read isn't offered.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.slots.list(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+    end="2027-01-04T15:00:00.000Z",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**end:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — Only this host's slots (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[str]` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.slots.<a href="src/coss/scheduling/slots/client.py">explain</a>(...) -> SchedulingSlotExplanation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Why one start can or can't be booked right now, host by host, decided the same way a booking is. For support and debugging: it says when a host is busy, so don't show it to attendees.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.slots.explain(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[str]` — A JSON object narrowing a pool, such as `{"licensed_in":"CA"}`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Availability
+<details><summary><code>client.scheduling.availability.<a href="src/coss/scheduling/availability/client.py">search</a>(...) -> SchedulingAvailabilitySearchResult</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+For "who's free" pages: each matching host's soonest slots, soonest first, across up to 500 hosts.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.availability.search(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T00:00:00.000Z",
+    end="2027-01-18T00:00:00.000Z",
+    attributes={
+        "licensed_in": "CA"
+    },
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**end:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, AvailabilitySearchRequestAttributesValue]]` — Only hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**hosts:** `typing.Optional[typing.List[str]]` — Only these hosts (ids or uids). Default: everyone the event type could offer.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**slots_per_host:** `typing.Optional[int]` — How many of each host's soonest slots to return.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[int]` — Hosts to return, soonest availability first.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Bookings
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">list</a>(...) -> SchedulingBookingList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's bookings, newest first. Answers aren't included.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.list(
+    start_after="2027-01-04T15:00:00.000Z",
+    start_before="2027-01-04T15:00:00.000Z",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `typing.Optional[str]` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**event_type:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**status:** `typing.Optional[ListBookingsRequestStatus]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee_uid:** `typing.Optional[str]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start_after:** `typing.Optional[str]` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start_before:** `typing.Optional[str]` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">create</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books a slot, or joins a group session. Without a `host`, a pool chooses fairly among those free. An event type that requires approval answers with a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingAttendeeInput
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.create(
+    idempotency_key="welcome-user-123",
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+    attendee=SchedulingAttendeeInput(
+        uid="patient_77",
+        name="Sam Lee",
+        email="sam@example.com",
+        time_zone="UTC",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**idempotency_key:** `typing.Optional[str]` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, CreateBookingRequestAttributesValue]]` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `typing.Optional[int]` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**guests:** `typing.Optional[typing.List[SchedulingGuestInput]]` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**answers:** `typing.Optional[typing.Dict[str, CreateBookingRequestAnswersValue]]` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `typing.Optional[CreateBookingRequestLocation]` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">get</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A booking with its attendees and their answers.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.get(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">reschedule</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Moves it to a new time, keeping its id. The old time stays booked if the new one isn't free.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.reschedule(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-05T15:00:00.000Z",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — The new start. The old time stays booked unless this one's free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — Move a pool booking to this host. Default: its current hosts.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">cancel</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Frees the time and removes the calendar event. A cancelled booking stays charged.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.cancel(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    reason="Feeling better",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reason:** `typing.Optional[str]` — Why it's being cancelled. Only retrieving this booking returns it: it's never in webhooks, logs or emails.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">events</a>(...) -> SchedulingBookingEventList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's happened to a booking, oldest first, and who did it. There's no personal data in here.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.events(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `typing.Optional[str]` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">approve</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Confirms a `pending_approval` booking.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.approve(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">decline</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Refuses a `pending_approval` booking and frees the time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.decline(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">notifications</a>(...) -> SchedulingBookingNotificationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+What's been queued for this booking and what became of it, newest first, including why something wasn't sent. It never says who it went to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.notifications(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**limit:** `typing.Optional[int]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**after:** `typing.Optional[str]` — The last id of the previous page.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">mark_no_show</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Records that the attendee didn't come, once the booking has started.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.mark_no_show(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.bookings.<a href="src/coss/scheduling/bookings/client.py">update_location</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Where it happens, such as the meeting link you made after the `scheduling.booking.confirmed` webhook.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingLocation_Link
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.bookings.update_location(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    location=SchedulingLocation_Link(
+        url="https://meet.example.com/abc",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `SchedulingLocation` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Holds
+<details><summary><code>client.scheduling.holds.<a href="src/coss/scheduling/holds/client.py">create</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Keeps a slot for a while (the event type's `hold_ttl_seconds`) so you can take payment, then confirm it. Answers with a `held` booking, which isn't charged and sends nothing.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingAttendeeInput
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.holds.create(
+    idempotency_key="welcome-user-123",
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+    attendee=SchedulingAttendeeInput(
+        uid="patient_77",
+        time_zone="UTC",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**start:** `str` — An ISO 8601 instant with an offset.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `SchedulingAttendeeInput` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**idempotency_key:** `typing.Optional[str]` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — A specific host (id or uid). Default: chosen fairly from those free.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, CreateHoldRequestAttributesValue]]` — Only choose among pool hosts matching all of these.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**duration_minutes:** `typing.Optional[int]` — One of the event type's `duration_options`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**guests:** `typing.Optional[typing.List[SchedulingGuestInput]]` — Up to the event type's `max_guests`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**answers:** `typing.Optional[typing.Dict[str, CreateHoldRequestAnswersValue]]` — Answers to the event type's questions. Stored encrypted, and returned only by retrieving the booking.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**location:** `typing.Optional[CreateHoldRequestLocation]` — One of the event type's `locations`, with your link filled in if it has none.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**metadata:** `typing.Optional[typing.Dict[str, str]]` — Your own key-value pairs. Don't put sensitive data here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.holds.<a href="src/coss/scheduling/holds/client.py">confirm</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Turns a hold into a booking. Always succeeds before the hold expires. Repeating it is safe.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.holds.confirm(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    if_still_free=True,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**if_still_free:** `typing.Optional[bool]` — After the hold expired, book anyway if nobody else took the slot. Default: refuse with `hold_expired`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.holds.<a href="src/coss/scheduling/holds/client.py">release</a>(...) -> SchedulingBooking</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Gives the slot back early.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.holds.release(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Series
+<details><summary><code>client.scheduling.series.<a href="src/coss/scheduling/series/client.py">create</a>(...) -> SchedulingSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Books up to 52 occurrences, keeping the attendee's local time across DST changes. Each one is an ordinary booking that can move on its own, and a pool keeps one host throughout.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingAttendeeInput, CreateSeriesRequestRecurrence
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.series.create(
+    idempotency_key="welcome-user-123",
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+    attendee=SchedulingAttendeeInput(
+        uid="patient_77",
+        time_zone="America/New_York",
+    ),
+    recurrence=CreateSeriesRequestRecurrence(
+        frequency="weekly",
+        interval=1,
+        count=12,
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSeriesRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**idempotency_key:** `typing.Optional[str]` — Makes retries safe: a repeated request with the same key and body returns the original booking instead of creating another, for 24 hours. A refused request keeps no key. 1-256 characters.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.series.<a href="src/coss/scheduling/series/client.py">preview</a>(...) -> SchedulingSeriesPreview</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Which occurrences would be free, without booking anything.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, SchedulingAttendeeInput, CreateSeriesRequestRecurrence
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.series.preview(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    start="2027-01-04T15:00:00.000Z",
+    attendee=SchedulingAttendeeInput(
+        uid="patient_77",
+        time_zone="America/New_York",
+    ),
+    recurrence=CreateSeriesRequestRecurrence(
+        frequency="weekly",
+        interval=1,
+        count=12,
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateSeriesRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.series.<a href="src/coss/scheduling/series/client.py">cancel</a>(...) -> SchedulingCancelledSeries</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Cancels the occurrences from `from_index` on, or all of them.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.series.cancel(
+    id="series_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    from_index=4,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The series' id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**from_index:** `typing.Optional[int]` — Cancel this occurrence and those after it. Default: all of them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Attendees
+<details><summary><code>client.scheduling.attendees.<a href="src/coss/scheduling/attendees/client.py">erase</a>(...) -> SchedulingAttendeeErasure</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this person's details and answers from every booking now, and ends any booker session fixed to them. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.attendees.erase(
+    uid="patient_77",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**uid:** `str` — Your id for the attendee.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.attendees.<a href="src/coss/scheduling/attendees/client.py">erase_by_email</a>(...) -> SchedulingAttendeeErasureByEmail</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Removes this address's details and answers from every booking now, for someone you have no `uid` for, such as a guest. The bookings themselves stay.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.attendees.erase_by_email(
+    email="sam@example.com",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**email:** `str` — The address to forget, an attendee's or a guest's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Calendars
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">authorize</a>(...) -> SchedulingCalendarAuthorization</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A URL for the host to give consent at Google or Microsoft. Open it in a new window: providers refuse to be framed. Coss.com reads only busy times, and writes events with a neutral title unless the event type's `host_calendar_details` is `full`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.authorize(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    provider="google",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**provider:** `AuthorizeCalendarRequestProvider` — Whose consent page to open. CalDAV connects with a password instead.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**return_url:** `typing.Optional[str]` — Where to send the browser afterwards, on one of the environment's allowed origins. `coss_calendar` says what happened: `connected`, `denied` or `invalid`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">list</a>(...) -> SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With each connection's calendars and which of them count.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.list(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">connect</a>(...) -> SchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+CalDAV (Apple and others) with an app password, or, in sandbox environments, a `simulated` calendar whose busy times you set yourself. Google and Microsoft use `authorize`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, CreateCalendarConnectionRequest_Caldav
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.connect(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    request=CreateCalendarConnectionRequest_Caldav(
+        url="url",
+        username="username",
+        password="password",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request:** `CreateCalendarConnectionRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">disconnect</a>(...) -> DeletedSchedulingCalendarConnection</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Revokes coss.com's access and deletes every busy time read through it. One a calendar delegation manages is refused (`calendar_managed`).
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.disconnect(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    id="calconn_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**id:** `str` — The connection's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">update</a>(...) -> SchedulingCalendarConnectionList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether its busy times block slots, and whether bookings are written to it.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.update(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    calendar_id="cal_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    read_busy=True,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_id:** `str` — The calendar's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**read_busy:** `typing.Optional[bool]` — Whether this calendar's busy times block slots.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**write_target:** `typing.Optional[bool]` — Bookings are written to one calendar; setting this moves it here.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendars.<a href="src/coss/scheduling/calendars/client.py">set_simulated_busy</a>(...)</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Sandbox environments only: test how bookings react to a busy calendar.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+from coss.scheduling.calendars import SetSimulatedBusyRequestIntervalsItem
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendars.set_simulated_busy(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    intervals=[
+        SetSimulatedBusyRequestIntervalsItem(
+            start="2027-01-04T15:00:00.000Z",
+            end="2027-01-04T16:00:00.000Z",
+        )
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**intervals:** `typing.List[SetSimulatedBusyRequestIntervalsItem]` — The simulated calendar's busy times.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling CalendarDelegations
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">list</a>() -> SchedulingCalendarDelegationList</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+With how many hosts each has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.list()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">create</a>(...) -> SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An admin authorizes once, and every host on the domain gets their calendar with no consent screen. It stays `pending`: authorize what it returns, then verify it. Credentials are never returned.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss, CreateCalendarDelegationRequest_Google
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.create(
+    request=CreateCalendarDelegationRequest_Google(
+        domain="domain",
+        service_account_key="service_account_key",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request:** `CreateCalendarDelegationRequest` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">get</a>(...) -> SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its status, what to authorize, and how many hosts it has connected.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.get(
+    id="caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">delete</a>(...) -> DeletedSchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Its hosts lose these calendars within minutes. They stay bookable with no conflict check, and events already written stay on their calendars, out of reach of later moves or cancellations.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.delete(
+    id="caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">update</a>(...) -> SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+New credentials are tried on the verified mailbox before they replace the old ones, and end an outage if they work.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.update(
+    id="caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    match_host_email=False,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**match_host_email:** `typing.Optional[bool]` — Whether a host's `email` picks their mailbox when `calendar_account` isn't set. Turn it off if end users can type their own email into your app: otherwise one could name a colleague's address and reach that calendar.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**service_account_key:** `typing.Optional[str]` — A new key. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**client_secret:** `typing.Optional[str]` — A new client secret. It's tried on the verified mailbox before it replaces the old one.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**secret_expires_at:** `typing.Optional[datetime.datetime]` — When the Entra client secret expires. Owners and admins are warned 14 days before.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.calendar_delegations.<a href="src/coss/scheduling/calendar_delegations/client.py">verify</a>(...) -> SchedulingCalendarDelegation</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Tries one real mailbox. Passing makes it `active`, and its hosts start connecting. Google can take up to 24 hours to apply a new authorization, so a refusal may just need time.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.calendar_delegations.verify(
+    id="caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    account="ana@example.com",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The delegation's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**account:** `str` — A real mailbox on the domain to try. In Microsoft 365, a user principal name.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Sessions
+<details><summary><code>client.scheduling.sessions.<a href="src/coss/scheduling/sessions/client.py">create_for_host</a>(...) -> SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets one host manage their own hours, calendars and locations, on coss.com's hosted page or your own UI. Send the `url` to their browser, or embed it with `coss/scheduling`.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.sessions.create_for_host(
+    host="host_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    expires_in=3600,
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**host:** `str` — The host's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**expires_in:** `typing.Optional[int]` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**read_only:** `typing.Optional[bool]` — The host can look but not change anything.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.sessions.<a href="src/coss/scheduling/sessions/client.py">create_for_booker</a>(...) -> SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets a browser book one event type, on coss.com's hosted page or your own UI, without your API key.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+from coss.scheduling.sessions import CreateSchedulingBookerSessionRequestAttendee
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.sessions.create_for_booker(
+    event_type="evtype_01kd2m9a0b1c2d3e4f5g6h7j8m",
+    attendee=CreateSchedulingBookerSessionRequestAttendee(
+        uid="patient_77",
+        name="Sam Lee",
+        time_zone="UTC",
+    ),
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**event_type:** `str` — The event type's id or uid.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**host:** `typing.Optional[str]` — Only this host (id or uid).
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attributes:** `typing.Optional[typing.Dict[str, CreateSchedulingBookerSessionRequestAttributesValue]]` — Only offer times, and book, among pool hosts matching all of these. The browser can't see or change them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**attendee:** `typing.Optional[CreateSchedulingBookerSessionRequestAttendee]` — Who's booking, if you already know: the browser then can't change it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**expires_in:** `typing.Optional[int]` — Seconds until it stops working. At most a day.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.sessions.<a href="src/coss/scheduling/sessions/client.py">create_for_booking</a>(...) -> SchedulingSession</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Lets an attendee reschedule or cancel this one booking, within the event type's cutoffs. Stops working when the booking's cancelled, or a day after it ends.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.sessions.create_for_booking(
+    id="book_01kd2m9a0b1c2d3e4f5g6h7j8m",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**id:** `str` — The booking's id.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Scheduling Settings
+<details><summary><code>client.scheduling.settings.<a href="src/coss/scheduling/settings/client.py">get</a>() -> SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The environment's scheduling settings.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.settings.get()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.scheduling.settings.<a href="src/coss/scheduling/settings/client.py">update</a>(...) -> SchedulingSettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes what's given.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.scheduling.settings.update(
+    brand_name="Acme Health",
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**allowed_origins:** `typing.Optional[typing.List[str]]` — Sites allowed to embed coss.com's hosted pages and call the client API, as `https://host` origins.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**brand_name:** `typing.Optional[str]` — Your name on hosted pages and on emails sent from `email_from`. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**accent_color:** `typing.Optional[str]` — The accent color as `#RRGGBB`. `null` restores the default.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**logo:** `typing.Optional[UpdateSchedulingSettingsRequestLogo]` — Your logo, a PNG or JPEG. `null` removes it.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_from:** `typing.Optional[str]` — Sender of booking emails, on a verified domain. `null`: coss.com's own address.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sms_from:** `typing.Optional[str]` — Your approved number for SMS reminders, in E.164. `null`: no SMS is sent.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**calendar_failure_mode:** `typing.Optional[UpdateSchedulingSettingsRequestCalendarFailureMode]` — When a host's calendar can't be read: `hide` stops offering them, `last_known` keeps offering their last known times.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**notifications:** `typing.Optional[typing.Dict[str, typing.Optional[UpdateSchedulingSettingsRequestNotificationsValue]]]` — Per event (`confirmed`, `pending_approval`, `rescheduled`, `cancelled`, `declined`, `reminder`), overriding the defaults. `null` restores them.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_reply_to:** `typing.Optional[str]` — Where replies go, for emails from `email_from`.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**reminders:** `typing.Optional[typing.List[SchedulingReminderInput]]` — What goes out around a booking, unless an event type has its own. `null` goes back to a reminder a day before.
     
 </dd>
 </dl>
@@ -19987,6 +25704,20 @@ client.sign.documents.upload(
 <details><summary><code>client.sign.documents.<a href="src/coss/sign/documents/client.py">get</a>(...) -> SignDocument</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -20300,7 +26031,7 @@ client.sign.requests.create(
 <dl>
 <dd>
 
-**signers:** `typing.List[CreateSignRequestRequestSignersItem]` 
+**signers:** `typing.List[CreateSignRequestRequestSignersItem]` — Who signs, and what each fills.
     
 </dd>
 </dl>
@@ -20379,6 +26110,20 @@ client.sign.requests.create(
 <details><summary><code>client.sign.requests.<a href="src/coss/sign/requests/client.py">get</a>(...) -> SignRequest</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -21085,7 +26830,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**allowed_origins:** `typing.Optional[typing.List[str]]` 
+**allowed_origins:** `typing.Optional[typing.List[str]]` — Origins that may embed the signing page in an iframe, like `https://app.example.com` (sandbox environments also `http://localhost:<port>`). Empty: it can only be opened on its own.
     
 </dd>
 </dl>
@@ -21093,7 +26838,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**display_name:** `typing.Optional[str]` 
+**display_name:** `typing.Optional[str]` — The requester's name signers see. `null`: the organization's name.
     
 </dd>
 </dl>
@@ -21101,7 +26846,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**accent_color:** `typing.Optional[str]` 
+**accent_color:** `typing.Optional[str]` — The signing page's accent color, as `#RRGGBB`. `null`: the default.
     
 </dd>
 </dl>
@@ -21109,7 +26854,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**theme:** `typing.Optional[UpdateSignSettingsRequestTheme]` 
+**theme:** `typing.Optional[UpdateSignSettingsRequestTheme]` — The signing page's theme. `system` follows the signer's device.
     
 </dd>
 </dl>
@@ -21117,7 +26862,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**disclosure:** `typing.Optional[str]` 
+**disclosure:** `typing.Optional[str]` — Your own consent text signers accept before they see a document. `null`: coss.com's default. Have your counsel review a replacement.
     
 </dd>
 </dl>
@@ -21125,7 +26870,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**email_from:** `typing.Optional[str]` 
+**email_from:** `typing.Optional[str]` — Signing emails come from this address, on a verified domain in live environments. `null`: from coss.com, as "<display name> via coss.com".
     
 </dd>
 </dl>
@@ -21133,7 +26878,7 @@ client.sign.settings.update(
 <dl>
 <dd>
 
-**reminder_interval_days:** `typing.Optional[int]` 
+**reminder_interval_days:** `typing.Optional[int]` — The default days between reminders for new requests. `null`: none.
     
 </dd>
 </dl>
@@ -21324,7 +27069,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**name:** `str` 
+**name:** `str` — Your name for the template.
     
 </dd>
 </dl>
@@ -21348,7 +27093,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**signing_order:** `typing.Optional[CreateSignTemplateRequestSigningOrder]` 
+**signing_order:** `typing.Optional[CreateSignTemplateRequestSigningOrder]` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -21356,7 +27101,7 @@ client.sign.templates.create(
 <dl>
 <dd>
 
-**documents:** `typing.Optional[typing.List[CreateSignTemplateRequestDocumentsItem]]` 
+**documents:** `typing.Optional[typing.List[CreateSignTemplateRequestDocumentsItem]]` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -21395,6 +27140,20 @@ client.sign.templates.create(
 <details><summary><code>client.sign.templates.<a href="src/coss/sign/templates/client.py">get</a>(...) -> SignTemplate</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -21586,7 +27345,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**name:** `typing.Optional[str]` 
+**name:** `typing.Optional[str]` — Your name for the template.
     
 </dd>
 </dl>
@@ -21610,7 +27369,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**signing_order:** `typing.Optional[UpdateSignTemplateRequestSigningOrder]` 
+**signing_order:** `typing.Optional[UpdateSignTemplateRequestSigningOrder]` — `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
     
 </dd>
 </dl>
@@ -21618,7 +27377,7 @@ client.sign.templates.update(
 <dl>
 <dd>
 
-**documents:** `typing.Optional[typing.List[UpdateSignTemplateRequestDocumentsItem]]` 
+**documents:** `typing.Optional[typing.List[UpdateSignTemplateRequestDocumentsItem]]` — Uploaded documents by id, or PDFs inline (base64).
     
 </dd>
 </dl>
@@ -21757,7 +27516,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**message:** `typing.Optional[str]` 
+**message:** `typing.Optional[str]` — Default: the template's message.
     
 </dd>
 </dl>
@@ -21781,7 +27540,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**expires_at:** `typing.Optional[datetime.datetime]` 
+**expires_at:** `typing.Optional[datetime.datetime]` — When an unfinished request expires, at most 365 days ahead.
     
 </dd>
 </dl>
@@ -21797,7 +27556,7 @@ client.sign.templates.create_request(
 <dl>
 <dd>
 
-**reminder_interval_days:** `typing.Optional[int]` 
+**reminder_interval_days:** `typing.Optional[int]` — Days between reminders to email signers. Default: your Sign settings'. `null`: none.
     
 </dd>
 </dl>
@@ -22048,7 +27807,7 @@ client.sms.suppressions.add(
 <dl>
 <dd>
 
-**phone_number:** `str` 
+**phone_number:** `str` — The number to suppress, in E.164.
     
 </dd>
 </dl>
@@ -22071,6 +27830,20 @@ client.sms.suppressions.add(
 <details><summary><code>client.sms.suppressions.<a href="src/coss/sms/suppressions/client.py">check</a>(...) -> SmsSuppressionCheck</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -22130,6 +27903,20 @@ client.sms.suppressions.check(
 <details><summary><code>client.sms.suppressions.<a href="src/coss/sms/suppressions/client.py">get</a>(...) -> SmsSuppression</code></summary>
 <dl>
 <dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One entry of the SMS suppression list of the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
 
 #### 🔌 Usage
 
@@ -22375,6 +28162,20 @@ client.sms.received.list()
 <dl>
 <dd>
 
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+One message received on a number of the organization and routed to the API key's environment.
+</dd>
+</dl>
+</dd>
+</dl>
+
 #### 🔌 Usage
 
 <dl>
@@ -22478,6 +28279,196 @@ client.sms.numbers.list()
 
 <dl>
 <dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+## Verify Settings
+<details><summary><code>client.verify.settings.<a href="src/coss/verify/settings/client.py">get</a>() -> VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+The API key's environment's settings, with defaults filled in: the name codes are sent for, code length, lifetime and attempts, the senders, and the countries SMS codes may go to.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.verify.settings.get()
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**request_options:** `typing.Optional[RequestOptions]` — Request-specific configuration.
+    
+</dd>
+</dl>
+</dd>
+</dl>
+
+
+</dd>
+</dl>
+</details>
+
+<details><summary><code>client.verify.settings.<a href="src/coss/verify/settings/client.py">update</a>(...) -> VerifySettings</code></summary>
+<dl>
+<dd>
+
+#### 📝 Description
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+Changes the fields given; the others keep their values. `sms_from` must be one of the organization's numbers, and a live key's `email_from` must be on one of its verified domains.
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### 🔌 Usage
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+```python
+from coss import Coss
+from coss.environment import CossEnvironment
+
+client = Coss(
+    api_key="<token>",
+    environment=CossEnvironment.DEFAULT,
+)
+
+client.verify.settings.update(
+    sms_from="+14155550100",
+    allowed_countries=[
+        "CA",
+        "GB",
+        "US"
+    ],
+)
+
+```
+</dd>
+</dl>
+</dd>
+</dl>
+
+#### ⚙️ Parameters
+
+<dl>
+<dd>
+
+<dl>
+<dd>
+
+**app_name:** `typing.Optional[str]` — The name codes are sent for; `null`: the project's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**code_length:** `typing.Optional[int]` — Digits in a code, 4-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**ttl_seconds:** `typing.Optional[int]` — How long a code works, 60-1800 s.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**max_attempts:** `typing.Optional[int]` — Wrong codes before a verification fails, 1-10.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**sms_from:** `typing.Optional[str]` — One of the organization's numbers; `null`: coss.com's shared numbers.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**email_from:** `typing.Optional[str]` — An address on one of the organization's verified domains (live keys); `null`: coss.com's.
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
+**allowed_countries:** `typing.Optional[typing.List[str]]` — ISO 3166 countries SMS codes may go to.
+    
+</dd>
+</dl>
 
 <dl>
 <dd>

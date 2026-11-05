@@ -24,10 +24,11 @@ var (
 	billingFieldEstimate        = big.NewInt(1 << 10)
 	billingFieldCreditRemaining = big.NewInt(1 << 11)
 	billingFieldSpendLimit      = big.NewInt(1 << 12)
-	billingFieldPaymentMethod   = big.NewInt(1 << 13)
-	billingFieldAddOns          = big.NewInt(1 << 14)
-	billingFieldFeatures        = big.NewInt(1 << 15)
-	billingFieldLimits          = big.NewInt(1 << 16)
+	billingFieldCreditLimit     = big.NewInt(1 << 13)
+	billingFieldPaymentMethod   = big.NewInt(1 << 14)
+	billingFieldAddOns          = big.NewInt(1 << 15)
+	billingFieldFeatures        = big.NewInt(1 << 16)
+	billingFieldLimits          = big.NewInt(1 << 17)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
@@ -35,12 +36,14 @@ var billingNullableFields = map[string]*big.Int{
 	"contract":         billingFieldContract,
 	"scheduled_change": billingFieldScheduledChange,
 	"spend_limit":      billingFieldSpendLimit,
+	"credit_limit":     billingFieldCreditLimit,
 	"payment_method":   billingFieldPaymentMethod,
 }
 
 type Billing struct {
-	Object         BillingObject `json:"object" url:"object"`
-	OrganizationID string        `json:"organization_id" url:"organization_id"`
+	Object BillingObject `json:"object" url:"object"`
+	// The organization's id.
+	OrganizationID string `json:"organization_id" url:"organization_id"`
 	// The plan in effect now (`free` without a contract).
 	Plan BillingPlan `json:"plan" url:"plan"`
 	// The contract in effect; `null` on the Free plan.
@@ -50,21 +53,27 @@ type Billing struct {
 	// `past_due`: an invoice is overdue; `delinquent`: past its grace period, and live sending is held.
 	Status BillingStatus `json:"status" url:"status"`
 	// Billing holds on live sending (sandbox keys keep working).
-	Holds    []*BillingHoldsItem `json:"holds" url:"holds"`
-	Currency BillingCurrency     `json:"currency" url:"currency"`
+	Holds []*BillingHoldsItem `json:"holds" url:"holds"`
+	// Always `usd`.
+	Currency BillingCurrency `json:"currency" url:"currency"`
 	// The current billing month (UTC).
-	Period *BillingPeriod      `json:"period" url:"period"`
-	Usage  []*BillingUsageItem `json:"usage" url:"usage"`
+	Period *BillingPeriod `json:"period" url:"period"`
+	// This month's usage per meter.
+	Usage []*BillingUsageItem `json:"usage" url:"usage"`
 	// This month so far, as it would be invoiced if it ended now.
 	Estimate *BillingEstimate `json:"estimate" url:"estimate"`
 	// Unused credit usable this month.
 	CreditRemaining int64 `json:"credit_remaining" url:"credit_remaining"`
 	// Usage beyond the credit past which live sending is held; `null`: none.
-	SpendLimit    *int64                `json:"spend_limit,omitempty" url:"spend_limit,omitempty"`
+	SpendLimit *int64 `json:"spend_limit,omitempty" url:"spend_limit,omitempty"`
+	// Where the organization stands against its credit limit; `null`: it has none.
+	CreditLimit *BillingCreditLimit `json:"credit_limit,omitempty" url:"credit_limit,omitempty"`
+	// The payment method on file. `null`: none.
 	PaymentMethod *BillingPaymentMethod `json:"payment_method,omitempty" url:"payment_method,omitempty"`
 	// Add-ons of the contract in effect, charged on top of the plan.
-	AddOns   []*BillingAddOnsItem `json:"add_ons" url:"add_ons"`
-	Features *BillingFeatures     `json:"features" url:"features"`
+	AddOns []*BillingAddOnsItem `json:"add_ons" url:"add_ons"`
+	// Which features the plan includes.
+	Features *BillingFeatures `json:"features" url:"features"`
 	// Resource limits (`null`: unlimited).
 	Limits *BillingLimits `json:"limits" url:"limits"`
 
@@ -164,6 +173,13 @@ func (b *Billing) GetSpendLimit() *int64 {
 		return nil
 	}
 	return b.SpendLimit
+}
+
+func (b *Billing) GetCreditLimit() *BillingCreditLimit {
+	if b == nil {
+		return nil
+	}
+	return b.CreditLimit
 }
 
 func (b *Billing) GetPaymentMethod() *BillingPaymentMethod {
@@ -301,6 +317,13 @@ func (b *Billing) SetSpendLimit(spendLimit *int64) {
 	b.require(billingFieldSpendLimit)
 }
 
+// SetCreditLimit sets the CreditLimit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetCreditLimit(creditLimit *BillingCreditLimit) {
+	b.CreditLimit = creditLimit
+	b.require(billingFieldCreditLimit)
+}
+
 // SetPaymentMethod sets the PaymentMethod field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *Billing) SetPaymentMethod(paymentMethod *BillingPaymentMethod) {
@@ -388,12 +411,15 @@ var (
 
 type BillingAddOnsItem struct {
 	// e.g. `dedicated_ips`.
-	Key      string `json:"key" url:"key"`
-	Name     string `json:"name" url:"name"`
-	Quantity int64  `json:"quantity" url:"quantity"`
+	Key string `json:"key" url:"key"`
+	// The add-on's name.
+	Name string `json:"name" url:"name"`
+	// How many units are on the contract.
+	Quantity int64 `json:"quantity" url:"quantity"`
 	// The price per unit and interval, in cents.
-	UnitAmount int64                     `json:"unit_amount" url:"unit_amount"`
-	Interval   BillingAddOnsItemInterval `json:"interval" url:"interval"`
+	UnitAmount int64 `json:"unit_amount" url:"unit_amount"`
+	// How often it's charged.
+	Interval BillingAddOnsItemInterval `json:"interval" url:"interval"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -530,6 +556,7 @@ func (b *BillingAddOnsItem) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+// How often it's charged.
 type BillingAddOnsItemInterval string
 
 const (
@@ -572,13 +599,18 @@ var billingContractNullableFields = map[string]*big.Int{
 
 // The contract in effect; `null` on the Free plan.
 type BillingContract struct {
-	ID             string              `json:"id" url:"id"`
-	Kind           BillingContractKind `json:"kind" url:"kind"`
-	EffectiveFrom  time.Time           `json:"effective_from" url:"effective_from"`
-	EffectiveUntil *time.Time          `json:"effective_until,omitempty" url:"effective_until,omitempty"`
+	// The contract's id.
+	ID string `json:"id" url:"id"`
+	// `self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own.
+	Kind BillingContractKind `json:"kind" url:"kind"`
+	// When it took effect.
+	EffectiveFrom time.Time `json:"effective_from" url:"effective_from"`
+	// When it ends. `null`: no end is set.
+	EffectiveUntil *time.Time `json:"effective_until,omitempty" url:"effective_until,omitempty"`
 	// End of a committed term.
-	TermEnd   *time.Time `json:"term_end,omitempty" url:"term_end,omitempty"`
-	AutoRenew bool       `json:"auto_renew" url:"auto_renew"`
+	TermEnd *time.Time `json:"term_end,omitempty" url:"term_end,omitempty"`
+	// Whether a committed term renews when it ends.
+	AutoRenew bool `json:"auto_renew" url:"auto_renew"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -752,6 +784,7 @@ func (b *BillingContract) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+// `self_serve`: chosen in the dashboard. `sales`: agreed with coss.com. `internal`: coss.com's own.
 type BillingContractKind string
 
 const (
@@ -777,6 +810,141 @@ func (b BillingContractKind) Ptr() *BillingContractKind {
 	return &b
 }
 
+var (
+	billingCreditLimitFieldLimit           = big.NewInt(1 << 0)
+	billingCreditLimitFieldUsed            = big.NewInt(1 << 1)
+	billingCreditLimitFieldChargeThreshold = big.NewInt(1 << 2)
+)
+
+// billingCreditLimitNullableFields maps the wire names of BillingCreditLimit's nullable fields (required or optional) to their field bits.
+var billingCreditLimitNullableFields = map[string]*big.Int{
+	"charge_threshold": billingCreditLimitFieldChargeThreshold,
+}
+
+// Where the organization stands against its credit limit; `null`: it has none.
+type BillingCreditLimit struct {
+	// What coss.com carries before live sending is held. It rises as payments settle.
+	Limit int64 `json:"limit" url:"limit"`
+	// Usage not invoiced yet, unpaid invoices and recent usage charges.
+	Used int64 `json:"used" url:"used"`
+	// Usage not invoiced yet is charged early at this amount; `null`: it isn't charged automatically.
+	ChargeThreshold *int64 `json:"charge_threshold,omitempty" url:"charge_threshold,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (b *BillingCreditLimit) GetLimit() int64 {
+	if b == nil {
+		return 0
+	}
+	return b.Limit
+}
+
+func (b *BillingCreditLimit) GetUsed() int64 {
+	if b == nil {
+		return 0
+	}
+	return b.Used
+}
+
+func (b *BillingCreditLimit) GetChargeThreshold() *int64 {
+	if b == nil {
+		return nil
+	}
+	return b.ChargeThreshold
+}
+
+func (b *BillingCreditLimit) GetExtraProperties() map[string]interface{} {
+	if b == nil {
+		return nil
+	}
+	return b.extraProperties
+}
+
+func (b *BillingCreditLimit) require(field *big.Int) {
+	next := new(big.Int)
+	if b.explicitFields != nil {
+		next.Set(b.explicitFields)
+	}
+	next.Or(next, field)
+	b.explicitFields = next
+}
+
+// SetLimit sets the Limit field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingCreditLimit) SetLimit(limit int64) {
+	b.Limit = limit
+	b.require(billingCreditLimitFieldLimit)
+}
+
+// SetUsed sets the Used field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingCreditLimit) SetUsed(used int64) {
+	b.Used = used
+	b.require(billingCreditLimitFieldUsed)
+}
+
+// SetChargeThreshold sets the ChargeThreshold field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingCreditLimit) SetChargeThreshold(chargeThreshold *int64) {
+	b.ChargeThreshold = chargeThreshold
+	b.require(billingCreditLimitFieldChargeThreshold)
+}
+
+func (b *BillingCreditLimit) UnmarshalJSON(data []byte) error {
+	type unmarshaler BillingCreditLimit
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*b = BillingCreditLimit(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *b)
+	if err != nil {
+		return err
+	}
+	b.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, billingCreditLimitNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		b.require(presentFields)
+	}
+	b.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (b *BillingCreditLimit) MarshalJSON() ([]byte, error) {
+	type embed BillingCreditLimit
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*b),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, b.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (b *BillingCreditLimit) String() string {
+	if b == nil {
+		return "<nil>"
+	}
+	if len(b.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(b.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(b); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", b)
+}
+
+// Always `usd`.
 type BillingCurrency string
 
 const (
@@ -944,13 +1112,20 @@ var (
 	billingFeaturesFieldDedicatedIps    = big.NewInt(1 << 5)
 )
 
+// Which features the plan includes.
 type BillingFeatures struct {
+	// Custom tracking domains.
 	TrackingDomains bool `json:"tracking_domains" url:"tracking_domains"`
-	AuditLog        bool `json:"audit_log" url:"audit_log"`
-	LogDrains       bool `json:"log_drains" url:"log_drains"`
-	SSO             bool `json:"sso" url:"sso"`
-	SCIM            bool `json:"scim" url:"scim"`
-	DedicatedIps    bool `json:"dedicated_ips" url:"dedicated_ips"`
+	// The organization's audit log.
+	AuditLog bool `json:"audit_log" url:"audit_log"`
+	// Log drains.
+	LogDrains bool `json:"log_drains" url:"log_drains"`
+	// Single sign-on.
+	SSO bool `json:"sso" url:"sso"`
+	// Directory sync (SCIM).
+	SCIM bool `json:"scim" url:"scim"`
+	// Dedicated IP pools.
+	DedicatedIps bool `json:"dedicated_ips" url:"dedicated_ips"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1107,8 +1282,10 @@ var (
 )
 
 type BillingHoldsItem struct {
+	// `delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `credit_limit`: the credit limit was reached, or a usage charge failed. `admin`: placed by coss.com.
 	Reason BillingHoldsItemReason `json:"reason" url:"reason"`
-	Since  time.Time              `json:"since" url:"since"`
+	// When the hold began.
+	Since time.Time `json:"since" url:"since"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1211,12 +1388,14 @@ func (b *BillingHoldsItem) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+// `delinquent`: an invoice is past its grace period. `spend_limit`: the spend limit was reached. `credit_limit`: the credit limit was reached, or a usage charge failed. `admin`: placed by coss.com.
 type BillingHoldsItemReason string
 
 const (
-	BillingHoldsItemReasonDelinquent BillingHoldsItemReason = "delinquent"
-	BillingHoldsItemReasonSpendLimit BillingHoldsItemReason = "spend_limit"
-	BillingHoldsItemReasonAdmin      BillingHoldsItemReason = "admin"
+	BillingHoldsItemReasonDelinquent  BillingHoldsItemReason = "delinquent"
+	BillingHoldsItemReasonSpendLimit  BillingHoldsItemReason = "spend_limit"
+	BillingHoldsItemReasonCreditLimit BillingHoldsItemReason = "credit_limit"
+	BillingHoldsItemReasonAdmin       BillingHoldsItemReason = "admin"
 )
 
 func NewBillingHoldsItemReasonFromString(s string) (BillingHoldsItemReason, error) {
@@ -1225,6 +1404,8 @@ func NewBillingHoldsItemReasonFromString(s string) (BillingHoldsItemReason, erro
 		return BillingHoldsItemReasonDelinquent, nil
 	case "spend_limit":
 		return BillingHoldsItemReasonSpendLimit, nil
+	case "credit_limit":
+		return BillingHoldsItemReasonCreditLimit, nil
 	case "admin":
 		return BillingHoldsItemReasonAdmin, nil
 	}
@@ -1255,11 +1436,16 @@ var billingLimitsNullableFields = map[string]*big.Int{
 
 // Resource limits (`null`: unlimited).
 type BillingLimits struct {
-	Domains                        *int64 `json:"domains,omitempty" url:"domains,omitempty"`
-	Members                        *int64 `json:"members,omitempty" url:"members,omitempty"`
+	// Sending domains. `null`: unlimited.
+	Domains *int64 `json:"domains,omitempty" url:"domains,omitempty"`
+	// Members of the organization. `null`: unlimited.
+	Members *int64 `json:"members,omitempty" url:"members,omitempty"`
+	// Webhook endpoints per environment. `null`: unlimited.
 	WebhookEndpointsPerEnvironment *int64 `json:"webhook_endpoints_per_environment,omitempty" url:"webhook_endpoints_per_environment,omitempty"`
-	ContactsPerEnvironment         *int64 `json:"contacts_per_environment,omitempty" url:"contacts_per_environment,omitempty"`
-	Inboxes                        *int64 `json:"inboxes,omitempty" url:"inboxes,omitempty"`
+	// Contacts per environment. `null`: unlimited.
+	ContactsPerEnvironment *int64 `json:"contacts_per_environment,omitempty" url:"contacts_per_environment,omitempty"`
+	// Inboxes. `null`: unlimited.
+	Inboxes *int64 `json:"inboxes,omitempty" url:"inboxes,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1434,9 +1620,13 @@ var billingPaymentMethodNullableFields = map[string]*big.Int{
 	"last4": billingPaymentMethodFieldLast4,
 }
 
+// The payment method on file. `null`: none.
 type BillingPaymentMethod struct {
-	Type  string  `json:"type" url:"type"`
+	// Its type, such as `card`.
+	Type string `json:"type" url:"type"`
+	// The card's brand. `null` for other types.
 	Brand *string `json:"brand,omitempty" url:"brand,omitempty"`
+	// The card's last four digits. `null` for other types.
 	Last4 *string `json:"last4,omitempty" url:"last4,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -1560,8 +1750,10 @@ var (
 
 // The current billing month (UTC).
 type BillingPeriod struct {
+	// When the period starts (inclusive).
 	Start time.Time `json:"start" url:"start"`
-	End   time.Time `json:"end" url:"end"`
+	// When the period ends (exclusive).
+	End time.Time `json:"end" url:"end"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1704,8 +1896,10 @@ var (
 
 // A plan change that takes effect later (a downgrade, a cancellation).
 type BillingScheduledChange struct {
-	EffectiveAt time.Time                  `json:"effective_at" url:"effective_at"`
-	Plan        BillingScheduledChangePlan `json:"plan" url:"plan"`
+	// When it takes effect.
+	EffectiveAt time.Time `json:"effective_at" url:"effective_at"`
+	// The plan it changes to.
+	Plan BillingScheduledChangePlan `json:"plan" url:"plan"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -1808,6 +2002,7 @@ func (b *BillingScheduledChange) String() string {
 	return fmt.Sprintf("%#v", b)
 }
 
+// The plan it changes to.
 type BillingScheduledChangePlan string
 
 const (
@@ -1875,8 +2070,9 @@ var billingUsageItemNullableFields = map[string]*big.Int{
 
 type BillingUsageItem struct {
 	// What is counted, e.g. `email.recipients`.
-	Meter    BillingUsageItemMeter `json:"meter" url:"meter"`
-	Quantity int64                 `json:"quantity" url:"quantity"`
+	Meter BillingUsageItemMeter `json:"meter" url:"meter"`
+	// Units used so far this month.
+	Quantity int64 `json:"quantity" url:"quantity"`
 	// The plan's monthly allowance where usage stops (Free), else `null`.
 	Included *int64 `json:"included,omitempty" url:"included,omitempty"`
 
@@ -1998,21 +2194,27 @@ func (b *BillingUsageItem) String() string {
 type BillingUsageItemMeter string
 
 const (
-	BillingUsageItemMeterEmailRecipients         BillingUsageItemMeter = "email.recipients"
-	BillingUsageItemMeterEmailDedicatedIP        BillingUsageItemMeter = "email.dedicated_ip"
-	BillingUsageItemMeterEmailReceived           BillingUsageItemMeter = "email.received"
-	BillingUsageItemMeterEmailInboxes            BillingUsageItemMeter = "email.inboxes"
-	BillingUsageItemMeterSmsSegments             BillingUsageItemMeter = "sms.segments"
-	BillingUsageItemMeterSmsReceivedSegments     BillingUsageItemMeter = "sms.received_segments"
-	BillingUsageItemMeterSmsNumbers              BillingUsageItemMeter = "sms.numbers"
-	BillingUsageItemMeterSmsRegistrations        BillingUsageItemMeter = "sms.registrations"
-	BillingUsageItemMeterSignCompletedRequests   BillingUsageItemMeter = "sign.completed_requests"
-	BillingUsageItemMeterRiskPhoneChecks         BillingUsageItemMeter = "risk.phone_checks"
-	BillingUsageItemMeterVerifyVerifications     BillingUsageItemMeter = "verify.verifications"
-	BillingUsageItemMeterVerifySms               BillingUsageItemMeter = "verify.sms"
-	BillingUsageItemMeterFormsSubmissions        BillingUsageItemMeter = "forms.submissions"
-	BillingUsageItemMeterVideoParticipantMinutes BillingUsageItemMeter = "video.participant_minutes"
-	BillingUsageItemMeterSchedulingBookings      BillingUsageItemMeter = "scheduling.bookings"
+	BillingUsageItemMeterEmailRecipients       BillingUsageItemMeter = "email.recipients"
+	BillingUsageItemMeterEmailDedicatedIP      BillingUsageItemMeter = "email.dedicated_ip"
+	BillingUsageItemMeterEmailAttachmentData   BillingUsageItemMeter = "email.attachment_data"
+	BillingUsageItemMeterEmailReceived         BillingUsageItemMeter = "email.received"
+	BillingUsageItemMeterEmailReceivedData     BillingUsageItemMeter = "email.received_data"
+	BillingUsageItemMeterEmailInboxes          BillingUsageItemMeter = "email.inboxes"
+	BillingUsageItemMeterSmsSegments           BillingUsageItemMeter = "sms.segments"
+	BillingUsageItemMeterSmsReceivedSegments   BillingUsageItemMeter = "sms.received_segments"
+	BillingUsageItemMeterSmsNumbers            BillingUsageItemMeter = "sms.numbers"
+	BillingUsageItemMeterSmsRegistrations      BillingUsageItemMeter = "sms.registrations"
+	BillingUsageItemMeterSignCompletedRequests BillingUsageItemMeter = "sign.completed_requests"
+	BillingUsageItemMeterRiskPhoneChecks       BillingUsageItemMeter = "risk.phone_checks"
+	BillingUsageItemMeterRiskAssessments       BillingUsageItemMeter = "risk.assessments"
+	BillingUsageItemMeterRiskContentChecks     BillingUsageItemMeter = "risk.content_checks"
+	BillingUsageItemMeterVerifyVerifications   BillingUsageItemMeter = "verify.verifications"
+	BillingUsageItemMeterVerifySms             BillingUsageItemMeter = "verify.sms"
+	BillingUsageItemMeterFormsSubmissions      BillingUsageItemMeter = "forms.submissions"
+	BillingUsageItemMeterFormsFileUploads      BillingUsageItemMeter = "forms.file_uploads"
+	BillingUsageItemMeterSchedulingBookings    BillingUsageItemMeter = "scheduling.bookings"
+	BillingUsageItemMeterSchedulingHosts       BillingUsageItemMeter = "scheduling.hosts"
+	BillingUsageItemMeterHooksMessages         BillingUsageItemMeter = "hooks.messages"
 )
 
 func NewBillingUsageItemMeterFromString(s string) (BillingUsageItemMeter, error) {
@@ -2021,8 +2223,12 @@ func NewBillingUsageItemMeterFromString(s string) (BillingUsageItemMeter, error)
 		return BillingUsageItemMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return BillingUsageItemMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return BillingUsageItemMeterEmailAttachmentData, nil
 	case "email.received":
 		return BillingUsageItemMeterEmailReceived, nil
+	case "email.received_data":
+		return BillingUsageItemMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return BillingUsageItemMeterEmailInboxes, nil
 	case "sms.segments":
@@ -2037,16 +2243,24 @@ func NewBillingUsageItemMeterFromString(s string) (BillingUsageItemMeter, error)
 		return BillingUsageItemMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return BillingUsageItemMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return BillingUsageItemMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return BillingUsageItemMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return BillingUsageItemMeterVerifyVerifications, nil
 	case "verify.sms":
 		return BillingUsageItemMeterVerifySms, nil
 	case "forms.submissions":
 		return BillingUsageItemMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return BillingUsageItemMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return BillingUsageItemMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return BillingUsageItemMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return BillingUsageItemMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return BillingUsageItemMeterHooksMessages, nil
 	}
 	var t BillingUsageItemMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -2091,10 +2305,13 @@ type Usage struct {
 	// Set with `group_by=api_key` (`null`: the dashboard, or usage recorded before keys were).
 	APIKeyID *string `json:"api_key_id,omitempty" url:"api_key_id,omitempty"`
 	// Set with `group_by=user`: the member whose personal API key caused it (`null`: organization keys and the dashboard).
-	UserID   *string   `json:"user_id,omitempty" url:"user_id,omitempty"`
-	Start    time.Time `json:"start" url:"start"`
-	End      time.Time `json:"end" url:"end"`
-	Quantity int64     `json:"quantity" url:"quantity"`
+	UserID *string `json:"user_id,omitempty" url:"user_id,omitempty"`
+	// When this bucket starts (inclusive).
+	Start time.Time `json:"start" url:"start"`
+	// When this bucket ends (exclusive).
+	End time.Time `json:"end" url:"end"`
+	// Units used in this bucket.
+	Quantity int64 `json:"quantity" url:"quantity"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -2461,21 +2678,27 @@ func (u UsageListObject) Ptr() *UsageListObject {
 type UsageMeter string
 
 const (
-	UsageMeterEmailRecipients         UsageMeter = "email.recipients"
-	UsageMeterEmailDedicatedIP        UsageMeter = "email.dedicated_ip"
-	UsageMeterEmailReceived           UsageMeter = "email.received"
-	UsageMeterEmailInboxes            UsageMeter = "email.inboxes"
-	UsageMeterSmsSegments             UsageMeter = "sms.segments"
-	UsageMeterSmsReceivedSegments     UsageMeter = "sms.received_segments"
-	UsageMeterSmsNumbers              UsageMeter = "sms.numbers"
-	UsageMeterSmsRegistrations        UsageMeter = "sms.registrations"
-	UsageMeterSignCompletedRequests   UsageMeter = "sign.completed_requests"
-	UsageMeterRiskPhoneChecks         UsageMeter = "risk.phone_checks"
-	UsageMeterVerifyVerifications     UsageMeter = "verify.verifications"
-	UsageMeterVerifySms               UsageMeter = "verify.sms"
-	UsageMeterFormsSubmissions        UsageMeter = "forms.submissions"
-	UsageMeterVideoParticipantMinutes UsageMeter = "video.participant_minutes"
-	UsageMeterSchedulingBookings      UsageMeter = "scheduling.bookings"
+	UsageMeterEmailRecipients       UsageMeter = "email.recipients"
+	UsageMeterEmailDedicatedIP      UsageMeter = "email.dedicated_ip"
+	UsageMeterEmailAttachmentData   UsageMeter = "email.attachment_data"
+	UsageMeterEmailReceived         UsageMeter = "email.received"
+	UsageMeterEmailReceivedData     UsageMeter = "email.received_data"
+	UsageMeterEmailInboxes          UsageMeter = "email.inboxes"
+	UsageMeterSmsSegments           UsageMeter = "sms.segments"
+	UsageMeterSmsReceivedSegments   UsageMeter = "sms.received_segments"
+	UsageMeterSmsNumbers            UsageMeter = "sms.numbers"
+	UsageMeterSmsRegistrations      UsageMeter = "sms.registrations"
+	UsageMeterSignCompletedRequests UsageMeter = "sign.completed_requests"
+	UsageMeterRiskPhoneChecks       UsageMeter = "risk.phone_checks"
+	UsageMeterRiskAssessments       UsageMeter = "risk.assessments"
+	UsageMeterRiskContentChecks     UsageMeter = "risk.content_checks"
+	UsageMeterVerifyVerifications   UsageMeter = "verify.verifications"
+	UsageMeterVerifySms             UsageMeter = "verify.sms"
+	UsageMeterFormsSubmissions      UsageMeter = "forms.submissions"
+	UsageMeterFormsFileUploads      UsageMeter = "forms.file_uploads"
+	UsageMeterSchedulingBookings    UsageMeter = "scheduling.bookings"
+	UsageMeterSchedulingHosts       UsageMeter = "scheduling.hosts"
+	UsageMeterHooksMessages         UsageMeter = "hooks.messages"
 )
 
 func NewUsageMeterFromString(s string) (UsageMeter, error) {
@@ -2484,8 +2707,12 @@ func NewUsageMeterFromString(s string) (UsageMeter, error) {
 		return UsageMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return UsageMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return UsageMeterEmailAttachmentData, nil
 	case "email.received":
 		return UsageMeterEmailReceived, nil
+	case "email.received_data":
+		return UsageMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return UsageMeterEmailInboxes, nil
 	case "sms.segments":
@@ -2500,16 +2727,24 @@ func NewUsageMeterFromString(s string) (UsageMeter, error) {
 		return UsageMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return UsageMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return UsageMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return UsageMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return UsageMeterVerifyVerifications, nil
 	case "verify.sms":
 		return UsageMeterVerifySms, nil
 	case "forms.submissions":
 		return UsageMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return UsageMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return UsageMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return UsageMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return UsageMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return UsageMeterHooksMessages, nil
 	}
 	var t UsageMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -2597,21 +2832,27 @@ func (u UsageBillingRequestGroupBy) Ptr() *UsageBillingRequestGroupBy {
 type UsageBillingRequestMeter string
 
 const (
-	UsageBillingRequestMeterEmailRecipients         UsageBillingRequestMeter = "email.recipients"
-	UsageBillingRequestMeterEmailDedicatedIP        UsageBillingRequestMeter = "email.dedicated_ip"
-	UsageBillingRequestMeterEmailReceived           UsageBillingRequestMeter = "email.received"
-	UsageBillingRequestMeterEmailInboxes            UsageBillingRequestMeter = "email.inboxes"
-	UsageBillingRequestMeterSmsSegments             UsageBillingRequestMeter = "sms.segments"
-	UsageBillingRequestMeterSmsReceivedSegments     UsageBillingRequestMeter = "sms.received_segments"
-	UsageBillingRequestMeterSmsNumbers              UsageBillingRequestMeter = "sms.numbers"
-	UsageBillingRequestMeterSmsRegistrations        UsageBillingRequestMeter = "sms.registrations"
-	UsageBillingRequestMeterSignCompletedRequests   UsageBillingRequestMeter = "sign.completed_requests"
-	UsageBillingRequestMeterRiskPhoneChecks         UsageBillingRequestMeter = "risk.phone_checks"
-	UsageBillingRequestMeterVerifyVerifications     UsageBillingRequestMeter = "verify.verifications"
-	UsageBillingRequestMeterVerifySms               UsageBillingRequestMeter = "verify.sms"
-	UsageBillingRequestMeterFormsSubmissions        UsageBillingRequestMeter = "forms.submissions"
-	UsageBillingRequestMeterVideoParticipantMinutes UsageBillingRequestMeter = "video.participant_minutes"
-	UsageBillingRequestMeterSchedulingBookings      UsageBillingRequestMeter = "scheduling.bookings"
+	UsageBillingRequestMeterEmailRecipients       UsageBillingRequestMeter = "email.recipients"
+	UsageBillingRequestMeterEmailDedicatedIP      UsageBillingRequestMeter = "email.dedicated_ip"
+	UsageBillingRequestMeterEmailAttachmentData   UsageBillingRequestMeter = "email.attachment_data"
+	UsageBillingRequestMeterEmailReceived         UsageBillingRequestMeter = "email.received"
+	UsageBillingRequestMeterEmailReceivedData     UsageBillingRequestMeter = "email.received_data"
+	UsageBillingRequestMeterEmailInboxes          UsageBillingRequestMeter = "email.inboxes"
+	UsageBillingRequestMeterSmsSegments           UsageBillingRequestMeter = "sms.segments"
+	UsageBillingRequestMeterSmsReceivedSegments   UsageBillingRequestMeter = "sms.received_segments"
+	UsageBillingRequestMeterSmsNumbers            UsageBillingRequestMeter = "sms.numbers"
+	UsageBillingRequestMeterSmsRegistrations      UsageBillingRequestMeter = "sms.registrations"
+	UsageBillingRequestMeterSignCompletedRequests UsageBillingRequestMeter = "sign.completed_requests"
+	UsageBillingRequestMeterRiskPhoneChecks       UsageBillingRequestMeter = "risk.phone_checks"
+	UsageBillingRequestMeterRiskAssessments       UsageBillingRequestMeter = "risk.assessments"
+	UsageBillingRequestMeterRiskContentChecks     UsageBillingRequestMeter = "risk.content_checks"
+	UsageBillingRequestMeterVerifyVerifications   UsageBillingRequestMeter = "verify.verifications"
+	UsageBillingRequestMeterVerifySms             UsageBillingRequestMeter = "verify.sms"
+	UsageBillingRequestMeterFormsSubmissions      UsageBillingRequestMeter = "forms.submissions"
+	UsageBillingRequestMeterFormsFileUploads      UsageBillingRequestMeter = "forms.file_uploads"
+	UsageBillingRequestMeterSchedulingBookings    UsageBillingRequestMeter = "scheduling.bookings"
+	UsageBillingRequestMeterSchedulingHosts       UsageBillingRequestMeter = "scheduling.hosts"
+	UsageBillingRequestMeterHooksMessages         UsageBillingRequestMeter = "hooks.messages"
 )
 
 func NewUsageBillingRequestMeterFromString(s string) (UsageBillingRequestMeter, error) {
@@ -2620,8 +2861,12 @@ func NewUsageBillingRequestMeterFromString(s string) (UsageBillingRequestMeter, 
 		return UsageBillingRequestMeterEmailRecipients, nil
 	case "email.dedicated_ip":
 		return UsageBillingRequestMeterEmailDedicatedIP, nil
+	case "email.attachment_data":
+		return UsageBillingRequestMeterEmailAttachmentData, nil
 	case "email.received":
 		return UsageBillingRequestMeterEmailReceived, nil
+	case "email.received_data":
+		return UsageBillingRequestMeterEmailReceivedData, nil
 	case "email.inboxes":
 		return UsageBillingRequestMeterEmailInboxes, nil
 	case "sms.segments":
@@ -2636,16 +2881,24 @@ func NewUsageBillingRequestMeterFromString(s string) (UsageBillingRequestMeter, 
 		return UsageBillingRequestMeterSignCompletedRequests, nil
 	case "risk.phone_checks":
 		return UsageBillingRequestMeterRiskPhoneChecks, nil
+	case "risk.assessments":
+		return UsageBillingRequestMeterRiskAssessments, nil
+	case "risk.content_checks":
+		return UsageBillingRequestMeterRiskContentChecks, nil
 	case "verify.verifications":
 		return UsageBillingRequestMeterVerifyVerifications, nil
 	case "verify.sms":
 		return UsageBillingRequestMeterVerifySms, nil
 	case "forms.submissions":
 		return UsageBillingRequestMeterFormsSubmissions, nil
-	case "video.participant_minutes":
-		return UsageBillingRequestMeterVideoParticipantMinutes, nil
+	case "forms.file_uploads":
+		return UsageBillingRequestMeterFormsFileUploads, nil
 	case "scheduling.bookings":
 		return UsageBillingRequestMeterSchedulingBookings, nil
+	case "scheduling.hosts":
+		return UsageBillingRequestMeterSchedulingHosts, nil
+	case "hooks.messages":
+		return UsageBillingRequestMeterHooksMessages, nil
 	}
 	var t UsageBillingRequestMeter
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

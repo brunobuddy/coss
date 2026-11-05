@@ -191,6 +191,8 @@ func (c *Client) Export(
 	return response.Body, nil
 }
 
+// One entry of the suppression list of the API key's environment.
+//
 // Example:
 //
 //	request := &email.GetSuppressionsRequest{

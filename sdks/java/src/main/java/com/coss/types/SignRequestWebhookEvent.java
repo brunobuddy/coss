@@ -64,6 +64,9 @@ public final class SignRequestWebhookEvent {
         return object;
     }
 
+    /**
+     * @return <code>sent</code>: sent to signers. <code>viewed</code>: a signer opened it. <code>signer_signed</code>: a signer signed. <code>declined</code>: a signer declined. <code>completed</code>: the sealed document is ready to download. <code>canceled</code> and <code>expired</code>: it ended unsigned.
+     */
     @JsonProperty("type")
     public SignRequestWebhookEventType getType() {
         return type;
@@ -77,11 +80,17 @@ public final class SignRequestWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The request. Never documents or field values.
+     */
     @JsonProperty("data")
     public SignRequestWebhookEventData getData() {
         return data;
@@ -135,6 +144,9 @@ public final class SignRequestWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p><code>sent</code>: sent to signers. <code>viewed</code>: a signer opened it. <code>signer_signed</code>: a signer signed. <code>declined</code>: a signer declined. <code>completed</code>: the sealed document is ready to download. <code>canceled</code> and <code>expired</code>: it ended unsigned.</p>
+         */
         ApiVersionStage type(@NotNull SignRequestWebhookEventType type);
     }
 
@@ -146,10 +158,16 @@ public final class SignRequestWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The request. Never documents or field values.</p>
+         */
         _FinalStage data(@NotNull SignRequestWebhookEventData data);
     }
 
@@ -210,6 +228,10 @@ public final class SignRequestWebhookEvent {
             return this;
         }
 
+        /**
+         * <p><code>sent</code>: sent to signers. <code>viewed</code>: a signer opened it. <code>signer_signed</code>: a signer signed. <code>declined</code>: a signer declined. <code>completed</code>: the sealed document is ready to download. <code>canceled</code> and <code>expired</code>: it ended unsigned.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull SignRequestWebhookEventType type) {
@@ -228,6 +250,10 @@ public final class SignRequestWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -235,6 +261,10 @@ public final class SignRequestWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The request. Never documents or field values.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull SignRequestWebhookEventData data) {

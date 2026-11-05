@@ -108,11 +108,17 @@ public final class Verification {
         return id;
     }
 
+    /**
+     * @return <code>sms</code> or <code>email</code>.
+     */
     @JsonProperty("channel")
     public VerificationChannel getChannel() {
         return channel;
     }
 
+    /**
+     * @return The phone number (E.164) or address the code goes to.
+     */
     @JsonProperty("to")
     public String getTo() {
         return to;
@@ -166,6 +172,9 @@ public final class Verification {
         return attempts;
     }
 
+    /**
+     * @return How many wrong codes end it.
+     */
     @JsonProperty("max_attempts")
     public long getMaxAttempts() {
         return maxAttempts;
@@ -179,6 +188,9 @@ public final class Verification {
         return sends;
     }
 
+    /**
+     * @return Your tags on the verification.
+     */
     @JsonProperty("tags")
     public List<VerificationTagsItem> getTags() {
         return tags;
@@ -192,11 +204,17 @@ public final class Verification {
         return sandbox;
     }
 
+    /**
+     * @return When the code stops working.
+     */
     @JsonProperty("expires_at")
     public OffsetDateTime getExpiresAt() {
         return expiresAt;
     }
 
+    /**
+     * @return When the right code was checked. <code>null</code>: it wasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("approved_at")
     public OptionalNullable<OffsetDateTime> getApprovedAt() {
@@ -300,10 +318,16 @@ public final class Verification {
     }
 
     public interface ChannelStage {
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         */
         ToStage channel(@NotNull VerificationChannel channel);
     }
 
     public interface ToStage {
+        /**
+         * <p>The phone number (E.164) or address the code goes to.</p>
+         */
         StatusStage to(@NotNull String to);
     }
 
@@ -322,6 +346,9 @@ public final class Verification {
     }
 
     public interface MaxAttemptsStage {
+        /**
+         * <p>How many wrong codes end it.</p>
+         */
         SandboxStage maxAttempts(long maxAttempts);
     }
 
@@ -333,6 +360,9 @@ public final class Verification {
     }
 
     public interface ExpiresAtStage {
+        /**
+         * <p>When the code stops working.</p>
+         */
         CreatedAtStage expiresAt(@NotNull OffsetDateTime expiresAt);
     }
 
@@ -387,12 +417,18 @@ public final class Verification {
 
         _FinalStage addAllSends(List<VerificationSend> sends);
 
+        /**
+         * <p>Your tags on the verification.</p>
+         */
         _FinalStage tags(List<VerificationTagsItem> tags);
 
         _FinalStage addTags(VerificationTagsItem tags);
 
         _FinalStage addAllTags(List<VerificationTagsItem> tags);
 
+        /**
+         * <p>When the right code was checked. <code>null</code>: it wasn't.</p>
+         */
         _FinalStage approvedAt(OptionalNullable<OffsetDateTime> approvedAt);
 
         _FinalStage approvedAt(OffsetDateTime approvedAt);
@@ -487,6 +523,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("channel")
         public ToStage channel(@NotNull VerificationChannel channel) {
@@ -494,6 +534,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>The phone number (E.164) or address the code goes to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public StatusStage to(@NotNull String to) {
@@ -523,6 +567,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>How many wrong codes end it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("max_attempts")
         public SandboxStage maxAttempts(long maxAttempts) {
@@ -541,6 +589,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>When the code stops working.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("expires_at")
         public CreatedAtStage expiresAt(@NotNull OffsetDateTime expiresAt) {
@@ -555,6 +607,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>When the right code was checked. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage approvedAt(Nullable<OffsetDateTime> approvedAt) {
             if (approvedAt.isNull()) {
@@ -567,6 +623,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>When the right code was checked. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage approvedAt(Optional<OffsetDateTime> approvedAt) {
             if (approvedAt.isPresent()) {
@@ -577,12 +637,19 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>When the right code was checked. <code>null</code>: it wasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage approvedAt(OffsetDateTime approvedAt) {
             this.approvedAt = OptionalNullable.of(approvedAt);
             return this;
         }
 
+        /**
+         * <p>When the right code was checked. <code>null</code>: it wasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "approved_at", nulls = Nulls.SKIP)
         public _FinalStage approvedAt(OptionalNullable<OffsetDateTime> approvedAt) {
@@ -590,6 +657,10 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTags(List<VerificationTagsItem> tags) {
             if (tags != null) {
@@ -598,12 +669,19 @@ public final class Verification {
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTags(VerificationTagsItem tags) {
             this.tags.add(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(List<VerificationTagsItem> tags) {

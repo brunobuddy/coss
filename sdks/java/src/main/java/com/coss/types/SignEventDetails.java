@@ -60,6 +60,9 @@ public final class SignEventDetails {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return <code>declined</code>: the signer's reason.
+     */
     @JsonProperty("reason")
     public Optional<String> getReason() {
         return reason;
@@ -81,6 +84,9 @@ public final class SignEventDetails {
         return disclosureSha256;
     }
 
+    /**
+     * @return <code>signed</code>: the fields the signer filled.
+     */
     @JsonProperty("field_ids")
     public Optional<List<String>> getFieldIds() {
         return fieldIds;
@@ -94,6 +100,9 @@ public final class SignEventDetails {
         return signatureSha256;
     }
 
+    /**
+     * @return SHA-256 of the initials image the signer adopted.
+     */
     @JsonProperty("initials_sha256")
     public Optional<String> getInitialsSha256() {
         return initialsSha256;
@@ -194,6 +203,9 @@ public final class SignEventDetails {
             return this;
         }
 
+        /**
+         * <p><code>declined</code>: the signer's reason.</p>
+         */
         @JsonSetter(value = "reason", nulls = Nulls.SKIP)
         public Builder reason(Optional<String> reason) {
             this.reason = reason;
@@ -233,6 +245,9 @@ public final class SignEventDetails {
             return this;
         }
 
+        /**
+         * <p><code>signed</code>: the fields the signer filled.</p>
+         */
         @JsonSetter(value = "field_ids", nulls = Nulls.SKIP)
         public Builder fieldIds(Optional<List<String>> fieldIds) {
             this.fieldIds = fieldIds;
@@ -258,6 +273,9 @@ public final class SignEventDetails {
             return this;
         }
 
+        /**
+         * <p>SHA-256 of the initials image the signer adopted.</p>
+         */
         @JsonSetter(value = "initials_sha256", nulls = Nulls.SKIP)
         public Builder initialsSha256(Optional<String> initialsSha256) {
             this.initialsSha256 = initialsSha256;

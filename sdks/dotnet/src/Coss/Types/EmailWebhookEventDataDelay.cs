@@ -11,13 +11,22 @@ public record EmailWebhookEventDataDelay : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The provider's reason for the delay.
+    /// </summary>
     [JsonPropertyName("type")]
     public required string Type { get; set; }
 
+    /// <summary>
+    /// When the provider stops trying. `null`: not reported.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }
 
+    /// <summary>
+    /// What the receiving server answered. `null`: not reported.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("diagnostic_code")]
     public string? DiagnosticCode { get; set; }

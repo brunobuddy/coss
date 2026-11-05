@@ -11,14 +11,45 @@ class DmarcReportSummaryPolicyPublished(UniversalBaseModel):
     The policy the reporter found when it evaluated the mail.
     """
 
-    domain: str
-    p: typing.Optional[str] = None
-    sp: typing.Optional[str] = None
-    np: typing.Optional[str] = None
-    adkim: typing.Optional[str] = None
-    aspf: typing.Optional[str] = None
-    pct: typing.Optional[int] = None
-    testing: typing.Optional[str] = None
+    domain: str = pydantic.Field()
+    """
+    The domain the policy was published for.
+    """
+
+    p: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The domain's policy tag.
+    """
+
+    sp: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The subdomain policy tag.
+    """
+
+    np: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The policy tag for non-existent subdomains.
+    """
+
+    adkim: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The DKIM alignment tag.
+    """
+
+    aspf: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The SPF alignment tag.
+    """
+
+    pct: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The percentage tag.
+    """
+
+    testing: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The testing tag.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

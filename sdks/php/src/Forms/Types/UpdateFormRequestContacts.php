@@ -6,16 +6,19 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * Turning submissions into contacts. Only the fields given change.
+ */
 class UpdateFormRequestContacts extends JsonSerializableType
 {
     /**
-     * @var ?bool $enabled
+     * @var ?bool $enabled Turn each accepted submission into a contact, from `submitter.email_field`. Default false.
      */
     #[JsonProperty('enabled')]
     public ?bool $enabled;
 
     /**
-     * @var ?array<string> $audienceIds
+     * @var ?array<string> $audienceIds Audiences the contact joins. They must exist in this environment.
      */
     #[JsonProperty('audience_ids'), ArrayType(['string'])]
     public ?array $audienceIds;
@@ -33,13 +36,13 @@ class UpdateFormRequestContacts extends JsonSerializableType
     public ?bool $doubleOptIn;
 
     /**
-     * @var ?string $firstNameField The `name` the form's input posts.
+     * @var ?string $firstNameField The field holding the contact's first name. `null`: none.
      */
     #[JsonProperty('first_name_field')]
     public ?string $firstNameField;
 
     /**
-     * @var ?string $lastNameField The `name` the form's input posts.
+     * @var ?string $lastNameField The field holding the contact's last name. `null`: none.
      */
     #[JsonProperty('last_name_field')]
     public ?string $lastNameField;

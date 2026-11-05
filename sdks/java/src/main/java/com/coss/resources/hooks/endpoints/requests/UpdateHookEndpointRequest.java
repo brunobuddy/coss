@@ -55,11 +55,17 @@ public final class UpdateHookEndpointRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Where deliveries are sent.
+     */
     @JsonProperty("url")
     public Optional<String> getUrl() {
         return url;
     }
 
+    /**
+     * @return Your note about it. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -97,6 +103,9 @@ public final class UpdateHookEndpointRequest {
         return metadata;
     }
 
+    /**
+     * @return <code>false</code> disables it with <code>disabled_reason: manual</code>; <code>true</code> enables it again and clears the reason.
+     */
     @JsonProperty("enabled")
     public Optional<Boolean> getEnabled() {
         return enabled;
@@ -178,6 +187,9 @@ public final class UpdateHookEndpointRequest {
             return this;
         }
 
+        /**
+         * <p>Where deliveries are sent.</p>
+         */
         @JsonSetter(value = "url", nulls = Nulls.SKIP)
         public Builder url(Optional<String> url) {
             this.url = url;
@@ -189,6 +201,9 @@ public final class UpdateHookEndpointRequest {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public Builder description(OptionalNullable<String> description) {
             this.description = description;
@@ -282,6 +297,9 @@ public final class UpdateHookEndpointRequest {
             return this;
         }
 
+        /**
+         * <p><code>false</code> disables it with <code>disabled_reason: manual</code>; <code>true</code> enables it again and clears the reason.</p>
+         */
         @JsonSetter(value = "enabled", nulls = Nulls.SKIP)
         public Builder enabled(Optional<Boolean> enabled) {
             this.enabled = enabled;

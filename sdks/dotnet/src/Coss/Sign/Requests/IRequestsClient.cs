@@ -22,6 +22,9 @@ public partial interface IRequestsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+    /// </summary>
     WithRawResponseTask<SignRequest> GetAsync(
         GetRequestsRequest request,
         RequestOptions? options = null,

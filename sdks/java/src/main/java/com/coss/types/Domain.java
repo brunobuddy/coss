@@ -140,6 +140,9 @@ public final class Domain {
         return canSend;
     }
 
+    /**
+     * @return The provider region it sends from. <code>null</code>: not set up there.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("region")
     public OptionalNullable<String> getRegion() {
@@ -157,6 +160,9 @@ public final class Domain {
         return mailFromDomain;
     }
 
+    /**
+     * @return How setting up its bounce-handling <code>MAIL FROM</code> domain went.
+     */
     @JsonProperty("mail_from_status")
     public DomainMailFromStatus getMailFromStatus() {
         return mailFromStatus;
@@ -175,6 +181,9 @@ public final class Domain {
         return createdAt;
     }
 
+    /**
+     * @return When DNS was last checked. <code>null</code>: not yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_checked_at")
     public OptionalNullable<OffsetDateTime> getLastCheckedAt() {
@@ -184,6 +193,9 @@ public final class Domain {
         return lastCheckedAt;
     }
 
+    /**
+     * @return When it was verified. <code>null</code>: it isn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("verified_at")
     public OptionalNullable<OffsetDateTime> getVerifiedAt() {
@@ -193,6 +205,9 @@ public final class Domain {
         return verifiedAt;
     }
 
+    /**
+     * @return When verification failed. <code>null</code>: it hasn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("failed_at")
     public OptionalNullable<OffsetDateTime> getFailedAt() {
@@ -390,6 +405,9 @@ public final class Domain {
     }
 
     public interface MailFromStatusStage {
+        /**
+         * <p>How setting up its bounce-handling <code>MAIL FROM</code> domain went.</p>
+         */
         CreatedAtStage mailFromStatus(@NotNull DomainMailFromStatus mailFromStatus);
     }
 
@@ -415,6 +433,9 @@ public final class Domain {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The provider region it sends from. <code>null</code>: not set up there.</p>
+         */
         _FinalStage region(OptionalNullable<String> region);
 
         _FinalStage region(String region);
@@ -432,6 +453,9 @@ public final class Domain {
 
         _FinalStage addAllRecords(List<DomainRecord> records);
 
+        /**
+         * <p>When DNS was last checked. <code>null</code>: not yet.</p>
+         */
         _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt);
 
         _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt);
@@ -440,6 +464,9 @@ public final class Domain {
 
         _FinalStage lastCheckedAt(Nullable<OffsetDateTime> lastCheckedAt);
 
+        /**
+         * <p>When it was verified. <code>null</code>: it isn't.</p>
+         */
         _FinalStage verifiedAt(OptionalNullable<OffsetDateTime> verifiedAt);
 
         _FinalStage verifiedAt(OffsetDateTime verifiedAt);
@@ -448,6 +475,9 @@ public final class Domain {
 
         _FinalStage verifiedAt(Nullable<OffsetDateTime> verifiedAt);
 
+        /**
+         * <p>When verification failed. <code>null</code>: it hasn't.</p>
+         */
         _FinalStage failedAt(OptionalNullable<OffsetDateTime> failedAt);
 
         _FinalStage failedAt(OffsetDateTime failedAt);
@@ -619,6 +649,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>How setting up its bounce-handling <code>MAIL FROM</code> domain went.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("mail_from_status")
         public CreatedAtStage mailFromStatus(@NotNull DomainMailFromStatus mailFromStatus) {
@@ -771,6 +805,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When verification failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(Nullable<OffsetDateTime> failedAt) {
             if (failedAt.isNull()) {
@@ -783,6 +821,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When verification failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(Optional<OffsetDateTime> failedAt) {
             if (failedAt.isPresent()) {
@@ -793,12 +835,19 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When verification failed. <code>null</code>: it hasn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failedAt(OffsetDateTime failedAt) {
             this.failedAt = OptionalNullable.of(failedAt);
             return this;
         }
 
+        /**
+         * <p>When verification failed. <code>null</code>: it hasn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "failed_at", nulls = Nulls.SKIP)
         public _FinalStage failedAt(OptionalNullable<OffsetDateTime> failedAt) {
@@ -806,6 +855,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When it was verified. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage verifiedAt(Nullable<OffsetDateTime> verifiedAt) {
             if (verifiedAt.isNull()) {
@@ -818,6 +871,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When it was verified. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage verifiedAt(Optional<OffsetDateTime> verifiedAt) {
             if (verifiedAt.isPresent()) {
@@ -828,12 +885,19 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When it was verified. <code>null</code>: it isn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage verifiedAt(OffsetDateTime verifiedAt) {
             this.verifiedAt = OptionalNullable.of(verifiedAt);
             return this;
         }
 
+        /**
+         * <p>When it was verified. <code>null</code>: it isn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "verified_at", nulls = Nulls.SKIP)
         public _FinalStage verifiedAt(OptionalNullable<OffsetDateTime> verifiedAt) {
@@ -841,6 +905,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When DNS was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Nullable<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isNull()) {
@@ -853,6 +921,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When DNS was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(Optional<OffsetDateTime> lastCheckedAt) {
             if (lastCheckedAt.isPresent()) {
@@ -863,12 +935,19 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>When DNS was last checked. <code>null</code>: not yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastCheckedAt(OffsetDateTime lastCheckedAt) {
             this.lastCheckedAt = OptionalNullable.of(lastCheckedAt);
             return this;
         }
 
+        /**
+         * <p>When DNS was last checked. <code>null</code>: not yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_checked_at", nulls = Nulls.SKIP)
         public _FinalStage lastCheckedAt(OptionalNullable<OffsetDateTime> lastCheckedAt) {
@@ -911,6 +990,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>The provider region it sends from. <code>null</code>: not set up there.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage region(Nullable<String> region) {
             if (region.isNull()) {
@@ -923,6 +1006,10 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>The provider region it sends from. <code>null</code>: not set up there.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage region(Optional<String> region) {
             if (region.isPresent()) {
@@ -933,12 +1020,19 @@ public final class Domain {
             return this;
         }
 
+        /**
+         * <p>The provider region it sends from. <code>null</code>: not set up there.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage region(String region) {
             this.region = OptionalNullable.of(region);
             return this;
         }
 
+        /**
+         * <p>The provider region it sends from. <code>null</code>: not set up there.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "region", nulls = Nulls.SKIP)
         public _FinalStage region(OptionalNullable<String> region) {

@@ -6,14 +6,23 @@ namespace Coss.Risk;
 [Serializable]
 public record UpdateRiskSettingsRequest
 {
+    /// <summary>
+    /// Scores at or above it are `review`.
+    /// </summary>
     [Optional]
     [JsonPropertyName("review_threshold")]
     public double? ReviewThreshold { get; set; }
 
+    /// <summary>
+    /// Scores at or above it are `block`.
+    /// </summary>
     [Optional]
     [JsonPropertyName("block_threshold")]
     public double? BlockThreshold { get; set; }
 
+    /// <summary>
+    /// Reasons that never fire in this environment. Replaces the list.
+    /// </summary>
     [Optional]
     [JsonPropertyName("disabled_reasons")]
     public IEnumerable<UpdateRiskSettingsRequestDisabledReasonsItem>? DisabledReasons { get; set; }

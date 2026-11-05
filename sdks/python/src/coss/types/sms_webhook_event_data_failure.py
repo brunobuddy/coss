@@ -11,8 +11,15 @@ class SmsWebhookEventDataFailure(UniversalBaseModel):
     Why the message failed or wasn't delivered.
     """
 
-    code: str
-    message: str
+    code: str = pydantic.Field()
+    """
+    Machine-readable reason.
+    """
+
+    message: str = pydantic.Field()
+    """
+    Human-readable explanation.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

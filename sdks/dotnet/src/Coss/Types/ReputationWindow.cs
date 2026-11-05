@@ -14,9 +14,15 @@ public record ReputationWindow : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// When the period starts.
+    /// </summary>
     [JsonPropertyName("start")]
     public required DateTime Start { get; set; }
 
+    /// <summary>
+    /// When the period ends.
+    /// </summary>
     [JsonPropertyName("end")]
     public required DateTime End { get; set; }
 

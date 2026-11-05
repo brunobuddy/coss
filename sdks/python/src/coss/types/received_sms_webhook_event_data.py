@@ -16,11 +16,32 @@ class ReceivedSmsWebhookEventData(UniversalBaseModel):
     The received message; `null` for an opt-out to a number whose replies go to no environment.
     """
 
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: str
-    keyword: typing.Optional[ReceivedSmsWebhookEventDataKeyword] = None
-    sandbox: bool
-    occurred_at: dt.datetime
+    from_: typing_extensions.Annotated[
+        str, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="Who sent it.")
+    ]
+    """
+    Who sent it.
+    """
+
+    to: str = pydantic.Field()
+    """
+    Your number that received it.
+    """
+
+    keyword: typing.Optional[ReceivedSmsWebhookEventDataKeyword] = pydantic.Field(default=None)
+    """
+    The keyword it is, if any: `stop`, `start` or `help`. `null`: none.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it's a simulated message of a sandbox environment.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

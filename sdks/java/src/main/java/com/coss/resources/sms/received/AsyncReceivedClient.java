@@ -56,18 +56,30 @@ public class AsyncReceivedClient {
         return this.rawClient.list(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<ReceivedSms> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<ReceivedSms> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<ReceivedSms> get(String id, GetReceivedRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One message received on a number of the organization and routed to the API key's environment.
+     */
     public CompletableFuture<ReceivedSms> get(String id, GetReceivedRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

@@ -7,6 +7,9 @@ namespace Coss.Risk;
 [Serializable]
 public record ListListsRequest
 {
+    /// <summary>
+    /// Which list: `allow` or `block`.
+    /// </summary>
     [JsonIgnore]
     public RiskList? List { get; set; }
 

@@ -11,8 +11,15 @@ class EmailWebhookEventDataUnsubscribe(UniversalBaseModel):
     Only for `email.suppressed` without `suppression`: the recipient is a contact who unsubscribed (from marketing, or from the email's topic, `topic`).
     """
 
-    contact_id: typing.Optional[str] = None
-    topic: typing.Optional[str] = None
+    contact_id: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The contact who unsubscribed. `null`: none.
+    """
+
+    topic: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The topic they left. `null`: marketing altogether.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

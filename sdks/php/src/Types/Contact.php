@@ -24,19 +24,19 @@ class Contact extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $email
+     * @var string $email The contact's address. Unique in the environment, case-insensitively.
      */
     #[JsonProperty('email')]
     public string $email;
 
     /**
-     * @var ?string $firstName
+     * @var ?string $firstName Their first name. `null`: not set.
      */
     #[JsonProperty('first_name')]
     public ?string $firstName;
 
     /**
-     * @var ?string $lastName
+     * @var ?string $lastName Their last name. `null`: not set.
      */
     #[JsonProperty('last_name')]
     public ?string $lastName;
@@ -52,7 +52,7 @@ class Contact extends JsonSerializableType
      *    string
      *   |float
      *   |bool
-     * )> $properties
+     * )> $properties Custom properties by key.
      */
     #[JsonProperty('properties'), ArrayType(['string' => new Union('string', 'float', 'bool')])]
     public array $properties;
@@ -64,13 +64,13 @@ class Contact extends JsonSerializableType
     public string $source;
 
     /**
-     * @var ?DateTime $subscribedAt
+     * @var ?DateTime $subscribedAt When it last became `subscribed`. `null`: it hasn't.
      */
     #[JsonProperty('subscribed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $subscribedAt;
 
     /**
-     * @var ?DateTime $unsubscribedAt
+     * @var ?DateTime $unsubscribedAt When it became `unsubscribed`. `null` unless it is.
      */
     #[JsonProperty('unsubscribed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $unsubscribedAt;

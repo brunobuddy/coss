@@ -56,21 +56,33 @@ public final class BillingContract {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The contract's id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
     }
 
+    /**
+     * @return <code>self_serve</code>: chosen in the dashboard. <code>sales</code>: agreed with coss.com. <code>internal</code>: coss.com's own.
+     */
     @JsonProperty("kind")
     public BillingContractKind getKind() {
         return kind;
     }
 
+    /**
+     * @return When it took effect.
+     */
     @JsonProperty("effective_from")
     public OffsetDateTime getEffectiveFrom() {
         return effectiveFrom;
     }
 
+    /**
+     * @return When it ends. <code>null</code>: no end is set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("effective_until")
     public OptionalNullable<OffsetDateTime> getEffectiveUntil() {
@@ -92,6 +104,9 @@ public final class BillingContract {
         return termEnd;
     }
 
+    /**
+     * @return Whether a committed term renews when it ends.
+     */
     @JsonProperty("auto_renew")
     public boolean getAutoRenew() {
         return autoRenew;
@@ -144,20 +159,32 @@ public final class BillingContract {
     }
 
     public interface IdStage {
+        /**
+         * <p>The contract's id.</p>
+         */
         KindStage id(@NotNull String id);
 
         Builder from(BillingContract other);
     }
 
     public interface KindStage {
+        /**
+         * <p><code>self_serve</code>: chosen in the dashboard. <code>sales</code>: agreed with coss.com. <code>internal</code>: coss.com's own.</p>
+         */
         EffectiveFromStage kind(@NotNull BillingContractKind kind);
     }
 
     public interface EffectiveFromStage {
+        /**
+         * <p>When it took effect.</p>
+         */
         AutoRenewStage effectiveFrom(@NotNull OffsetDateTime effectiveFrom);
     }
 
     public interface AutoRenewStage {
+        /**
+         * <p>Whether a committed term renews when it ends.</p>
+         */
         _FinalStage autoRenew(boolean autoRenew);
     }
 
@@ -168,6 +195,9 @@ public final class BillingContract {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When it ends. <code>null</code>: no end is set.</p>
+         */
         _FinalStage effectiveUntil(OptionalNullable<OffsetDateTime> effectiveUntil);
 
         _FinalStage effectiveUntil(OffsetDateTime effectiveUntil);
@@ -218,6 +248,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>The contract's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public KindStage id(@NotNull String id) {
@@ -225,6 +259,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p><code>self_serve</code>: chosen in the dashboard. <code>sales</code>: agreed with coss.com. <code>internal</code>: coss.com's own.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("kind")
         public EffectiveFromStage kind(@NotNull BillingContractKind kind) {
@@ -232,6 +270,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>When it took effect.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("effective_from")
         public AutoRenewStage effectiveFrom(@NotNull OffsetDateTime effectiveFrom) {
@@ -239,6 +281,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>Whether a committed term renews when it ends.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("auto_renew")
         public _FinalStage autoRenew(boolean autoRenew) {
@@ -296,6 +342,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>When it ends. <code>null</code>: no end is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage effectiveUntil(Nullable<OffsetDateTime> effectiveUntil) {
             if (effectiveUntil.isNull()) {
@@ -308,6 +358,10 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>When it ends. <code>null</code>: no end is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage effectiveUntil(Optional<OffsetDateTime> effectiveUntil) {
             if (effectiveUntil.isPresent()) {
@@ -318,12 +372,19 @@ public final class BillingContract {
             return this;
         }
 
+        /**
+         * <p>When it ends. <code>null</code>: no end is set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage effectiveUntil(OffsetDateTime effectiveUntil) {
             this.effectiveUntil = OptionalNullable.of(effectiveUntil);
             return this;
         }
 
+        /**
+         * <p>When it ends. <code>null</code>: no end is set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "effective_until", nulls = Nulls.SKIP)
         public _FinalStage effectiveUntil(OptionalNullable<OffsetDateTime> effectiveUntil) {

@@ -24,7 +24,11 @@ class Reputation(UniversalBaseModel):
     The trigger behind a `warning` or `suspended` status.
     """
 
-    status_changed_at: typing.Optional[dt.datetime] = None
+    status_changed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When `status` last changed. `null`: it never has.
+    """
+
     evaluated_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the checks below were computed; `null` before the first evaluation.
@@ -35,7 +39,11 @@ class Reputation(UniversalBaseModel):
     The period the checks cover (live environments only).
     """
 
-    checks: typing.List[ReputationCheck]
+    checks: typing.List[ReputationCheck] = pydantic.Field()
+    """
+    The measurements behind `status`.
+    """
+
     marketing: MarketingStanding
 
     if IS_PYDANTIC_V2:

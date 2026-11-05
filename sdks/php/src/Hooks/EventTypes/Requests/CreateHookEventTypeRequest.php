@@ -9,13 +9,13 @@ use Coss\Core\Types\ArrayType;
 class CreateHookEventTypeRequest extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description What this event means, shown to your users.
      */
     #[JsonProperty('description')]
     public ?string $description;

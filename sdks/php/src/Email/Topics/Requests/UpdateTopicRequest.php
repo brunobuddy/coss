@@ -10,13 +10,13 @@ use Coss\Email\Topics\Types\UpdateTopicRequestVisibility;
 class UpdateTopicRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Shown in the preference center.
      */
     #[JsonProperty('name')]
     public ?string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Shown in the preference center under its name. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;

@@ -87,6 +87,9 @@ public final class CreateFormRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the form, shown in the dashboard and in notifications.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -140,31 +143,49 @@ public final class CreateFormRequest {
         return redirectUrl;
     }
 
+    /**
+     * @return How submissions are screened. Only the fields given change.
+     */
     @JsonProperty("spam")
     public Optional<CreateFormRequestSpam> getSpam() {
         return spam;
     }
 
+    /**
+     * @return Who the submitter is, and whether they must confirm by email. Only the fields given change.
+     */
     @JsonProperty("submitter")
     public Optional<CreateFormRequestSubmitter> getSubmitter() {
         return submitter;
     }
 
+    /**
+     * @return Emails about accepted submissions. Only the fields given change.
+     */
     @JsonProperty("notifications")
     public Optional<CreateFormRequestNotifications> getNotifications() {
         return notifications;
     }
 
+    /**
+     * @return Turning submissions into contacts. Only the fields given change.
+     */
     @JsonProperty("contacts")
     public Optional<CreateFormRequestContacts> getContacts() {
         return contacts;
     }
 
+    /**
+     * @return File uploads. Only the fields given change.
+     */
     @JsonProperty("files")
     public Optional<CreateFormRequestFiles> getFiles() {
         return files;
     }
 
+    /**
+     * @return The page coss.com can serve for this form. Only the fields given change.
+     */
     @JsonProperty("hosted")
     public Optional<CreateFormRequestHosted> getHosted() {
         return hosted;
@@ -235,6 +256,9 @@ public final class CreateFormRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>Your name for the form, shown in the dashboard and in notifications.</p>
+         */
         _FinalStage name(@NotNull String name);
 
         Builder from(CreateFormRequest other);
@@ -290,26 +314,44 @@ public final class CreateFormRequest {
 
         _FinalStage redirectUrl(Nullable<String> redirectUrl);
 
+        /**
+         * <p>How submissions are screened. Only the fields given change.</p>
+         */
         _FinalStage spam(Optional<CreateFormRequestSpam> spam);
 
         _FinalStage spam(CreateFormRequestSpam spam);
 
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email. Only the fields given change.</p>
+         */
         _FinalStage submitter(Optional<CreateFormRequestSubmitter> submitter);
 
         _FinalStage submitter(CreateFormRequestSubmitter submitter);
 
+        /**
+         * <p>Emails about accepted submissions. Only the fields given change.</p>
+         */
         _FinalStage notifications(Optional<CreateFormRequestNotifications> notifications);
 
         _FinalStage notifications(CreateFormRequestNotifications notifications);
 
+        /**
+         * <p>Turning submissions into contacts. Only the fields given change.</p>
+         */
         _FinalStage contacts(Optional<CreateFormRequestContacts> contacts);
 
         _FinalStage contacts(CreateFormRequestContacts contacts);
 
+        /**
+         * <p>File uploads. Only the fields given change.</p>
+         */
         _FinalStage files(Optional<CreateFormRequestFiles> files);
 
         _FinalStage files(CreateFormRequestFiles files);
 
+        /**
+         * <p>The page coss.com can serve for this form. Only the fields given change.</p>
+         */
         _FinalStage hosted(Optional<CreateFormRequestHosted> hosted);
 
         _FinalStage hosted(CreateFormRequestHosted hosted);
@@ -363,6 +405,10 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the form, shown in the dashboard and in notifications.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public _FinalStage name(@NotNull String name) {
@@ -370,12 +416,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>The page coss.com can serve for this form. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage hosted(CreateFormRequestHosted hosted) {
             this.hosted = Optional.ofNullable(hosted);
             return this;
         }
 
+        /**
+         * <p>The page coss.com can serve for this form. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "hosted", nulls = Nulls.SKIP)
         public _FinalStage hosted(Optional<CreateFormRequestHosted> hosted) {
@@ -383,12 +436,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>File uploads. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage files(CreateFormRequestFiles files) {
             this.files = Optional.ofNullable(files);
             return this;
         }
 
+        /**
+         * <p>File uploads. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "files", nulls = Nulls.SKIP)
         public _FinalStage files(Optional<CreateFormRequestFiles> files) {
@@ -396,12 +456,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Turning submissions into contacts. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage contacts(CreateFormRequestContacts contacts) {
             this.contacts = Optional.ofNullable(contacts);
             return this;
         }
 
+        /**
+         * <p>Turning submissions into contacts. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "contacts", nulls = Nulls.SKIP)
         public _FinalStage contacts(Optional<CreateFormRequestContacts> contacts) {
@@ -409,12 +476,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Emails about accepted submissions. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage notifications(CreateFormRequestNotifications notifications) {
             this.notifications = Optional.ofNullable(notifications);
             return this;
         }
 
+        /**
+         * <p>Emails about accepted submissions. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "notifications", nulls = Nulls.SKIP)
         public _FinalStage notifications(Optional<CreateFormRequestNotifications> notifications) {
@@ -422,12 +496,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitter(CreateFormRequestSubmitter submitter) {
             this.submitter = Optional.ofNullable(submitter);
             return this;
         }
 
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "submitter", nulls = Nulls.SKIP)
         public _FinalStage submitter(Optional<CreateFormRequestSubmitter> submitter) {
@@ -435,12 +516,19 @@ public final class CreateFormRequest {
             return this;
         }
 
+        /**
+         * <p>How submissions are screened. Only the fields given change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spam(CreateFormRequestSpam spam) {
             this.spam = Optional.ofNullable(spam);
             return this;
         }
 
+        /**
+         * <p>How submissions are screened. Only the fields given change.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "spam", nulls = Nulls.SKIP)
         public _FinalStage spam(Optional<CreateFormRequestSpam> spam) {

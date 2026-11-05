@@ -33,11 +33,17 @@ public final class UpdateBroadcastRequestTracking {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Track opens with a pixel.
+     */
     @JsonProperty("opens")
     public Optional<Boolean> getOpens() {
         return opens;
     }
 
+    /**
+     * @return Track clicks by rewriting links.
+     */
     @JsonProperty("clicks")
     public Optional<Boolean> getClicks() {
         return clicks;
@@ -89,6 +95,9 @@ public final class UpdateBroadcastRequestTracking {
             return this;
         }
 
+        /**
+         * <p>Track opens with a pixel.</p>
+         */
         @JsonSetter(value = "opens", nulls = Nulls.SKIP)
         public Builder opens(Optional<Boolean> opens) {
             this.opens = opens;
@@ -100,6 +109,9 @@ public final class UpdateBroadcastRequestTracking {
             return this;
         }
 
+        /**
+         * <p>Track clicks by rewriting links.</p>
+         */
         @JsonSetter(value = "clicks", nulls = Nulls.SKIP)
         public Builder clicks(Optional<Boolean> clicks) {
             this.clicks = clicks;

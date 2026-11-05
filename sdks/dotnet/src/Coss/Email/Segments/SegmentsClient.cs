@@ -1247,6 +1247,9 @@ public partial class SegmentsClient : ISegmentsClient
         );
     }
 
+    /// <summary>
+    /// One segment of the API key's environment, with its filter.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Segments.GetAsync(
     ///     new GetSegmentsRequest { Id = "seg_01k7c8m4q2f3e9v6t5r1n0p8yz" }
@@ -1261,6 +1264,9 @@ public partial class SegmentsClient : ISegmentsClient
         return new WithRawResponseTask<Segment>(GetAsyncCore(request, options, cancellationToken));
     }
 
+    /// <summary>
+    /// Deletes a segment. The contacts it matched stay.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Segments.RemoveAsync(
     ///     new RemoveSegmentsRequest { Id = "seg_01k7c8m4q2f3e9v6t5r1n0p8yz" }
@@ -1277,6 +1283,9 @@ public partial class SegmentsClient : ISegmentsClient
         );
     }
 
+    /// <summary>
+    /// Changes a segment's name or filter. Only the fields given change.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Segments.UpdateAsync(
     ///     new UpdateSegmentRequest

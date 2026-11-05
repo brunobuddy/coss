@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// One recipient of an email and how delivery to them went.
+/// </summary>
 [Serializable]
 public record EmailRecipient : IJsonOnDeserialized
 {
@@ -17,6 +20,9 @@ public record EmailRecipient : IJsonOnDeserialized
     [JsonPropertyName("address")]
     public required string Address { get; set; }
 
+    /// <summary>
+    /// Which list it's on: `to`, `cc` or `bcc`.
+    /// </summary>
     [JsonPropertyName("type")]
     public required EmailRecipientType Type { get; set; }
 
@@ -26,6 +32,9 @@ public record EmailRecipient : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required EmailRecipientStatus Status { get; set; }
 
+    /// <summary>
+    /// When its latest delivery event happened. `null`: none yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_event_at")]
     public DateTime? LastEventAt { get; set; }

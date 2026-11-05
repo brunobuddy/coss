@@ -17,6 +17,7 @@ from .....errors.content_too_large_error import ContentTooLargeError
 from .....errors.forbidden_error import ForbiddenError
 from .....errors.internal_server_error import InternalServerError
 from .....errors.not_found_error import NotFoundError
+from .....errors.payment_required_error import PaymentRequiredError
 from .....errors.service_unavailable_error import ServiceUnavailableError
 from .....errors.too_many_requests_error import TooManyRequestsError
 from .....errors.unauthorized_error import UnauthorizedError
@@ -186,6 +187,7 @@ class RawEndpointsClient:
         url : str
 
         description : typing.Optional[str]
+            Your note about it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -200,6 +202,7 @@ class RawEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -631,8 +634,10 @@ class RawEndpointsClient:
             The endpoint's id.
 
         url : typing.Optional[str]
+            Where deliveries are sent.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -644,6 +649,7 @@ class RawEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1420,6 +1426,7 @@ class RawEndpointsClient:
             The endpoint's id.
 
         event_type : str
+            The event type to send as.
 
         payload : typing.Optional[typing.Dict[str, typing.Any]]
             Defaults to the event type's first example.
@@ -1472,6 +1479,17 @@ class RawEndpointsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,
@@ -1871,6 +1889,7 @@ class AsyncRawEndpointsClient:
         url : str
 
         description : typing.Optional[str]
+            Your note about it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -1885,6 +1904,7 @@ class AsyncRawEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -2316,8 +2336,10 @@ class AsyncRawEndpointsClient:
             The endpoint's id.
 
         url : typing.Optional[str]
+            Where deliveries are sent.
 
         description : typing.Optional[str]
+            Your note about it. `null` removes it.
 
         filter_types : typing.Optional[typing.Sequence[str]]
             Event types delivered to this endpoint (existing, unarchived ones). An empty array means every type, including ones added later.
@@ -2329,6 +2351,7 @@ class AsyncRawEndpointsClient:
             Your own key-value pairs (at most 16; keys up to 40 characters, values up to 500).
 
         enabled : typing.Optional[bool]
+            `false` disables it with `disabled_reason: manual`; `true` enables it again and clears the reason.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -3105,6 +3128,7 @@ class AsyncRawEndpointsClient:
             The endpoint's id.
 
         event_type : str
+            The event type to send as.
 
         payload : typing.Optional[typing.Dict[str, typing.Any]]
             Defaults to the event type's first example.
@@ -3157,6 +3181,17 @@ class AsyncRawEndpointsClient:
                 )
             if _response.status_code == 401:
                 raise UnauthorizedError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        Error,
+                        parse_obj_as(
+                            type_=Error,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
                     headers=dict(_response.headers),
                     body=typing.cast(
                         Error,

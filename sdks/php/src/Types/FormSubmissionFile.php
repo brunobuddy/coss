@@ -14,19 +14,19 @@ class FormSubmissionFile extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $field
+     * @var string $field The form field it was uploaded through.
      */
     #[JsonProperty('field')]
     public string $field;
 
     /**
-     * @var string $filename
+     * @var string $filename The file's name, made safe.
      */
     #[JsonProperty('filename')]
     public string $filename;
 
     /**
-     * @var string $contentType
+     * @var string $contentType The MIME type it was uploaded as.
      */
     #[JsonProperty('content_type')]
     public string $contentType;

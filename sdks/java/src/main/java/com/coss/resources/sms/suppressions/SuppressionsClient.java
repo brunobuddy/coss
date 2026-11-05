@@ -74,26 +74,44 @@ public class SuppressionsClient {
         return this.rawClient.add(request, requestOptions).body();
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public SmsSuppressionCheck check(CheckSuppressionsRequest request) {
         return this.rawClient.check(request).body();
     }
 
+    /**
+     * Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+     */
     public SmsSuppressionCheck check(CheckSuppressionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.check(request, requestOptions).body();
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public SmsSuppression get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public SmsSuppression get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public SmsSuppression get(String id, GetSuppressionsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One entry of the SMS suppression list of the API key's environment.
+     */
     public SmsSuppression get(String id, GetSuppressionsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

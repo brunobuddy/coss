@@ -12,7 +12,7 @@ module Coss
       @raw_client = Coss::Internal::Http::RawClient.new(
         base_url: base_url || Coss::Environment::DEFAULT,
         headers: {
-          "User-Agent" => "coss-ruby/0.2.0",
+          "User-Agent" => "coss-ruby/0.3.0",
           "X-Fern-Language" => "Ruby",
           Authorization: "Bearer #{api_key}",
           "Coss-Version" => api_version.to_s
@@ -110,6 +110,11 @@ module Coss
     # @return [Coss::Hooks::Client]
     def hooks
       @hooks ||= Coss::Hooks::Client.new(client: @raw_client)
+    end
+
+    # @return [Coss::Scheduling::Client]
+    def scheduling
+      @scheduling ||= Coss::Scheduling::Client.new(client: @raw_client)
     end
 
     # @return [Coss::Sign::Client]

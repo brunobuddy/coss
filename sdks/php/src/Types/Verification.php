@@ -23,13 +23,13 @@ class Verification extends JsonSerializableType
     public string $id;
 
     /**
-     * @var value-of<VerificationChannel> $channel
+     * @var value-of<VerificationChannel> $channel `sms` or `email`.
      */
     #[JsonProperty('channel')]
     public string $channel;
 
     /**
-     * @var string $to
+     * @var string $to The phone number (E.164) or address the code goes to.
      */
     #[JsonProperty('to')]
     public string $to;
@@ -65,7 +65,7 @@ class Verification extends JsonSerializableType
     public int $attempts;
 
     /**
-     * @var int $maxAttempts
+     * @var int $maxAttempts How many wrong codes end it.
      */
     #[JsonProperty('max_attempts')]
     public int $maxAttempts;
@@ -77,7 +77,7 @@ class Verification extends JsonSerializableType
     public array $sends;
 
     /**
-     * @var array<VerificationTagsItem> $tags
+     * @var array<VerificationTagsItem> $tags Your tags on the verification.
      */
     #[JsonProperty('tags'), ArrayType([VerificationTagsItem::class])]
     public array $tags;
@@ -89,13 +89,13 @@ class Verification extends JsonSerializableType
     public bool $sandbox;
 
     /**
-     * @var DateTime $expiresAt
+     * @var DateTime $expiresAt When the code stops working.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $expiresAt;
 
     /**
-     * @var ?DateTime $approvedAt
+     * @var ?DateTime $approvedAt When the right code was checked. `null`: it wasn't.
      */
     #[JsonProperty('approved_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $approvedAt;

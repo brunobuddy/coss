@@ -53,6 +53,9 @@ public final class ReceivingDomainRecord {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The record's type.
+     */
     @JsonProperty("type")
     public ReceivingDomainRecordType getType() {
         return type;
@@ -74,6 +77,9 @@ public final class ReceivingDomainRecord {
         return value;
     }
 
+    /**
+     * @return The MX record's priority.
+     */
     @JsonProperty("priority")
     public long getPriority() {
         return priority;
@@ -130,6 +136,9 @@ public final class ReceivingDomainRecord {
     }
 
     public interface TypeStage {
+        /**
+         * <p>The record's type.</p>
+         */
         NameStage type(@NotNull ReceivingDomainRecordType type);
 
         Builder from(ReceivingDomainRecord other);
@@ -150,6 +159,9 @@ public final class ReceivingDomainRecord {
     }
 
     public interface PriorityStage {
+        /**
+         * <p>The MX record's priority.</p>
+         */
         StatusStage priority(long priority);
     }
 
@@ -208,6 +220,10 @@ public final class ReceivingDomainRecord {
             return this;
         }
 
+        /**
+         * <p>The record's type.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public NameStage type(@NotNull ReceivingDomainRecordType type) {
@@ -237,6 +253,10 @@ public final class ReceivingDomainRecord {
             return this;
         }
 
+        /**
+         * <p>The MX record's priority.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("priority")
         public StatusStage priority(long priority) {

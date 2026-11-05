@@ -114,6 +114,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One broadcast of the API key's environment, with its status and stats.
+//
 // Example:
 //
 //	request := &email.GetBroadcastsRequest{

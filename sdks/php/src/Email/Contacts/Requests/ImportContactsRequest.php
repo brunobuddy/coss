@@ -10,7 +10,7 @@ use Coss\Core\Types\ArrayType;
 class ImportContactsRequest extends JsonSerializableType
 {
     /**
-     * @var array<ImportContactsRequestContactsItem> $contacts
+     * @var array<ImportContactsRequestContactsItem> $contacts The contacts to create or update, at most 1,000.
      */
     #[JsonProperty('contacts'), ArrayType([ImportContactsRequestContactsItem::class])]
     public array $contacts;

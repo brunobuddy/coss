@@ -53,6 +53,9 @@ public final class ContactWebhookEventData {
         return contact;
     }
 
+    /**
+     * @return How the contact was created.
+     */
     @JsonProperty("source")
     public ContactWebhookEventDataSource getSource() {
         return source;
@@ -70,6 +73,9 @@ public final class ContactWebhookEventData {
         return topic;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -120,10 +126,16 @@ public final class ContactWebhookEventData {
     }
 
     public interface SourceStage {
+        /**
+         * <p>How the contact was created.</p>
+         */
         OccurredAtStage source(@NotNull ContactWebhookEventDataSource source);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -177,6 +189,10 @@ public final class ContactWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>How the contact was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("source")
         public OccurredAtStage source(@NotNull ContactWebhookEventDataSource source) {
@@ -184,6 +200,10 @@ public final class ContactWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {

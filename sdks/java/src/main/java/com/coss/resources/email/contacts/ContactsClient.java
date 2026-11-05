@@ -189,18 +189,30 @@ public class ContactsClient {
         return this.rawClient.export(request, requestOptions).body();
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public Contact get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public Contact get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public Contact get(String id, GetContactsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public Contact get(String id, GetContactsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

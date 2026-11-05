@@ -2985,6 +2985,132 @@ func TestEnumCreateWebhookListenerRequestEventTypesItem(t *testing.T) {
 		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("form.submission.flagged"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_scheduling_booking_created", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.created")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.created"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_pending_approval", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.pending_approval")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.pending_approval"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_confirmed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.confirmed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.confirmed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_rescheduled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.rescheduled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.rescheduled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_cancelled", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.cancelled")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_declined", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.declined")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.declined"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_no_show", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.no_show")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.no_show"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_external_conflict", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.external_conflict")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.external_conflict"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_calendar_write_failed", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.calendar_write_failed")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.calendar_write_failed"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_location_ready", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.location_ready")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.location_ready"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_started", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.started")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.started"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_ended", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.ended")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.ended"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_booking_reminder", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.booking.reminder")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.booking.reminder"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_connected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.calendar.connected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.calendar.connected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_needs_reauth", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.calendar.needs_reauth")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.calendar.needs_reauth"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_disconnected", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.calendar.disconnected")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.calendar.disconnected"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_delegation_failing", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.calendar_delegation.failing")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.calendar_delegation.failing"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_scheduling_calendar_delegation_restored", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateWebhookListenerRequestEventTypesItemFromString("scheduling.calendar_delegation.restored")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateWebhookListenerRequestEventTypesItem("scheduling.calendar_delegation.restored"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewCreateWebhookListenerRequestEventTypesItemFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

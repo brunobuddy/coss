@@ -43,8 +43,16 @@ class CreateSignTemplateRequestFieldsItemDocument(UniversalBaseModel):
     Top edge, in PDF points from the page's top.
     """
 
-    width: float
-    height: float
+    width: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    height: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
     role: str = pydantic.Field()
     """
     The role's key, e.g. `client`.

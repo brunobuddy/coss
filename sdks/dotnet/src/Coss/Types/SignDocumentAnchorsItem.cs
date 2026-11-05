@@ -14,21 +14,39 @@ public record SignDocumentAnchorsItem : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The anchor as it appears in the document.
+    /// </summary>
     [JsonPropertyName("text")]
     public required string Text { get; set; }
 
+    /// <summary>
+    /// 1-based page number.
+    /// </summary>
     [JsonPropertyName("page")]
     public required long Page { get; set; }
 
+    /// <summary>
+    /// Left edge, in PDF points from the page's left.
+    /// </summary>
     [JsonPropertyName("x")]
     public required double X { get; set; }
 
+    /// <summary>
+    /// Top edge, in PDF points from the page's top.
+    /// </summary>
     [JsonPropertyName("y")]
     public required double Y { get; set; }
 
+    /// <summary>
+    /// In PDF points.
+    /// </summary>
     [JsonPropertyName("width")]
     public required double Width { get; set; }
 
+    /// <summary>
+    /// In PDF points.
+    /// </summary>
     [JsonPropertyName("height")]
     public required double Height { get; set; }
 

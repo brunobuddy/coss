@@ -327,6 +327,8 @@ class RawInboxesClient:
 
     def get(self, inbox_id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Inbox]:
         """
+        One inbox of the API key's environment.
+
         Parameters
         ----------
         inbox_id : str
@@ -1006,6 +1008,8 @@ class AsyncRawInboxesClient:
         self, inbox_id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Inbox]:
         """
+        One inbox of the API key's environment.
+
         Parameters
         ----------
         inbox_id : str

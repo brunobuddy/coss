@@ -247,18 +247,30 @@ public class RawSegmentsClient {
         }
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CossHttpResponse<Segment> get(String id) {
         return get(id, GetSegmentsRequest.builder().build());
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CossHttpResponse<Segment> get(String id, RequestOptions requestOptions) {
         return get(id, GetSegmentsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CossHttpResponse<Segment> get(String id, GetSegmentsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One segment of the API key's environment, with its filter.
+     */
     public CossHttpResponse<Segment> get(String id, GetSegmentsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -332,18 +344,30 @@ public class RawSegmentsClient {
         }
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CossHttpResponse<DeletedSegment> remove(String id) {
         return remove(id, RemoveSegmentsRequest.builder().build());
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CossHttpResponse<DeletedSegment> remove(String id, RequestOptions requestOptions) {
         return remove(id, RemoveSegmentsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CossHttpResponse<DeletedSegment> remove(String id, RemoveSegmentsRequest request) {
         return remove(id, request, null);
     }
 
+    /**
+     * Deletes a segment. The contacts it matched stay.
+     */
     public CossHttpResponse<DeletedSegment> remove(
             String id, RemoveSegmentsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
@@ -418,18 +442,30 @@ public class RawSegmentsClient {
         }
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CossHttpResponse<Segment> update(String id) {
         return update(id, UpdateSegmentRequest.builder().build());
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CossHttpResponse<Segment> update(String id, RequestOptions requestOptions) {
         return update(id, UpdateSegmentRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CossHttpResponse<Segment> update(String id, UpdateSegmentRequest request) {
         return update(id, request, null);
     }
 
+    /**
+     * Changes a segment's name or filter. Only the fields given change.
+     */
     public CossHttpResponse<Segment> update(String id, UpdateSegmentRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

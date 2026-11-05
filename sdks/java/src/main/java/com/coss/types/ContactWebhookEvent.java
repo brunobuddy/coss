@@ -64,6 +64,9 @@ public final class ContactWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What happened to the contact.
+     */
     @JsonProperty("type")
     public ContactWebhookEventType getType() {
         return type;
@@ -77,11 +80,17 @@ public final class ContactWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The contact, without its properties.
+     */
     @JsonProperty("data")
     public ContactWebhookEventData getData() {
         return data;
@@ -135,6 +144,9 @@ public final class ContactWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened to the contact.</p>
+         */
         ApiVersionStage type(@NotNull ContactWebhookEventType type);
     }
 
@@ -146,10 +158,16 @@ public final class ContactWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The contact, without its properties.</p>
+         */
         _FinalStage data(@NotNull ContactWebhookEventData data);
     }
 
@@ -210,6 +228,10 @@ public final class ContactWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What happened to the contact.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull ContactWebhookEventType type) {
@@ -228,6 +250,10 @@ public final class ContactWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -235,6 +261,10 @@ public final class ContactWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The contact, without its properties.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull ContactWebhookEventData data) {

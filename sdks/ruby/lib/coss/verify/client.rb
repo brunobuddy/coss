@@ -170,6 +170,8 @@ module Coss
         end
       end
 
+      # A verification's status and destination. Its code is never returned.
+      #
       # @param request_options [Hash]
       # @param params [Hash]
       # @option request_options [String] :base_url
@@ -242,6 +244,11 @@ module Coss
           error_class = Coss::Errors::ResponseError.subclass_for_code(code)
           raise error_class.new(response.body, code: code)
         end
+      end
+
+      # @return [Coss::Settings::Client]
+      def settings
+        @settings ||= Coss::Verify::Settings::Client.new(client: @client)
       end
     end
   end

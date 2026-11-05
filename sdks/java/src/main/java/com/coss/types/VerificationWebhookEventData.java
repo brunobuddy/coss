@@ -70,26 +70,41 @@ public final class VerificationWebhookEventData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The verification's id.
+     */
     @JsonProperty("verification_id")
     public String getVerificationId() {
         return verificationId;
     }
 
+    /**
+     * @return <code>sms</code> or <code>email</code>.
+     */
     @JsonProperty("channel")
     public VerificationWebhookEventDataChannel getChannel() {
         return channel;
     }
 
+    /**
+     * @return The phone number (E.164) or address the code goes to.
+     */
     @JsonProperty("to")
     public String getTo() {
         return to;
     }
 
+    /**
+     * @return Its status after this event.
+     */
     @JsonProperty("status")
     public VerificationWebhookEventDataStatus getStatus() {
         return status;
     }
 
+    /**
+     * @return Why it <code>failed</code>. <code>null</code> otherwise.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("failure")
     public OptionalNullable<VerificationWebhookEventDataFailure> getFailure() {
@@ -99,21 +114,33 @@ public final class VerificationWebhookEventData {
         return failure;
     }
 
+    /**
+     * @return Why it was <code>blocked</code>. Empty otherwise.
+     */
     @JsonProperty("reasons")
     public List<VerificationWebhookEventDataReasonsItem> getReasons() {
         return reasons;
     }
 
+    /**
+     * @return Your tags on the verification.
+     */
     @JsonProperty("tags")
     public List<VerificationWebhookEventDataTagsItem> getTags() {
         return tags;
     }
 
+    /**
+     * @return Whether it's made in a sandbox environment: simulated.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -172,28 +199,46 @@ public final class VerificationWebhookEventData {
     }
 
     public interface VerificationIdStage {
+        /**
+         * <p>The verification's id.</p>
+         */
         ChannelStage verificationId(@NotNull String verificationId);
 
         Builder from(VerificationWebhookEventData other);
     }
 
     public interface ChannelStage {
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         */
         ToStage channel(@NotNull VerificationWebhookEventDataChannel channel);
     }
 
     public interface ToStage {
+        /**
+         * <p>The phone number (E.164) or address the code goes to.</p>
+         */
         StatusStage to(@NotNull String to);
     }
 
     public interface StatusStage {
+        /**
+         * <p>Its status after this event.</p>
+         */
         SandboxStage status(@NotNull VerificationWebhookEventDataStatus status);
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it's made in a sandbox environment: simulated.</p>
+         */
         OccurredAtStage sandbox(boolean sandbox);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -204,6 +249,9 @@ public final class VerificationWebhookEventData {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Why it <code>failed</code>. <code>null</code> otherwise.</p>
+         */
         _FinalStage failure(OptionalNullable<VerificationWebhookEventDataFailure> failure);
 
         _FinalStage failure(VerificationWebhookEventDataFailure failure);
@@ -212,12 +260,18 @@ public final class VerificationWebhookEventData {
 
         _FinalStage failure(Nullable<VerificationWebhookEventDataFailure> failure);
 
+        /**
+         * <p>Why it was <code>blocked</code>. Empty otherwise.</p>
+         */
         _FinalStage reasons(List<VerificationWebhookEventDataReasonsItem> reasons);
 
         _FinalStage addReasons(VerificationWebhookEventDataReasonsItem reasons);
 
         _FinalStage addAllReasons(List<VerificationWebhookEventDataReasonsItem> reasons);
 
+        /**
+         * <p>Your tags on the verification.</p>
+         */
         _FinalStage tags(List<VerificationWebhookEventDataTagsItem> tags);
 
         _FinalStage addTags(VerificationWebhookEventDataTagsItem tags);
@@ -271,6 +325,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The verification's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("verification_id")
         public ChannelStage verificationId(@NotNull String verificationId) {
@@ -278,6 +336,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p><code>sms</code> or <code>email</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("channel")
         public ToStage channel(@NotNull VerificationWebhookEventDataChannel channel) {
@@ -285,6 +347,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The phone number (E.164) or address the code goes to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public StatusStage to(@NotNull String to) {
@@ -292,6 +358,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Its status after this event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public SandboxStage status(@NotNull VerificationWebhookEventDataStatus status) {
@@ -299,6 +369,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Whether it's made in a sandbox environment: simulated.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public OccurredAtStage sandbox(boolean sandbox) {
@@ -306,6 +380,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -313,6 +391,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTags(List<VerificationWebhookEventDataTagsItem> tags) {
             if (tags != null) {
@@ -321,12 +403,19 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTags(VerificationWebhookEventDataTagsItem tags) {
             this.tags.add(tags);
             return this;
         }
 
+        /**
+         * <p>Your tags on the verification.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public _FinalStage tags(List<VerificationWebhookEventDataTagsItem> tags) {
@@ -337,6 +426,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it was <code>blocked</code>. Empty otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReasons(List<VerificationWebhookEventDataReasonsItem> reasons) {
             if (reasons != null) {
@@ -345,12 +438,19 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it was <code>blocked</code>. Empty otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReasons(VerificationWebhookEventDataReasonsItem reasons) {
             this.reasons.add(reasons);
             return this;
         }
 
+        /**
+         * <p>Why it was <code>blocked</code>. Empty otherwise.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reasons", nulls = Nulls.SKIP)
         public _FinalStage reasons(List<VerificationWebhookEventDataReasonsItem> reasons) {
@@ -361,6 +461,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failure(Nullable<VerificationWebhookEventDataFailure> failure) {
             if (failure.isNull()) {
@@ -373,6 +477,10 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failure(Optional<VerificationWebhookEventDataFailure> failure) {
             if (failure.isPresent()) {
@@ -383,12 +491,19 @@ public final class VerificationWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage failure(VerificationWebhookEventDataFailure failure) {
             this.failure = OptionalNullable.of(failure);
             return this;
         }
 
+        /**
+         * <p>Why it <code>failed</code>. <code>null</code> otherwise.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "failure", nulls = Nulls.SKIP)
         public _FinalStage failure(OptionalNullable<VerificationWebhookEventDataFailure> failure) {

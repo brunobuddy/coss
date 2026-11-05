@@ -85,6 +85,9 @@ public final class TemplateVariableInput {
         return default_;
     }
 
+    /**
+     * @return What it's for, shown in the dashboard.
+     */
     @JsonProperty("description")
     public Optional<String> getDescription() {
         return description;
@@ -169,6 +172,9 @@ public final class TemplateVariableInput {
 
         _FinalStage default_(TemplateVariableInputDefault default_);
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         */
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
@@ -253,12 +259,19 @@ public final class TemplateVariableInput {
             return this;
         }
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = Optional.ofNullable(description);
             return this;
         }
 
+        /**
+         * <p>What it's for, shown in the dashboard.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(Optional<String> description) {

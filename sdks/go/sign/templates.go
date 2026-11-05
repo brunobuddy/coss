@@ -21,13 +21,16 @@ var (
 )
 
 type CreateSignTemplateRequest struct {
+	// Your name for the template.
 	Name string `json:"name" url:"-"`
 	// Requests' title (a request may set its own). Default: `name`.
 	Title *string `json:"title,omitempty" url:"-"`
 	// Requests' message to signers (a request may set its own).
-	Message      *string                                   `json:"message,omitempty" url:"-"`
-	SigningOrder *CreateSignTemplateRequestSigningOrder    `json:"signing_order,omitempty" url:"-"`
-	Documents    []*CreateSignTemplateRequestDocumentsItem `json:"documents,omitempty" url:"-"`
+	Message *string `json:"message,omitempty" url:"-"`
+	// `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
+	SigningOrder *CreateSignTemplateRequestSigningOrder `json:"signing_order,omitempty" url:"-"`
+	// Uploaded documents by id, or PDFs inline (base64).
+	Documents []*CreateSignTemplateRequestDocumentsItem `json:"documents,omitempty" url:"-"`
 	// Who signs: each request names one signer per role.
 	Roles []*CreateSignTemplateRequestRolesItem `json:"roles,omitempty" url:"-"`
 	// Each role's fields, by position or text anchor (resolved when saved). A template can be used once every role has a `signature` field.
@@ -195,7 +198,8 @@ type CreateSignRequestFromTemplateRequest struct {
 	// The template's id.
 	ID string `json:"-" url:"-"`
 	// Default: the template's title (else its name).
-	Title   *string `json:"title,omitempty" url:"-"`
+	Title *string `json:"title,omitempty" url:"-"`
+	// Default: the template's message.
 	Message *string `json:"message,omitempty" url:"-"`
 	// One signer for each of the template's roles.
 	Signers []*CreateSignRequestFromTemplateRequestSignersItem `json:"signers" url:"-"`
@@ -203,10 +207,12 @@ type CreateSignRequestFromTemplateRequest struct {
 	MergeFields map[string]string `json:"merge_fields,omitempty" url:"-"`
 	// Default: the template's.
 	SigningOrder *CreateSignRequestFromTemplateRequestSigningOrder `json:"signing_order,omitempty" url:"-"`
-	ExpiresAt    *time.Time                                        `json:"expires_at,omitempty" url:"-"`
+	// When an unfinished request expires, at most 365 days ahead.
+	ExpiresAt *time.Time `json:"expires_at,omitempty" url:"-"`
 	// Your own key-value pairs, returned with the request and its webhooks.
-	Metadata             map[string]string `json:"metadata,omitempty" url:"-"`
-	ReminderIntervalDays *int              `json:"reminder_interval_days,omitempty" url:"-"`
+	Metadata map[string]string `json:"metadata,omitempty" url:"-"`
+	// Days between reminders to email signers. Default: your Sign settings'. `null`: none.
+	ReminderIntervalDays *int `json:"reminder_interval_days,omitempty" url:"-"`
 	// Default `true`.
 	Send *bool `json:"send,omitempty" url:"-"`
 
@@ -433,13 +439,18 @@ var (
 )
 
 type CreateSignRequestFromTemplateRequestSignersItem struct {
-	// The role's key, e.g. `client`.
-	Role      string                                                   `json:"role" url:"role"`
-	Name      string                                                   `json:"name" url:"name"`
-	Email     string                                                   `json:"email" url:"email"`
-	Delivery  *CreateSignRequestFromTemplateRequestSignersItemDelivery `json:"delivery,omitempty" url:"delivery,omitempty"`
-	Order     *int                                                     `json:"order,omitempty" url:"order,omitempty"`
-	ClientRef *string                                                  `json:"client_ref,omitempty" url:"client_ref,omitempty"`
+	// The `key` of the template's role they sign as.
+	Role string `json:"role" url:"role"`
+	// Shown on the signing page and on the certificate.
+	Name string `json:"name" url:"name"`
+	// Where a `delivery: email` signer gets their link.
+	Email string `json:"email" url:"email"`
+	// `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page.
+	Delivery *CreateSignRequestFromTemplateRequestSignersItemDelivery `json:"delivery,omitempty" url:"delivery,omitempty"`
+	// With `sequential` signing, signers sign in increasing `order`.
+	Order *int `json:"order,omitempty" url:"order,omitempty"`
+	// Your own id for the signer, recorded in the audit trail.
+	ClientRef *string `json:"client_ref,omitempty" url:"client_ref,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -590,6 +601,7 @@ func (c *CreateSignRequestFromTemplateRequestSignersItem) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page.
 type CreateSignRequestFromTemplateRequestSignersItemDelivery string
 
 const (
@@ -1320,8 +1332,10 @@ type CreateSignTemplateRequestFieldsItemDocument struct {
 	// Left edge, in PDF points from the page's left.
 	X float64 `json:"x" url:"x"`
 	// Top edge, in PDF points from the page's top.
-	Y      float64 `json:"y" url:"y"`
-	Width  float64 `json:"width" url:"width"`
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
 	Height float64 `json:"height" url:"height"`
 	// The role's key, e.g. `client`.
 	Role string `json:"role" url:"role"`
@@ -1591,7 +1605,7 @@ var (
 )
 
 type CreateSignTemplateRequestRolesItem struct {
-	// The role's key, e.g. `client`.
+	// The role's id within the template, used by fields and signers.
 	Key string `json:"key" url:"key"`
 	// Shown in the builder, e.g. `Client`.
 	Name string `json:"name" url:"name"`
@@ -1689,6 +1703,7 @@ func (c *CreateSignTemplateRequestRolesItem) String() string {
 	return fmt.Sprintf("%#v", c)
 }
 
+// `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 type CreateSignTemplateRequestSigningOrder string
 
 const (
@@ -2396,8 +2411,10 @@ type UpdateSignTemplateRequestFieldsItemDocument struct {
 	// Left edge, in PDF points from the page's left.
 	X float64 `json:"x" url:"x"`
 	// Top edge, in PDF points from the page's top.
-	Y      float64 `json:"y" url:"y"`
-	Width  float64 `json:"width" url:"width"`
+	Y float64 `json:"y" url:"y"`
+	// In PDF points.
+	Width float64 `json:"width" url:"width"`
+	// In PDF points.
 	Height float64 `json:"height" url:"height"`
 	// The role's key, e.g. `client`.
 	Role string `json:"role" url:"role"`
@@ -2667,7 +2684,7 @@ var (
 )
 
 type UpdateSignTemplateRequestRolesItem struct {
-	// The role's key, e.g. `client`.
+	// The role's id within the template, used by fields and signers.
 	Key string `json:"key" url:"key"`
 	// Shown in the builder, e.g. `Client`.
 	Name string `json:"name" url:"name"`
@@ -2765,6 +2782,7 @@ func (u *UpdateSignTemplateRequestRolesItem) String() string {
 	return fmt.Sprintf("%#v", u)
 }
 
+// `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
 type UpdateSignTemplateRequestSigningOrder string
 
 const (
@@ -2800,14 +2818,17 @@ var (
 
 type UpdateSignTemplateRequest struct {
 	// The template's id.
-	ID   string  `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Your name for the template.
 	Name *string `json:"name,omitempty" url:"-"`
 	// Requests' title (a request may set its own). Default: `name`.
 	Title *string `json:"title,omitempty" url:"-"`
 	// Requests' message to signers (a request may set its own).
-	Message      *string                                   `json:"message,omitempty" url:"-"`
-	SigningOrder *UpdateSignTemplateRequestSigningOrder    `json:"signing_order,omitempty" url:"-"`
-	Documents    []*UpdateSignTemplateRequestDocumentsItem `json:"documents,omitempty" url:"-"`
+	Message *string `json:"message,omitempty" url:"-"`
+	// `parallel`: everyone at once. `sequential`: in each signer's `order`. Default for its requests.
+	SigningOrder *UpdateSignTemplateRequestSigningOrder `json:"signing_order,omitempty" url:"-"`
+	// Uploaded documents by id, or PDFs inline (base64).
+	Documents []*UpdateSignTemplateRequestDocumentsItem `json:"documents,omitempty" url:"-"`
 	// Who signs: each request names one signer per role.
 	Roles []*UpdateSignTemplateRequestRolesItem `json:"roles,omitempty" url:"-"`
 	// Each role's fields, by position or text anchor (resolved when saved). A template can be used once every role has a `signature` field.

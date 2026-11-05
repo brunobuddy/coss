@@ -12,6 +12,9 @@ public final class BillingHoldsItemReason {
     public static final BillingHoldsItemReason SPEND_LIMIT =
             new BillingHoldsItemReason(Value.SPEND_LIMIT, "spend_limit");
 
+    public static final BillingHoldsItemReason CREDIT_LIMIT =
+            new BillingHoldsItemReason(Value.CREDIT_LIMIT, "credit_limit");
+
     public static final BillingHoldsItemReason DELINQUENT = new BillingHoldsItemReason(Value.DELINQUENT, "delinquent");
 
     private final Value value;
@@ -51,6 +54,8 @@ public final class BillingHoldsItemReason {
                 return visitor.visitAdmin();
             case SPEND_LIMIT:
                 return visitor.visitSpendLimit();
+            case CREDIT_LIMIT:
+                return visitor.visitCreditLimit();
             case DELINQUENT:
                 return visitor.visitDelinquent();
             case UNKNOWN:
@@ -66,6 +71,8 @@ public final class BillingHoldsItemReason {
                 return ADMIN;
             case "spend_limit":
                 return SPEND_LIMIT;
+            case "credit_limit":
+                return CREDIT_LIMIT;
             case "delinquent":
                 return DELINQUENT;
             default:
@@ -78,6 +85,8 @@ public final class BillingHoldsItemReason {
 
         SPEND_LIMIT,
 
+        CREDIT_LIMIT,
+
         ADMIN,
 
         UNKNOWN
@@ -87,6 +96,8 @@ public final class BillingHoldsItemReason {
         T visitDelinquent();
 
         T visitSpendLimit();
+
+        T visitCreditLimit();
 
         T visitAdmin();
 

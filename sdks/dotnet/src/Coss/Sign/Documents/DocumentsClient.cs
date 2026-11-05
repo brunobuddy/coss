@@ -802,6 +802,9 @@ public partial class DocumentsClient : IDocumentsClient
         );
     }
 
+    /// <summary>
+    /// An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+    /// </summary>
     /// <example><code>
     /// await client.Sign.Documents.GetAsync(
     ///     new GetDocumentsRequest { Id = "sdoc_01k7c8m4q2f3e9v6t5r1n0p8yz" }

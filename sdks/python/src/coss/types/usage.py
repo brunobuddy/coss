@@ -41,9 +41,20 @@ class Usage(UniversalBaseModel):
     Set with `group_by=user`: the member whose personal API key caused it (`null`: organization keys and the dashboard).
     """
 
-    start: dt.datetime
-    end: dt.datetime
-    quantity: int
+    start: dt.datetime = pydantic.Field()
+    """
+    When this bucket starts (inclusive).
+    """
+
+    end: dt.datetime = pydantic.Field()
+    """
+    When this bucket ends (exclusive).
+    """
+
+    quantity: int = pydantic.Field()
+    """
+    Units used in this bucket.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

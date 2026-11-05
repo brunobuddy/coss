@@ -12,7 +12,7 @@ use Coss\Core\Types\ArrayType;
 class ReceivingDomainRecord extends JsonSerializableType
 {
     /**
-     * @var value-of<ReceivingDomainRecordType> $type
+     * @var value-of<ReceivingDomainRecordType> $type The record's type.
      */
     #[JsonProperty('type')]
     public string $type;
@@ -30,7 +30,7 @@ class ReceivingDomainRecord extends JsonSerializableType
     public string $value;
 
     /**
-     * @var int $priority
+     * @var int $priority The MX record's priority.
      */
     #[JsonProperty('priority')]
     public int $priority;

@@ -44,21 +44,33 @@ public final class UpdateRiskLimitBucketRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Tokens added per <code>period_seconds</code>.
+     */
     @JsonProperty("limit")
     public Optional<Integer> getLimit() {
         return limit;
     }
 
+    /**
+     * @return How many seconds <code>limit</code> tokens take to be added.
+     */
     @JsonProperty("period_seconds")
     public Optional<Integer> getPeriodSeconds() {
         return periodSeconds;
     }
 
+    /**
+     * @return The bucket's size: how many requests a key can make at once.
+     */
     @JsonProperty("burst")
     public Optional<Integer> getBurst() {
         return burst;
     }
 
+    /**
+     * @return The answer while coss.com can't count: <code>allow</code> or <code>deny</code>.
+     */
     @JsonProperty("on_failure")
     public Optional<UpdateRiskLimitBucketRequestOnFailure> getOnFailure() {
         return onFailure;
@@ -119,6 +131,9 @@ public final class UpdateRiskLimitBucketRequest {
             return this;
         }
 
+        /**
+         * <p>Tokens added per <code>period_seconds</code>.</p>
+         */
         @JsonSetter(value = "limit", nulls = Nulls.SKIP)
         public Builder limit(Optional<Integer> limit) {
             this.limit = limit;
@@ -130,6 +145,9 @@ public final class UpdateRiskLimitBucketRequest {
             return this;
         }
 
+        /**
+         * <p>How many seconds <code>limit</code> tokens take to be added.</p>
+         */
         @JsonSetter(value = "period_seconds", nulls = Nulls.SKIP)
         public Builder periodSeconds(Optional<Integer> periodSeconds) {
             this.periodSeconds = periodSeconds;
@@ -141,6 +159,9 @@ public final class UpdateRiskLimitBucketRequest {
             return this;
         }
 
+        /**
+         * <p>The bucket's size: how many requests a key can make at once.</p>
+         */
         @JsonSetter(value = "burst", nulls = Nulls.SKIP)
         public Builder burst(Optional<Integer> burst) {
             this.burst = burst;
@@ -152,6 +173,9 @@ public final class UpdateRiskLimitBucketRequest {
             return this;
         }
 
+        /**
+         * <p>The answer while coss.com can't count: <code>allow</code> or <code>deny</code>.</p>
+         */
         @JsonSetter(value = "on_failure", nulls = Nulls.SKIP)
         public Builder onFailure(Optional<UpdateRiskLimitBucketRequestOnFailure> onFailure) {
             this.onFailure = onFailure;

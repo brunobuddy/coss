@@ -11,15 +11,27 @@ from .received_sms_webhook_event_type import ReceivedSmsWebhookEventType
 
 
 class ReceivedSmsWebhookEvent(UniversalBaseModel):
-    id: str
+    id: str = pydantic.Field()
+    """
+    The event id.
+    """
+
     object: ReceivedSmsWebhookEventObject
-    type: ReceivedSmsWebhookEventType
+    type: ReceivedSmsWebhookEventType = pydantic.Field()
+    """
+    `sms.received`: a message arrived. `sms.opted_out`: the sender replied with an opt-out keyword. `sms.opted_in`: the sender replied with an opt-in keyword.
+    """
+
     api_version: str = pydantic.Field()
     """
     The API version (`Coss-Version`) this event is rendered in: the receiving endpoint's `api_version`.
     """
 
-    created_at: dt.datetime
+    created_at: dt.datetime = pydantic.Field()
+    """
+    When the event was created.
+    """
+
     data: ReceivedSmsWebhookEventData
 
     if IS_PYDANTIC_V2:

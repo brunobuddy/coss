@@ -54,11 +54,17 @@ public final class BillingAddOnsItem {
         return key;
     }
 
+    /**
+     * @return The add-on's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return How many units are on the contract.
+     */
     @JsonProperty("quantity")
     public long getQuantity() {
         return quantity;
@@ -72,6 +78,9 @@ public final class BillingAddOnsItem {
         return unitAmount;
     }
 
+    /**
+     * @return How often it's charged.
+     */
     @JsonProperty("interval")
     public BillingAddOnsItemInterval getInterval() {
         return interval;
@@ -120,10 +129,16 @@ public final class BillingAddOnsItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>The add-on's name.</p>
+         */
         QuantityStage name(@NotNull String name);
     }
 
     public interface QuantityStage {
+        /**
+         * <p>How many units are on the contract.</p>
+         */
         UnitAmountStage quantity(long quantity);
     }
 
@@ -135,6 +150,9 @@ public final class BillingAddOnsItem {
     }
 
     public interface IntervalStage {
+        /**
+         * <p>How often it's charged.</p>
+         */
         _FinalStage interval(@NotNull BillingAddOnsItemInterval interval);
     }
 
@@ -185,6 +203,10 @@ public final class BillingAddOnsItem {
             return this;
         }
 
+        /**
+         * <p>The add-on's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public QuantityStage name(@NotNull String name) {
@@ -192,6 +214,10 @@ public final class BillingAddOnsItem {
             return this;
         }
 
+        /**
+         * <p>How many units are on the contract.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("quantity")
         public UnitAmountStage quantity(long quantity) {
@@ -210,6 +236,10 @@ public final class BillingAddOnsItem {
             return this;
         }
 
+        /**
+         * <p>How often it's charged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("interval")
         public _FinalStage interval(@NotNull BillingAddOnsItemInterval interval) {

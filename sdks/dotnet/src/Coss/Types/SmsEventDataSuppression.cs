@@ -14,9 +14,15 @@ public record SmsEventDataSuppression : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The suppression's id.
+    /// </summary>
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Why the number is suppressed.
+    /// </summary>
     [JsonPropertyName("reason")]
     public required SmsEventDataSuppressionReason Reason { get; set; }
 

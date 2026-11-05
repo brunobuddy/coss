@@ -17,7 +17,7 @@ class EmailTemplateVersion extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $templateId
+     * @var string $templateId The template's id.
      */
     #[JsonProperty('template_id')]
     public string $templateId;
@@ -35,25 +35,25 @@ class EmailTemplateVersion extends JsonSerializableType
     public int $revision;
 
     /**
-     * @var string $defaultLocale
+     * @var string $defaultLocale The locale sends fall back to when they ask for none, or for one without content.
      */
     #[JsonProperty('default_locale')]
     public string $defaultLocale;
 
     /**
-     * @var array<TemplateVariable> $variables
+     * @var array<TemplateVariable> $variables The variables the template uses, with their types.
      */
     #[JsonProperty('variables'), ArrayType([TemplateVariable::class])]
     public array $variables;
 
     /**
-     * @var array<string, mixed> $sampleVariables
+     * @var array<string, mixed> $sampleVariables Example values for previews and test sends in the dashboard.
      */
     #[JsonProperty('sample_variables'), ArrayType(['string' => 'mixed'])]
     public array $sampleVariables;
 
     /**
-     * @var array<TemplateContent> $contents
+     * @var array<TemplateContent> $contents The subject, HTML and text per locale.
      */
     #[JsonProperty('contents'), ArrayType([TemplateContent::class])]
     public array $contents;
@@ -65,7 +65,7 @@ class EmailTemplateVersion extends JsonSerializableType
     public array $problems;
 
     /**
-     * @var ?DateTime $publishedAt
+     * @var ?DateTime $publishedAt When this version was published. `null` for the draft.
      */
     #[JsonProperty('published_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $publishedAt;

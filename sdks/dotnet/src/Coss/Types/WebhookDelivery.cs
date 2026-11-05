@@ -17,6 +17,9 @@ public record WebhookDelivery : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the endpoint it's delivered to.
+    /// </summary>
     [JsonPropertyName("endpoint_id")]
     public required string EndpointId { get; set; }
 
@@ -32,6 +35,9 @@ public record WebhookDelivery : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required WebhookDeliveryStatus Status { get; set; }
 
+    /// <summary>
+    /// How many attempts were made so far.
+    /// </summary>
     [JsonPropertyName("attempt_count")]
     public required long AttemptCount { get; set; }
 
@@ -42,10 +48,16 @@ public record WebhookDelivery : IJsonOnDeserialized
     [JsonPropertyName("next_attempt_at")]
     public DateTime? NextAttemptAt { get; set; }
 
+    /// <summary>
+    /// The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_status_code")]
     public long? LastStatusCode { get; set; }
 
+    /// <summary>
+    /// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_error")]
     public string? LastError { get; set; }
