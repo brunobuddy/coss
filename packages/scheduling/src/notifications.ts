@@ -532,27 +532,6 @@ function isStale(row: Claimed, booking: BookingRow): boolean {
 }
 
 /**
- * A session's new host hears about it through one of its seats. That seat cancelling says nothing
- * about the session, which goes on with whoever's left.
- */
-async function seatStillStanding(row: Claimed, booking: BookingRow): Promise<BookingRow | null> {
-  if (row.kind !== "reassigned" || row.recipient !== "host" || !booking.groupSessionId) return null;
-  const [seat] = await db
-    .select()
-    .from(schedulingBooking)
-    .where(
-      and(
-        eq(schedulingBooking.groupSessionId, booking.groupSessionId),
-        eq(schedulingBooking.organizationId, booking.organizationId),
-        inArray(schedulingBooking.status, ["confirmed", "pending_approval", "held"]),
-      ),
-    )
-    .orderBy(asc(schedulingBooking.id))
-    .limit(1);
-  return seat ?? null;
-}
-
-/**
  * A cancellation only reaches the booking's hosts by then, so whoever had it just before still needs
  * this, or the invitation they accepted stays on their calendar. Those who were joining don't.
  */
@@ -1270,10 +1249,7 @@ export async function runDueSchedulingNotifications(
         .where(eq(schedulingNotification.id, row.id));
       if (!current || current.finishedAt || current.dueAt > now) continue;
       const stale = !found || isStale({ ...row, bookingVersion: current.bookingVersion }, found);
-      // Who lost a seat is told about that seat, whose invitation they hold, whatever else stands.
-      const lost = stale && found ? await lostItBeforeItEnded(row, found) : false;
-      const seat = stale && found && !lost ? await seatStillStanding(row, found) : null;
-      if (!found || (stale && !lost && !seat)) {
+      if (!found || (stale && !(await lostItBeforeItEnded(row, found)))) {
         await finish(row, "stale", now);
         continue;
       }
@@ -1281,7 +1257,7 @@ export async function runDueSchedulingNotifications(
         await sendTimedWebhook(row, now);
         continue;
       }
-      const booking = await withSessionLocation(db, seat ?? found);
+      const booking = await withSessionLocation(db, found);
       let rule: ReminderRule | null = null;
       let ownSenderOnly = false;
       if (row.kind === "reminder" && row.reminderKey) {

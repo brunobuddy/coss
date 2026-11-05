@@ -1,7 +1,13 @@
 import { expect, test } from "bun:test";
-import { chosenTarget, overridesFor } from "../src/lib/team-moves.ts";
+import { chosenTarget, overridesFor, sourceHost } from "../src/lib/team-moves.ts";
 
 const item = { booking: "book_1", to_host: "host_a" };
+
+test("who's leaving is someone still on the booking", () => {
+  expect(sourceHost("host_b", ["host_a", "host_b"])).toBe("host_b");
+  expect(sourceHost("host_a", ["host_b"])).toBe("host_b");
+  expect(sourceHost("host_a", [])).toBe("");
+});
 
 test("a preview's proposal stands until someone says otherwise", () => {
   expect(chosenTarget(item, {})).toBe("host_a");

@@ -22,3 +22,8 @@ export function overridesFor(candidate: { member: boolean; reasons: readonly str
     ...candidate.reasons.filter((reason) => OVERRIDABLE.has(reason)),
   ];
 }
+
+/** Who's leaving: whoever was picked, unless they've gone since, as they do once it's moved. */
+export function sourceHost(picked: string, hosts: readonly string[]): string {
+  return hosts.includes(picked) ? picked : (hosts[0] ?? "");
+}

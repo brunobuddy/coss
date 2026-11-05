@@ -29,7 +29,7 @@ import {
 import { type Branding, useAccentColor } from "@/lib/branding";
 import { type ClientApiError, type ClientCall, useClientApi } from "@/lib/client-api";
 import { postToHost, reportHeight } from "@/lib/embed";
-import { chosenTarget, overridesFor } from "@/lib/team-moves";
+import { chosenTarget, overridesFor, sourceHost } from "@/lib/team-moves";
 
 type TeamSession = Branding & { read_only: boolean; sandbox: boolean };
 type Host = { id: string; name: string; status: string };
@@ -459,7 +459,8 @@ function BookingRow(props: {
 }) {
   const { call, booking, nameOf, readOnly, onMoved, opened } = props;
   const [candidates, setCandidates] = useState<Candidate[] | null>(null);
-  const [from, setFrom] = useState(booking.hosts[0] ?? "");
+  const [pickedSource, setFrom] = useState(booking.hosts[0] ?? "");
+  const from = sourceHost(pickedSource, booking.hosts);
   const [to, setTo] = useState<string | null>(null);
   const [note, setNote] = useState("");
   const [reason, setReason] = useState(booking.host_away ? "out_of_office" : "other");

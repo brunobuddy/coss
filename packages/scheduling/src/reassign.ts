@@ -831,7 +831,6 @@ async function reassignSession(
 
   const live = seats.filter((seat) => seat.status !== "cancelled" && seat.status !== "declined");
   let result = asked;
-  let hostsTold = opts.quietHosts ?? false;
   const swap: Swap = { from: { hostId: previousHostId, role: "member" }, to: target };
   const encryptedNote = encryptedNoteOf(input.note, deps);
   let calendarMoved = false;
@@ -879,15 +878,15 @@ async function reassignSession(
         tx,
         updated,
         {
-          // The new host hears once about the session. The old one has an invitation per seat, each
-          // with its own UID, and only its own cancellation takes it off their calendar.
-          added: hostsTold ? [] : [target.id],
+          // A host has an invitation per seat, each with its own UID, as when the seats were booked.
+          // So each goes from the old host's calendar and onto the new one's by itself, and a seat
+          // cancelling later takes only its own.
+          added: opts.quietHosts ? [] : [target.id],
           removed: opts.quietHosts ? [] : [previousHostId],
           attendee: input.notify?.attendee ?? true,
         },
         now,
       );
-      hostsTold = true;
     }
     if (updated.id === askedSeatId) result = updated;
   }

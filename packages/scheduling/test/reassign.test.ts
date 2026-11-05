@@ -990,7 +990,7 @@ describe("a group session", () => {
     ).rejects.toMatchObject({ code: "booking_not_changeable" });
   });
 
-  test("tells the new host once, and the old host and attendee per seat", async () => {
+  test("tells both hosts and the attendee per seat, each seat having its own invitation", async () => {
     const { env, first, second, seats } = await session();
     await reassign(
       env,
@@ -1008,7 +1008,7 @@ describe("a group session", () => {
       );
     const toHost = (id: string) =>
       notices.filter((row) => row.recipient === "host" && row.hostId === id).length;
-    expect(toHost(second.id)).toBe(1);
+    expect(toHost(second.id)).toBe(3);
     expect(toHost(first.id)).toBe(3);
     expect(notices.filter((row) => row.recipient === "attendee").length).toBe(3);
   });
@@ -1341,7 +1341,7 @@ describe("who's told", () => {
   const subjectsTo = (sent: SchedulingEmail[], to: string) =>
     sent.filter((message) => message.to === to).map((message) => message.subject);
 
-  test("a session's former host gets a cancellation for every seat, its new one hears once", async () => {
+  test("a session moves invitation by invitation, one per seat", async () => {
     const env = await environment();
     const first = await host(env, "Dr. First", { email: "first@example.com" });
     const second = await host(env, "Dr. Second", { email: "second@example.com" });
@@ -1373,7 +1373,48 @@ describe("who's told", () => {
     expect(toFirst.map((message) => message.ics?.method)).toEqual(["CANCEL", "CANCEL", "CANCEL"]);
     const uids = toFirst.map((message) => message.ics?.content.match(/^UID:(.*)$/m)?.[1]);
     expect(new Set(uids).size).toBe(3);
-    expect(subjectsTo(sent, "second@example.com")).toEqual(["Assigned to you: Call"]);
+    const toSecond = sent.filter((message) => message.to === "second@example.com");
+    expect(toSecond.map((message) => message.subject)).toEqual([
+      "Assigned to you: Call",
+      "Assigned to you: Call",
+      "Assigned to you: Call",
+    ]);
+    expect(toSecond.map((message) => message.ics?.method)).toEqual([
+      "REQUEST",
+      "REQUEST",
+      "REQUEST",
+    ]);
+  });
+
+  test("a seat cancelling after the move leaves the new host's other invitations", async () => {
+    const env = await environment();
+    const first = await host(env, "Dr. First", { email: "first@example.com" });
+    const second = await host(env, "Dr. Second", { email: "second@example.com" });
+    const group = await eventTypeWith(env, "group", [member(first)], { capacity: 5 });
+    const seats = [];
+    for (const uid of ["one", "two"]) {
+      const { booking } = await createBooking(
+        env,
+        { eventType: group.id, startMs: at("10:00"), attendee: { ...attendee, uid } },
+        plain,
+        actor,
+      );
+      seats.push(booking);
+    }
+    await runDueSchedulingNotifications(sender().deps as never, { scope: scope(env) });
+    await reassign(env, seats[0]?.id as string, change(second.id, ANY_HOST));
+    const moved = sender();
+    await runDueSchedulingNotifications(moved.deps as never, { scope: scope(env) });
+    const uidOf = (message: SchedulingEmail) => message.ics?.content.match(/^UID:(.*)$/m)?.[1];
+    const invited = moved.sent.filter((message) => message.to === "second@example.com");
+    expect(invited.map(uidOf).sort()).toEqual(seats.map((seat) => `${seat.id}@coss.com`).sort());
+    await cancelBooking(env, seats[0]?.id as string, plain, actor);
+    const after = sender();
+    await runDueSchedulingNotifications(after.deps as never, { scope: scope(env) });
+    const cancels = after.sent.filter(
+      (message) => message.to === "second@example.com" && message.ics?.method === "CANCEL",
+    );
+    expect(cancels.map(uidOf)).toEqual([`${seats[0]?.id}@coss.com`]);
   });
 
   test("both hosts and the attendee, each with what's theirs", async () => {
