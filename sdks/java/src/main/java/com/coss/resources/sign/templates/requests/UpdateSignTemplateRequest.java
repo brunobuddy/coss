@@ -63,6 +63,9 @@ public final class UpdateSignTemplateRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the template.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -92,11 +95,17 @@ public final class UpdateSignTemplateRequest {
         return message;
     }
 
+    /**
+     * @return <code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.
+     */
     @JsonProperty("signing_order")
     public Optional<UpdateSignTemplateRequestSigningOrder> getSigningOrder() {
         return signingOrder;
     }
 
+    /**
+     * @return Uploaded documents by id, or PDFs inline (base64).
+     */
     @JsonProperty("documents")
     public Optional<List<UpdateSignTemplateRequestDocumentsItem>> getDocuments() {
         return documents;
@@ -198,6 +207,9 @@ public final class UpdateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the template.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;
@@ -277,6 +289,9 @@ public final class UpdateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p><code>parallel</code>: everyone at once. <code>sequential</code>: in each signer's <code>order</code>. Default for its requests.</p>
+         */
         @JsonSetter(value = "signing_order", nulls = Nulls.SKIP)
         public Builder signingOrder(Optional<UpdateSignTemplateRequestSigningOrder> signingOrder) {
             this.signingOrder = signingOrder;
@@ -288,6 +303,9 @@ public final class UpdateSignTemplateRequest {
             return this;
         }
 
+        /**
+         * <p>Uploaded documents by id, or PDFs inline (base64).</p>
+         */
         @JsonSetter(value = "documents", nulls = Nulls.SKIP)
         public Builder documents(Optional<List<UpdateSignTemplateRequestDocumentsItem>> documents) {
             this.documents = documents;

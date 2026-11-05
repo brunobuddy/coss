@@ -15,7 +15,7 @@ class CreateHookEndpointRequest extends JsonSerializableType
     public string $url;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it.
      */
     #[JsonProperty('description')]
     public ?string $description;
@@ -45,7 +45,7 @@ class CreateHookEndpointRequest extends JsonSerializableType
     public ?array $metadata;
 
     /**
-     * @var ?bool $enabled
+     * @var ?bool $enabled Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
      */
     #[JsonProperty('enabled')]
     public ?bool $enabled;

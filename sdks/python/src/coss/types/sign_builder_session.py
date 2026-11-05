@@ -11,7 +11,11 @@ from .sign_builder_session_object import SignBuilderSessionObject
 class SignBuilderSession(UniversalBaseModel):
     object: SignBuilderSessionObject
     id: str
-    template_id: str
+    template_id: str = pydantic.Field()
+    """
+    The id of the template it edits.
+    """
+
     url: str = pydantic.Field()
     """
     The builder: embed it (from an allowed origin, `mountBuilder` from `coss/sign`) for whoever edits the template: they can upload documents, add roles and place fields. Show it only to them.
@@ -22,7 +26,10 @@ class SignBuilderSession(UniversalBaseModel):
     The secret part of `url`, shown only here.
     """
 
-    expires_at: dt.datetime
+    expires_at: dt.datetime = pydantic.Field()
+    """
+    When the link stops working.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

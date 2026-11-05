@@ -750,18 +750,30 @@ public class AsyncRawSuppressionsClient {
         return future;
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<Suppression>> get(String id) {
         return get(id, GetSuppressionsRequest.builder().build());
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<Suppression>> get(String id, RequestOptions requestOptions) {
         return get(id, GetSuppressionsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<Suppression>> get(String id, GetSuppressionsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One entry of the suppression list of the API key's environment.
+     */
     public CompletableFuture<CossHttpResponse<Suppression>> get(
             String id, GetSuppressionsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

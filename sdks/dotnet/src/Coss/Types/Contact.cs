@@ -18,13 +18,22 @@ public record Contact : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The contact's address. Unique in the environment, case-insensitively.
+    /// </summary>
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 
+    /// <summary>
+    /// Their first name. `null`: not set.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("first_name")]
     public string? FirstName { get; set; }
 
+    /// <summary>
+    /// Their last name. `null`: not set.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_name")]
     public string? LastName { get; set; }
@@ -35,6 +44,9 @@ public record Contact : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required ContactStatus Status { get; set; }
 
+    /// <summary>
+    /// Custom properties by key.
+    /// </summary>
     [JsonPropertyName("properties")]
     public Dictionary<string, OneOf<string, double, bool>> Properties { get; set; } =
         new Dictionary<string, OneOf<string, double, bool>>();
@@ -45,10 +57,16 @@ public record Contact : IJsonOnDeserialized
     [JsonPropertyName("source")]
     public required ContactSource Source { get; set; }
 
+    /// <summary>
+    /// When it last became `subscribed`. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("subscribed_at")]
     public DateTime? SubscribedAt { get; set; }
 
+    /// <summary>
+    /// When it became `unsubscribed`. `null` unless it is.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("unsubscribed_at")]
     public DateTime? UnsubscribedAt { get; set; }

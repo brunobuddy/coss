@@ -12,19 +12,28 @@ import type {
   CreateSchedulingCalendarDelegationParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
+  CreateSchedulingHolidayCalendarParams,
   CreateSchedulingHostParams,
   CreateSchedulingHostSessionParams,
+  CreateSchedulingManagerSessionParams,
   CreateSchedulingOauthAppParams,
+  CreateSchedulingOutOfOfficeParams,
+  CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
   DeletedSchedulingCalendarConnection,
   DeletedSchedulingCalendarDelegation,
   DeletedSchedulingHost,
   DeletedSchedulingOauthApp,
+  DeletedSchedulingOutOfOffice,
   DeletedSchedulingSchedule,
   ExplainSchedulingSlotParams,
   ListSchedulingBookingEventsParams,
   ListSchedulingBookingsParams,
+  ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
+  PreviewSchedulingReassignmentParams,
+  PutSchedulingOutOfOfficeParams,
+  ReassignSchedulingBookingParams,
   RescheduleSchedulingBookingParams,
   SchedulingAttendeeEmailErasure,
   SchedulingAttendeeErasure,
@@ -37,9 +46,17 @@ import type {
   SchedulingCalendarDelegation,
   SchedulingCancelledSeries,
   SchedulingEventType,
+  SchedulingHoliday,
+  SchedulingHolidayCalendar,
   SchedulingHost,
   SchedulingOauthApp,
+  SchedulingOutOfOffice,
+  SchedulingOutOfOfficeConflict,
   SchedulingPageParams,
+  SchedulingReassignCandidate,
+  SchedulingReassignment,
+  SchedulingReassignmentItem,
+  SchedulingReassignmentPreview,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -49,12 +66,15 @@ import type {
   SchedulingSlotList,
   SearchSchedulingAvailabilityParams,
   SetSchedulingSimulatedBusyParams,
+  UndoSchedulingReassignmentParams,
   UpdateSchedulingBookingLocationParams,
   UpdateSchedulingCalendarDelegationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHolidayCalendarParams,
   UpdateSchedulingHostParams,
   UpdateSchedulingOauthAppParams,
+  UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
   UpsertSchedulingScheduleParams,
   VerifySchedulingCalendarDelegationParams,
@@ -382,6 +402,38 @@ export class SchedulingBookingsResource {
       method: "POST",
       path: `/v1/scheduling/bookings/${part(id)}/reschedule`,
       body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /**
+   * Gives a booking to another host, keeping its id and time. Not retried: done twice it'd be
+   * refused, or give it back.
+   */
+  reassign(
+    id: string,
+    params: ReassignSchedulingBookingParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingBooking>> {
+    return this.#http.request<SchedulingBooking>({
+      method: "POST",
+      path: `/v1/scheduling/bookings/${part(id)}/reassign`,
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Who a booking could go to, members first, each saying whether they're free and why not. */
+  reassignCandidates(
+    id: string,
+    params: { from_host?: string } = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignCandidate>>> {
+    return this.#http.request<List<SchedulingReassignCandidate>>({
+      method: "GET",
+      path: `/v1/scheduling/bookings/${part(id)}/reassign_candidates`,
+      query: listQuery(params),
       signal: options?.signal,
     });
   }
@@ -835,6 +887,23 @@ export class SchedulingSessionsResource {
     });
   }
 
+  /**
+   * Lets a team lead manage cover for the hosts you name: time off, bookings that need someone else,
+   * and moving them. Not retried: each one's a new token.
+   */
+  createForManager(
+    params: CreateSchedulingManagerSessionParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingSession>> {
+    return this.#http.request<SchedulingSession>({
+      method: "POST",
+      path: "/v1/scheduling/manager_sessions",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
   /** Lets a browser book one event type. Not retried: each one's a new token. */
   createForBooker(
     params: CreateSchedulingBookerSessionParams,
@@ -892,6 +961,284 @@ export class SchedulingAttendeesResource {
   }
 }
 
+/** `coss.scheduling.holidayCalendars`: public holidays, or your own feed, as time away. */
+export class SchedulingHolidayCalendarsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.holidayCalendars`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /** Applies a country's holidays or your feed to some hosts. Not retried: it would make another. */
+  create(
+    params: CreateSchedulingHolidayCalendarParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "POST",
+      path: "/v1/scheduling/holiday_calendars",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists calendars, by name. */
+  list(options?: ReadOptions): Promise<CossResult<List<SchedulingHolidayCalendar>>> {
+    return this.#http.request<List<SchedulingHolidayCalendar>>({
+      method: "GET",
+      path: "/v1/scheduling/holiday_calendars",
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves a calendar, with when it was last read. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "GET",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** What's coming, with names, as last read. */
+  holidays(id: string, options?: ReadOptions): Promise<CossResult<List<SchedulingHoliday>>> {
+    return this.#http.request<List<SchedulingHoliday>>({
+      method: "GET",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}/holidays`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Changes who it applies to, who covers and what happens to bookings. */
+  update(
+    id: string,
+    params: UpdateSchedulingHolidayCalendarParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingHolidayCalendar>> {
+    return this.#http.request<SchedulingHolidayCalendar>({
+      method: "PATCH",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Hosts can be booked on its days again, shortly. */
+  remove(id: string, options?: ReadOptions): Promise<CossResult<{ id: string; deleted: true }>> {
+    return this.#http.request<{ id: string; deleted: true }>({
+      method: "DELETE",
+      path: `/v1/scheduling/holiday_calendars/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+}
+
+/** `coss.scheduling.reassignments`: moving many bookings at once. */
+export class SchedulingReassignmentsResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.reassignments`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /**
+   * Who each booking would go to, and why not, without moving anything. Change any of it and pass
+   * it to `create` as `assignments`.
+   */
+  preview(
+    params: PreviewSchedulingReassignmentParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingReassignmentPreview>> {
+    return this.#http.request<SchedulingReassignmentPreview>({
+      method: "POST",
+      path: "/v1/scheduling/reassignments/preview",
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Starts moving them, in the background. Follow it with `get`, or the webhook. */
+  create(
+    params: CreateSchedulingReassignmentParams,
+    options?: WriteOptions,
+  ): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: "/v1/scheduling/reassignments",
+      body: params,
+      idempotencyKey: options?.idempotencyKey,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists runs, newest first. Pass the last `id` as `after` while `has_more` is true. */
+  list(
+    params: SchedulingPageParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignment>>> {
+    return this.#http.request<List<SchedulingReassignment>>({
+      method: "GET",
+      path: "/v1/scheduling/reassignments",
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves a run, with how it's going. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "GET",
+      path: `/v1/scheduling/reassignments/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Each booking a run covers and what happened to it. */
+  items(
+    id: string,
+    params: SchedulingPageParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingReassignmentItem>>> {
+    return this.#http.request<List<SchedulingReassignmentItem>>({
+      method: "GET",
+      path: `/v1/scheduling/reassignments/${part(id)}/items`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Stops what hasn't happened yet. What's moved stays moved. */
+  cancel(id: string, options?: ReadOptions): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: `/v1/scheduling/reassignments/${part(id)}/cancel`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Gives back what a finished run moved, as a new run. Not retried: it would start another. */
+  undo(
+    id: string,
+    params: UndoSchedulingReassignmentParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingReassignment>> {
+    return this.#http.request<SchedulingReassignment>({
+      method: "POST",
+      path: `/v1/scheduling/reassignments/${part(id)}/undo`,
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+}
+
+/** `coss.scheduling.outOfOffice`: time a host is away. */
+export class SchedulingOutOfOfficeResource {
+  readonly #http: HttpClient;
+
+  /** @internal Use `new Coss().scheduling.outOfOffice`. */
+  constructor(http: HttpClient) {
+    this.#http = http;
+  }
+
+  /**
+   * Marks one host, a list or everyone matching some attributes as away. An entry per host comes
+   * back. Existing bookings stay as they are. Not retried: pass `external_id` and use `put` to
+   * sync safely.
+   */
+  create(
+    params: CreateSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOffice>>> {
+    return this.#http.request<List<SchedulingOutOfOffice>>({
+      method: "POST",
+      path: "/v1/scheduling/out_of_office",
+      body: params,
+      retry: false,
+      signal: options?.signal,
+    });
+  }
+
+  /** Lists entries, newest first. Pass the last `id` as `after` while `has_more` is true. */
+  list(
+    params: ListSchedulingOutOfOfficeParams = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOffice>>> {
+    return this.#http.request<List<SchedulingOutOfOffice>>({
+      method: "GET",
+      path: "/v1/scheduling/out_of_office",
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+
+  /** Retrieves an entry. */
+  get(id: string, options?: ReadOptions): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "GET",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Changes what's given. An entry stays with its host. */
+  update(
+    id: string,
+    params: UpdateSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "PATCH",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /**
+   * Creates or replaces the entry with your own id. For syncing from a system of record: send what
+   * it says, as often as you like, and there's one entry for it.
+   */
+  put(
+    externalId: string,
+    params: PutSchedulingOutOfOfficeParams,
+    options?: ReadOptions,
+  ): Promise<CossResult<SchedulingOutOfOffice>> {
+    return this.#http.request<SchedulingOutOfOffice>({
+      method: "PUT",
+      path: `/v1/scheduling/out_of_office/by_external_id/${part(externalId)}`,
+      body: params,
+      signal: options?.signal,
+    });
+  }
+
+  /** Deletes an entry: the host can be booked then again, and any calendar event for it goes. */
+  remove(id: string, options?: ReadOptions): Promise<CossResult<DeletedSchedulingOutOfOffice>> {
+    return this.#http.request<DeletedSchedulingOutOfOffice>({
+      method: "DELETE",
+      path: `/v1/scheduling/out_of_office/${part(id)}`,
+      signal: options?.signal,
+    });
+  }
+
+  /** Live bookings of the host that fall in the entry, soonest first. Entries never change them. */
+  conflicts(
+    id: string,
+    params: { limit?: number } = {},
+    options?: ReadOptions,
+  ): Promise<CossResult<List<SchedulingOutOfOfficeConflict>>> {
+    return this.#http.request<List<SchedulingOutOfOfficeConflict>>({
+      method: "GET",
+      path: `/v1/scheduling/out_of_office/${part(id)}/conflicts`,
+      query: listQuery(params),
+      signal: options?.signal,
+    });
+  }
+}
+
 /** `coss.scheduling.settings`. */
 export class SchedulingSettingsResource {
   readonly #http: HttpClient;
@@ -939,11 +1286,17 @@ export class SchedulingResource {
   readonly oauthApps: SchedulingOauthAppsResource;
   readonly sessions: SchedulingSessionsResource;
   readonly attendees: SchedulingAttendeesResource;
+  readonly outOfOffice: SchedulingOutOfOfficeResource;
+  readonly reassignments: SchedulingReassignmentsResource;
+  readonly holidayCalendars: SchedulingHolidayCalendarsResource;
   readonly settings: SchedulingSettingsResource;
 
   /** @internal Use `new Coss().scheduling`. */
   constructor(http: HttpClient) {
     this.hosts = new SchedulingHostsResource(http);
+    this.outOfOffice = new SchedulingOutOfOfficeResource(http);
+    this.reassignments = new SchedulingReassignmentsResource(http);
+    this.holidayCalendars = new SchedulingHolidayCalendarsResource(http);
     this.schedules = new SchedulingSchedulesResource(http);
     this.eventTypes = new SchedulingEventTypesResource(http);
     this.slots = new SchedulingSlotsResource(http);

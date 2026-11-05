@@ -96,11 +96,17 @@ public final class WebhookEndpoint {
         return id;
     }
 
+    /**
+     * @return Where events are posted.
+     */
     @JsonProperty("url")
     public String getUrl() {
         return url;
     }
 
+    /**
+     * @return Your note about it. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -146,6 +152,9 @@ public final class WebhookEndpoint {
         return disabledReason;
     }
 
+    /**
+     * @return When it was disabled. <code>null</code> while enabled.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("disabled_at")
     public OptionalNullable<OffsetDateTime> getDisabledAt() {
@@ -284,6 +293,9 @@ public final class WebhookEndpoint {
     }
 
     public interface UrlStage {
+        /**
+         * <p>Where events are posted.</p>
+         */
         ApiVersionStage url(@NotNull String url);
     }
 
@@ -316,6 +328,9 @@ public final class WebhookEndpoint {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -344,6 +359,9 @@ public final class WebhookEndpoint {
 
         _FinalStage disabledReason(Nullable<WebhookEndpointDisabledReason> disabledReason);
 
+        /**
+         * <p>When it was disabled. <code>null</code> while enabled.</p>
+         */
         _FinalStage disabledAt(OptionalNullable<OffsetDateTime> disabledAt);
 
         _FinalStage disabledAt(OffsetDateTime disabledAt);
@@ -448,6 +466,10 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Where events are posted.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("url")
         public ApiVersionStage url(@NotNull String url) {
@@ -591,6 +613,10 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code> while enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(Nullable<OffsetDateTime> disabledAt) {
             if (disabledAt.isNull()) {
@@ -603,6 +629,10 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code> while enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(Optional<OffsetDateTime> disabledAt) {
             if (disabledAt.isPresent()) {
@@ -613,12 +643,19 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code> while enabled.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage disabledAt(OffsetDateTime disabledAt) {
             this.disabledAt = OptionalNullable.of(disabledAt);
             return this;
         }
 
+        /**
+         * <p>When it was disabled. <code>null</code> while enabled.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "disabled_at", nulls = Nulls.SKIP)
         public _FinalStage disabledAt(OptionalNullable<OffsetDateTime> disabledAt) {
@@ -711,6 +748,10 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -723,6 +764,10 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -733,12 +778,19 @@ public final class WebhookEndpoint {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

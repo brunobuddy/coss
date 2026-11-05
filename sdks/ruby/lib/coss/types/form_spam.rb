@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # How submissions are screened.
     class FormSpam < Internal::Types::Model
       field :honeypot_field, -> { String }, optional: false, nullable: false
 

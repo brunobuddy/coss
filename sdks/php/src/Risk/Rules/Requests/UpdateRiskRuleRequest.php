@@ -13,37 +13,37 @@ use Coss\Types\RiskDecision;
 class UpdateRiskRuleRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Your name for the rule.
      */
     #[JsonProperty('name')]
     public ?string $name;
 
     /**
-     * @var ?bool $enabled
+     * @var ?bool $enabled `false` keeps it, and stops applying it.
      */
     #[JsonProperty('enabled')]
     public ?bool $enabled;
 
     /**
-     * @var ?int $position
+     * @var ?int $position Rules are tried in ascending order.
      */
     #[JsonProperty('position')]
     public ?int $position;
 
     /**
-     * @var ?array<value-of<RiskEvent>> $events
+     * @var ?array<value-of<RiskEvent>> $events Events it applies to. Empty: every event.
      */
     #[JsonProperty('events'), ArrayType(['string'])]
     public ?array $events;
 
     /**
-     * @var ?value-of<UpdateRiskRuleRequestMatch> $match
+     * @var ?value-of<UpdateRiskRuleRequestMatch> $match `all`: every condition must hold. `any`: one is enough.
      */
     #[JsonProperty('match')]
     public ?string $match;
 
     /**
-     * @var ?array<RiskRuleCondition> $conditions
+     * @var ?array<RiskRuleCondition> $conditions What must hold, by `match`.
      */
     #[JsonProperty('conditions'), ArrayType([RiskRuleCondition::class])]
     public ?array $conditions;

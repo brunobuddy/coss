@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class DomainDmarcNext extends JsonSerializableType
 {
     /**
-     * @var value-of<DomainDmarcNextKind> $kind
+     * @var value-of<DomainDmarcNextKind> $kind The kind of step this is.
      */
     #[JsonProperty('kind')]
     public string $kind;
 
     /**
-     * @var value-of<DomainDmarcNextPolicy> $policy
+     * @var value-of<DomainDmarcNextPolicy> $policy The policy that step gets to.
      */
     #[JsonProperty('policy')]
     public string $policy;

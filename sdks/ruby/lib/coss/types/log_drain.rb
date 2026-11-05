@@ -13,6 +13,10 @@ module Coss
 
       field :sources, -> { Internal::Types::Array[Coss::Types::LogDrainSource] }, optional: false, nullable: false
 
+      field :format, -> { Coss::Types::LogDrainFormat }, optional: false, nullable: false
+
+      field :auth_header_name, -> { String }, optional: false, nullable: true
+
       field :enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false
 
       field :disabled_reason, -> { Coss::Types::LogDrainDisabledReason }, optional: false, nullable: true

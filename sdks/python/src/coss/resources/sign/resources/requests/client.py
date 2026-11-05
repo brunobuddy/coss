@@ -103,6 +103,7 @@ class RequestsClient:
             Uploaded documents by id, or PDFs inline (base64).
 
         signers : typing.Sequence[CreateSignRequestRequestSignersItem]
+            Who signs, and what each fills.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original request (in its current state) instead of creating another, for 24 hours. 1-256 characters.
@@ -192,6 +193,8 @@ class RequestsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SignRequest:
         """
+        A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+
         Parameters
         ----------
         id : str
@@ -510,6 +513,7 @@ class AsyncRequestsClient:
             Uploaded documents by id, or PDFs inline (base64).
 
         signers : typing.Sequence[CreateSignRequestRequestSignersItem]
+            Who signs, and what each fills.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original request (in its current state) instead of creating another, for 24 hours. 1-256 characters.
@@ -607,6 +611,8 @@ class AsyncRequestsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> SignRequest:
         """
+        A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+
         Parameters
         ----------
         id : str

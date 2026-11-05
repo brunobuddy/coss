@@ -4,12 +4,23 @@ import type { SecretsKeyRing } from "@coss/webhooks";
 import { decryptSecret, encryptSecret, isEncryptedWithPrimary } from "@coss/webhooks";
 import { and, asc, eq, gt, inArray, isNotNull, isNull, or } from "drizzle-orm";
 
-const { schedulingAttendee, schedulingBooking, schedulingSession } = schema;
+const {
+  schedulingAttendee,
+  schedulingBooking,
+  schedulingBookingEvent,
+  schedulingOutOfOffice,
+  schedulingReassignment,
+  schedulingSession,
+} = schema;
 
 /** A test compares this with the database's columns. */
 export const SCHEDULING_DATA_KEY_COLUMNS = [
   "scheduling_attendee.encrypted_contact",
   "scheduling_attendee.encrypted_answers",
+  "scheduling_booking.encrypted_attributes",
+  "scheduling_booking_event.encrypted_note",
+  "scheduling_out_of_office.encrypted_notes",
+  "scheduling_reassignment.encrypted_note",
   "scheduling_session.encrypted_attendee",
   "scheduling_session.encrypted_attributes",
   "scheduling_booking.encrypted_cancellation_reason",
@@ -162,6 +173,256 @@ async function reencryptAttendees(opts: Options, result: SchedulingReencryptResu
   }
 }
 
+async function reencryptBookings(opts: Options, result: SchedulingReencryptResult): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingBooking.id,
+        organizationId: schedulingBooking.organizationId,
+        attributes: schedulingBooking.encryptedAttributes,
+        reason: schedulingBooking.encryptedCancellationReason,
+      })
+      .from(schedulingBooking)
+      .where(
+        and(
+          gt(schedulingBooking.id, after),
+          or(
+            isNotNull(schedulingBooking.encryptedAttributes),
+            isNotNull(schedulingBooking.encryptedCancellationReason),
+          ),
+          opts.scope
+            ? inArray(schedulingBooking.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingBooking.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [
+          ["scheduling_booking.encrypted_attributes", row.attributes],
+          ["scheduling_booking.encrypted_cancellation_reason", row.reason],
+        ],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      // The compare-and-set is what keeps a booking erased meanwhile erased.
+      const [updated] = await db
+        .update(schedulingBooking)
+        .set({
+          encryptedAttributes: next.get("scheduling_booking.encrypted_attributes") ?? null,
+          encryptedCancellationReason:
+            next.get("scheduling_booking.encrypted_cancellation_reason") ?? null,
+        })
+        .where(
+          and(
+            eq(schedulingBooking.id, row.id),
+            eq(schedulingBooking.organizationId, row.organizationId),
+            row.attributes === null
+              ? isNull(schedulingBooking.encryptedAttributes)
+              : eq(schedulingBooking.encryptedAttributes, row.attributes),
+            row.reason === null
+              ? isNull(schedulingBooking.encryptedCancellationReason)
+              : eq(schedulingBooking.encryptedCancellationReason, row.reason),
+          ),
+        )
+        .returning({ id: schedulingBooking.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
+async function reencryptBookingEvents(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingBookingEvent.id,
+        organizationId: schedulingBookingEvent.organizationId,
+        note: schedulingBookingEvent.encryptedNote,
+      })
+      .from(schedulingBookingEvent)
+      .where(
+        and(
+          gt(schedulingBookingEvent.id, after),
+          isNotNull(schedulingBookingEvent.encryptedNote),
+          opts.scope
+            ? inArray(schedulingBookingEvent.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingBookingEvent.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_booking_event.encrypted_note", row.note]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingBookingEvent)
+        .set({ encryptedNote: next.get("scheduling_booking_event.encrypted_note") ?? null })
+        .where(
+          and(
+            eq(schedulingBookingEvent.id, row.id),
+            eq(schedulingBookingEvent.organizationId, row.organizationId),
+            eq(schedulingBookingEvent.encryptedNote, row.note as string),
+          ),
+        )
+        .returning({ id: schedulingBookingEvent.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
+async function reencryptReassignments(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingReassignment.id,
+        organizationId: schedulingReassignment.organizationId,
+        note: schedulingReassignment.encryptedNote,
+      })
+      .from(schedulingReassignment)
+      .where(
+        and(
+          gt(schedulingReassignment.id, after),
+          isNotNull(schedulingReassignment.encryptedNote),
+          opts.scope
+            ? inArray(schedulingReassignment.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingReassignment.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_reassignment.encrypted_note", row.note]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingReassignment)
+        .set({ encryptedNote: next.get("scheduling_reassignment.encrypted_note") ?? null })
+        .where(
+          and(
+            eq(schedulingReassignment.id, row.id),
+            eq(schedulingReassignment.organizationId, row.organizationId),
+            eq(schedulingReassignment.encryptedNote, row.note as string),
+          ),
+        )
+        .returning({ id: schedulingReassignment.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
+async function reencryptOutOfOffice(
+  opts: Options,
+  result: SchedulingReencryptResult,
+): Promise<void> {
+  const batchSize = opts.batchSize ?? 200;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingOutOfOffice.id,
+        organizationId: schedulingOutOfOffice.organizationId,
+        notes: schedulingOutOfOffice.encryptedNotes,
+      })
+      .from(schedulingOutOfOffice)
+      .where(
+        and(
+          gt(schedulingOutOfOffice.id, after),
+          isNotNull(schedulingOutOfOffice.encryptedNotes),
+          opts.scope
+            ? inArray(schedulingOutOfOffice.organizationId, [...opts.scope.organizationIds])
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingOutOfOffice.id))
+      .limit(batchSize);
+    for (const row of rows) {
+      result.checked++;
+      const next = rewritten(
+        row,
+        [["scheduling_out_of_office.encrypted_notes", row.notes]],
+        opts,
+        result,
+      );
+      if (!next) continue;
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      await opts.beforeWrite?.(row.id);
+      const [updated] = await db
+        .update(schedulingOutOfOffice)
+        .set({ encryptedNotes: next.get("scheduling_out_of_office.encrypted_notes") ?? null })
+        .where(
+          and(
+            eq(schedulingOutOfOffice.id, row.id),
+            eq(schedulingOutOfOffice.organizationId, row.organizationId),
+            eq(schedulingOutOfOffice.encryptedNotes, row.notes as string),
+          ),
+        )
+        .returning({ id: schedulingOutOfOffice.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < batchSize) break;
+    after = last.id;
+  }
+}
+
 // Expired sessions count too: they still hold someone's details.
 async function reencryptSessions(opts: Options, result: SchedulingReencryptResult): Promise<void> {
   const batchSize = opts.batchSize ?? 200;
@@ -235,69 +496,6 @@ async function reencryptSessions(opts: Options, result: SchedulingReencryptResul
 }
 
 /** Idempotent and safe while the apps serve traffic: it resumes by running again. */
-async function reencryptCancellationReasons(
-  opts: Options,
-  result: SchedulingReencryptResult,
-): Promise<void> {
-  const batchSize = opts.batchSize ?? 200;
-  let after = "";
-  for (;;) {
-    const rows = await db
-      .select({
-        id: schedulingBooking.id,
-        organizationId: schedulingBooking.organizationId,
-        reason: schedulingBooking.encryptedCancellationReason,
-      })
-      .from(schedulingBooking)
-      .where(
-        and(
-          gt(schedulingBooking.id, after),
-          isNotNull(schedulingBooking.encryptedCancellationReason),
-          opts.scope
-            ? inArray(schedulingBooking.organizationId, [...opts.scope.organizationIds])
-            : undefined,
-        ),
-      )
-      .orderBy(asc(schedulingBooking.id))
-      .limit(batchSize);
-    for (const row of rows) {
-      result.checked++;
-      const next = rewritten(
-        row,
-        [["scheduling_booking.encrypted_cancellation_reason", row.reason]],
-        opts,
-        result,
-      );
-      if (!next) continue;
-      if (opts.dryRun) {
-        result.reencrypted++;
-        continue;
-      }
-      await opts.beforeWrite?.(row.id);
-      // The compare-and-set is what keeps a reason erased meanwhile erased.
-      const [updated] = await db
-        .update(schedulingBooking)
-        .set({
-          encryptedCancellationReason:
-            next.get("scheduling_booking.encrypted_cancellation_reason") ?? null,
-        })
-        .where(
-          and(
-            eq(schedulingBooking.id, row.id),
-            eq(schedulingBooking.organizationId, row.organizationId),
-            eq(schedulingBooking.encryptedCancellationReason, row.reason as string),
-          ),
-        )
-        .returning({ id: schedulingBooking.id });
-      if (updated) result.reencrypted++;
-      else result.conflicts++;
-    }
-    const last = rows.at(-1);
-    if (!last || rows.length < batchSize) break;
-    after = last.id;
-  }
-}
-
 export async function reencryptSchedulingData(opts: Options): Promise<SchedulingReencryptResult> {
   const result: SchedulingReencryptResult = {
     checked: 0,
@@ -307,7 +505,10 @@ export async function reencryptSchedulingData(opts: Options): Promise<Scheduling
     conflicts: 0,
   };
   await reencryptAttendees(opts, result);
+  await reencryptBookings(opts, result);
+  await reencryptBookingEvents(opts, result);
+  await reencryptOutOfOffice(opts, result);
+  await reencryptReassignments(opts, result);
   await reencryptSessions(opts, result);
-  await reencryptCancellationReasons(opts, result);
   return result;
 }

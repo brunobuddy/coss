@@ -14,9 +14,15 @@ public record BillingOverviewScheduledChange : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// When it takes effect.
+    /// </summary>
     [JsonPropertyName("effective_at")]
     public required DateTime EffectiveAt { get; set; }
 
+    /// <summary>
+    /// The plan it changes to.
+    /// </summary>
     [JsonPropertyName("plan")]
     public required BillingOverviewScheduledChangePlan Plan { get; set; }
 

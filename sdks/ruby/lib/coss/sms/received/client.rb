@@ -62,6 +62,8 @@ module Coss
           end
         end
 
+        # One message received on a number of the organization and routed to the API key's environment.
+        #
         # @param request_options [Hash]
         # @param params [Hash]
         # @option request_options [String] :base_url

@@ -12,8 +12,15 @@ class ReputationWindow(UniversalBaseModel):
     The period the checks cover (live environments only).
     """
 
-    start: dt.datetime
-    end: dt.datetime
+    start: dt.datetime = pydantic.Field()
+    """
+    When the period starts.
+    """
+
+    end: dt.datetime = pydantic.Field()
+    """
+    When the period ends.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

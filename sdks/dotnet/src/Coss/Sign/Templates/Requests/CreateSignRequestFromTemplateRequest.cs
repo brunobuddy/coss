@@ -25,6 +25,9 @@ public record CreateSignRequestFromTemplateRequest
     [JsonPropertyName("title")]
     public string? Title { get; set; }
 
+    /// <summary>
+    /// Default: the template's message.
+    /// </summary>
     [Optional]
     [JsonPropertyName("message")]
     public string? Message { get; set; }
@@ -50,6 +53,9 @@ public record CreateSignRequestFromTemplateRequest
     [JsonPropertyName("signing_order")]
     public CreateSignRequestFromTemplateRequestSigningOrder? SigningOrder { get; set; }
 
+    /// <summary>
+    /// When an unfinished request expires, at most 365 days ahead.
+    /// </summary>
     [Optional]
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }
@@ -61,6 +67,9 @@ public record CreateSignRequestFromTemplateRequest
     [JsonPropertyName("metadata")]
     public Dictionary<string, string>? Metadata { get; set; }
 
+    /// <summary>
+    /// Days between reminders to email signers. Default: your Sign settings'. `null`: none.
+    /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("reminder_interval_days")]
     public Optional<int?> ReminderIntervalDays { get; set; }

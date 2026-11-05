@@ -7,8 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class SignTemplateRolesItem(UniversalBaseModel):
-    key: str
-    name: str
+    key: str = pydantic.Field()
+    """
+    The role's id within the template.
+    """
+
+    name: str = pydantic.Field()
+    """
+    Shown in the builder, e.g. `Client`.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

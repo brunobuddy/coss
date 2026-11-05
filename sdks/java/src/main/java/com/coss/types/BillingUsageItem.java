@@ -51,6 +51,9 @@ public final class BillingUsageItem {
         return meter;
     }
 
+    /**
+     * @return Units used so far this month.
+     */
     @JsonProperty("quantity")
     public long getQuantity() {
         return quantity;
@@ -113,6 +116,9 @@ public final class BillingUsageItem {
     }
 
     public interface QuantityStage {
+        /**
+         * <p>Units used so far this month.</p>
+         */
         _FinalStage quantity(long quantity);
     }
 
@@ -167,6 +173,10 @@ public final class BillingUsageItem {
             return this;
         }
 
+        /**
+         * <p>Units used so far this month.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("quantity")
         public _FinalStage quantity(long quantity) {

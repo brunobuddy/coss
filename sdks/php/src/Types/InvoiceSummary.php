@@ -22,31 +22,31 @@ class InvoiceSummary extends JsonSerializableType
     public string $id;
 
     /**
-     * @var ?string $number
+     * @var ?string $number The invoice number. `null` until it's finalized.
      */
     #[JsonProperty('number')]
     public ?string $number;
 
     /**
-     * @var value-of<InvoiceSummaryKind> $kind
+     * @var value-of<InvoiceSummaryKind> $kind `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
      */
     #[JsonProperty('kind')]
     public string $kind;
 
     /**
-     * @var value-of<InvoiceSummaryStatus> $status
+     * @var value-of<InvoiceSummaryStatus> $status `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
      */
     #[JsonProperty('status')]
     public string $status;
 
     /**
-     * @var value-of<InvoiceSummaryCurrency> $currency
+     * @var value-of<InvoiceSummaryCurrency> $currency Always `usd`.
      */
     #[JsonProperty('currency')]
     public string $currency;
 
     /**
-     * @var InvoiceSummaryPeriod $period
+     * @var InvoiceSummaryPeriod $period What period it covers.
      */
     #[JsonProperty('period')]
     public InvoiceSummaryPeriod $period;
@@ -94,31 +94,31 @@ class InvoiceSummary extends JsonSerializableType
     public int $amountDue;
 
     /**
-     * @var value-of<InvoiceSummaryCollectionMethod> $collectionMethod
+     * @var value-of<InvoiceSummaryCollectionMethod> $collectionMethod `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
      */
     #[JsonProperty('collection_method')]
     public string $collectionMethod;
 
     /**
-     * @var ?DateTime $dueAt
+     * @var ?DateTime $dueAt When payment is due. `null`: not set.
      */
     #[JsonProperty('due_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $dueAt;
 
     /**
-     * @var ?DateTime $finalizedAt
+     * @var ?DateTime $finalizedAt When it was finalized. `null`: not yet.
      */
     #[JsonProperty('finalized_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $finalizedAt;
 
     /**
-     * @var ?DateTime $paidAt
+     * @var ?DateTime $paidAt When it was paid. `null`: not paid.
      */
     #[JsonProperty('paid_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $paidAt;
 
     /**
-     * @var ?DateTime $voidedAt
+     * @var ?DateTime $voidedAt When it was voided. `null`: it wasn't.
      */
     #[JsonProperty('voided_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $voidedAt;
@@ -130,7 +130,7 @@ class InvoiceSummary extends JsonSerializableType
     public ?string $hostedUrl;
 
     /**
-     * @var ?string $pdfUrl
+     * @var ?string $pdfUrl The invoice as a PDF. `null`: not available.
      */
     #[JsonProperty('pdf_url')]
     public ?string $pdfUrl;

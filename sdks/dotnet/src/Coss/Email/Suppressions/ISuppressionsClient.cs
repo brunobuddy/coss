@@ -49,6 +49,9 @@ public partial interface ISuppressionsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One entry of the suppression list of the API key's environment.
+    /// </summary>
     WithRawResponseTask<Suppression> GetAsync(
         GetSuppressionsRequest request,
         RequestOptions? options = null,

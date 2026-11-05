@@ -8,28 +8,31 @@ use DateTime;
 use Coss\Core\Types\Date;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * The sub-account's standing.
+ */
 class SubaccountWebhookEventData extends JsonSerializableType
 {
     /**
-     * @var string $subaccountId
+     * @var string $subaccountId The sub-account's id.
      */
     #[JsonProperty('subaccount_id')]
     public string $subaccountId;
 
     /**
-     * @var ?string $uid
+     * @var ?string $uid Your own id for it. `null`: none.
      */
     #[JsonProperty('uid')]
     public ?string $uid;
 
     /**
-     * @var value-of<SubaccountWebhookEventDataStatus> $status
+     * @var value-of<SubaccountWebhookEventDataStatus> $status Its status after this event.
      */
     #[JsonProperty('status')]
     public string $status;
 
     /**
-     * @var value-of<SubaccountWebhookEventDataPreviousStatus> $previousStatus
+     * @var value-of<SubaccountWebhookEventDataPreviousStatus> $previousStatus Its status before.
      */
     #[JsonProperty('previous_status')]
     public string $previousStatus;
@@ -41,7 +44,7 @@ class SubaccountWebhookEventData extends JsonSerializableType
     public ?string $trigger;
 
     /**
-     * @var DateTime $occurredAt
+     * @var DateTime $occurredAt When this happened.
      */
     #[JsonProperty('occurred_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $occurredAt;

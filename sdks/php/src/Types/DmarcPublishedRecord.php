@@ -18,31 +18,31 @@ class DmarcPublishedRecord extends JsonSerializableType
     public string $value;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordP> $p
+     * @var ?value-of<DmarcPublishedRecordP> $p The domain's policy tag.
      */
     #[JsonProperty('p')]
     public ?string $p;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordSp> $sp
+     * @var ?value-of<DmarcPublishedRecordSp> $sp The subdomain policy tag. `null`: not published.
      */
     #[JsonProperty('sp')]
     public ?string $sp;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordNp> $np
+     * @var ?value-of<DmarcPublishedRecordNp> $np The policy tag for non-existent subdomains. `null`: not published.
      */
     #[JsonProperty('np')]
     public ?string $np;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordAdkim> $adkim
+     * @var ?value-of<DmarcPublishedRecordAdkim> $adkim The DKIM alignment tag. `null`: not published.
      */
     #[JsonProperty('adkim')]
     public ?string $adkim;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordAspf> $aspf
+     * @var ?value-of<DmarcPublishedRecordAspf> $aspf The SPF alignment tag. `null`: not published.
      */
     #[JsonProperty('aspf')]
     public ?string $aspf;
@@ -54,7 +54,7 @@ class DmarcPublishedRecord extends JsonSerializableType
     public ?int $pct;
 
     /**
-     * @var ?value-of<DmarcPublishedRecordT> $t
+     * @var ?value-of<DmarcPublishedRecordT> $t The testing tag. `null`: not published.
      */
     #[JsonProperty('t')]
     public ?string $t;

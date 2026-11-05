@@ -12,14 +12,33 @@ from .create_sign_request_from_template_request_signers_item_delivery import (
 class CreateSignRequestFromTemplateRequestSignersItem(UniversalBaseModel):
     role: str = pydantic.Field()
     """
-    The role's key, e.g. `client`.
+    The `key` of the template's role they sign as.
     """
 
-    name: str
-    email: str
-    delivery: typing.Optional[CreateSignRequestFromTemplateRequestSignersItemDelivery] = None
-    order: typing.Optional[int] = None
-    client_ref: typing.Optional[str] = None
+    name: str = pydantic.Field()
+    """
+    Shown on the signing page and on the certificate.
+    """
+
+    email: str = pydantic.Field()
+    """
+    Where a `delivery: email` signer gets their link.
+    """
+
+    delivery: typing.Optional[CreateSignRequestFromTemplateRequestSignersItemDelivery] = pydantic.Field(default=None)
+    """
+    `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page.
+    """
+
+    order: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    With `sequential` signing, signers sign in increasing `order`.
+    """
+
+    client_ref: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your own id for the signer, recorded in the audit trail.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

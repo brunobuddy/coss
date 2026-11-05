@@ -11,10 +11,25 @@ class RiskSettingsContentThresholds(UniversalBaseModel):
     Per content category, the score at which `content.<category>` fires; `null`: never (the score is still in `signals.content` for your rules).
     """
 
-    spam: typing.Optional[float] = None
-    phishing: typing.Optional[float] = None
-    malware: typing.Optional[float] = None
-    fraud: typing.Optional[float] = None
+    spam: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.spam` fires. `null`: never.
+    """
+
+    phishing: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.phishing` fires. `null`: never.
+    """
+
+    malware: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.malware` fires. `null`: never.
+    """
+
+    fraud: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    The score at which `content.fraud` fires. `null`: never.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

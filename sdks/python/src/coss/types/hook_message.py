@@ -15,8 +15,16 @@ class HookMessage(UniversalBaseModel):
     Also the `webhook-id` header of every request delivering it.
     """
 
-    application_id: str
-    event_type: str
+    application_id: str = pydantic.Field()
+    """
+    The id of the application it was sent to.
+    """
+
+    event_type: str = pydantic.Field()
+    """
+    The event type it was sent as.
+    """
+
     payload: typing.Dict[str, typing.Any] = pydantic.Field()
     """
     The JSON body delivered to each endpoint.

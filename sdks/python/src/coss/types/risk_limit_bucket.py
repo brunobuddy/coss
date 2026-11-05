@@ -22,7 +22,11 @@ class RiskLimitBucket(UniversalBaseModel):
     Tokens added per `period_seconds`.
     """
 
-    period_seconds: int
+    period_seconds: int = pydantic.Field()
+    """
+    How many seconds `limit` tokens take to be added.
+    """
+
     burst: int = pydantic.Field()
     """
     The bucket's size: how many requests a key can make at once.

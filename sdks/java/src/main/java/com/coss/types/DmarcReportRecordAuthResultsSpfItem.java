@@ -40,11 +40,17 @@ public final class DmarcReportRecordAuthResultsSpfItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The checked domain.
+     */
     @JsonProperty("domain")
     public String getDomain() {
         return domain;
     }
 
+    /**
+     * @return What it was checked against.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("scope")
     public OptionalNullable<String> getScope() {
@@ -54,6 +60,9 @@ public final class DmarcReportRecordAuthResultsSpfItem {
         return scope;
     }
 
+    /**
+     * @return The result.
+     */
     @JsonProperty("result")
     public String getResult() {
         return result;
@@ -96,12 +105,18 @@ public final class DmarcReportRecordAuthResultsSpfItem {
     }
 
     public interface DomainStage {
+        /**
+         * <p>The checked domain.</p>
+         */
         ResultStage domain(@NotNull String domain);
 
         Builder from(DmarcReportRecordAuthResultsSpfItem other);
     }
 
     public interface ResultStage {
+        /**
+         * <p>The result.</p>
+         */
         _FinalStage result(@NotNull String result);
     }
 
@@ -112,6 +127,9 @@ public final class DmarcReportRecordAuthResultsSpfItem {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>What it was checked against.</p>
+         */
         _FinalStage scope(OptionalNullable<String> scope);
 
         _FinalStage scope(String scope);
@@ -142,6 +160,10 @@ public final class DmarcReportRecordAuthResultsSpfItem {
             return this;
         }
 
+        /**
+         * <p>The checked domain.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain")
         public ResultStage domain(@NotNull String domain) {
@@ -149,6 +171,10 @@ public final class DmarcReportRecordAuthResultsSpfItem {
             return this;
         }
 
+        /**
+         * <p>The result.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("result")
         public _FinalStage result(@NotNull String result) {
@@ -156,6 +182,10 @@ public final class DmarcReportRecordAuthResultsSpfItem {
             return this;
         }
 
+        /**
+         * <p>What it was checked against.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scope(Nullable<String> scope) {
             if (scope.isNull()) {
@@ -168,6 +198,10 @@ public final class DmarcReportRecordAuthResultsSpfItem {
             return this;
         }
 
+        /**
+         * <p>What it was checked against.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scope(Optional<String> scope) {
             if (scope.isPresent()) {
@@ -178,12 +212,19 @@ public final class DmarcReportRecordAuthResultsSpfItem {
             return this;
         }
 
+        /**
+         * <p>What it was checked against.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage scope(String scope) {
             this.scope = OptionalNullable.of(scope);
             return this;
         }
 
+        /**
+         * <p>What it was checked against.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "scope", nulls = Nulls.SKIP)
         public _FinalStage scope(OptionalNullable<String> scope) {

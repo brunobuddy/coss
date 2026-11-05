@@ -29,7 +29,10 @@ class ReceivingDomain(UniversalBaseModel):
     """
 
     created_at: dt.datetime
-    last_checked_at: typing.Optional[dt.datetime] = None
+    last_checked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was last checked. `null`: not yet.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

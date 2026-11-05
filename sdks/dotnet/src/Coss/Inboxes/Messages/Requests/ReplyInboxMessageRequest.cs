@@ -33,10 +33,16 @@ public record ReplyInboxMessageRequest
     [JsonPropertyName("reply_all")]
     public bool? ReplyAll { get; set; }
 
+    /// <summary>
+    /// Who it's copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("cc")]
     public OneOf<string, IEnumerable<string>>? Cc { get; set; }
 
+    /// <summary>
+    /// Who it's blind copied to.
+    /// </summary>
     [Optional]
     [JsonPropertyName("bcc")]
     public OneOf<string, IEnumerable<string>>? Bcc { get; set; }
@@ -62,6 +68,9 @@ public record ReplyInboxMessageRequest
     [JsonPropertyName("attachments")]
     public IEnumerable<SendEmailAttachment>? Attachments { get; set; }
 
+    /// <summary>
+    /// Your tags on the email.
+    /// </summary>
     [Optional]
     [JsonPropertyName("tags")]
     public IEnumerable<ReplyInboxMessageRequestTagsItem>? Tags { get; set; }

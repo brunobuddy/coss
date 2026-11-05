@@ -35,7 +35,7 @@ class RiskDeviceSignals extends JsonSerializableType
     public ?string $language;
 
     /**
-     * @var ?string $platform
+     * @var ?string $platform The browser's reported platform. `null` when it reported none.
      */
     #[JsonProperty('platform')]
     public ?string $platform;
@@ -47,7 +47,7 @@ class RiskDeviceSignals extends JsonSerializableType
     public ?string $screen;
 
     /**
-     * @var ?bool $touch
+     * @var ?bool $touch Whether the device has a touch screen. `null` when it didn't say.
      */
     #[JsonProperty('touch')]
     public ?bool $touch;

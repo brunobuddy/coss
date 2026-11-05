@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Details of the event: only what its `type` has.
+/// </summary>
 [Serializable]
 public record EmailEventData : IJsonOnDeserialized
 {

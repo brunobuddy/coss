@@ -20,6 +20,9 @@ public record RiskAssessment : IJsonOnDeserialized
     [JsonPropertyName("event")]
     public required RiskEvent Event { get; set; }
 
+    /// <summary>
+    /// Your name for a `custom` event. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("event_name")]
     public string? EventName { get; set; }
@@ -39,9 +42,15 @@ public record RiskAssessment : IJsonOnDeserialized
     [JsonPropertyName("reasons")]
     public IEnumerable<RiskReason> Reasons { get; set; } = new List<RiskReason>();
 
+    /// <summary>
+    /// What the assessment saw, by group. A group is `null` when it had nothing to go on.
+    /// </summary>
     [JsonPropertyName("signals")]
     public required RiskAssessmentSignals Signals { get; set; }
 
+    /// <summary>
+    /// Who it's about.
+    /// </summary>
     [JsonPropertyName("user")]
     public required RiskAssessmentUser User { get; set; }
 
@@ -53,7 +62,7 @@ public record RiskAssessment : IJsonOnDeserialized
     public string? Ip { get; set; }
 
     /// <summary>
-    /// Signal groups that were unavailable for this assessment (it was made without them).
+    /// Signal groups that were unavailable for this assessment (it was made without them). `usage_limit` means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.
     /// </summary>
     [JsonPropertyName("degraded")]
     public IEnumerable<RiskAssessmentDegradedItem> Degraded { get; set; } =

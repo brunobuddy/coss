@@ -59,7 +59,7 @@ class AuditEvent extends JsonSerializableType
     public ?string $targetType;
 
     /**
-     * @var ?string $targetId
+     * @var ?string $targetId The id of what it acted on. `null`: nothing in particular.
      */
     #[JsonProperty('target_id')]
     public ?string $targetId;
@@ -89,13 +89,13 @@ class AuditEvent extends JsonSerializableType
     public array $metadata;
 
     /**
-     * @var ?string $clientIp
+     * @var ?string $clientIp The actor's address. `null`: unknown.
      */
     #[JsonProperty('client_ip')]
     public ?string $clientIp;
 
     /**
-     * @var ?string $userAgent
+     * @var ?string $userAgent The actor's `User-Agent`. `null`: unknown.
      */
     #[JsonProperty('user_agent')]
     public ?string $userAgent;

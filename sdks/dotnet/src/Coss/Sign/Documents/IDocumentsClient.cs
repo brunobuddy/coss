@@ -22,6 +22,9 @@ public partial interface IDocumentsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// An uploaded document's details: its hash, page sizes and text anchors. Its bytes are never returned here.
+    /// </summary>
     WithRawResponseTask<SignDocument> GetAsync(
         GetDocumentsRequest request,
         RequestOptions? options = null,

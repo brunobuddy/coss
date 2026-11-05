@@ -87,18 +87,30 @@ public class SmsClient {
         return this.rawClient.send(request, requestOptions).body();
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public Sms get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public Sms get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public Sms get(String id, GetSmsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public Sms get(String id, GetSmsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

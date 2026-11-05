@@ -37,9 +37,21 @@ class InboxMessageSummary(UniversalBaseModel):
     The `From` header.
     """
 
-    to: typing.List[str]
-    cc: typing.List[str]
-    subject: typing.Optional[str] = None
+    to: typing.List[str] = pydantic.Field()
+    """
+    Addresses in the `To` header.
+    """
+
+    cc: typing.List[str] = pydantic.Field()
+    """
+    Addresses in the `Cc` header.
+    """
+
+    subject: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The subject. `null`: none.
+    """
+
     preview: typing.Optional[str] = pydantic.Field(default=None)
     """
     The start of the message's own text (without the quoted conversation).

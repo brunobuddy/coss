@@ -20,9 +20,15 @@ public record HookMessage : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the application it was sent to.
+    /// </summary>
     [JsonPropertyName("application_id")]
     public required string ApplicationId { get; set; }
 
+    /// <summary>
+    /// The event type it was sent as.
+    /// </summary>
     [JsonPropertyName("event_type")]
     public required string EventType { get; set; }
 

@@ -85,11 +85,17 @@ public final class DmarcReportSummary {
         return id;
     }
 
+    /**
+     * @return The domain's id.
+     */
     @JsonProperty("domain_id")
     public String getDomainId() {
         return domainId;
     }
 
+    /**
+     * @return Who sent the report.
+     */
     @JsonProperty("reporter")
     public DmarcReportSummaryReporter getReporter() {
         return reporter;
@@ -103,11 +109,17 @@ public final class DmarcReportSummary {
         return reportId;
     }
 
+    /**
+     * @return When the period it covers starts.
+     */
     @JsonProperty("period_start")
     public OffsetDateTime getPeriodStart() {
         return periodStart;
     }
 
+    /**
+     * @return When the period it covers ends.
+     */
     @JsonProperty("period_end")
     public OffsetDateTime getPeriodEnd() {
         return periodEnd;
@@ -121,11 +133,17 @@ public final class DmarcReportSummary {
         return policyPublished;
     }
 
+    /**
+     * @return Messages the report covers.
+     */
     @JsonProperty("messages")
     public long getMessages() {
         return messages;
     }
 
+    /**
+     * @return Of those, how many passed DMARC.
+     */
     @JsonProperty("passing")
     public long getPassing() {
         return passing;
@@ -139,6 +157,9 @@ public final class DmarcReportSummary {
         return truncated;
     }
 
+    /**
+     * @return When coss.com received it.
+     */
     @JsonProperty("received_at")
     public OffsetDateTime getReceivedAt() {
         return receivedAt;
@@ -207,10 +228,16 @@ public final class DmarcReportSummary {
     }
 
     public interface DomainIdStage {
+        /**
+         * <p>The domain's id.</p>
+         */
         ReporterStage domainId(@NotNull String domainId);
     }
 
     public interface ReporterStage {
+        /**
+         * <p>Who sent the report.</p>
+         */
         ReportIdStage reporter(@NotNull DmarcReportSummaryReporter reporter);
     }
 
@@ -222,10 +249,16 @@ public final class DmarcReportSummary {
     }
 
     public interface PeriodStartStage {
+        /**
+         * <p>When the period it covers starts.</p>
+         */
         PeriodEndStage periodStart(@NotNull OffsetDateTime periodStart);
     }
 
     public interface PeriodEndStage {
+        /**
+         * <p>When the period it covers ends.</p>
+         */
         PolicyPublishedStage periodEnd(@NotNull OffsetDateTime periodEnd);
     }
 
@@ -237,10 +270,16 @@ public final class DmarcReportSummary {
     }
 
     public interface MessagesStage {
+        /**
+         * <p>Messages the report covers.</p>
+         */
         PassingStage messages(long messages);
     }
 
     public interface PassingStage {
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         */
         TruncatedStage passing(long passing);
     }
 
@@ -252,6 +291,9 @@ public final class DmarcReportSummary {
     }
 
     public interface ReceivedAtStage {
+        /**
+         * <p>When coss.com received it.</p>
+         */
         _FinalStage receivedAt(@NotNull OffsetDateTime receivedAt);
     }
 
@@ -338,6 +380,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>The domain's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain_id")
         public ReporterStage domainId(@NotNull String domainId) {
@@ -345,6 +391,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Who sent the report.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("reporter")
         public ReportIdStage reporter(@NotNull DmarcReportSummaryReporter reporter) {
@@ -363,6 +413,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the period it covers starts.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period_start")
         public PeriodEndStage periodStart(@NotNull OffsetDateTime periodStart) {
@@ -370,6 +424,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the period it covers ends.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period_end")
         public PolicyPublishedStage periodEnd(@NotNull OffsetDateTime periodEnd) {
@@ -388,6 +446,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Messages the report covers.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("messages")
         public PassingStage messages(long messages) {
@@ -395,6 +457,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("passing")
         public TruncatedStage passing(long passing) {
@@ -413,6 +479,10 @@ public final class DmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When coss.com received it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("received_at")
         public _FinalStage receivedAt(@NotNull OffsetDateTime receivedAt) {

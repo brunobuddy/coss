@@ -43,8 +43,15 @@ class SignFieldInputDocument(UniversalBaseModel):
     Top edge, in PDF points from the page's top.
     """
 
-    width: float
-    height: float
+    width: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    height: float = pydantic.Field()
+    """
+    In PDF points.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

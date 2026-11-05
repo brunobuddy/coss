@@ -5,6 +5,9 @@ namespace Coss\Forms\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * The page coss.com can serve for this form. Only the fields given change.
+ */
 class UpdateFormRequestHosted extends JsonSerializableType
 {
     /**
@@ -14,25 +17,25 @@ class UpdateFormRequestHosted extends JsonSerializableType
     public ?bool $enabled;
 
     /**
-     * @var ?string $title
+     * @var ?string $title The page's heading. `null`: the form's name.
      */
     #[JsonProperty('title')]
     public ?string $title;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Text under the heading. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
 
     /**
-     * @var ?string $submitLabel
+     * @var ?string $submitLabel The submit button's label. `null`: the default.
      */
     #[JsonProperty('submit_label')]
     public ?string $submitLabel;
 
     /**
-     * @var ?string $successMessage
+     * @var ?string $successMessage Shown after a submission. `null`: the default.
      */
     #[JsonProperty('success_message')]
     public ?string $successMessage;

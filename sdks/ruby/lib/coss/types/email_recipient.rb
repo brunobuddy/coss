@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # One recipient of an email and how delivery to them went.
     class EmailRecipient < Internal::Types::Model
       field :address, -> { String }, optional: false, nullable: false
 

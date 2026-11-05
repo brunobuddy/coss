@@ -23,43 +23,43 @@ class SignTemplate extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Your name for the template.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $title
+     * @var ?string $title Requests' title. `null`: the template's name.
      */
     #[JsonProperty('title')]
     public ?string $title;
 
     /**
-     * @var ?string $message
+     * @var ?string $message Requests' message to signers. `null`: none.
      */
     #[JsonProperty('message')]
     public ?string $message;
 
     /**
-     * @var value-of<SignTemplateSigningOrder> $signingOrder
+     * @var value-of<SignTemplateSigningOrder> $signingOrder Its requests' order, unless one sets its own.
      */
     #[JsonProperty('signing_order')]
     public string $signingOrder;
 
     /**
-     * @var array<SignTemplateDocumentsItem> $documents
+     * @var array<SignTemplateDocumentsItem> $documents The documents its requests use, in order.
      */
     #[JsonProperty('documents'), ArrayType([SignTemplateDocumentsItem::class])]
     public array $documents;
 
     /**
-     * @var array<SignTemplateRolesItem> $roles
+     * @var array<SignTemplateRolesItem> $roles Who signs: each request names one signer per role.
      */
     #[JsonProperty('roles'), ArrayType([SignTemplateRolesItem::class])]
     public array $roles;
 
     /**
-     * @var array<SignTemplateFieldsItem> $fields
+     * @var array<SignTemplateFieldsItem> $fields Each role's fields.
      */
     #[JsonProperty('fields'), ArrayType([SignTemplateFieldsItem::class])]
     public array $fields;
@@ -71,7 +71,7 @@ class SignTemplate extends JsonSerializableType
     public bool $ready;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;

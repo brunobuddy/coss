@@ -23,29 +23,53 @@ public record SignRequest : IJsonOnDeserialized
     [JsonPropertyName("status")]
     public required SignRequestStatus Status { get; set; }
 
+    /// <summary>
+    /// Shown to signers.
+    /// </summary>
     [JsonPropertyName("title")]
     public required string Title { get; set; }
 
+    /// <summary>
+    /// A note to signers. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("message")]
     public string? Message { get; set; }
 
+    /// <summary>
+    /// `parallel`: everyone at once. `sequential`: in each signer's `order`.
+    /// </summary>
     [JsonPropertyName("signing_order")]
     public required SignRequestSigningOrder SigningOrder { get; set; }
 
+    /// <summary>
+    /// The documents to sign, in order.
+    /// </summary>
     [JsonPropertyName("documents")]
     public IEnumerable<SignRequestDocumentsItem> Documents { get; set; } =
         new List<SignRequestDocumentsItem>();
 
+    /// <summary>
+    /// Who signs.
+    /// </summary>
     [JsonPropertyName("signers")]
     public IEnumerable<SignSigner> Signers { get; set; } = new List<SignSigner>();
 
+    /// <summary>
+    /// What each signer fills.
+    /// </summary>
     [JsonPropertyName("fields")]
     public IEnumerable<SignField> Fields { get; set; } = new List<SignField>();
 
+    /// <summary>
+    /// Your own key-value pairs.
+    /// </summary>
     [JsonPropertyName("metadata")]
     public Dictionary<string, string> Metadata { get; set; } = new Dictionary<string, string>();
 
+    /// <summary>
+    /// Whether it belongs to a sandbox environment.
+    /// </summary>
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
@@ -56,26 +80,44 @@ public record SignRequest : IJsonOnDeserialized
     [JsonPropertyName("reminder_interval_days")]
     public long? ReminderIntervalDays { get; set; }
 
+    /// <summary>
+    /// When it expires if it isn't finished. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("expires_at")]
     public DateTime? ExpiresAt { get; set; }
 
+    /// <summary>
+    /// When it expired. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("expired_at")]
     public DateTime? ExpiredAt { get; set; }
 
+    /// <summary>
+    /// When it was sent. `null`: still a draft.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("sent_at")]
     public DateTime? SentAt { get; set; }
 
+    /// <summary>
+    /// When the last signer signed. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("completed_at")]
     public DateTime? CompletedAt { get; set; }
 
+    /// <summary>
+    /// When it was canceled. `null`: it wasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("canceled_at")]
     public DateTime? CanceledAt { get; set; }
 
+    /// <summary>
+    /// When a signer declined it. `null`: nobody has.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("declined_at")]
     public DateTime? DeclinedAt { get; set; }

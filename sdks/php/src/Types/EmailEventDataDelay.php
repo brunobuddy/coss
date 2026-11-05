@@ -10,19 +10,19 @@ use Coss\Core\Types\Date;
 class EmailEventDataDelay extends JsonSerializableType
 {
     /**
-     * @var string $type
+     * @var string $type The provider's reason for the delay.
      */
     #[JsonProperty('type')]
     public string $type;
 
     /**
-     * @var ?DateTime $expiresAt
+     * @var ?DateTime $expiresAt When the provider stops trying. `null`: not reported.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiresAt;
 
     /**
-     * @var ?string $diagnosticCode
+     * @var ?string $diagnosticCode What the receiving server answered. `null`: not reported.
      */
     #[JsonProperty('diagnostic_code')]
     public ?string $diagnosticCode;

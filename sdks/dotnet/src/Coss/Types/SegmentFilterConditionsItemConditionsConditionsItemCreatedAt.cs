@@ -12,6 +12,9 @@ public record SegmentFilterConditionsItemConditionsConditionsItemCreatedAt : IJs
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// `before` or `after` a time, or created `within_days` the last days.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp Op { get; set; }
 

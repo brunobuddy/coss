@@ -7,6 +7,9 @@ use Coss\Core\Json\JsonProperty;
 use DateTime;
 use Coss\Core\Types\Date;
 
+/**
+ * A number sends skip.
+ */
 class SmsSuppressionCheckSuppression extends JsonSerializableType
 {
     /**
@@ -22,7 +25,7 @@ class SmsSuppressionCheckSuppression extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $phoneNumber
+     * @var string $phoneNumber The suppressed number, in E.164.
      */
     #[JsonProperty('phone_number')]
     public string $phoneNumber;

@@ -88,6 +88,9 @@ public final class InboxThread {
         return id;
     }
 
+    /**
+     * @return The inbox's id.
+     */
     @JsonProperty("inbox_id")
     public String getInboxId() {
         return inboxId;
@@ -113,6 +116,9 @@ public final class InboxThread {
         return participants;
     }
 
+    /**
+     * @return Messages in the thread.
+     */
     @JsonProperty("message_count")
     public long getMessageCount() {
         return messageCount;
@@ -130,6 +136,9 @@ public final class InboxThread {
         return preview;
     }
 
+    /**
+     * @return When its latest message was received or sent.
+     */
     @JsonProperty("last_message_at")
     public OffsetDateTime getLastMessageAt() {
         return lastMessageAt;
@@ -239,14 +248,23 @@ public final class InboxThread {
     }
 
     public interface InboxIdStage {
+        /**
+         * <p>The inbox's id.</p>
+         */
         MessageCountStage inboxId(@NotNull String inboxId);
     }
 
     public interface MessageCountStage {
+        /**
+         * <p>Messages in the thread.</p>
+         */
         LastMessageAtStage messageCount(long messageCount);
     }
 
     public interface LastMessageAtStage {
+        /**
+         * <p>When its latest message was received or sent.</p>
+         */
         CreatedAtStage lastMessageAt(@NotNull OffsetDateTime lastMessageAt);
     }
 
@@ -379,6 +397,10 @@ public final class InboxThread {
             return this;
         }
 
+        /**
+         * <p>The inbox's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("inbox_id")
         public MessageCountStage inboxId(@NotNull String inboxId) {
@@ -386,6 +408,10 @@ public final class InboxThread {
             return this;
         }
 
+        /**
+         * <p>Messages in the thread.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message_count")
         public LastMessageAtStage messageCount(long messageCount) {
@@ -393,6 +419,10 @@ public final class InboxThread {
             return this;
         }
 
+        /**
+         * <p>When its latest message was received or sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("last_message_at")
         public CreatedAtStage lastMessageAt(@NotNull OffsetDateTime lastMessageAt) {

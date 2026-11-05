@@ -15,13 +15,13 @@ class AudienceContactsAdded extends JsonSerializableType
     public string $object;
 
     /**
-     * @var int $added
+     * @var int $added Contacts newly added.
      */
     #[JsonProperty('added')]
     public int $added;
 
     /**
-     * @var int $existing
+     * @var int $existing Contacts that were already members.
      */
     #[JsonProperty('existing')]
     public int $existing;

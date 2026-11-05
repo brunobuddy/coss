@@ -51,16 +51,25 @@ public final class FormSpam {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return A field people leave empty; a submission that fills it is spam.
+     */
     @JsonProperty("honeypot_field")
     public String getHoneypotField() {
         return honeypotField;
     }
 
+    /**
+     * @return <code>required</code>: submissions need a captcha token. <code>off</code>: they don't.
+     */
     @JsonProperty("captcha")
     public FormSpamCaptcha getCaptcha() {
         return captcha;
     }
 
+    /**
+     * @return The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("captcha_site_key")
     public OptionalNullable<String> getCaptchaSiteKey() {
@@ -70,6 +79,9 @@ public final class FormSpam {
         return captchaSiteKey;
     }
 
+    /**
+     * @return A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("content_threshold")
     public OptionalNullable<Double> getContentThreshold() {
@@ -79,6 +91,9 @@ public final class FormSpam {
         return contentThreshold;
     }
 
+    /**
+     * @return When Risk's decision is <code>review</code>: <code>hold</code> keeps the submission until you release it, <code>deliver</code> delivers it.
+     */
     @JsonProperty("on_review")
     public FormSpamOnReview getOnReview() {
         return onReview;
@@ -131,16 +146,25 @@ public final class FormSpam {
     }
 
     public interface HoneypotFieldStage {
+        /**
+         * <p>A field people leave empty; a submission that fills it is spam.</p>
+         */
         CaptchaStage honeypotField(@NotNull String honeypotField);
 
         Builder from(FormSpam other);
     }
 
     public interface CaptchaStage {
+        /**
+         * <p><code>required</code>: submissions need a captcha token. <code>off</code>: they don't.</p>
+         */
         OnReviewStage captcha(@NotNull FormSpamCaptcha captcha);
     }
 
     public interface OnReviewStage {
+        /**
+         * <p>When Risk's decision is <code>review</code>: <code>hold</code> keeps the submission until you release it, <code>deliver</code> delivers it.</p>
+         */
         _FinalStage onReview(@NotNull FormSpamOnReview onReview);
     }
 
@@ -151,6 +175,9 @@ public final class FormSpam {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.</p>
+         */
         _FinalStage captchaSiteKey(OptionalNullable<String> captchaSiteKey);
 
         _FinalStage captchaSiteKey(String captchaSiteKey);
@@ -159,6 +186,9 @@ public final class FormSpam {
 
         _FinalStage captchaSiteKey(Nullable<String> captchaSiteKey);
 
+        /**
+         * <p>A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.</p>
+         */
         _FinalStage contentThreshold(OptionalNullable<Double> contentThreshold);
 
         _FinalStage contentThreshold(Double contentThreshold);
@@ -195,6 +225,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>A field people leave empty; a submission that fills it is spam.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("honeypot_field")
         public CaptchaStage honeypotField(@NotNull String honeypotField) {
@@ -202,6 +236,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p><code>required</code>: submissions need a captcha token. <code>off</code>: they don't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("captcha")
         public OnReviewStage captcha(@NotNull FormSpamCaptcha captcha) {
@@ -209,6 +247,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>When Risk's decision is <code>review</code>: <code>hold</code> keeps the submission until you release it, <code>deliver</code> delivers it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("on_review")
         public _FinalStage onReview(@NotNull FormSpamOnReview onReview) {
@@ -216,6 +258,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage contentThreshold(Nullable<Double> contentThreshold) {
             if (contentThreshold.isNull()) {
@@ -228,6 +274,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage contentThreshold(Optional<Double> contentThreshold) {
             if (contentThreshold.isPresent()) {
@@ -238,12 +288,19 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage contentThreshold(Double contentThreshold) {
             this.contentThreshold = OptionalNullable.of(contentThreshold);
             return this;
         }
 
+        /**
+         * <p>A submission whose text scores at least this in a content category is spam. <code>null</code>: the environment's risk settings decide.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "content_threshold", nulls = Nulls.SKIP)
         public _FinalStage contentThreshold(OptionalNullable<Double> contentThreshold) {
@@ -251,6 +308,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage captchaSiteKey(Nullable<String> captchaSiteKey) {
             if (captchaSiteKey.isNull()) {
@@ -263,6 +324,10 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage captchaSiteKey(Optional<String> captchaSiteKey) {
             if (captchaSiteKey.isPresent()) {
@@ -273,12 +338,19 @@ public final class FormSpam {
             return this;
         }
 
+        /**
+         * <p>The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage captchaSiteKey(String captchaSiteKey) {
             this.captchaSiteKey = OptionalNullable.of(captchaSiteKey);
             return this;
         }
 
+        /**
+         * <p>The captcha's site key, which hosted pages render the widget with. <code>null</code>: none set.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "captcha_site_key", nulls = Nulls.SKIP)
         public _FinalStage captchaSiteKey(OptionalNullable<String> captchaSiteKey) {

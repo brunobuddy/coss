@@ -17,9 +17,25 @@ from .sms_tags_item import SmsTagsItem
 class Sms(UniversalBaseModel):
     object: SmsObject
     id: str
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: str
-    body: str
+    from_: typing_extensions.Annotated[
+        str,
+        FieldMetadata(alias="from"),
+        pydantic.Field(alias="from", description="The number it's sent from, in E.164."),
+    ]
+    """
+    The number it's sent from, in E.164.
+    """
+
+    to: str = pydantic.Field()
+    """
+    The recipient's number, in E.164.
+    """
+
+    body: str = pydantic.Field()
+    """
+    The text. Empty once discarded.
+    """
+
     status: SmsStatus = pydantic.Field()
     """
     `queued` until handed to the carrier (`sent`), then `delivered` or `undelivered` once the carrier reports. `failed`: never sent. `scheduled` and `canceled`: scheduled sends.
@@ -30,13 +46,21 @@ class Sms(UniversalBaseModel):
     Segments the body takes (what is billed).
     """
 
-    encoding: SmsEncoding
+    encoding: SmsEncoding = pydantic.Field()
+    """
+    `gsm7` fits the basic alphabet; `ucs2` is used for anything else, with smaller segments.
+    """
+
     country: str = pydantic.Field()
     """
     ISO 3166 country of `to`.
     """
 
-    tags: typing.List[SmsTagsItem]
+    tags: typing.List[SmsTagsItem] = pydantic.Field()
+    """
+    Your tags on the message.
+    """
+
     failure: typing.Optional[SmsFailure] = pydantic.Field(default=None)
     """
     Why the message failed or wasn't delivered.
@@ -47,9 +71,21 @@ class Sms(UniversalBaseModel):
     Sent from a sandbox environment: simulated.
     """
 
-    scheduled_at: typing.Optional[dt.datetime] = None
-    sent_at: typing.Optional[dt.datetime] = None
-    delivered_at: typing.Optional[dt.datetime] = None
+    scheduled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it's set to send. `null`: it was sent at once.
+    """
+
+    sent_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was handed to the carrier. `null`: not yet.
+    """
+
+    delivered_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the carrier reported delivery. `null`: not delivered, or not reported.
+    """
+
     created_at: dt.datetime
 
     if IS_PYDANTIC_V2:

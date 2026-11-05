@@ -14,7 +14,8 @@ public class UpdateTest : BaseMockServerTest
     {
         const string requestJson = """
             {
-              "description": null
+              "description": null,
+              "auth_header": null
             }
             """;
 
@@ -28,6 +29,8 @@ public class UpdateTest : BaseMockServerTest
                 "api",
                 "api"
               ],
+              "format": "ndjson",
+              "auth_header_name": "auth_header_name",
               "enabled": true,
               "disabled_reason": "manual",
               "disabled_at": "2024-01-15T09:30:00.000Z",
@@ -59,6 +62,8 @@ public class UpdateTest : BaseMockServerTest
                 Url = null,
                 Description = null,
                 Sources = null,
+                Format = null,
+                AuthHeader = null,
                 Enabled = null,
             }
         );
@@ -84,6 +89,8 @@ public class UpdateTest : BaseMockServerTest
                 "api",
                 "email"
               ],
+              "format": "ndjson",
+              "auth_header_name": null,
               "enabled": true,
               "disabled_reason": null,
               "disabled_at": null,

@@ -56,6 +56,12 @@ public final class WebhookTestEventEvent {
             return visitor.visit((VerificationWebhookEvent) this.value);
         } else if (this.type == 11) {
             return visitor.visit((FormSubmissionWebhookEvent) this.value);
+        } else if (this.type == 12) {
+            return visitor.visit((SchedulingBookingWebhookEvent) this.value);
+        } else if (this.type == 13) {
+            return visitor.visit((SchedulingCalendarWebhookEvent) this.value);
+        } else if (this.type == 14) {
+            return visitor.visit((SchedulingCalendarDelegationWebhookEvent) this.value);
         }
         throw new IllegalStateException("Failed to visit value. This should never happen.");
     }
@@ -128,6 +134,18 @@ public final class WebhookTestEventEvent {
         return new WebhookTestEventEvent(value, 11);
     }
 
+    public static WebhookTestEventEvent of(SchedulingBookingWebhookEvent value) {
+        return new WebhookTestEventEvent(value, 12);
+    }
+
+    public static WebhookTestEventEvent of(SchedulingCalendarWebhookEvent value) {
+        return new WebhookTestEventEvent(value, 13);
+    }
+
+    public static WebhookTestEventEvent of(SchedulingCalendarDelegationWebhookEvent value) {
+        return new WebhookTestEventEvent(value, 14);
+    }
+
     public interface Visitor<T> {
         T visit(EmailWebhookEvent value);
 
@@ -152,6 +170,12 @@ public final class WebhookTestEventEvent {
         T visit(VerificationWebhookEvent value);
 
         T visit(FormSubmissionWebhookEvent value);
+
+        T visit(SchedulingBookingWebhookEvent value);
+
+        T visit(SchedulingCalendarWebhookEvent value);
+
+        T visit(SchedulingCalendarDelegationWebhookEvent value);
     }
 
     static final class Deserializer extends StdDeserializer<WebhookTestEventEvent> {
@@ -303,6 +327,43 @@ public final class WebhookTestEventEvent {
                     && ((Map<?, ?>) value).containsKey("data")) {
                 try {
                     return of(ObjectMappers.JSON_MAPPER.convertValue(value, FormSubmissionWebhookEvent.class));
+                } catch (RuntimeException e) {
+                }
+            }
+            if (value instanceof Map<?, ?>
+                    && ((Map<?, ?>) value).containsKey("id")
+                    && ((Map<?, ?>) value).containsKey("object")
+                    && ((Map<?, ?>) value).containsKey("api_version")
+                    && ((Map<?, ?>) value).containsKey("created_at")
+                    && ((Map<?, ?>) value).containsKey("type")
+                    && ((Map<?, ?>) value).containsKey("data")) {
+                try {
+                    return of(ObjectMappers.JSON_MAPPER.convertValue(value, SchedulingBookingWebhookEvent.class));
+                } catch (RuntimeException e) {
+                }
+            }
+            if (value instanceof Map<?, ?>
+                    && ((Map<?, ?>) value).containsKey("id")
+                    && ((Map<?, ?>) value).containsKey("object")
+                    && ((Map<?, ?>) value).containsKey("api_version")
+                    && ((Map<?, ?>) value).containsKey("created_at")
+                    && ((Map<?, ?>) value).containsKey("type")
+                    && ((Map<?, ?>) value).containsKey("data")) {
+                try {
+                    return of(ObjectMappers.JSON_MAPPER.convertValue(value, SchedulingCalendarWebhookEvent.class));
+                } catch (RuntimeException e) {
+                }
+            }
+            if (value instanceof Map<?, ?>
+                    && ((Map<?, ?>) value).containsKey("id")
+                    && ((Map<?, ?>) value).containsKey("object")
+                    && ((Map<?, ?>) value).containsKey("api_version")
+                    && ((Map<?, ?>) value).containsKey("created_at")
+                    && ((Map<?, ?>) value).containsKey("type")
+                    && ((Map<?, ?>) value).containsKey("data")) {
+                try {
+                    return of(ObjectMappers.JSON_MAPPER.convertValue(
+                            value, SchedulingCalendarDelegationWebhookEvent.class));
                 } catch (RuntimeException e) {
                 }
             }

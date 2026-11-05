@@ -9,11 +9,34 @@ from .form_spam_on_review import FormSpamOnReview
 
 
 class FormSpam(UniversalBaseModel):
-    honeypot_field: str
-    captcha: FormSpamCaptcha
-    captcha_site_key: typing.Optional[str] = None
-    content_threshold: typing.Optional[float] = None
-    on_review: FormSpamOnReview
+    """
+    How submissions are screened.
+    """
+
+    honeypot_field: str = pydantic.Field()
+    """
+    A field people leave empty; a submission that fills it is spam.
+    """
+
+    captcha: FormSpamCaptcha = pydantic.Field()
+    """
+    `required`: submissions need a captcha token. `off`: they don't.
+    """
+
+    captcha_site_key: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The captcha's site key, which hosted pages render the widget with. `null`: none set.
+    """
+
+    content_threshold: typing.Optional[float] = pydantic.Field(default=None)
+    """
+    A submission whose text scores at least this in a content category is spam. `null`: the environment's risk settings decide.
+    """
+
+    on_review: FormSpamOnReview = pydantic.Field()
+    """
+    When Risk's decision is `review`: `hold` keeps the submission until you release it, `deliver` delivers it.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

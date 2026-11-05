@@ -9,7 +9,11 @@ from .preference_links_object import PreferenceLinksObject
 
 class PreferenceLinks(UniversalBaseModel):
     object: PreferenceLinksObject
-    contact_id: str
+    contact_id: str = pydantic.Field()
+    """
+    The contact's id.
+    """
+
     preferences_url: str = pydantic.Field()
     """
     The contact's preference center.

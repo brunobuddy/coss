@@ -20,7 +20,11 @@ class RiskAssessment(UniversalBaseModel):
     object: RiskAssessmentObject
     id: str
     event: RiskEvent
-    event_name: typing.Optional[str] = None
+    event_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your name for a `custom` event. `null`: none.
+    """
+
     decision: RiskDecision
     score: float = pydantic.Field()
     """
@@ -32,8 +36,16 @@ class RiskAssessment(UniversalBaseModel):
     Why, most significant first.
     """
 
-    signals: RiskAssessmentSignals
-    user: RiskAssessmentUser
+    signals: RiskAssessmentSignals = pydantic.Field()
+    """
+    What the assessment saw, by group. A group is `null` when it had nothing to go on.
+    """
+
+    user: RiskAssessmentUser = pydantic.Field()
+    """
+    Who it's about.
+    """
+
     ip: typing.Optional[str] = pydantic.Field(default=None)
     """
     `null` once removed (90 days after).
@@ -41,7 +53,7 @@ class RiskAssessment(UniversalBaseModel):
 
     degraded: typing.List[RiskAssessmentDegradedItem] = pydantic.Field()
     """
-    Signal groups that were unavailable for this assessment (it was made without them).
+    Signal groups that were unavailable for this assessment (it was made without them). `usage_limit` means the plan's included assessments are used up, or a billing hold or budget applies: the assessment was free and made without velocity, memory of earlier events, content or address-level IP data.
     """
 
     outcome: typing.Optional[RiskOutcome] = pydantic.Field(default=None)

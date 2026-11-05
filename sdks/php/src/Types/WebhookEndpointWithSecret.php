@@ -23,13 +23,13 @@ class WebhookEndpointWithSecret extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $url
+     * @var string $url Where events are posted.
      */
     #[JsonProperty('url')]
     public string $url;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Your note about it. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;
@@ -59,7 +59,7 @@ class WebhookEndpointWithSecret extends JsonSerializableType
     public ?string $disabledReason;
 
     /**
-     * @var ?DateTime $disabledAt
+     * @var ?DateTime $disabledAt When it was disabled. `null` while enabled.
      */
     #[JsonProperty('disabled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $disabledAt;

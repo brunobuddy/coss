@@ -49,11 +49,17 @@ public final class SegmentFilterConditionsItemKey {
         return field;
     }
 
+    /**
+     * @return The custom property to test.
+     */
     @JsonProperty("key")
     public String getKey() {
         return key;
     }
 
+    /**
+     * @return How to compare: <code>eq</code>, <code>neq</code>, <code>in</code>, <code>not_in</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>, <code>contains</code>, <code>starts_with</code>, or <code>exists</code> and <code>not_exists</code>, which take no value.
+     */
     @JsonProperty("op")
     public SegmentFilterConditionsItemKeyOp getOp() {
         return op;
@@ -103,10 +109,16 @@ public final class SegmentFilterConditionsItemKey {
     }
 
     public interface KeyStage {
+        /**
+         * <p>The custom property to test.</p>
+         */
         OpStage key(@NotNull String key);
     }
 
     public interface OpStage {
+        /**
+         * <p>How to compare: <code>eq</code>, <code>neq</code>, <code>in</code>, <code>not_in</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>, <code>contains</code>, <code>starts_with</code>, or <code>exists</code> and <code>not_exists</code>, which take no value.</p>
+         */
         _FinalStage op(@NotNull SegmentFilterConditionsItemKeyOp op);
     }
 
@@ -156,6 +168,10 @@ public final class SegmentFilterConditionsItemKey {
             return this;
         }
 
+        /**
+         * <p>The custom property to test.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("key")
         public OpStage key(@NotNull String key) {
@@ -163,6 +179,10 @@ public final class SegmentFilterConditionsItemKey {
             return this;
         }
 
+        /**
+         * <p>How to compare: <code>eq</code>, <code>neq</code>, <code>in</code>, <code>not_in</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>, <code>contains</code>, <code>starts_with</code>, or <code>exists</code> and <code>not_exists</code>, which take no value.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("op")
         public _FinalStage op(@NotNull SegmentFilterConditionsItemKeyOp op) {

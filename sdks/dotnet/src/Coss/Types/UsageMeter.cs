@@ -12,7 +12,11 @@ public readonly record struct UsageMeter : IStringEnum
 
     public static readonly UsageMeter EmailDedicatedIp = new(Values.EmailDedicatedIp);
 
+    public static readonly UsageMeter EmailAttachmentData = new(Values.EmailAttachmentData);
+
     public static readonly UsageMeter EmailReceived = new(Values.EmailReceived);
+
+    public static readonly UsageMeter EmailReceivedData = new(Values.EmailReceivedData);
 
     public static readonly UsageMeter EmailInboxes = new(Values.EmailInboxes);
 
@@ -28,15 +32,23 @@ public readonly record struct UsageMeter : IStringEnum
 
     public static readonly UsageMeter RiskPhoneChecks = new(Values.RiskPhoneChecks);
 
+    public static readonly UsageMeter RiskAssessments = new(Values.RiskAssessments);
+
+    public static readonly UsageMeter RiskContentChecks = new(Values.RiskContentChecks);
+
     public static readonly UsageMeter VerifyVerifications = new(Values.VerifyVerifications);
 
     public static readonly UsageMeter VerifySms = new(Values.VerifySms);
 
     public static readonly UsageMeter FormsSubmissions = new(Values.FormsSubmissions);
 
-    public static readonly UsageMeter VideoParticipantMinutes = new(Values.VideoParticipantMinutes);
+    public static readonly UsageMeter FormsFileUploads = new(Values.FormsFileUploads);
 
     public static readonly UsageMeter SchedulingBookings = new(Values.SchedulingBookings);
+
+    public static readonly UsageMeter SchedulingHosts = new(Values.SchedulingHosts);
+
+    public static readonly UsageMeter HooksMessages = new(Values.HooksMessages);
 
     public UsageMeter(string value)
     {
@@ -137,7 +149,11 @@ public readonly record struct UsageMeter : IStringEnum
 
         public const string EmailDedicatedIp = "email.dedicated_ip";
 
+        public const string EmailAttachmentData = "email.attachment_data";
+
         public const string EmailReceived = "email.received";
+
+        public const string EmailReceivedData = "email.received_data";
 
         public const string EmailInboxes = "email.inboxes";
 
@@ -153,14 +169,22 @@ public readonly record struct UsageMeter : IStringEnum
 
         public const string RiskPhoneChecks = "risk.phone_checks";
 
+        public const string RiskAssessments = "risk.assessments";
+
+        public const string RiskContentChecks = "risk.content_checks";
+
         public const string VerifyVerifications = "verify.verifications";
 
         public const string VerifySms = "verify.sms";
 
         public const string FormsSubmissions = "forms.submissions";
 
-        public const string VideoParticipantMinutes = "video.participant_minutes";
+        public const string FormsFileUploads = "forms.file_uploads";
 
         public const string SchedulingBookings = "scheduling.bookings";
+
+        public const string SchedulingHosts = "scheduling.hosts";
+
+        public const string HooksMessages = "hooks.messages";
     }
 }

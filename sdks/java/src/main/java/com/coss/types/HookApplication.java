@@ -83,11 +83,17 @@ public final class HookApplication {
         return uid;
     }
 
+    /**
+     * @return Shown to the application's users in the portal.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Your own key-value pairs.
+     */
     @JsonProperty("metadata")
     public Map<String, String> getMetadata() {
         return metadata;
@@ -155,6 +161,9 @@ public final class HookApplication {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown to the application's users in the portal.</p>
+         */
         CreatedAtStage name(@NotNull String name);
     }
 
@@ -184,6 +193,9 @@ public final class HookApplication {
 
         _FinalStage uid(Nullable<String> uid);
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         _FinalStage metadata(Map<String, String> metadata);
 
         _FinalStage putAllMetadata(Map<String, String> metadata);
@@ -239,6 +251,10 @@ public final class HookApplication {
             return this;
         }
 
+        /**
+         * <p>Shown to the application's users in the portal.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public CreatedAtStage name(@NotNull String name) {
@@ -260,12 +276,20 @@ public final class HookApplication {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage metadata(String key, String value) {
             this.metadata.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllMetadata(Map<String, String> metadata) {
             if (metadata != null) {
@@ -274,6 +298,9 @@ public final class HookApplication {
             return this;
         }
 
+        /**
+         * <p>Your own key-value pairs.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "metadata", nulls = Nulls.SKIP)
         public _FinalStage metadata(Map<String, String> metadata) {

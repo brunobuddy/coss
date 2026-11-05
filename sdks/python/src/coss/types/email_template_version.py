@@ -13,7 +13,11 @@ from .template_variable import TemplateVariable
 
 class EmailTemplateVersion(UniversalBaseModel):
     object: EmailTemplateVersionObject
-    template_id: str
+    template_id: str = pydantic.Field()
+    """
+    The template's id.
+    """
+
     version: typing.Optional[int] = pydantic.Field(default=None)
     """
     The version number; `null` for the draft.
@@ -24,16 +28,36 @@ class EmailTemplateVersion(UniversalBaseModel):
     Counts the draft's saves. A published version keeps the revision it was published from.
     """
 
-    default_locale: str
-    variables: typing.List[TemplateVariable]
-    sample_variables: typing.Dict[str, typing.Any]
-    contents: typing.List[TemplateContent]
+    default_locale: str = pydantic.Field()
+    """
+    The locale sends fall back to when they ask for none, or for one without content.
+    """
+
+    variables: typing.List[TemplateVariable] = pydantic.Field()
+    """
+    The variables the template uses, with their types.
+    """
+
+    sample_variables: typing.Dict[str, typing.Any] = pydantic.Field()
+    """
+    Example values for previews and test sends in the dashboard.
+    """
+
+    contents: typing.List[TemplateContent] = pydantic.Field()
+    """
+    The subject, HTML and text per locale.
+    """
+
     problems: typing.List[TemplateProblem] = pydantic.Field()
     """
     Syntax errors and undeclared variables per locale and field, which keep a draft from being published. Always empty for published versions.
     """
 
-    published_at: typing.Optional[dt.datetime] = None
+    published_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When this version was published. `null` for the draft.
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

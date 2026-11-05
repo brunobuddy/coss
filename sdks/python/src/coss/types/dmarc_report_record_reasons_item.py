@@ -7,8 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class DmarcReportRecordReasonsItem(UniversalBaseModel):
-    type: str
-    comment: typing.Optional[str] = None
+    type: str = pydantic.Field()
+    """
+    The kind of override.
+    """
+
+    comment: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The receiver's comment.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

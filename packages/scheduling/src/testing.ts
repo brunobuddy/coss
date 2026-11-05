@@ -56,10 +56,12 @@ export function testSchedulingDeps(overrides: Partial<SchedulingDeps> = {}): Sch
 
 type FakeEvent = {
   id: string;
+  calendarId?: string;
   startMs: number;
   endMs: number;
   deleted?: boolean;
   title: string;
+  location?: string | undefined;
   description?: string;
 };
 
@@ -80,6 +82,8 @@ export class FakeGoogleCalendarApi {
   readonly erroredCalendars = new Set<string>();
   failNext: { path: RegExp; status: number; body?: unknown } | null = null;
   loseNextAnswer = false;
+  /** The next event's conference is still being created, so its answer has no link yet. */
+  conferencePendingNext = false;
   refreshFails = false;
   /** A client secret Google says no to, as when it's been deleted in the Cloud console. */
   refusedSecret: string | null = null;
@@ -226,7 +230,7 @@ export class FakeGoogleCalendarApi {
           busy: [
             ...(this.busy.get(id) ?? []),
             ...[...this.events.values()]
-              .filter((event) => !event.deleted)
+              .filter((event) => !event.deleted && event.calendarId === id)
               .map((event) => ({
                 start: new Date(event.startMs).toISOString(),
                 end: new Date(event.endMs).toISOString(),
@@ -242,16 +246,16 @@ export class FakeGoogleCalendarApi {
       return json(200, { id: body.id, resourceId: "resource", expiration: body.expiration });
     }
     if (path === "/channels/stop") return new Response(null, { status: 204 });
-    const eventMatch = /^\/calendars\/[^/]+\/events(?:\/([^/]+))?$/.exec(path);
+    const eventMatch = /^\/calendars\/([^/]+)\/events(?:\/([^/]+))?$/.exec(path);
     if (eventMatch) {
-      const id = eventMatch[1] ? decodeURIComponent(eventMatch[1]) : undefined;
-      if (method !== "GET") {
-        this.writtenTo.push(decodeURIComponent(path.split("/")[2] ?? ""));
-      }
+      const calendarId = decodeURIComponent(eventMatch[1] as string);
+      const id = eventMatch[2] ? decodeURIComponent(eventMatch[2]) : undefined;
+      if (method !== "GET") this.writtenTo.push(calendarId);
       const body = init?.body
         ? (JSON.parse(String(init.body)) as {
             id?: string;
             summary?: string;
+            location?: string;
             description?: string;
             start?: { dateTime: string };
             end?: { dateTime: string };
@@ -260,18 +264,26 @@ export class FakeGoogleCalendarApi {
         : {};
       const toEvent = (eventId: string): FakeEvent => ({
         id: eventId,
+        calendarId,
         title: body.summary ?? "",
+        location: body.location,
         startMs: Date.parse(body.start?.dateTime ?? ""),
         endMs: Date.parse(body.end?.dateTime ?? ""),
         ...(body.description !== undefined ? { description: body.description } : {}),
       });
-      const wire = (event: FakeEvent) => ({
-        id: event.id,
-        status: event.deleted ? "cancelled" : "confirmed",
-        start: { dateTime: new Date(event.startMs).toISOString() },
-        end: { dateTime: new Date(event.endMs).toISOString() },
-        ...(body.conferenceData ? { hangoutLink: "https://meet.google.com/abc-defg-hij" } : {}),
-      });
+      const wire = (event: FakeEvent) => {
+        const pending = this.conferencePendingNext;
+        if (body.conferenceData) this.conferencePendingNext = false;
+        return {
+          id: event.id,
+          status: event.deleted ? "cancelled" : "confirmed",
+          start: { dateTime: new Date(event.startMs).toISOString() },
+          end: { dateTime: new Date(event.endMs).toISOString() },
+          ...(body.conferenceData && !pending
+            ? { hangoutLink: "https://meet.google.com/abc-defg-hij" }
+            : {}),
+        };
+      };
       if (method === "POST") {
         const eventId = body.id as string;
         const existing = this.events.get(eventId);

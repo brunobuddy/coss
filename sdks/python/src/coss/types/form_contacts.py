@@ -7,13 +7,44 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class FormContacts(UniversalBaseModel):
-    enabled: bool
-    audience_ids: typing.List[str]
-    topics: typing.List[str]
-    double_opt_in: typing.Optional[bool] = None
-    first_name_field: typing.Optional[str] = None
-    last_name_field: typing.Optional[str] = None
-    properties: typing.Dict[str, str]
+    """
+    Turning submissions into contacts.
+    """
+
+    enabled: bool = pydantic.Field()
+    """
+    Whether each accepted submission becomes a contact.
+    """
+
+    audience_ids: typing.List[str] = pydantic.Field()
+    """
+    Audiences the contact joins.
+    """
+
+    topics: typing.List[str] = pydantic.Field()
+    """
+    Topic keys the contact is opted into.
+    """
+
+    double_opt_in: typing.Optional[bool] = pydantic.Field(default=None)
+    """
+    Whether new contacts confirm by email first. `null`: the environment's marketing settings decide.
+    """
+
+    first_name_field: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The field holding the contact's first name. `null`: none.
+    """
+
+    last_name_field: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The field holding the contact's last name. `null`: none.
+    """
+
+    properties: typing.Dict[str, str] = pydantic.Field()
+    """
+    Contact property key → the field whose value it takes.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

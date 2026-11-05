@@ -14,7 +14,7 @@ class RiskLimit extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $bucket
+     * @var string $bucket The bucket's name.
      */
     #[JsonProperty('bucket')]
     public string $bucket;

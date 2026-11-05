@@ -345,9 +345,11 @@ type Inbox struct {
 	Object InboxObject `json:"object" url:"object"`
 	ID     string      `json:"id" url:"id"`
 	// The inbox's email address (`username@domain`).
-	Address  string `json:"address" url:"address"`
+	Address string `json:"address" url:"address"`
+	// The part of the address before the `@`.
 	Username string `json:"username" url:"username"`
-	Domain   string `json:"domain" url:"domain"`
+	// The part of the address after the `@`.
+	Domain string `json:"domain" url:"domain"`
 	// `managed`: at the environment's own domain under coss.com's inbound domain (no DNS setup). `domain`: at one of the environment's receiving domains.
 	Kind InboxKind `json:"kind" url:"kind"`
 	// The name messages from the inbox are sent with.

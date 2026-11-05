@@ -8,7 +8,11 @@ from .risk_calibration_reason_code import RiskCalibrationReasonCode
 
 
 class RiskCalibrationReason(UniversalBaseModel):
-    code: RiskCalibrationReasonCode
+    code: RiskCalibrationReasonCode = pydantic.Field()
+    """
+    The reason's code.
+    """
+
     fired: int = pydantic.Field()
     """
     Assessments it fired in.
@@ -29,7 +33,11 @@ class RiskCalibrationReason(UniversalBaseModel):
     `fraud / (fraud + legitimate)`: how often it was right when you told coss.com. `null` without feedback.
     """
 
-    default_weight: float
+    default_weight: float = pydantic.Field()
+    """
+    Its weight unless this environment changes it.
+    """
+
     weight: float = pydantic.Field()
     """
     Its weight in this environment now.

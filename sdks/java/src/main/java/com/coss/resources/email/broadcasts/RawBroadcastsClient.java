@@ -270,18 +270,30 @@ public class RawBroadcastsClient {
         }
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CossHttpResponse<Broadcast> get(String id) {
         return get(id, GetBroadcastsRequest.builder().build());
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CossHttpResponse<Broadcast> get(String id, RequestOptions requestOptions) {
         return get(id, GetBroadcastsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CossHttpResponse<Broadcast> get(String id, GetBroadcastsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One broadcast of the API key's environment, with its status and stats.
+     */
     public CossHttpResponse<Broadcast> get(String id, GetBroadcastsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

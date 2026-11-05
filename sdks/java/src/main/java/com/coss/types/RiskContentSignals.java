@@ -37,21 +37,33 @@ public final class RiskContentSignals {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The model's probability (0-1) that it's spam.
+     */
     @JsonProperty("spam")
     public double getSpam() {
         return spam;
     }
 
+    /**
+     * @return The model's probability (0-1) that it's phishing.
+     */
     @JsonProperty("phishing")
     public double getPhishing() {
         return phishing;
     }
 
+    /**
+     * @return The model's probability (0-1) that it's malware.
+     */
     @JsonProperty("malware")
     public double getMalware() {
         return malware;
     }
 
+    /**
+     * @return The model's probability (0-1) that it's fraud.
+     */
     @JsonProperty("fraud")
     public double getFraud() {
         return fraud;
@@ -87,20 +99,32 @@ public final class RiskContentSignals {
     }
 
     public interface SpamStage {
+        /**
+         * <p>The model's probability (0-1) that it's spam.</p>
+         */
         PhishingStage spam(double spam);
 
         Builder from(RiskContentSignals other);
     }
 
     public interface PhishingStage {
+        /**
+         * <p>The model's probability (0-1) that it's phishing.</p>
+         */
         MalwareStage phishing(double phishing);
     }
 
     public interface MalwareStage {
+        /**
+         * <p>The model's probability (0-1) that it's malware.</p>
+         */
         FraudStage malware(double malware);
     }
 
     public interface FraudStage {
+        /**
+         * <p>The model's probability (0-1) that it's fraud.</p>
+         */
         _FinalStage fraud(double fraud);
     }
 
@@ -136,6 +160,10 @@ public final class RiskContentSignals {
             return this;
         }
 
+        /**
+         * <p>The model's probability (0-1) that it's spam.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("spam")
         public PhishingStage spam(double spam) {
@@ -143,6 +171,10 @@ public final class RiskContentSignals {
             return this;
         }
 
+        /**
+         * <p>The model's probability (0-1) that it's phishing.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("phishing")
         public MalwareStage phishing(double phishing) {
@@ -150,6 +182,10 @@ public final class RiskContentSignals {
             return this;
         }
 
+        /**
+         * <p>The model's probability (0-1) that it's malware.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("malware")
         public FraudStage malware(double malware) {
@@ -157,6 +193,10 @@ public final class RiskContentSignals {
             return this;
         }
 
+        /**
+         * <p>The model's probability (0-1) that it's fraud.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("fraud")
         public _FinalStage fraud(double fraud) {

@@ -32,11 +32,17 @@ public final class RiskSettingsCaptcha {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The captcha provider.
+     */
     @JsonProperty("provider")
     public RiskSettingsCaptchaProvider getProvider() {
         return provider;
     }
 
+    /**
+     * @return Whether assessments without a token get <code>captcha.missing</code>.
+     */
     @JsonProperty("required")
     public boolean getRequired() {
         return required;
@@ -72,12 +78,18 @@ public final class RiskSettingsCaptcha {
     }
 
     public interface ProviderStage {
+        /**
+         * <p>The captcha provider.</p>
+         */
         RequiredStage provider(@NotNull RiskSettingsCaptchaProvider provider);
 
         Builder from(RiskSettingsCaptcha other);
     }
 
     public interface RequiredStage {
+        /**
+         * <p>Whether assessments without a token get <code>captcha.missing</code>.</p>
+         */
         _FinalStage required(boolean required);
     }
 
@@ -107,6 +119,10 @@ public final class RiskSettingsCaptcha {
             return this;
         }
 
+        /**
+         * <p>The captcha provider.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("provider")
         public RequiredStage provider(@NotNull RiskSettingsCaptchaProvider provider) {
@@ -114,6 +130,10 @@ public final class RiskSettingsCaptcha {
             return this;
         }
 
+        /**
+         * <p>Whether assessments without a token get <code>captcha.missing</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("required")
         public _FinalStage required(boolean required) {

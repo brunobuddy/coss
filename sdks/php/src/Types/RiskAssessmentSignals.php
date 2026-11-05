@@ -6,16 +6,19 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * What the assessment saw, by group. A group is `null` when it had nothing to go on.
+ */
 class RiskAssessmentSignals extends JsonSerializableType
 {
     /**
-     * @var ?RiskEmailSignals $email
+     * @var ?RiskEmailSignals $email What the address says. `null`: no email was given.
      */
     #[JsonProperty('email')]
     public ?RiskEmailSignals $email;
 
     /**
-     * @var ?RiskIpSignals $ip
+     * @var ?RiskIpSignals $ip What the IP address says. `null`: none was given.
      */
     #[JsonProperty('ip')]
     public ?RiskIpSignals $ip;
@@ -27,13 +30,13 @@ class RiskAssessmentSignals extends JsonSerializableType
     public ?array $velocity;
 
     /**
-     * @var ?RiskCaptchaSignals $captcha
+     * @var ?RiskCaptchaSignals $captcha How the captcha went. `null`: no captcha applied.
      */
     #[JsonProperty('captcha')]
     public ?RiskCaptchaSignals $captcha;
 
     /**
-     * @var ?RiskLoginSignals $login
+     * @var ?RiskLoginSignals $login Whether a login is new for this user. `null`: not a login of a user with history.
      */
     #[JsonProperty('login')]
     public ?RiskLoginSignals $login;
@@ -45,13 +48,13 @@ class RiskAssessmentSignals extends JsonSerializableType
     public ?RiskContentSignals $content;
 
     /**
-     * @var ?RiskCheckoutSignals $checkout
+     * @var ?RiskCheckoutSignals $checkout What you sent in `checkout`. `null`: not given.
      */
     #[JsonProperty('checkout')]
     public ?RiskCheckoutSignals $checkout;
 
     /**
-     * @var ?RiskDeviceSignals $device
+     * @var ?RiskDeviceSignals $device What the device token said. `null`: none was given.
      */
     #[JsonProperty('device')]
     public ?RiskDeviceSignals $device;

@@ -35,6 +35,22 @@ func TestSettersCreateLogDrainRequest(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFormat", func(t *testing.T) {
+		obj := &CreateLogDrainRequest{}
+		var fernTestValueFormat *CreateLogDrainRequestFormat
+		obj.SetFormat(fernTestValueFormat)
+		assert.Equal(t, fernTestValueFormat, obj.Format)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAuthHeader", func(t *testing.T) {
+		obj := &CreateLogDrainRequest{}
+		var fernTestValueAuthHeader *LogDrainAuthHeader
+		obj.SetAuthHeader(fernTestValueAuthHeader)
+		assert.Equal(t, fernTestValueAuthHeader, obj.AuthHeader)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 }
 
 func TestSettersMarkExplicitCreateLogDrainRequest(t *testing.T) {
@@ -108,6 +124,68 @@ func TestSettersMarkExplicitCreateLogDrainRequest(t *testing.T) {
 
 		// Act
 		obj.SetSources(fernTestValueSources)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetFormat_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CreateLogDrainRequest{}
+		var fernTestValueFormat *CreateLogDrainRequestFormat
+
+		// Act
+		obj.SetFormat(fernTestValueFormat)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAuthHeader_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &CreateLogDrainRequest{}
+		var fernTestValueAuthHeader *LogDrainAuthHeader
+
+		// Act
+		obj.SetAuthHeader(fernTestValueAuthHeader)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -459,6 +537,22 @@ func TestSettersLogDrain(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFormat", func(t *testing.T) {
+		obj := &LogDrain{}
+		var fernTestValueFormat LogDrainFormat
+		obj.SetFormat(fernTestValueFormat)
+		assert.Equal(t, fernTestValueFormat, obj.Format)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAuthHeaderName", func(t *testing.T) {
+		obj := &LogDrain{}
+		var fernTestValueAuthHeaderName *string
+		obj.SetAuthHeaderName(fernTestValueAuthHeaderName)
+		assert.Equal(t, fernTestValueAuthHeaderName, obj.AuthHeaderName)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetEnabled", func(t *testing.T) {
 		obj := &LogDrain{}
 		var fernTestValueEnabled bool
@@ -635,6 +729,62 @@ func TestGettersLogDrain(t *testing.T) {
 			}
 		}()
 		_ = obj.GetSources() // Should return zero value
+	})
+
+	t.Run("GetFormat", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrain{}
+		var expected LogDrainFormat
+		obj.Format = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFormat(), "getter should return the property value")
+	})
+
+	t.Run("GetFormat_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrain
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFormat() // Should return zero value
+	})
+
+	t.Run("GetAuthHeaderName", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrain{}
+		var expected *string
+		obj.AuthHeaderName = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAuthHeaderName(), "getter should return the property value")
+	})
+
+	t.Run("GetAuthHeaderName_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrain{}
+		obj.AuthHeaderName = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAuthHeaderName(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAuthHeaderName_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrain
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAuthHeaderName() // Should return zero value
 	})
 
 	t.Run("GetEnabled", func(t *testing.T) {
@@ -930,6 +1080,68 @@ func TestSettersMarkExplicitLogDrain(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetFormat_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrain{}
+		var fernTestValueFormat LogDrainFormat
+
+		// Act
+		obj.SetFormat(fernTestValueFormat)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAuthHeaderName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrain{}
+		var fernTestValueAuthHeaderName *string
+
+		// Act
+		obj.SetAuthHeaderName(fernTestValueAuthHeaderName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetEnabled_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -1062,6 +1274,139 @@ func TestSettersMarkExplicitLogDrain(t *testing.T) {
 
 		// Act
 		obj.SetUpdatedAt(fernTestValueUpdatedAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
+func TestSettersLogDrainAuthHeader(t *testing.T) {
+	t.Run("SetName", func(t *testing.T) {
+		obj := &LogDrainAuthHeader{}
+		var fernTestValueName string
+		obj.SetName(fernTestValueName)
+		assert.Equal(t, fernTestValueName, obj.Name)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetValue", func(t *testing.T) {
+		obj := &LogDrainAuthHeader{}
+		var fernTestValueValue string
+		obj.SetValue(fernTestValueValue)
+		assert.Equal(t, fernTestValueValue, obj.Value)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersLogDrainAuthHeader(t *testing.T) {
+	t.Run("GetName", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainAuthHeader{}
+		var expected string
+		obj.Name = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetName(), "getter should return the property value")
+	})
+
+	t.Run("GetName_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainAuthHeader
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetName() // Should return zero value
+	})
+
+	t.Run("GetValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainAuthHeader{}
+		var expected string
+		obj.Value = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetValue(), "getter should return the property value")
+	})
+
+	t.Run("GetValue_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainAuthHeader
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetValue() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitLogDrainAuthHeader(t *testing.T) {
+	t.Run("SetName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainAuthHeader{}
+		var fernTestValueName string
+
+		// Act
+		obj.SetName(fernTestValueName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetValue_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainAuthHeader{}
+		var fernTestValueValue string
+
+		// Act
+		obj.SetValue(fernTestValueValue)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -1333,6 +1678,22 @@ func TestSettersLogDrainWithSecret(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFormat", func(t *testing.T) {
+		obj := &LogDrainWithSecret{}
+		var fernTestValueFormat LogDrainFormat
+		obj.SetFormat(fernTestValueFormat)
+		assert.Equal(t, fernTestValueFormat, obj.Format)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAuthHeaderName", func(t *testing.T) {
+		obj := &LogDrainWithSecret{}
+		var fernTestValueAuthHeaderName *string
+		obj.SetAuthHeaderName(fernTestValueAuthHeaderName)
+		assert.Equal(t, fernTestValueAuthHeaderName, obj.AuthHeaderName)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetEnabled", func(t *testing.T) {
 		obj := &LogDrainWithSecret{}
 		var fernTestValueEnabled bool
@@ -1517,6 +1878,62 @@ func TestGettersLogDrainWithSecret(t *testing.T) {
 			}
 		}()
 		_ = obj.GetSources() // Should return zero value
+	})
+
+	t.Run("GetFormat", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainWithSecret{}
+		var expected LogDrainFormat
+		obj.Format = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetFormat(), "getter should return the property value")
+	})
+
+	t.Run("GetFormat_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainWithSecret
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetFormat() // Should return zero value
+	})
+
+	t.Run("GetAuthHeaderName", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainWithSecret{}
+		var expected *string
+		obj.AuthHeaderName = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetAuthHeaderName(), "getter should return the property value")
+	})
+
+	t.Run("GetAuthHeaderName_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainWithSecret{}
+		obj.AuthHeaderName = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetAuthHeaderName(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetAuthHeaderName_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainWithSecret
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetAuthHeaderName() // Should return zero value
 	})
 
 	t.Run("GetEnabled", func(t *testing.T) {
@@ -1835,6 +2252,68 @@ func TestSettersMarkExplicitLogDrainWithSecret(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetFormat_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainWithSecret{}
+		var fernTestValueFormat LogDrainFormat
+
+		// Act
+		obj.SetFormat(fernTestValueFormat)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAuthHeaderName_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainWithSecret{}
+		var fernTestValueAuthHeaderName *string
+
+		// Act
+		obj.SetAuthHeaderName(fernTestValueAuthHeaderName)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetEnabled_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -2056,6 +2535,22 @@ func TestSettersUpdateLogDrainRequest(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetFormat", func(t *testing.T) {
+		obj := &UpdateLogDrainRequest{}
+		var fernTestValueFormat *LogDrainFormat
+		obj.SetFormat(fernTestValueFormat)
+		assert.Equal(t, fernTestValueFormat, obj.Format)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetAuthHeader", func(t *testing.T) {
+		obj := &UpdateLogDrainRequest{}
+		var fernTestValueAuthHeader *LogDrainAuthHeader
+		obj.SetAuthHeader(fernTestValueAuthHeader)
+		assert.Equal(t, fernTestValueAuthHeader, obj.AuthHeader)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetEnabled", func(t *testing.T) {
 		obj := &UpdateLogDrainRequest{}
 		var fernTestValueEnabled *bool
@@ -2191,6 +2686,68 @@ func TestSettersMarkExplicitUpdateLogDrainRequest(t *testing.T) {
 		// It verifies that setting a field via setter allows successful JSON round-trip
 	})
 
+	t.Run("SetFormat_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UpdateLogDrainRequest{}
+		var fernTestValueFormat *LogDrainFormat
+
+		// Act
+		obj.SetFormat(fernTestValueFormat)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetAuthHeader_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &UpdateLogDrainRequest{}
+		var fernTestValueAuthHeader *LogDrainAuthHeader
+
+		// Act
+		obj.SetAuthHeader(fernTestValueAuthHeader)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetEnabled_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -2290,6 +2847,39 @@ func TestJSONMarshalingLogDrain(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingLogDrainAuthHeader(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &LogDrainAuthHeader{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled LogDrainAuthHeader
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj LogDrainAuthHeader
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj LogDrainAuthHeader
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingLogDrainList(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -2359,6 +2949,7 @@ func TestJSONMarshalingLogDrainWithSecret(t *testing.T) {
 func TestRequiredNullableRoundTripLogDrain(t *testing.T) {
 	requiredNullableKeys := []string{
 		"description",
+		"auth_header_name",
 		"disabled_reason",
 		"disabled_at",
 	}
@@ -2373,7 +2964,7 @@ func TestRequiredNullableRoundTripLogDrain(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj LogDrain
-		require.NoError(t, json.Unmarshal([]byte(`{"description":null,"disabled_reason":null,"disabled_at":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"description":null,"auth_header_name":null,"disabled_reason":null,"disabled_at":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]
@@ -2404,6 +2995,7 @@ func TestRequiredNullableRoundTripLogDrain(t *testing.T) {
 func TestRequiredNullableRoundTripLogDrainWithSecret(t *testing.T) {
 	requiredNullableKeys := []string{
 		"description",
+		"auth_header_name",
 		"disabled_reason",
 		"disabled_at",
 	}
@@ -2418,7 +3010,7 @@ func TestRequiredNullableRoundTripLogDrainWithSecret(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj LogDrainWithSecret
-		require.NoError(t, json.Unmarshal([]byte(`{"description":null,"disabled_reason":null,"disabled_at":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"description":null,"auth_header_name":null,"disabled_reason":null,"disabled_at":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]
@@ -2478,6 +3070,22 @@ func TestStringLogDrain(t *testing.T) {
 	})
 }
 
+func TestStringLogDrainAuthHeader(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &LogDrainAuthHeader{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainAuthHeader
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringLogDrainList(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -2507,6 +3115,49 @@ func TestStringLogDrainWithSecret(t *testing.T) {
 		var obj *LogDrainWithSecret
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestEnumCreateLogDrainRequestFormat(t *testing.T) {
+	t.Run("NewFromString_ndjson", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateLogDrainRequestFormatFromString("ndjson")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateLogDrainRequestFormat("ndjson"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_loki", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateLogDrainRequestFormatFromString("loki")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateLogDrainRequestFormat("loki"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_datadog", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateLogDrainRequestFormatFromString("datadog")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateLogDrainRequestFormat("datadog"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_otlp", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewCreateLogDrainRequestFormatFromString("otlp")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, CreateLogDrainRequestFormat("otlp"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewCreateLogDrainRequestFormatFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewCreateLogDrainRequestFormatFromString("ndjson")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
 	})
 }
 
@@ -2554,6 +3205,49 @@ func TestEnumLogDrainDisabledReason(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewLogDrainDisabledReasonFromString("manual")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumLogDrainFormat(t *testing.T) {
+	t.Run("NewFromString_ndjson", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLogDrainFormatFromString("ndjson")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LogDrainFormat("ndjson"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_loki", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLogDrainFormatFromString("loki")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LogDrainFormat("loki"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_datadog", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLogDrainFormatFromString("datadog")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LogDrainFormat("datadog"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_otlp", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLogDrainFormatFromString("otlp")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LogDrainFormat("otlp"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewLogDrainFormatFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewLogDrainFormatFromString("ndjson")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)
@@ -2669,6 +3363,13 @@ func TestEnumLogDrainSource(t *testing.T) {
 		assert.Equal(t, LogDrainSource("forms"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_scheduling", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewLogDrainSourceFromString("scheduling")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, LogDrainSource("scheduling"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_audit", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewLogDrainSourceFromString("audit")
@@ -2782,6 +3483,29 @@ func TestExtraPropertiesLogDrain(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *LogDrain
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesLogDrainAuthHeader(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &LogDrainAuthHeader{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *LogDrainAuthHeader
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

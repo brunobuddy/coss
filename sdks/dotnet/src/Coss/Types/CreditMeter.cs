@@ -12,7 +12,11 @@ public readonly record struct CreditMeter : IStringEnum
 
     public static readonly CreditMeter EmailDedicatedIp = new(Values.EmailDedicatedIp);
 
+    public static readonly CreditMeter EmailAttachmentData = new(Values.EmailAttachmentData);
+
     public static readonly CreditMeter EmailReceived = new(Values.EmailReceived);
+
+    public static readonly CreditMeter EmailReceivedData = new(Values.EmailReceivedData);
 
     public static readonly CreditMeter EmailInboxes = new(Values.EmailInboxes);
 
@@ -28,17 +32,23 @@ public readonly record struct CreditMeter : IStringEnum
 
     public static readonly CreditMeter RiskPhoneChecks = new(Values.RiskPhoneChecks);
 
+    public static readonly CreditMeter RiskAssessments = new(Values.RiskAssessments);
+
+    public static readonly CreditMeter RiskContentChecks = new(Values.RiskContentChecks);
+
     public static readonly CreditMeter VerifyVerifications = new(Values.VerifyVerifications);
 
     public static readonly CreditMeter VerifySms = new(Values.VerifySms);
 
     public static readonly CreditMeter FormsSubmissions = new(Values.FormsSubmissions);
 
-    public static readonly CreditMeter VideoParticipantMinutes = new(
-        Values.VideoParticipantMinutes
-    );
+    public static readonly CreditMeter FormsFileUploads = new(Values.FormsFileUploads);
 
     public static readonly CreditMeter SchedulingBookings = new(Values.SchedulingBookings);
+
+    public static readonly CreditMeter SchedulingHosts = new(Values.SchedulingHosts);
+
+    public static readonly CreditMeter HooksMessages = new(Values.HooksMessages);
 
     public CreditMeter(string value)
     {
@@ -140,7 +150,11 @@ public readonly record struct CreditMeter : IStringEnum
 
         public const string EmailDedicatedIp = "email.dedicated_ip";
 
+        public const string EmailAttachmentData = "email.attachment_data";
+
         public const string EmailReceived = "email.received";
+
+        public const string EmailReceivedData = "email.received_data";
 
         public const string EmailInboxes = "email.inboxes";
 
@@ -156,14 +170,22 @@ public readonly record struct CreditMeter : IStringEnum
 
         public const string RiskPhoneChecks = "risk.phone_checks";
 
+        public const string RiskAssessments = "risk.assessments";
+
+        public const string RiskContentChecks = "risk.content_checks";
+
         public const string VerifyVerifications = "verify.verifications";
 
         public const string VerifySms = "verify.sms";
 
         public const string FormsSubmissions = "forms.submissions";
 
-        public const string VideoParticipantMinutes = "video.participant_minutes";
+        public const string FormsFileUploads = "forms.file_uploads";
 
         public const string SchedulingBookings = "scheduling.bookings";
+
+        public const string SchedulingHosts = "scheduling.hosts";
+
+        public const string HooksMessages = "hooks.messages";
     }
 }

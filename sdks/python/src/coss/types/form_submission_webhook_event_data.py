@@ -12,24 +12,59 @@ from .form_submission_webhook_event_data_status import FormSubmissionWebhookEven
 
 
 class FormSubmissionWebhookEventData(UniversalBaseModel):
-    form_id: str
-    form_name: str
-    submission_id: str
-    status: FormSubmissionWebhookEventDataStatus
+    """
+    The submission.
+    """
+
+    form_id: str = pydantic.Field()
+    """
+    The form's id.
+    """
+
+    form_name: str = pydantic.Field()
+    """
+    The form's name.
+    """
+
+    submission_id: str = pydantic.Field()
+    """
+    The submission's id.
+    """
+
+    status: FormSubmissionWebhookEventDataStatus = pydantic.Field()
+    """
+    The submission's status after this event.
+    """
+
     data: typing.Dict[str, FormSubmissionWebhookEventDataDataValue] = pydantic.Field()
     """
     Field name → value; a field posted several times has an array.
     """
 
-    submitter_email: typing.Optional[str] = None
+    submitter_email: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The value of the form's `submitter.email_field`. `null` when it has none.
+    """
+
     files: typing.List[FormSubmissionFile] = pydantic.Field()
     """
     Uploaded files (download them with the API; never their bytes here).
     """
 
-    spam_reason: typing.Optional[FormSubmissionWebhookEventDataSpamReason] = None
-    sandbox: bool
-    occurred_at: dt.datetime
+    spam_reason: typing.Optional[FormSubmissionWebhookEventDataSpamReason] = pydantic.Field(default=None)
+    """
+    Why it was flagged. `null`: not flagged.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

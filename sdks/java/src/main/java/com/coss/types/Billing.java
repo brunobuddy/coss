@@ -52,6 +52,8 @@ public final class Billing {
 
     private final OptionalNullable<Long> spendLimit;
 
+    private final OptionalNullable<BillingCreditLimit> creditLimit;
+
     private final OptionalNullable<BillingPaymentMethod> paymentMethod;
 
     private final List<BillingAddOnsItem> addOns;
@@ -76,6 +78,7 @@ public final class Billing {
             BillingEstimate estimate,
             long creditRemaining,
             OptionalNullable<Long> spendLimit,
+            OptionalNullable<BillingCreditLimit> creditLimit,
             OptionalNullable<BillingPaymentMethod> paymentMethod,
             List<BillingAddOnsItem> addOns,
             BillingFeatures features,
@@ -94,6 +97,7 @@ public final class Billing {
         this.estimate = estimate;
         this.creditRemaining = creditRemaining;
         this.spendLimit = spendLimit;
+        this.creditLimit = creditLimit;
         this.paymentMethod = paymentMethod;
         this.addOns = addOns;
         this.features = features;
@@ -106,6 +110,9 @@ public final class Billing {
         return object;
     }
 
+    /**
+     * @return The organization's id.
+     */
     @JsonProperty("organization_id")
     public String getOrganizationId() {
         return organizationId;
@@ -159,6 +166,9 @@ public final class Billing {
         return holds;
     }
 
+    /**
+     * @return Always <code>usd</code>.
+     */
     @JsonProperty("currency")
     public BillingCurrency getCurrency() {
         return currency;
@@ -172,6 +182,9 @@ public final class Billing {
         return period;
     }
 
+    /**
+     * @return This month's usage per meter.
+     */
     @JsonProperty("usage")
     public List<BillingUsageItem> getUsage() {
         return usage;
@@ -205,6 +218,21 @@ public final class Billing {
         return spendLimit;
     }
 
+    /**
+     * @return Where the organization stands against its credit limit; <code>null</code>: it has none.
+     */
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("credit_limit")
+    public OptionalNullable<BillingCreditLimit> getCreditLimit() {
+        if (creditLimit == null) {
+            return OptionalNullable.absent();
+        }
+        return creditLimit;
+    }
+
+    /**
+     * @return The payment method on file. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("payment_method")
     public OptionalNullable<BillingPaymentMethod> getPaymentMethod() {
@@ -222,6 +250,9 @@ public final class Billing {
         return addOns;
     }
 
+    /**
+     * @return Which features the plan includes.
+     */
     @JsonProperty("features")
     public BillingFeatures getFeatures() {
         return features;
@@ -251,6 +282,12 @@ public final class Billing {
     @JsonProperty("spend_limit")
     private OptionalNullable<Long> _getSpendLimit() {
         return spendLimit;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("credit_limit")
+    private OptionalNullable<BillingCreditLimit> _getCreditLimit() {
+        return creditLimit;
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
@@ -284,6 +321,7 @@ public final class Billing {
                 && estimate.equals(other.estimate)
                 && creditRemaining == other.creditRemaining
                 && spendLimit.equals(other.spendLimit)
+                && creditLimit.equals(other.creditLimit)
                 && paymentMethod.equals(other.paymentMethod)
                 && addOns.equals(other.addOns)
                 && features.equals(other.features)
@@ -306,6 +344,7 @@ public final class Billing {
                 this.estimate,
                 this.creditRemaining,
                 this.spendLimit,
+                this.creditLimit,
                 this.paymentMethod,
                 this.addOns,
                 this.features,
@@ -328,6 +367,9 @@ public final class Billing {
     }
 
     public interface OrganizationIdStage {
+        /**
+         * <p>The organization's id.</p>
+         */
         PlanStage organizationId(@NotNull String organizationId);
     }
 
@@ -346,6 +388,9 @@ public final class Billing {
     }
 
     public interface CurrencyStage {
+        /**
+         * <p>Always <code>usd</code>.</p>
+         */
         PeriodStage currency(@NotNull BillingCurrency currency);
     }
 
@@ -371,6 +416,9 @@ public final class Billing {
     }
 
     public interface FeaturesStage {
+        /**
+         * <p>Which features the plan includes.</p>
+         */
         LimitsStage features(@NotNull BillingFeatures features);
     }
 
@@ -419,6 +467,9 @@ public final class Billing {
 
         _FinalStage addAllHolds(List<BillingHoldsItem> holds);
 
+        /**
+         * <p>This month's usage per meter.</p>
+         */
         _FinalStage usage(List<BillingUsageItem> usage);
 
         _FinalStage addUsage(BillingUsageItem usage);
@@ -436,6 +487,20 @@ public final class Billing {
 
         _FinalStage spendLimit(Nullable<Long> spendLimit);
 
+        /**
+         * <p>Where the organization stands against its credit limit; <code>null</code>: it has none.</p>
+         */
+        _FinalStage creditLimit(OptionalNullable<BillingCreditLimit> creditLimit);
+
+        _FinalStage creditLimit(BillingCreditLimit creditLimit);
+
+        _FinalStage creditLimit(Optional<BillingCreditLimit> creditLimit);
+
+        _FinalStage creditLimit(Nullable<BillingCreditLimit> creditLimit);
+
+        /**
+         * <p>The payment method on file. <code>null</code>: none.</p>
+         */
         _FinalStage paymentMethod(OptionalNullable<BillingPaymentMethod> paymentMethod);
 
         _FinalStage paymentMethod(BillingPaymentMethod paymentMethod);
@@ -491,6 +556,8 @@ public final class Billing {
 
         private OptionalNullable<BillingPaymentMethod> paymentMethod = OptionalNullable.absent();
 
+        private OptionalNullable<BillingCreditLimit> creditLimit = OptionalNullable.absent();
+
         private OptionalNullable<Long> spendLimit = OptionalNullable.absent();
 
         private List<BillingUsageItem> usage = new ArrayList<>();
@@ -521,6 +588,7 @@ public final class Billing {
             estimate(other.getEstimate());
             creditRemaining(other.getCreditRemaining());
             spendLimit(other.getSpendLimit());
+            creditLimit(other.getCreditLimit());
             paymentMethod(other.getPaymentMethod());
             addOns(other.getAddOns());
             features(other.getFeatures());
@@ -535,6 +603,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>The organization's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("organization_id")
         public PlanStage organizationId(@NotNull String organizationId) {
@@ -564,6 +636,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>Always <code>usd</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("currency")
         public PeriodStage currency(@NotNull BillingCurrency currency) {
@@ -604,6 +680,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>Which features the plan includes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("features")
         public LimitsStage features(@NotNull BillingFeatures features) {
@@ -657,6 +737,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>The payment method on file. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paymentMethod(Nullable<BillingPaymentMethod> paymentMethod) {
             if (paymentMethod.isNull()) {
@@ -669,6 +753,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>The payment method on file. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paymentMethod(Optional<BillingPaymentMethod> paymentMethod) {
             if (paymentMethod.isPresent()) {
@@ -679,16 +767,73 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>The payment method on file. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage paymentMethod(BillingPaymentMethod paymentMethod) {
             this.paymentMethod = OptionalNullable.of(paymentMethod);
             return this;
         }
 
+        /**
+         * <p>The payment method on file. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "payment_method", nulls = Nulls.SKIP)
         public _FinalStage paymentMethod(OptionalNullable<BillingPaymentMethod> paymentMethod) {
             this.paymentMethod = paymentMethod;
+            return this;
+        }
+
+        /**
+         * <p>Where the organization stands against its credit limit; <code>null</code>: it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        public _FinalStage creditLimit(Nullable<BillingCreditLimit> creditLimit) {
+            if (creditLimit.isNull()) {
+                this.creditLimit = OptionalNullable.ofNull();
+            } else if (creditLimit.isEmpty()) {
+                this.creditLimit = OptionalNullable.absent();
+            } else {
+                this.creditLimit = OptionalNullable.of(creditLimit.get());
+            }
+            return this;
+        }
+
+        /**
+         * <p>Where the organization stands against its credit limit; <code>null</code>: it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        public _FinalStage creditLimit(Optional<BillingCreditLimit> creditLimit) {
+            if (creditLimit.isPresent()) {
+                this.creditLimit = OptionalNullable.of(creditLimit.get());
+            } else {
+                this.creditLimit = OptionalNullable.absent();
+            }
+            return this;
+        }
+
+        /**
+         * <p>Where the organization stands against its credit limit; <code>null</code>: it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
+        @java.lang.Override
+        public _FinalStage creditLimit(BillingCreditLimit creditLimit) {
+            this.creditLimit = OptionalNullable.of(creditLimit);
+            return this;
+        }
+
+        /**
+         * <p>Where the organization stands against its credit limit; <code>null</code>: it has none.</p>
+         */
+        @java.lang.Override
+        @JsonSetter(value = "credit_limit", nulls = Nulls.SKIP)
+        public _FinalStage creditLimit(OptionalNullable<BillingCreditLimit> creditLimit) {
+            this.creditLimit = creditLimit;
             return this;
         }
 
@@ -742,6 +887,10 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>This month's usage per meter.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllUsage(List<BillingUsageItem> usage) {
             if (usage != null) {
@@ -750,12 +899,19 @@ public final class Billing {
             return this;
         }
 
+        /**
+         * <p>This month's usage per meter.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addUsage(BillingUsageItem usage) {
             this.usage.add(usage);
             return this;
         }
 
+        /**
+         * <p>This month's usage per meter.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "usage", nulls = Nulls.SKIP)
         public _FinalStage usage(List<BillingUsageItem> usage) {
@@ -917,6 +1073,7 @@ public final class Billing {
                     estimate,
                     creditRemaining,
                     spendLimit,
+                    creditLimit,
                     paymentMethod,
                     addOns,
                     features,

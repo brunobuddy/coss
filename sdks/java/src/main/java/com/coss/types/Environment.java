@@ -71,11 +71,17 @@ public final class Environment {
         return id;
     }
 
+    /**
+     * @return The environment's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return The environment's slug, as in dashboard URLs.
+     */
     @JsonProperty("slug")
     public String getSlug() {
         return slug;
@@ -89,11 +95,17 @@ public final class Environment {
         return mode;
     }
 
+    /**
+     * @return The project it belongs to.
+     */
     @JsonProperty("project")
     public EnvironmentProject getProject() {
         return project;
     }
 
+    /**
+     * @return The organization it belongs to.
+     */
     @JsonProperty("organization")
     public EnvironmentOrganization getOrganization() {
         return organization;
@@ -158,10 +170,16 @@ public final class Environment {
     }
 
     public interface NameStage {
+        /**
+         * <p>The environment's name.</p>
+         */
         SlugStage name(@NotNull String name);
     }
 
     public interface SlugStage {
+        /**
+         * <p>The environment's slug, as in dashboard URLs.</p>
+         */
         ModeStage slug(@NotNull String slug);
     }
 
@@ -173,10 +191,16 @@ public final class Environment {
     }
 
     public interface ProjectStage {
+        /**
+         * <p>The project it belongs to.</p>
+         */
         OrganizationStage project(@NotNull EnvironmentProject project);
     }
 
     public interface OrganizationStage {
+        /**
+         * <p>The organization it belongs to.</p>
+         */
         ApiKeyStage organization(@NotNull EnvironmentOrganization organization);
     }
 
@@ -258,6 +282,10 @@ public final class Environment {
             return this;
         }
 
+        /**
+         * <p>The environment's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public SlugStage name(@NotNull String name) {
@@ -265,6 +293,10 @@ public final class Environment {
             return this;
         }
 
+        /**
+         * <p>The environment's slug, as in dashboard URLs.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("slug")
         public ModeStage slug(@NotNull String slug) {
@@ -283,6 +315,10 @@ public final class Environment {
             return this;
         }
 
+        /**
+         * <p>The project it belongs to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("project")
         public OrganizationStage project(@NotNull EnvironmentProject project) {
@@ -290,6 +326,10 @@ public final class Environment {
             return this;
         }
 
+        /**
+         * <p>The organization it belongs to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("organization")
         public ApiKeyStage organization(@NotNull EnvironmentOrganization organization) {

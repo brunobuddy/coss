@@ -11,9 +11,15 @@ public record SegmentFilterConditionsItemConditionsConditionsItemEmail : IJsonOn
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// How to compare the contact's address.
+    /// </summary>
     [JsonPropertyName("op")]
     public required SegmentFilterConditionsItemConditionsConditionsItemEmailOp Op { get; set; }
 
+    /// <summary>
+    /// What to compare it with.
+    /// </summary>
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 

@@ -14,7 +14,7 @@ class SmsSuppressionCheck extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $phoneNumber
+     * @var string $phoneNumber The number checked, in E.164.
      */
     #[JsonProperty('phone_number')]
     public string $phoneNumber;
@@ -26,7 +26,7 @@ class SmsSuppressionCheck extends JsonSerializableType
     public bool $suppressed;
 
     /**
-     * @var ?SmsSuppressionCheckSuppression $suppression
+     * @var ?SmsSuppressionCheckSuppression $suppression A number sends skip.
      */
     #[JsonProperty('suppression')]
     public ?SmsSuppressionCheckSuppression $suppression;

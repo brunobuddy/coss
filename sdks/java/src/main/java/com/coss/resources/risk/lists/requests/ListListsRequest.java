@@ -45,6 +45,9 @@ public final class ListListsRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Which list: <code>allow</code> or <code>block</code>.
+     */
     @JsonProperty("list")
     public Optional<RiskList> getList() {
         return list;
@@ -129,6 +132,9 @@ public final class ListListsRequest {
             return this;
         }
 
+        /**
+         * <p>Which list: <code>allow</code> or <code>block</code>.</p>
+         */
         @JsonSetter(value = "list", nulls = Nulls.SKIP)
         public Builder list(Optional<RiskList> list) {
             this.list = list;

@@ -14,9 +14,15 @@ public record ContactTopics : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required ContactTopicsObject Object { get; set; }
 
+    /// <summary>
+    /// The contact's id.
+    /// </summary>
     [JsonPropertyName("contact_id")]
     public required string ContactId { get; set; }
 
+    /// <summary>
+    /// Every topic of the environment, with this contact's standing.
+    /// </summary>
     [JsonPropertyName("topics")]
     public IEnumerable<ContactTopicsTopicsItem> Topics { get; set; } =
         new List<ContactTopicsTopicsItem>();

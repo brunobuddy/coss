@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class CreateSignTemplateRequestRolesItem extends JsonSerializableType
 {
     /**
-     * @var string $key The role's key, e.g. `client`.
+     * @var string $key The role's id within the template, used by fields and signers.
      */
     #[JsonProperty('key')]
     public string $key;

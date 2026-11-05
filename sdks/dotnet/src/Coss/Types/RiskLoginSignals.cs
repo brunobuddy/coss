@@ -14,9 +14,15 @@ public record RiskLoginSignals : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Whether this user never logged in from this country in this environment.
+    /// </summary>
     [JsonPropertyName("new_country")]
     public required bool NewCountry { get; set; }
 
+    /// <summary>
+    /// Whether this user never logged in from this network (ASN) in this environment.
+    /// </summary>
     [JsonPropertyName("new_network")]
     public required bool NewNetwork { get; set; }
 

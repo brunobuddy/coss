@@ -34,13 +34,13 @@ class FormSubmissionWebhookEvent extends JsonSerializableType
     public string $apiVersion;
 
     /**
-     * @var DateTime $createdAt
+     * @var DateTime $createdAt When the event was created.
      */
     #[JsonProperty('created_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $createdAt;
 
     /**
-     * @var FormSubmissionWebhookEventData $data
+     * @var FormSubmissionWebhookEventData $data The submission.
      */
     #[JsonProperty('data')]
     public FormSubmissionWebhookEventData $data;

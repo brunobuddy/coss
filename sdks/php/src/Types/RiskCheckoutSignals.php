@@ -11,37 +11,37 @@ use Coss\Core\Json\JsonProperty;
 class RiskCheckoutSignals extends JsonSerializableType
 {
     /**
-     * @var int $amount
+     * @var int $amount The amount you sent, in the currency's smallest unit.
      */
     #[JsonProperty('amount')]
     public int $amount;
 
     /**
-     * @var string $currency
+     * @var string $currency The currency you sent.
      */
     #[JsonProperty('currency')]
     public string $currency;
 
     /**
-     * @var ?string $cardCountry
+     * @var ?string $cardCountry The card's country. `null` when not given.
      */
     #[JsonProperty('card_country')]
     public ?string $cardCountry;
 
     /**
-     * @var ?value-of<RiskCheckoutSignalsCardFunding> $cardFunding
+     * @var ?value-of<RiskCheckoutSignalsCardFunding> $cardFunding The card's funding type. `null` when not given.
      */
     #[JsonProperty('card_funding')]
     public ?string $cardFunding;
 
     /**
-     * @var ?string $billingCountry
+     * @var ?string $billingCountry The billing country. `null` when not given.
      */
     #[JsonProperty('billing_country')]
     public ?string $billingCountry;
 
     /**
-     * @var ?string $shippingCountry
+     * @var ?string $shippingCountry The shipping country. `null` when not given.
      */
     #[JsonProperty('shipping_country')]
     public ?string $shippingCountry;

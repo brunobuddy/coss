@@ -34,13 +34,13 @@ class ReceivedSms extends JsonSerializableType
     public string $to;
 
     /**
-     * @var string $body
+     * @var string $body The text.
      */
     #[JsonProperty('body')]
     public string $body;
 
     /**
-     * @var int $segments
+     * @var int $segments Segments the text took.
      */
     #[JsonProperty('segments')]
     public int $segments;
@@ -52,7 +52,7 @@ class ReceivedSms extends JsonSerializableType
     public ?string $keyword;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it's a simulated message of a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;

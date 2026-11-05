@@ -40,13 +40,13 @@ class RiskListEntry extends JsonSerializableType
     public string $value;
 
     /**
-     * @var ?string $note
+     * @var ?string $note Your note about it. `null`: none.
      */
     #[JsonProperty('note')]
     public ?string $note;
 
     /**
-     * @var ?DateTime $expiresAt
+     * @var ?DateTime $expiresAt When it stops matching. `null`: never.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiresAt;

@@ -14,15 +14,27 @@ public record RiskContentSignals : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The model's probability (0-1) that it's spam.
+    /// </summary>
     [JsonPropertyName("spam")]
     public required double Spam { get; set; }
 
+    /// <summary>
+    /// The model's probability (0-1) that it's phishing.
+    /// </summary>
     [JsonPropertyName("phishing")]
     public required double Phishing { get; set; }
 
+    /// <summary>
+    /// The model's probability (0-1) that it's malware.
+    /// </summary>
     [JsonPropertyName("malware")]
     public required double Malware { get; set; }
 
+    /// <summary>
+    /// The model's probability (0-1) that it's fraud.
+    /// </summary>
     [JsonPropertyName("fraud")]
     public required double Fraud { get; set; }
 

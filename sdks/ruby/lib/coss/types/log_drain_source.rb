@@ -14,6 +14,7 @@ module Coss
       SIGN = "sign"
       VERIFY = "verify"
       FORMS = "forms"
+      SCHEDULING = "scheduling"
       AUDIT = "audit"
     end
   end

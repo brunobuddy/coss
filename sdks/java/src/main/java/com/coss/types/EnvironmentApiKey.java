@@ -61,6 +61,9 @@ public final class EnvironmentApiKey {
         return id;
     }
 
+    /**
+     * @return The key's name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("name")
     public OptionalNullable<String> getName() {
@@ -166,6 +169,9 @@ public final class EnvironmentApiKey {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The key's name. <code>null</code>: none.</p>
+         */
         _FinalStage name(OptionalNullable<String> name);
 
         _FinalStage name(String name);
@@ -329,6 +335,10 @@ public final class EnvironmentApiKey {
             return this;
         }
 
+        /**
+         * <p>The key's name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage name(Nullable<String> name) {
             if (name.isNull()) {
@@ -341,6 +351,10 @@ public final class EnvironmentApiKey {
             return this;
         }
 
+        /**
+         * <p>The key's name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage name(Optional<String> name) {
             if (name.isPresent()) {
@@ -351,12 +365,19 @@ public final class EnvironmentApiKey {
             return this;
         }
 
+        /**
+         * <p>The key's name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage name(String name) {
             this.name = OptionalNullable.of(name);
             return this;
         }
 
+        /**
+         * <p>The key's name. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public _FinalStage name(OptionalNullable<String> name) {

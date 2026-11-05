@@ -5,16 +5,19 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Why it failed. `null`: it didn't.
+ */
 class BroadcastWebhookEventDataError extends JsonSerializableType
 {
     /**
-     * @var string $code
+     * @var string $code Machine-readable reason.
      */
     #[JsonProperty('code')]
     public string $code;
 
     /**
-     * @var string $message
+     * @var string $message Human-readable explanation.
      */
     #[JsonProperty('message')]
     public string $message;

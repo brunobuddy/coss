@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # A box on a page that one signer fills.
     class SignField < Internal::Types::Model
       field :object, -> { Coss::Types::SignFieldObject }, optional: false, nullable: false
 

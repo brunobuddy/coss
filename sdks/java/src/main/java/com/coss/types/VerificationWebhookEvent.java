@@ -61,6 +61,9 @@ public final class VerificationWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What happened to the verification.
+     */
     @JsonProperty("type")
     public VerificationWebhookEventType getType() {
         return type;
@@ -74,11 +77,17 @@ public final class VerificationWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The verification. Never its code.
+     */
     @JsonProperty("data")
     public VerificationWebhookEventData getData() {
         return data;
@@ -129,6 +138,9 @@ public final class VerificationWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened to the verification.</p>
+         */
         ApiVersionStage type(@NotNull VerificationWebhookEventType type);
     }
 
@@ -140,10 +152,16 @@ public final class VerificationWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The verification. Never its code.</p>
+         */
         _FinalStage data(@NotNull VerificationWebhookEventData data);
     }
 
@@ -200,6 +218,10 @@ public final class VerificationWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What happened to the verification.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull VerificationWebhookEventType type) {
@@ -218,6 +240,10 @@ public final class VerificationWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -225,6 +251,10 @@ public final class VerificationWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The verification. Never its code.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull VerificationWebhookEventData data) {

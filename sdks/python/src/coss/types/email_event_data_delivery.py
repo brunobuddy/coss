@@ -7,7 +7,10 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class EmailEventDataDelivery(UniversalBaseModel):
-    smtp_response: typing.Optional[str] = None
+    smtp_response: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What the receiving server answered. `null`: not reported.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

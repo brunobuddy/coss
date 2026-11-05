@@ -16,7 +16,7 @@ class SignRequestSignedDocument extends JsonSerializableType
     public string $sha256;
 
     /**
-     * @var DateTime $sealedAt
+     * @var DateTime $sealedAt When it was sealed.
      */
     #[JsonProperty('sealed_at'), Date(Date::TYPE_DATETIME)]
     public DateTime $sealedAt;

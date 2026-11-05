@@ -9,17 +9,60 @@ from .sign_template_fields_item_type import SignTemplateFieldsItemType
 
 class SignTemplateFieldsItem(UniversalBaseModel):
     id: str
-    role: str
-    document_id: str
-    type: SignTemplateFieldsItemType
-    page: int
-    x: float
-    y: float
-    width: float
-    height: float
-    required: bool
-    label: typing.Optional[str] = None
-    merge_key: typing.Optional[str] = None
+    role: str = pydantic.Field()
+    """
+    The `key` of the role that fills it.
+    """
+
+    document_id: str = pydantic.Field()
+    """
+    The id of the document it's on.
+    """
+
+    type: SignTemplateFieldsItemType = pydantic.Field()
+    """
+    What the field takes, as on a signature request.
+    """
+
+    page: int = pydantic.Field()
+    """
+    1-based page number.
+    """
+
+    x: float = pydantic.Field()
+    """
+    Left edge, in PDF points from the page's left.
+    """
+
+    y: float = pydantic.Field()
+    """
+    Top edge, in PDF points from the page's top.
+    """
+
+    width: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    height: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    required: bool = pydantic.Field()
+    """
+    Whether a signer can finish with it empty.
+    """
+
+    label: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown to the signer. `null`: none.
+    """
+
+    merge_key: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    `text` fields: which `merge_fields` value fills it. `null`: the signer fills it.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

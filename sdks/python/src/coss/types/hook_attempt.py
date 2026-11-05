@@ -11,16 +11,36 @@ from .hook_attempt_object import HookAttemptObject
 class HookAttempt(UniversalBaseModel):
     object: HookAttemptObject
     id: str
-    delivery_id: str
-    endpoint_id: str
-    attempted_at: dt.datetime
+    delivery_id: str = pydantic.Field()
+    """
+    The id of the delivery this attempt belongs to.
+    """
+
+    endpoint_id: str = pydantic.Field()
+    """
+    The id of the endpoint it was sent to.
+    """
+
+    attempted_at: dt.datetime = pydantic.Field()
+    """
+    When the attempt ran.
+    """
+
     status_code: typing.Optional[int] = pydantic.Field(default=None)
     """
     The endpoint's HTTP status; `null` when no response arrived.
     """
 
-    duration_ms: int
-    error: typing.Optional[str] = None
+    duration_ms: int = pydantic.Field()
+    """
+    How long it took, in milliseconds.
+    """
+
+    error: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Why it failed. `null`: it didn't.
+    """
+
     response_excerpt: typing.Optional[str] = pydantic.Field(default=None)
     """
     At most 1 KB of the response body, as text.

@@ -29,6 +29,12 @@ module Coss
       member -> { Coss::Types::VerificationWebhookEvent }
 
       member -> { Coss::Types::FormSubmissionWebhookEvent }
+
+      member -> { Coss::Types::SchedulingBookingWebhookEvent }
+
+      member -> { Coss::Types::SchedulingCalendarWebhookEvent }
+
+      member -> { Coss::Types::SchedulingCalendarDelegationWebhookEvent }
     end
   end
 end

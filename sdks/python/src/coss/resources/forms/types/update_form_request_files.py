@@ -7,13 +7,25 @@ from ....core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class UpdateFormRequestFiles(UniversalBaseModel):
+    """
+    File uploads. Only the fields given change.
+    """
+
     enabled: typing.Optional[bool] = pydantic.Field(default=None)
     """
     Accept uploads (`multipart/form-data`). Default false.
     """
 
-    max_files: typing.Optional[int] = None
-    max_file_bytes: typing.Optional[int] = None
+    max_files: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Most files per submission. Default 3.
+    """
+
+    max_file_bytes: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Largest file, in bytes. Default and maximum 10 MB.
+    """
+
     allowed_types: typing.Optional[typing.List[str]] = pydantic.Field(default=None)
     """
     MIME types (`image/*` allowed). Empty: images, PDFs, text and Office.

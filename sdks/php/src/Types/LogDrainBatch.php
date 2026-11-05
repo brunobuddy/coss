@@ -23,7 +23,7 @@ class LogDrainBatch extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $drainId
+     * @var string $drainId The id of the drain it's posted to.
      */
     #[JsonProperty('drain_id')]
     public string $drainId;
@@ -35,7 +35,7 @@ class LogDrainBatch extends JsonSerializableType
     public string $status;
 
     /**
-     * @var int $lineCount Lines in the batch (one per NDJSON line).
+     * @var int $lineCount Lines in the batch.
      */
     #[JsonProperty('line_count')]
     public int $lineCount;
@@ -47,7 +47,7 @@ class LogDrainBatch extends JsonSerializableType
     public int $byteSize;
 
     /**
-     * @var int $attemptCount
+     * @var int $attemptCount How many attempts were made so far.
      */
     #[JsonProperty('attempt_count')]
     public int $attemptCount;
@@ -59,13 +59,13 @@ class LogDrainBatch extends JsonSerializableType
     public ?DateTime $nextAttemptAt;
 
     /**
-     * @var ?int $lastStatusCode
+     * @var ?int $lastStatusCode The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
      */
     #[JsonProperty('last_status_code')]
     public ?int $lastStatusCode;
 
     /**
-     * @var ?string $lastError
+     * @var ?string $lastError Why the latest attempt failed. `null`: it didn't, or no attempt yet.
      */
     #[JsonProperty('last_error')]
     public ?string $lastError;

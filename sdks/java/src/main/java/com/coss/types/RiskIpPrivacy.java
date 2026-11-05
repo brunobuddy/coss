@@ -46,16 +46,25 @@ public final class RiskIpPrivacy {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether it's a VPN exit.
+     */
     @JsonProperty("vpn")
     public boolean getVpn() {
         return vpn;
     }
 
+    /**
+     * @return Whether it's a proxy.
+     */
     @JsonProperty("proxy")
     public boolean getProxy() {
         return proxy;
     }
 
+    /**
+     * @return Whether it's a privacy relay.
+     */
     @JsonProperty("relay")
     public boolean getRelay() {
         return relay;
@@ -109,16 +118,25 @@ public final class RiskIpPrivacy {
     }
 
     public interface VpnStage {
+        /**
+         * <p>Whether it's a VPN exit.</p>
+         */
         ProxyStage vpn(boolean vpn);
 
         Builder from(RiskIpPrivacy other);
     }
 
     public interface ProxyStage {
+        /**
+         * <p>Whether it's a proxy.</p>
+         */
         RelayStage proxy(boolean proxy);
     }
 
     public interface RelayStage {
+        /**
+         * <p>Whether it's a privacy relay.</p>
+         */
         _FinalStage relay(boolean relay);
     }
 
@@ -165,6 +183,10 @@ public final class RiskIpPrivacy {
             return this;
         }
 
+        /**
+         * <p>Whether it's a VPN exit.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("vpn")
         public ProxyStage vpn(boolean vpn) {
@@ -172,6 +194,10 @@ public final class RiskIpPrivacy {
             return this;
         }
 
+        /**
+         * <p>Whether it's a proxy.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("proxy")
         public RelayStage proxy(boolean proxy) {
@@ -179,6 +205,10 @@ public final class RiskIpPrivacy {
             return this;
         }
 
+        /**
+         * <p>Whether it's a privacy relay.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("relay")
         public _FinalStage relay(boolean relay) {

@@ -35,16 +35,25 @@ public final class ContactImportInvalidItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The entry's position in <code>contacts</code>, from 0.
+     */
     @JsonProperty("index")
     public long getIndex() {
         return index;
     }
 
+    /**
+     * @return The address it gave.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
     }
 
+    /**
+     * @return Why it was refused.
+     */
     @JsonProperty("message")
     public String getMessage() {
         return message;
@@ -80,16 +89,25 @@ public final class ContactImportInvalidItem {
     }
 
     public interface IndexStage {
+        /**
+         * <p>The entry's position in <code>contacts</code>, from 0.</p>
+         */
         EmailStage index(long index);
 
         Builder from(ContactImportInvalidItem other);
     }
 
     public interface EmailStage {
+        /**
+         * <p>The address it gave.</p>
+         */
         MessageStage email(@NotNull String email);
     }
 
     public interface MessageStage {
+        /**
+         * <p>Why it was refused.</p>
+         */
         _FinalStage message(@NotNull String message);
     }
 
@@ -122,6 +140,10 @@ public final class ContactImportInvalidItem {
             return this;
         }
 
+        /**
+         * <p>The entry's position in <code>contacts</code>, from 0.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("index")
         public EmailStage index(long index) {
@@ -129,6 +151,10 @@ public final class ContactImportInvalidItem {
             return this;
         }
 
+        /**
+         * <p>The address it gave.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public MessageStage email(@NotNull String email) {
@@ -136,6 +162,10 @@ public final class ContactImportInvalidItem {
             return this;
         }
 
+        /**
+         * <p>Why it was refused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message")
         public _FinalStage message(@NotNull String message) {

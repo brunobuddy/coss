@@ -11,31 +11,31 @@ use Coss\Core\Json\JsonProperty;
 class ReceivedEmailVerdicts extends JsonSerializableType
 {
     /**
-     * @var ?value-of<ReceivedEmailVerdictsSpam> $spam
+     * @var ?value-of<ReceivedEmailVerdictsSpam> $spam The spam verdict.
      */
     #[JsonProperty('spam')]
     public ?string $spam;
 
     /**
-     * @var ?value-of<ReceivedEmailVerdictsVirus> $virus
+     * @var ?value-of<ReceivedEmailVerdictsVirus> $virus The virus verdict.
      */
     #[JsonProperty('virus')]
     public ?string $virus;
 
     /**
-     * @var ?value-of<ReceivedEmailVerdictsSpf> $spf
+     * @var ?value-of<ReceivedEmailVerdictsSpf> $spf The SPF verdict.
      */
     #[JsonProperty('spf')]
     public ?string $spf;
 
     /**
-     * @var ?value-of<ReceivedEmailVerdictsDkim> $dkim
+     * @var ?value-of<ReceivedEmailVerdictsDkim> $dkim The DKIM verdict.
      */
     #[JsonProperty('dkim')]
     public ?string $dkim;
 
     /**
-     * @var ?value-of<ReceivedEmailVerdictsDmarc> $dmarc
+     * @var ?value-of<ReceivedEmailVerdictsDmarc> $dmarc The DMARC verdict.
      */
     #[JsonProperty('dmarc')]
     public ?string $dmarc;

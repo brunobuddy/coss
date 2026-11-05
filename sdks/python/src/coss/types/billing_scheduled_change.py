@@ -13,8 +13,15 @@ class BillingScheduledChange(UniversalBaseModel):
     A plan change that takes effect later (a downgrade, a cancellation).
     """
 
-    effective_at: dt.datetime
-    plan: BillingScheduledChangePlan
+    effective_at: dt.datetime = pydantic.Field()
+    """
+    When it takes effect.
+    """
+
+    plan: BillingScheduledChangePlan = pydantic.Field()
+    """
+    The plan it changes to.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

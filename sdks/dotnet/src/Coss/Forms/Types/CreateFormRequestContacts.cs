@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Turning submissions into contacts. Only the fields given change.
+/// </summary>
 [Serializable]
 public record CreateFormRequestContacts : IJsonOnDeserialized
 {
@@ -11,10 +14,16 @@ public record CreateFormRequestContacts : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Turn each accepted submission into a contact, from `submitter.email_field`. Default false.
+    /// </summary>
     [Optional]
     [JsonPropertyName("enabled")]
     public bool? Enabled { get; set; }
 
+    /// <summary>
+    /// Audiences the contact joins. They must exist in this environment.
+    /// </summary>
     [Optional]
     [JsonPropertyName("audience_ids")]
     public IEnumerable<string>? AudienceIds { get; set; }
@@ -34,14 +43,14 @@ public record CreateFormRequestContacts : IJsonOnDeserialized
     public Optional<bool?> DoubleOptIn { get; set; }
 
     /// <summary>
-    /// The `name` the form's input posts.
+    /// The field holding the contact's first name. `null`: none.
     /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("first_name_field")]
     public Optional<string?> FirstNameField { get; set; }
 
     /// <summary>
-    /// The `name` the form's input posts.
+    /// The field holding the contact's last name. `null`: none.
     /// </summary>
     [Nullable, Optional]
     [JsonPropertyName("last_name_field")]

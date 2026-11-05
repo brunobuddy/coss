@@ -61,21 +61,33 @@ public final class FormContacts {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Whether each accepted submission becomes a contact.
+     */
     @JsonProperty("enabled")
     public boolean getEnabled() {
         return enabled;
     }
 
+    /**
+     * @return Audiences the contact joins.
+     */
     @JsonProperty("audience_ids")
     public List<String> getAudienceIds() {
         return audienceIds;
     }
 
+    /**
+     * @return Topic keys the contact is opted into.
+     */
     @JsonProperty("topics")
     public List<String> getTopics() {
         return topics;
     }
 
+    /**
+     * @return Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("double_opt_in")
     public OptionalNullable<Boolean> getDoubleOptIn() {
@@ -85,6 +97,9 @@ public final class FormContacts {
         return doubleOptIn;
     }
 
+    /**
+     * @return The field holding the contact's first name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_name_field")
     public OptionalNullable<String> getFirstNameField() {
@@ -94,6 +109,9 @@ public final class FormContacts {
         return firstNameField;
     }
 
+    /**
+     * @return The field holding the contact's last name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_name_field")
     public OptionalNullable<String> getLastNameField() {
@@ -103,6 +121,9 @@ public final class FormContacts {
         return lastNameField;
     }
 
+    /**
+     * @return Contact property key → the field whose value it takes.
+     */
     @JsonProperty("properties")
     public Map<String, String> getProperties() {
         return properties;
@@ -169,6 +190,9 @@ public final class FormContacts {
     }
 
     public interface EnabledStage {
+        /**
+         * <p>Whether each accepted submission becomes a contact.</p>
+         */
         _FinalStage enabled(boolean enabled);
 
         Builder from(FormContacts other);
@@ -181,18 +205,27 @@ public final class FormContacts {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Audiences the contact joins.</p>
+         */
         _FinalStage audienceIds(List<String> audienceIds);
 
         _FinalStage addAudienceIds(String audienceIds);
 
         _FinalStage addAllAudienceIds(List<String> audienceIds);
 
+        /**
+         * <p>Topic keys the contact is opted into.</p>
+         */
         _FinalStage topics(List<String> topics);
 
         _FinalStage addTopics(String topics);
 
         _FinalStage addAllTopics(List<String> topics);
 
+        /**
+         * <p>Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.</p>
+         */
         _FinalStage doubleOptIn(OptionalNullable<Boolean> doubleOptIn);
 
         _FinalStage doubleOptIn(Boolean doubleOptIn);
@@ -201,6 +234,9 @@ public final class FormContacts {
 
         _FinalStage doubleOptIn(Nullable<Boolean> doubleOptIn);
 
+        /**
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
+         */
         _FinalStage firstNameField(OptionalNullable<String> firstNameField);
 
         _FinalStage firstNameField(String firstNameField);
@@ -209,6 +245,9 @@ public final class FormContacts {
 
         _FinalStage firstNameField(Nullable<String> firstNameField);
 
+        /**
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
+         */
         _FinalStage lastNameField(OptionalNullable<String> lastNameField);
 
         _FinalStage lastNameField(String lastNameField);
@@ -217,6 +256,9 @@ public final class FormContacts {
 
         _FinalStage lastNameField(Nullable<String> lastNameField);
 
+        /**
+         * <p>Contact property key → the field whose value it takes.</p>
+         */
         _FinalStage properties(Map<String, String> properties);
 
         _FinalStage putAllProperties(Map<String, String> properties);
@@ -257,6 +299,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Whether each accepted submission becomes a contact.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("enabled")
         public _FinalStage enabled(boolean enabled) {
@@ -264,12 +310,20 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Contact property key → the field whose value it takes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage properties(String key, String value) {
             this.properties.put(key, value);
             return this;
         }
 
+        /**
+         * <p>Contact property key → the field whose value it takes.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage putAllProperties(Map<String, String> properties) {
             if (properties != null) {
@@ -278,6 +332,9 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Contact property key → the field whose value it takes.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "properties", nulls = Nulls.SKIP)
         public _FinalStage properties(Map<String, String> properties) {
@@ -288,6 +345,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastNameField(Nullable<String> lastNameField) {
             if (lastNameField.isNull()) {
@@ -300,6 +361,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastNameField(Optional<String> lastNameField) {
             if (lastNameField.isPresent()) {
@@ -310,12 +375,19 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastNameField(String lastNameField) {
             this.lastNameField = OptionalNullable.of(lastNameField);
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's last name. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_name_field", nulls = Nulls.SKIP)
         public _FinalStage lastNameField(OptionalNullable<String> lastNameField) {
@@ -323,6 +395,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstNameField(Nullable<String> firstNameField) {
             if (firstNameField.isNull()) {
@@ -335,6 +411,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstNameField(Optional<String> firstNameField) {
             if (firstNameField.isPresent()) {
@@ -345,12 +425,19 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstNameField(String firstNameField) {
             this.firstNameField = OptionalNullable.of(firstNameField);
             return this;
         }
 
+        /**
+         * <p>The field holding the contact's first name. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_name_field", nulls = Nulls.SKIP)
         public _FinalStage firstNameField(OptionalNullable<String> firstNameField) {
@@ -358,6 +445,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage doubleOptIn(Nullable<Boolean> doubleOptIn) {
             if (doubleOptIn.isNull()) {
@@ -370,6 +461,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage doubleOptIn(Optional<Boolean> doubleOptIn) {
             if (doubleOptIn.isPresent()) {
@@ -380,12 +475,19 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage doubleOptIn(Boolean doubleOptIn) {
             this.doubleOptIn = OptionalNullable.of(doubleOptIn);
             return this;
         }
 
+        /**
+         * <p>Whether new contacts confirm by email first. <code>null</code>: the environment's marketing settings decide.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "double_opt_in", nulls = Nulls.SKIP)
         public _FinalStage doubleOptIn(OptionalNullable<Boolean> doubleOptIn) {
@@ -393,6 +495,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Topic keys the contact is opted into.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllTopics(List<String> topics) {
             if (topics != null) {
@@ -401,12 +507,19 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Topic keys the contact is opted into.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addTopics(String topics) {
             this.topics.add(topics);
             return this;
         }
 
+        /**
+         * <p>Topic keys the contact is opted into.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "topics", nulls = Nulls.SKIP)
         public _FinalStage topics(List<String> topics) {
@@ -417,6 +530,10 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Audiences the contact joins.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllAudienceIds(List<String> audienceIds) {
             if (audienceIds != null) {
@@ -425,12 +542,19 @@ public final class FormContacts {
             return this;
         }
 
+        /**
+         * <p>Audiences the contact joins.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAudienceIds(String audienceIds) {
             this.audienceIds.add(audienceIds);
             return this;
         }
 
+        /**
+         * <p>Audiences the contact joins.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "audience_ids", nulls = Nulls.SKIP)
         public _FinalStage audienceIds(List<String> audienceIds) {

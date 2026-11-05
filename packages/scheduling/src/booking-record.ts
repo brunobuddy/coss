@@ -29,7 +29,12 @@ export function toWebhookData(
   hostIds: readonly string[],
   attendeeUids: readonly string[],
   occurredAt: Date,
-  extra: { previousStart?: Date; reminder?: ReminderWebhookData } = {},
+  extra: {
+    previousStart?: Date;
+    previousHostIds?: readonly string[] | undefined;
+    reassignmentId?: string | undefined;
+    reminder?: ReminderWebhookData;
+  } = {},
 ) {
   return {
     booking_id: booking.id,
@@ -41,6 +46,8 @@ export function toWebhookData(
     attendee_uids: [...attendeeUids],
     series_id: booking.seriesId,
     ...(extra.previousStart ? { previous_start: extra.previousStart.toISOString() } : {}),
+    ...(extra.previousHostIds ? { previous_host_ids: [...extra.previousHostIds] } : {}),
+    ...(extra.reassignmentId ? { reassignment_id: extra.reassignmentId } : {}),
     ...(extra.reminder ? { reminder: extra.reminder } : {}),
     occurred_at: occurredAt.toISOString(),
   };
@@ -85,6 +92,10 @@ export async function recordChange(
     momentAt?: Date;
     details?: Record<string, unknown>;
     previousStart?: Date;
+    previousHostIds?: readonly string[] | undefined;
+    reassignmentId?: string | undefined;
+    /** Why it was done, in someone's own words: on this row only, encrypted, gone with the details. */
+    encryptedNote?: string | null;
     reminder?: ReminderWebhookData;
     message: string;
     level?: "info" | "warning";
@@ -108,6 +119,7 @@ export async function recordChange(
     type: input.type,
     actor: input.actor,
     details: input.details ?? {},
+    encryptedNote: input.encryptedNote ?? null,
     occurredAt: input.occurredAt,
   });
   const { hostIds, attendees } = await participants(tx, booking);
@@ -130,6 +142,8 @@ export async function recordChange(
           input.momentAt ?? input.occurredAt,
           {
             ...(input.previousStart ? { previousStart: input.previousStart } : {}),
+            previousHostIds: input.previousHostIds,
+            reassignmentId: input.reassignmentId,
             ...(input.reminder ? { reminder: input.reminder } : {}),
           },
         ),

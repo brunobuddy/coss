@@ -18,19 +18,34 @@ public record ReceivedSmsWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("received_sms_id")]
     public string? ReceivedSmsId { get; set; }
 
+    /// <summary>
+    /// Who sent it.
+    /// </summary>
     [JsonPropertyName("from")]
     public required string From { get; set; }
 
+    /// <summary>
+    /// Your number that received it.
+    /// </summary>
     [JsonPropertyName("to")]
     public required string To { get; set; }
 
+    /// <summary>
+    /// The keyword it is, if any: `stop`, `start` or `help`. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("keyword")]
     public ReceivedSmsWebhookEventDataKeyword? Keyword { get; set; }
 
+    /// <summary>
+    /// Whether it's a simulated message of a sandbox environment.
+    /// </summary>
     [JsonPropertyName("sandbox")]
     public required bool Sandbox { get; set; }
 
+    /// <summary>
+    /// When it happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 

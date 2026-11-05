@@ -16,7 +16,7 @@ class SegmentFilterConditionsItemField extends JsonSerializableType
     public string $field;
 
     /**
-     * @var value-of<SegmentFilterConditionsItemFieldOp> $op
+     * @var value-of<SegmentFilterConditionsItemFieldOp> $op `before` or `after` a time, or created `within_days` the last days.
      */
     #[JsonProperty('op')]
     public string $op;

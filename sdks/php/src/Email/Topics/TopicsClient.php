@@ -183,6 +183,8 @@ class TopicsClient
     }
 
     /**
+     * One topic of the API key's environment.
+     *
      * Example:
      * ```php
      * $client->email->topics->get(

@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class DmarcReportRecordAuthResultsDkimItem extends JsonSerializableType
 {
     /**
-     * @var string $domain
+     * @var string $domain The signing domain.
      */
     #[JsonProperty('domain')]
     public string $domain;
 
     /**
-     * @var ?string $selector
+     * @var ?string $selector The selector.
      */
     #[JsonProperty('selector')]
     public ?string $selector;
 
     /**
-     * @var string $result
+     * @var string $result The result.
      */
     #[JsonProperty('result')]
     public string $result;

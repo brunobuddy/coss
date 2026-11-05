@@ -31,11 +31,17 @@ public final class VerificationWebhookEventDataFailure {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Machine-readable reason.
+     */
     @JsonProperty("code")
     public String getCode() {
         return code;
     }
 
+    /**
+     * @return Human-readable explanation.
+     */
     @JsonProperty("message")
     public String getMessage() {
         return message;
@@ -72,12 +78,18 @@ public final class VerificationWebhookEventDataFailure {
     }
 
     public interface CodeStage {
+        /**
+         * <p>Machine-readable reason.</p>
+         */
         MessageStage code(@NotNull String code);
 
         Builder from(VerificationWebhookEventDataFailure other);
     }
 
     public interface MessageStage {
+        /**
+         * <p>Human-readable explanation.</p>
+         */
         _FinalStage message(@NotNull String message);
     }
 
@@ -107,6 +119,10 @@ public final class VerificationWebhookEventDataFailure {
             return this;
         }
 
+        /**
+         * <p>Machine-readable reason.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("code")
         public MessageStage code(@NotNull String code) {
@@ -114,6 +130,10 @@ public final class VerificationWebhookEventDataFailure {
             return this;
         }
 
+        /**
+         * <p>Human-readable explanation.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message")
         public _FinalStage message(@NotNull String message) {

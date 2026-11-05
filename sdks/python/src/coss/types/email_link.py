@@ -11,16 +11,35 @@ from .email_link_object import EmailLinkObject
 class EmailLink(UniversalBaseModel):
     object: EmailLinkObject
     id: str
-    email_id: str
+    email_id: str = pydantic.Field()
+    """
+    The email's id.
+    """
+
     position: int = pydantic.Field()
     """
     Index of the link among the tracked links.
     """
 
-    url: str
-    click_count: int
-    first_clicked_at: typing.Optional[dt.datetime] = None
-    last_clicked_at: typing.Optional[dt.datetime] = None
+    url: str = pydantic.Field()
+    """
+    The original link.
+    """
+
+    click_count: int = pydantic.Field()
+    """
+    Times it was clicked. Link scanners inflate it.
+    """
+
+    first_clicked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was first clicked. `null`: not yet.
+    """
+
+    last_clicked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was last clicked. `null`: not yet.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

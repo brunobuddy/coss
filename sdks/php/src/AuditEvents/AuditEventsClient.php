@@ -137,6 +137,8 @@ class AuditEventsClient
     }
 
     /**
+     * One event of the organization's audit log.
+     *
      * Example:
      * ```php
      * $client->auditEvents->get(

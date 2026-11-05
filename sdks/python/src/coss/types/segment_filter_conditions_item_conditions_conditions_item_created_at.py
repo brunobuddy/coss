@@ -13,7 +13,11 @@ from .segment_filter_conditions_item_conditions_conditions_item_created_at_value
 
 
 class SegmentFilterConditionsItemConditionsConditionsItemCreatedAt(UniversalBaseModel):
-    op: SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp
+    op: SegmentFilterConditionsItemConditionsConditionsItemCreatedAtOp = pydantic.Field()
+    """
+    `before` or `after` a time, or created `within_days` the last days.
+    """
+
     value: SegmentFilterConditionsItemConditionsConditionsItemCreatedAtValue = pydantic.Field()
     """
     A timestamp for `before`/`after`, a number of days for `within_days`.

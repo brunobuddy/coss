@@ -7,8 +7,19 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class BroadcastError(UniversalBaseModel):
-    code: str
-    message: str
+    """
+    Why it `failed`, such as `target_unavailable` when its audience, segment or topic was deleted while sending. `null`: it didn't.
+    """
+
+    code: str = pydantic.Field()
+    """
+    Machine-readable reason.
+    """
+
+    message: str = pydantic.Field()
+    """
+    Human-readable explanation.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

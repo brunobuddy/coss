@@ -6,6 +6,9 @@ namespace Coss.Email;
 [Serializable]
 public record ImportContactsRequest
 {
+    /// <summary>
+    /// The contacts to create or update, at most 1,000.
+    /// </summary>
     [JsonPropertyName("contacts")]
     public IEnumerable<ImportContactsRequestContactsItem> Contacts { get; set; } =
         new List<ImportContactsRequestContactsItem>();

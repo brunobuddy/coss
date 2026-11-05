@@ -98,6 +98,9 @@ public final class RiskDeviceSignals {
         return language;
     }
 
+    /**
+     * @return The browser's reported platform. <code>null</code> when it reported none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("platform")
     public OptionalNullable<String> getPlatform() {
@@ -119,6 +122,9 @@ public final class RiskDeviceSignals {
         return screen;
     }
 
+    /**
+     * @return Whether the device has a touch screen. <code>null</code> when it didn't say.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("touch")
     public OptionalNullable<Boolean> getTouch() {
@@ -239,6 +245,9 @@ public final class RiskDeviceSignals {
 
         _FinalStage language(Nullable<String> language);
 
+        /**
+         * <p>The browser's reported platform. <code>null</code> when it reported none.</p>
+         */
         _FinalStage platform(OptionalNullable<String> platform);
 
         _FinalStage platform(String platform);
@@ -258,6 +267,9 @@ public final class RiskDeviceSignals {
 
         _FinalStage screen(Nullable<String> screen);
 
+        /**
+         * <p>Whether the device has a touch screen. <code>null</code> when it didn't say.</p>
+         */
         _FinalStage touch(OptionalNullable<Boolean> touch);
 
         _FinalStage touch(Boolean touch);
@@ -322,6 +334,10 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>Whether the device has a touch screen. <code>null</code> when it didn't say.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage touch(Nullable<Boolean> touch) {
             if (touch.isNull()) {
@@ -334,6 +350,10 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>Whether the device has a touch screen. <code>null</code> when it didn't say.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage touch(Optional<Boolean> touch) {
             if (touch.isPresent()) {
@@ -344,12 +364,19 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>Whether the device has a touch screen. <code>null</code> when it didn't say.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage touch(Boolean touch) {
             this.touch = OptionalNullable.of(touch);
             return this;
         }
 
+        /**
+         * <p>Whether the device has a touch screen. <code>null</code> when it didn't say.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "touch", nulls = Nulls.SKIP)
         public _FinalStage touch(OptionalNullable<Boolean> touch) {
@@ -407,6 +434,10 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>The browser's reported platform. <code>null</code> when it reported none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage platform(Nullable<String> platform) {
             if (platform.isNull()) {
@@ -419,6 +450,10 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>The browser's reported platform. <code>null</code> when it reported none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage platform(Optional<String> platform) {
             if (platform.isPresent()) {
@@ -429,12 +464,19 @@ public final class RiskDeviceSignals {
             return this;
         }
 
+        /**
+         * <p>The browser's reported platform. <code>null</code> when it reported none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage platform(String platform) {
             this.platform = OptionalNullable.of(platform);
             return this;
         }
 
+        /**
+         * <p>The browser's reported platform. <code>null</code> when it reported none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "platform", nulls = Nulls.SKIP)
         public _FinalStage platform(OptionalNullable<String> platform) {

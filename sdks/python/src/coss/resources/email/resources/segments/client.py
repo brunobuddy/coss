@@ -78,6 +78,7 @@ class SegmentsClient:
         Parameters
         ----------
         name : str
+            Your name for the segment, unique in the environment.
 
         filter : SegmentFilter
 
@@ -138,6 +139,8 @@ class SegmentsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Segment:
         """
+        One segment of the API key's environment, with its filter.
+
         Parameters
         ----------
         id : str
@@ -168,6 +171,8 @@ class SegmentsClient:
 
     def remove(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> DeletedSegment:
         """
+        Deletes a segment. The contacts it matched stay.
+
         Parameters
         ----------
         id : str
@@ -205,12 +210,15 @@ class SegmentsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Segment:
         """
+        Changes a segment's name or filter. Only the fields given change.
+
         Parameters
         ----------
         id : str
             The segment's id.
 
         name : typing.Optional[str]
+            Your name for the segment, unique in the environment.
 
         filter : typing.Optional[SegmentFilter]
 
@@ -355,6 +363,7 @@ class AsyncSegmentsClient:
         Parameters
         ----------
         name : str
+            Your name for the segment, unique in the environment.
 
         filter : SegmentFilter
 
@@ -423,6 +432,8 @@ class AsyncSegmentsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Segment:
         """
+        One segment of the API key's environment, with its filter.
+
         Parameters
         ----------
         id : str
@@ -461,6 +472,8 @@ class AsyncSegmentsClient:
 
     async def remove(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> DeletedSegment:
         """
+        Deletes a segment. The contacts it matched stay.
+
         Parameters
         ----------
         id : str
@@ -506,12 +519,15 @@ class AsyncSegmentsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Segment:
         """
+        Changes a segment's name or filter. Only the fields given change.
+
         Parameters
         ----------
         id : str
             The segment's id.
 
         name : typing.Optional[str]
+            Your name for the segment, unique in the environment.
 
         filter : typing.Optional[SegmentFilter]
 

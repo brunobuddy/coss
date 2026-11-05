@@ -12,12 +12,33 @@ from .hook_event_type_object import HookEventTypeObject
 
 class HookEventType(UniversalBaseModel):
     object: HookEventTypeObject
-    name: str
-    description: typing.Optional[str] = None
+    name: str = pydantic.Field()
+    """
+    The type's name, which messages send as `event_type`.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What this event means, shown to your users. `null`: none.
+    """
+
     schema_: typing_extensions.Annotated[
-        typing.Optional[typing.Dict[str, typing.Any]], FieldMetadata(alias="schema"), pydantic.Field(alias="schema")
+        typing.Optional[typing.Dict[str, typing.Any]],
+        FieldMetadata(alias="schema"),
+        pydantic.Field(
+            alias="schema",
+            description="A JSON Schema of the payload, shown to your users (not enforced). `null`: none.",
+        ),
     ] = None
-    examples: typing.List[typing.Dict[str, typing.Any]]
+    """
+    A JSON Schema of the payload, shown to your users (not enforced). `null`: none.
+    """
+
+    examples: typing.List[typing.Dict[str, typing.Any]] = pydantic.Field()
+    """
+    Sample payloads, shown to your users. Test sends use the first.
+    """
+
     archived: bool = pydantic.Field()
     """
     Archived types are hidden from the portal and can't be subscribed to; messages of the type are still delivered to endpoints that subscribed before.

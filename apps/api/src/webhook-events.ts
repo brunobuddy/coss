@@ -15,6 +15,8 @@ import {
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
   SchedulingOauthAppWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
+  SchedulingReassignmentWebhookEvent,
 } from "@coss/scheduling/schemas";
 import { SignRequestWebhookEvent } from "@coss/sign/schemas";
 import { ReceivedSmsWebhookEvent, SmsWebhookEvent } from "@coss/sms/schemas";
@@ -44,6 +46,8 @@ const WEBHOOK_EVENTS = {
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
+  SchedulingReassignmentWebhookEvent,
   SchedulingOauthAppWebhookEvent,
 };
 

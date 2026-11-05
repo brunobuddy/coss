@@ -40,6 +40,9 @@ function toSettingsObject(
       : null,
     email_from: row?.emailFrom ?? null,
     sms_from: row?.smsFrom ?? null,
+    name_host_in_attendee_emails: row?.nameHostInAttendeeEmails ?? false,
+    host_reassignment: row?.hostReassignment ?? "off",
+    out_of_office_reasons: row?.outOfOfficeReasons ?? [],
     calendar_failure_mode: row?.calendarFailureMode ?? "hide",
     notifications: policyToWire(row?.notifications),
     email_reply_to: row?.emailReplyTo ?? null,
@@ -107,6 +110,10 @@ export async function updateSettings(
   refuseLinks(params.brand_name, "brand_name");
   checkedPrivacyUrl(params.privacy_url);
   if (params.brand_name) await screenSetup(env, params.brand_name, opts.screen, "brand_name");
+  for (const custom of params.out_of_office_reasons ?? []) {
+    refuseLinks(custom.label, "out_of_office_reasons");
+    await screenSetup(env, custom.label, opts.screen, "out_of_office_reasons");
+  }
   const reminders = params.reminders ? normalizeReminders(params.reminders) : params.reminders;
   const existing =
     reminders || params.email_from !== undefined ? await getSettingsRow(env) : undefined;
@@ -156,6 +163,15 @@ export async function updateSettings(
     ...(params.sms_from !== undefined ? { smsFrom: params.sms_from } : {}),
     ...(params.calendar_failure_mode !== undefined
       ? { calendarFailureMode: params.calendar_failure_mode }
+      : {}),
+    ...(params.name_host_in_attendee_emails !== undefined
+      ? { nameHostInAttendeeEmails: params.name_host_in_attendee_emails }
+      : {}),
+    ...(params.host_reassignment !== undefined
+      ? { hostReassignment: params.host_reassignment }
+      : {}),
+    ...(params.out_of_office_reasons !== undefined
+      ? { outOfOfficeReasons: params.out_of_office_reasons }
       : {}),
     ...(params.notifications !== undefined
       ? { notifications: policyFromWire(params.notifications) }

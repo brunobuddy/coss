@@ -66,11 +66,17 @@ public final class HookMessage {
         return id;
     }
 
+    /**
+     * @return The id of the application it was sent to.
+     */
     @JsonProperty("application_id")
     public String getApplicationId() {
         return applicationId;
     }
 
+    /**
+     * @return The event type it was sent as.
+     */
     @JsonProperty("event_type")
     public String getEventType() {
         return eventType;
@@ -137,10 +143,16 @@ public final class HookMessage {
     }
 
     public interface ApplicationIdStage {
+        /**
+         * <p>The id of the application it was sent to.</p>
+         */
         EventTypeStage applicationId(@NotNull String applicationId);
     }
 
     public interface EventTypeStage {
+        /**
+         * <p>The event type it was sent as.</p>
+         */
         CreatedAtStage eventType(@NotNull String eventType);
     }
 
@@ -214,6 +226,10 @@ public final class HookMessage {
             return this;
         }
 
+        /**
+         * <p>The id of the application it was sent to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("application_id")
         public EventTypeStage applicationId(@NotNull String applicationId) {
@@ -221,6 +237,10 @@ public final class HookMessage {
             return this;
         }
 
+        /**
+         * <p>The event type it was sent as.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("event_type")
         public CreatedAtStage eventType(@NotNull String eventType) {

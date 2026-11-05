@@ -47,7 +47,7 @@ class CreateBroadcastRequest extends JsonSerializableType
     public string $from;
 
     /**
-     * @var ?array<string> $replyTo
+     * @var ?array<string> $replyTo Addresses replies go to.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public ?array $replyTo;
@@ -71,13 +71,13 @@ class CreateBroadcastRequest extends JsonSerializableType
     public ?string $html;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain text part. Takes the same placeholders as `html`.
      */
     #[JsonProperty('text')]
     public ?string $text;
 
     /**
-     * @var ?CreateBroadcastRequestTracking $tracking
+     * @var ?CreateBroadcastRequestTracking $tracking Which opens and clicks are tracked.
      */
     #[JsonProperty('tracking')]
     public ?CreateBroadcastRequestTracking $tracking;

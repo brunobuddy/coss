@@ -35,6 +35,9 @@ public record Domain : IJsonOnDeserialized
     [JsonPropertyName("can_send")]
     public required bool CanSend { get; set; }
 
+    /// <summary>
+    /// The provider region it sends from. `null`: not set up there.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("region")]
     public string? Region { get; set; }
@@ -45,6 +48,9 @@ public record Domain : IJsonOnDeserialized
     [JsonPropertyName("mail_from_domain")]
     public required string MailFromDomain { get; set; }
 
+    /// <summary>
+    /// How setting up its bounce-handling `MAIL FROM` domain went.
+    /// </summary>
     [JsonPropertyName("mail_from_status")]
     public required DomainMailFromStatus MailFromStatus { get; set; }
 
@@ -57,14 +63,23 @@ public record Domain : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When DNS was last checked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_checked_at")]
     public DateTime? LastCheckedAt { get; set; }
 
+    /// <summary>
+    /// When it was verified. `null`: it isn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("verified_at")]
     public DateTime? VerifiedAt { get; set; }
 
+    /// <summary>
+    /// When verification failed. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("failed_at")]
     public DateTime? FailedAt { get; set; }

@@ -54,6 +54,9 @@ public final class UpdateContactRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Their first name. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_name")
     public OptionalNullable<String> getFirstName() {
@@ -63,6 +66,9 @@ public final class UpdateContactRequest {
         return firstName;
     }
 
+    /**
+     * @return Their last name. <code>null</code> removes it.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_name")
     public OptionalNullable<String> getLastName() {
@@ -165,6 +171,9 @@ public final class UpdateContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their first name. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "first_name", nulls = Nulls.SKIP)
         public Builder firstName(OptionalNullable<String> firstName) {
             this.firstName = firstName;
@@ -196,6 +205,9 @@ public final class UpdateContactRequest {
             return this;
         }
 
+        /**
+         * <p>Their last name. <code>null</code> removes it.</p>
+         */
         @JsonSetter(value = "last_name", nulls = Nulls.SKIP)
         public Builder lastName(OptionalNullable<String> lastName) {
             this.lastName = lastName;

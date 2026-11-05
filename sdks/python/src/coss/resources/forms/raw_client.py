@@ -203,6 +203,7 @@ class RawFormsClient:
         Parameters
         ----------
         name : str
+            Your name for the form, shown in the dashboard and in notifications.
 
         enabled : typing.Optional[bool]
             `false`: submissions are refused.
@@ -220,16 +221,22 @@ class RawFormsClient:
             Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
 
         spam : typing.Optional[CreateFormRequestSpam]
+            How submissions are screened. Only the fields given change.
 
         submitter : typing.Optional[CreateFormRequestSubmitter]
+            Who the submitter is, and whether they must confirm by email. Only the fields given change.
 
         notifications : typing.Optional[CreateFormRequestNotifications]
+            Emails about accepted submissions. Only the fields given change.
 
         contacts : typing.Optional[CreateFormRequestContacts]
+            Turning submissions into contacts. Only the fields given change.
 
         files : typing.Optional[CreateFormRequestFiles]
+            File uploads. Only the fields given change.
 
         hosted : typing.Optional[CreateFormRequestHosted]
+            The page coss.com can serve for this form. Only the fields given change.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -389,6 +396,8 @@ class RawFormsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Form]:
         """
+        A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+
         Parameters
         ----------
         id : str
@@ -648,6 +657,7 @@ class RawFormsClient:
             The form's id.
 
         name : typing.Optional[str]
+            Your name for the form, shown in the dashboard and in notifications.
 
         enabled : typing.Optional[bool]
             `false`: submissions are refused.
@@ -665,16 +675,22 @@ class RawFormsClient:
             Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
 
         spam : typing.Optional[UpdateFormRequestSpam]
+            How submissions are screened. Only the fields given change.
 
         submitter : typing.Optional[UpdateFormRequestSubmitter]
+            Who the submitter is, and whether they must confirm by email. Only the fields given change.
 
         notifications : typing.Optional[UpdateFormRequestNotifications]
+            Emails about accepted submissions. Only the fields given change.
 
         contacts : typing.Optional[UpdateFormRequestContacts]
+            Turning submissions into contacts. Only the fields given change.
 
         files : typing.Optional[UpdateFormRequestFiles]
+            File uploads. Only the fields given change.
 
         hosted : typing.Optional[UpdateFormRequestHosted]
+            The page coss.com can serve for this form. Only the fields given change.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1009,6 +1025,7 @@ class AsyncRawFormsClient:
         Parameters
         ----------
         name : str
+            Your name for the form, shown in the dashboard and in notifications.
 
         enabled : typing.Optional[bool]
             `false`: submissions are refused.
@@ -1026,16 +1043,22 @@ class AsyncRawFormsClient:
             Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
 
         spam : typing.Optional[CreateFormRequestSpam]
+            How submissions are screened. Only the fields given change.
 
         submitter : typing.Optional[CreateFormRequestSubmitter]
+            Who the submitter is, and whether they must confirm by email. Only the fields given change.
 
         notifications : typing.Optional[CreateFormRequestNotifications]
+            Emails about accepted submissions. Only the fields given change.
 
         contacts : typing.Optional[CreateFormRequestContacts]
+            Turning submissions into contacts. Only the fields given change.
 
         files : typing.Optional[CreateFormRequestFiles]
+            File uploads. Only the fields given change.
 
         hosted : typing.Optional[CreateFormRequestHosted]
+            The page coss.com can serve for this form. Only the fields given change.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.
@@ -1195,6 +1218,8 @@ class AsyncRawFormsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> AsyncHttpResponse[Form]:
         """
+        A form's settings, with the `endpoint` it posts to and its `hosted_url`.
+
         Parameters
         ----------
         id : str
@@ -1456,6 +1481,7 @@ class AsyncRawFormsClient:
             The form's id.
 
         name : typing.Optional[str]
+            Your name for the form, shown in the dashboard and in notifications.
 
         enabled : typing.Optional[bool]
             `false`: submissions are refused.
@@ -1473,16 +1499,22 @@ class AsyncRawFormsClient:
             Where browsers go after an HTML post. `null`: coss.com's thank-you page. A post's `_next` field overrides it when its origin is allowed.
 
         spam : typing.Optional[UpdateFormRequestSpam]
+            How submissions are screened. Only the fields given change.
 
         submitter : typing.Optional[UpdateFormRequestSubmitter]
+            Who the submitter is, and whether they must confirm by email. Only the fields given change.
 
         notifications : typing.Optional[UpdateFormRequestNotifications]
+            Emails about accepted submissions. Only the fields given change.
 
         contacts : typing.Optional[UpdateFormRequestContacts]
+            Turning submissions into contacts. Only the fields given change.
 
         files : typing.Optional[UpdateFormRequestFiles]
+            File uploads. Only the fields given change.
 
         hosted : typing.Optional[UpdateFormRequestHosted]
+            The page coss.com can serve for this form. Only the fields given change.
 
         request_options : typing.Optional[RequestOptions]
             Request-specific configuration.

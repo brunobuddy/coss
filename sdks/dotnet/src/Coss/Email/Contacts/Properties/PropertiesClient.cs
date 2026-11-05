@@ -1002,6 +1002,9 @@ public partial class PropertiesClient : IPropertiesClient
         );
     }
 
+    /// <summary>
+    /// One contact property of the API key's environment: its key, type and fallback.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Contacts.Properties.GetAsync(
     ///     new GetPropertiesRequest { Id = "cprop_01k7c8m4q2f3e9v6t5r1n0p8yz" }
@@ -1037,6 +1040,9 @@ public partial class PropertiesClient : IPropertiesClient
         );
     }
 
+    /// <summary>
+    /// Changes the value used when a contact has none for this property. Its key and type can't change.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Contacts.Properties.UpdateAsync(
     ///     new UpdateContactPropertyRequest

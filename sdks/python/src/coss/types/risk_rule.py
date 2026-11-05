@@ -15,8 +15,16 @@ from .risk_rule_object import RiskRuleObject
 class RiskRule(UniversalBaseModel):
     object: RiskRuleObject
     id: str
-    name: str
-    enabled: bool
+    name: str = pydantic.Field()
+    """
+    Your name for the rule, returned with reasons when it decides.
+    """
+
+    enabled: bool = pydantic.Field()
+    """
+    `false`: it's kept, and no assessment applies it.
+    """
+
     position: int = pydantic.Field()
     """
     Rules are tried in ascending order.
@@ -32,7 +40,11 @@ class RiskRule(UniversalBaseModel):
     `all`: every condition must hold. `any`: one is enough.
     """
 
-    conditions: typing.List[RiskRuleCondition]
+    conditions: typing.List[RiskRuleCondition] = pydantic.Field()
+    """
+    What must hold, by `match`.
+    """
+
     action: RiskDecision
     created_at: dt.datetime
     updated_at: dt.datetime

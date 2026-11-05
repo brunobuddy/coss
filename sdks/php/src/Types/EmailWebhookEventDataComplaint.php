@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class EmailWebhookEventDataComplaint extends JsonSerializableType
 {
     /**
-     * @var ?string $feedbackType
+     * @var ?string $feedbackType The kind of complaint the mailbox provider reported. `null`: not reported.
      */
     #[JsonProperty('feedback_type')]
     public ?string $feedbackType;
 
     /**
-     * @var ?string $subType
+     * @var ?string $subType The provider's finer classification. `null`: not reported.
      */
     #[JsonProperty('sub_type')]
     public ?string $subType;

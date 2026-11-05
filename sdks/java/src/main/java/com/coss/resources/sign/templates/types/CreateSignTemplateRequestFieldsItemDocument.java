@@ -128,11 +128,17 @@ public final class CreateSignTemplateRequestFieldsItemDocument {
         return y;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("width")
     public double getWidth() {
         return width;
     }
 
+    /**
+     * @return In PDF points.
+     */
     @JsonProperty("height")
     public double getHeight() {
         return height;
@@ -236,10 +242,16 @@ public final class CreateSignTemplateRequestFieldsItemDocument {
     }
 
     public interface WidthStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         HeightStage width(double width);
     }
 
     public interface HeightStage {
+        /**
+         * <p>In PDF points.</p>
+         */
         RoleStage height(double height);
     }
 
@@ -376,6 +388,10 @@ public final class CreateSignTemplateRequestFieldsItemDocument {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("width")
         public HeightStage width(double width) {
@@ -383,6 +399,10 @@ public final class CreateSignTemplateRequestFieldsItemDocument {
             return this;
         }
 
+        /**
+         * <p>In PDF points.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("height")
         public RoleStage height(double height) {

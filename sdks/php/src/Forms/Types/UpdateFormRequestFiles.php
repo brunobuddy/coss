@@ -6,6 +6,9 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * File uploads. Only the fields given change.
+ */
 class UpdateFormRequestFiles extends JsonSerializableType
 {
     /**
@@ -15,13 +18,13 @@ class UpdateFormRequestFiles extends JsonSerializableType
     public ?bool $enabled;
 
     /**
-     * @var ?int $maxFiles
+     * @var ?int $maxFiles Most files per submission. Default 3.
      */
     #[JsonProperty('max_files')]
     public ?int $maxFiles;
 
     /**
-     * @var ?int $maxFileBytes
+     * @var ?int $maxFileBytes Largest file, in bytes. Default and maximum 10 MB.
      */
     #[JsonProperty('max_file_bytes')]
     public ?int $maxFileBytes;

@@ -22,25 +22,81 @@ class SignRequest(UniversalBaseModel):
     `draft` until sent, `sent` while signers sign, then `completed` (everyone signed), `declined` (a signer declined), `canceled` or `expired`.
     """
 
-    title: str
-    message: typing.Optional[str] = None
-    signing_order: SignRequestSigningOrder
-    documents: typing.List[SignRequestDocumentsItem]
-    signers: typing.List[SignSigner]
-    fields: typing.List[SignField]
-    metadata: typing.Dict[str, str]
-    sandbox: bool
+    title: str = pydantic.Field()
+    """
+    Shown to signers.
+    """
+
+    message: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    A note to signers. `null`: none.
+    """
+
+    signing_order: SignRequestSigningOrder = pydantic.Field()
+    """
+    `parallel`: everyone at once. `sequential`: in each signer's `order`.
+    """
+
+    documents: typing.List[SignRequestDocumentsItem] = pydantic.Field()
+    """
+    The documents to sign, in order.
+    """
+
+    signers: typing.List[SignSigner] = pydantic.Field()
+    """
+    Who signs.
+    """
+
+    fields: typing.List[SignField] = pydantic.Field()
+    """
+    What each signer fills.
+    """
+
+    metadata: typing.Dict[str, str] = pydantic.Field()
+    """
+    Your own key-value pairs.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it belongs to a sandbox environment.
+    """
+
     reminder_interval_days: typing.Optional[int] = pydantic.Field(default=None)
     """
     Days between automatic reminders to email signers; `null`: none.
     """
 
-    expires_at: typing.Optional[dt.datetime] = None
-    expired_at: typing.Optional[dt.datetime] = None
-    sent_at: typing.Optional[dt.datetime] = None
-    completed_at: typing.Optional[dt.datetime] = None
-    canceled_at: typing.Optional[dt.datetime] = None
-    declined_at: typing.Optional[dt.datetime] = None
+    expires_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it expires if it isn't finished. `null`: never.
+    """
+
+    expired_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it expired. `null`: it hasn't.
+    """
+
+    sent_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was sent. `null`: still a draft.
+    """
+
+    completed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When the last signer signed. `null`: not yet.
+    """
+
+    canceled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was canceled. `null`: it wasn't.
+    """
+
+    declined_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When a signer declined it. `null`: nobody has.
+    """
+
     signed_document: typing.Optional[SignRequestSignedDocument] = pydantic.Field(default=None)
     """
     The completed document, sealed by coss.com: every document with the signatures and values filled in, and a certificate of completion. `null` until it is ready (shortly after `completed`, announced by the `sign_request.completed` webhook); download it from `GET /v1/sign/requests/{id}/signed_document`.

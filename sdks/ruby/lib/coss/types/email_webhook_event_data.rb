@@ -42,6 +42,8 @@ module Coss
       field :occurred_at, -> { String }, optional: false, nullable: false
 
       field :subaccount_id, -> { String }, optional: true, nullable: false
+
+      field :traceparent, -> { String }, optional: true, nullable: false
     end
   end
 end

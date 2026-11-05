@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Which features the plan includes.
     class BillingFeatures < Internal::Types::Model
       field :tracking_domains, -> { Internal::Types::Boolean }, optional: false, nullable: false
 

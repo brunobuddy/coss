@@ -14,6 +14,9 @@ public record BroadcastTest : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required BroadcastTestObject Object { get; set; }
 
+    /// <summary>
+    /// The ids of the test emails.
+    /// </summary>
     [JsonPropertyName("email_ids")]
     public IEnumerable<string> EmailIds { get; set; } = new List<string>();
 

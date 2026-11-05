@@ -18,6 +18,9 @@ public record SendHookTestRequest
     [JsonIgnore]
     public required string EndpointId { get; set; }
 
+    /// <summary>
+    /// The event type to send as.
+    /// </summary>
     [JsonPropertyName("event_type")]
     public required string EventType { get; set; }
 

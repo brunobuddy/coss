@@ -14,19 +14,34 @@ public record SignRequestWebhookEventDataSigner : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The signer's id.
+    /// </summary>
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The signer's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// The signer's email address.
+    /// </summary>
     [JsonPropertyName("email")]
     public required string Email { get; set; }
 
+    /// <summary>
+    /// Your own id for the signer. `null`: none given.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("client_ref")]
     public string? ClientRef { get; set; }
 
+    /// <summary>
+    /// The signer's status after the event.
+    /// </summary>
     [JsonPropertyName("status")]
     public required SignRequestWebhookEventDataSignerStatus Status { get; set; }
 

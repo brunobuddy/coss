@@ -1584,6 +1584,9 @@ public partial class AudiencesClient : IAudiencesClient
         );
     }
 
+    /// <summary>
+    /// Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Audiences.CreateAsync(new CreateAudienceRequest { Name = "Beta testers" });
     /// </code></example>
@@ -1598,6 +1601,9 @@ public partial class AudiencesClient : IAudiencesClient
         );
     }
 
+    /// <summary>
+    /// One audience of the API key's environment.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Audiences.GetAsync(
     ///     new GetAudiencesRequest { Id = "aud_01k7c8m4q2f3e9v6t5r1n0p8yz" }
@@ -1631,6 +1637,9 @@ public partial class AudiencesClient : IAudiencesClient
         );
     }
 
+    /// <summary>
+    /// Renames an audience. Its members stay.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Audiences.UpdateAsync(
     ///     new UpdateAudienceRequest { Id = "aud_01k7c8m4q2f3e9v6t5r1n0p8yz", Name = "Early access" }
@@ -1689,6 +1698,9 @@ public partial class AudiencesClient : IAudiencesClient
         );
     }
 
+    /// <summary>
+    /// Takes a contact out of the audience. The contact itself stays.
+    /// </summary>
     /// <example><code>
     /// await client.Email.Audiences.RemoveContactAsync(
     ///     new RemoveContactAudiencesRequest

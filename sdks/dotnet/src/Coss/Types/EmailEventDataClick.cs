@@ -26,6 +26,9 @@ public record EmailEventDataClick : IJsonOnDeserialized
     [JsonPropertyName("link_position")]
     public required long LinkPosition { get; set; }
 
+    /// <summary>
+    /// The client's `User-Agent`. `null`: not sent.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("user_agent")]
     public string? UserAgent { get; set; }

@@ -82,6 +82,9 @@ public final class EmailTemplate {
         return id;
     }
 
+    /**
+     * @return A name to send the template by instead of its id. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("alias")
     public OptionalNullable<String> getAlias() {
@@ -91,11 +94,17 @@ public final class EmailTemplate {
         return alias;
     }
 
+    /**
+     * @return Shown in the dashboard.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Your note about it. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -117,6 +126,9 @@ public final class EmailTemplate {
         return publishedVersion;
     }
 
+    /**
+     * @return When the published version was published. <code>null</code>: never.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("published_at")
     public OptionalNullable<OffsetDateTime> getPublishedAt() {
@@ -227,6 +239,9 @@ public final class EmailTemplate {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown in the dashboard.</p>
+         */
         HasUnpublishedChangesStage name(@NotNull String name);
     }
 
@@ -252,6 +267,9 @@ public final class EmailTemplate {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>A name to send the template by instead of its id. <code>null</code>: none.</p>
+         */
         _FinalStage alias(OptionalNullable<String> alias);
 
         _FinalStage alias(String alias);
@@ -260,6 +278,9 @@ public final class EmailTemplate {
 
         _FinalStage alias(Nullable<String> alias);
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -279,6 +300,9 @@ public final class EmailTemplate {
 
         _FinalStage publishedVersion(Nullable<Long> publishedVersion);
 
+        /**
+         * <p>When the published version was published. <code>null</code>: never.</p>
+         */
         _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt);
 
         _FinalStage publishedAt(OffsetDateTime publishedAt);
@@ -351,6 +375,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>Shown in the dashboard.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public HasUnpublishedChangesStage name(@NotNull String name) {
@@ -383,6 +411,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>When the published version was published. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Nullable<OffsetDateTime> publishedAt) {
             if (publishedAt.isNull()) {
@@ -395,6 +427,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>When the published version was published. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(Optional<OffsetDateTime> publishedAt) {
             if (publishedAt.isPresent()) {
@@ -405,12 +441,19 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>When the published version was published. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage publishedAt(OffsetDateTime publishedAt) {
             this.publishedAt = OptionalNullable.of(publishedAt);
             return this;
         }
 
+        /**
+         * <p>When the published version was published. <code>null</code>: never.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "published_at", nulls = Nulls.SKIP)
         public _FinalStage publishedAt(OptionalNullable<OffsetDateTime> publishedAt) {
@@ -468,6 +511,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -480,6 +527,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -490,12 +541,19 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Your note about it. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {
@@ -503,6 +561,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>A name to send the template by instead of its id. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage alias(Nullable<String> alias) {
             if (alias.isNull()) {
@@ -515,6 +577,10 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>A name to send the template by instead of its id. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage alias(Optional<String> alias) {
             if (alias.isPresent()) {
@@ -525,12 +591,19 @@ public final class EmailTemplate {
             return this;
         }
 
+        /**
+         * <p>A name to send the template by instead of its id. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage alias(String alias) {
             this.alias = OptionalNullable.of(alias);
             return this;
         }
 
+        /**
+         * <p>A name to send the template by instead of its id. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "alias", nulls = Nulls.SKIP)
         public _FinalStage alias(OptionalNullable<String> alias) {

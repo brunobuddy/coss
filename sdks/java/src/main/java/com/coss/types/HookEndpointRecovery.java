@@ -78,16 +78,25 @@ public final class HookEndpointRecovery {
         return id;
     }
 
+    /**
+     * @return The id of the endpoint being recovered.
+     */
     @JsonProperty("endpoint_id")
     public String getEndpointId() {
         return endpointId;
     }
 
+    /**
+     * @return Deliveries of messages sent from this time on are requeued.
+     */
     @JsonProperty("since")
     public OffsetDateTime getSince() {
         return since;
     }
 
+    /**
+     * @return Up to this time: when the recovery was asked for.
+     */
     @JsonProperty("until")
     public OffsetDateTime getUntil() {
         return until;
@@ -114,6 +123,9 @@ public final class HookEndpointRecovery {
         return createdAt;
     }
 
+    /**
+     * @return When requeueing finished. <code>null</code>: still <code>pending</code>.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("completed_at")
     public OptionalNullable<OffsetDateTime> getCompletedAt() {
@@ -186,14 +198,23 @@ public final class HookEndpointRecovery {
     }
 
     public interface EndpointIdStage {
+        /**
+         * <p>The id of the endpoint being recovered.</p>
+         */
         SinceStage endpointId(@NotNull String endpointId);
     }
 
     public interface SinceStage {
+        /**
+         * <p>Deliveries of messages sent from this time on are requeued.</p>
+         */
         UntilStage since(@NotNull OffsetDateTime since);
     }
 
     public interface UntilStage {
+        /**
+         * <p>Up to this time: when the recovery was asked for.</p>
+         */
         StatusStage until(@NotNull OffsetDateTime until);
     }
 
@@ -222,6 +243,9 @@ public final class HookEndpointRecovery {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When requeueing finished. <code>null</code>: still <code>pending</code>.</p>
+         */
         _FinalStage completedAt(OptionalNullable<OffsetDateTime> completedAt);
 
         _FinalStage completedAt(OffsetDateTime completedAt);
@@ -293,6 +317,10 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>The id of the endpoint being recovered.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("endpoint_id")
         public SinceStage endpointId(@NotNull String endpointId) {
@@ -300,6 +328,10 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>Deliveries of messages sent from this time on are requeued.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("since")
         public UntilStage since(@NotNull OffsetDateTime since) {
@@ -307,6 +339,10 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>Up to this time: when the recovery was asked for.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("until")
         public StatusStage until(@NotNull OffsetDateTime until) {
@@ -343,6 +379,10 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>When requeueing finished. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(Nullable<OffsetDateTime> completedAt) {
             if (completedAt.isNull()) {
@@ -355,6 +395,10 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>When requeueing finished. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(Optional<OffsetDateTime> completedAt) {
             if (completedAt.isPresent()) {
@@ -365,12 +409,19 @@ public final class HookEndpointRecovery {
             return this;
         }
 
+        /**
+         * <p>When requeueing finished. <code>null</code>: still <code>pending</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage completedAt(OffsetDateTime completedAt) {
             this.completedAt = OptionalNullable.of(completedAt);
             return this;
         }
 
+        /**
+         * <p>When requeueing finished. <code>null</code>: still <code>pending</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "completed_at", nulls = Nulls.SKIP)
         public _FinalStage completedAt(OptionalNullable<OffsetDateTime> completedAt) {

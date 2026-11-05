@@ -1,5 +1,5 @@
 import { getBookingOverview, listBookingNotifications, SchedulingError } from "@coss/scheduling";
-import type { BookingObjectOutput } from "@coss/scheduling/schemas";
+import { type BookingObjectOutput, REASSIGNMENT_REASON_LABELS } from "@coss/scheduling/schemas";
 import {
   Table,
   TableBody,
@@ -20,6 +20,7 @@ import { schedulingPageContext } from "../page-context";
 import {
   CancelBookingButton,
   MarkNoShowButton,
+  OpenTeamPageButton,
   RescheduleBookingButton,
 } from "../scheduling-actions";
 
@@ -37,6 +38,7 @@ const EVENT_LABEL: Record<string, string> = {
   "scheduling.booking.external_conflict": "Conflict found on a calendar",
   "scheduling.booking.calendar_write_failed": "Couldn't update a calendar",
   "scheduling.booking.location_ready": "Location set",
+  "scheduling.booking.reassigned": "Given to another host",
   "scheduling.booking.started": "Started",
   "scheduling.booking.ended": "Ended",
   "scheduling.booking.reminder": "Reminder webhook",
@@ -79,6 +81,7 @@ const ACTOR_LABEL = {
   host_session: "Host",
   booker_session: "Booker",
   manage_session: "Attendee",
+  manager_session: "Team lead",
   system: "coss.com",
 } as const;
 
@@ -123,17 +126,19 @@ export default async function BookingPage({
     !booking.group_session &&
     Date.parse(booking.end) > Date.now();
   const metadataEntries = Object.entries(booking.metadata);
+  const canUpdate = !ended && can({ scheduling: ["update"] });
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         actions={
-          !ended && can({ scheduling: ["update"] }) ? (
+          canUpdate ? (
             <div className="flex gap-2">
               {started && !booking.no_show_at ? (
                 <MarkNoShowButton {...target} bookingId={booking.id} />
               ) : null}
               {canMove ? <RescheduleBookingButton {...target} bookingId={booking.id} /> : null}
+              <OpenTeamPageButton {...target} bookingId={booking.id} label="Reassign" />
               <CancelBookingButton {...target} bookingId={booking.id} />
             </div>
           ) : null
@@ -310,7 +315,16 @@ export default async function BookingPage({
             {events.map((event) => (
               <TableRow key={event.id}>
                 <TableCell>{formatDateTime(event.occurredAt)}</TableCell>
-                <TableCell>{EVENT_LABEL[event.type] ?? event.type}</TableCell>
+                <TableCell>
+                  {EVENT_LABEL[event.type] ?? event.type}
+                  {event.reasonCode ? (
+                    <div className="text-muted-foreground text-xs">
+                      {(REASSIGNMENT_REASON_LABELS as Record<string, string>)[event.reasonCode] ??
+                        event.reasonCode}
+                      {event.note ? `: ${event.note}` : ""}
+                    </div>
+                  ) : null}
+                </TableCell>
                 <TableCell>{ACTOR_LABEL[event.actor]}</TableCell>
               </TableRow>
             ))}

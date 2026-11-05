@@ -58,6 +58,9 @@ public final class RiskCalibration {
         return object;
     }
 
+    /**
+     * @return How many days back it looks.
+     */
     @JsonProperty("window_days")
     public long getWindowDays() {
         return windowDays;
@@ -79,11 +82,17 @@ public final class RiskCalibration {
         return labeled;
     }
 
+    /**
+     * @return How each reason did against your feedback.
+     */
     @JsonProperty("reasons")
     public List<RiskCalibrationReason> getReasons() {
         return reasons;
     }
 
+    /**
+     * @return How each rule did against your feedback.
+     */
     @JsonProperty("rules")
     public List<RiskCalibrationRule> getRules() {
         return rules;
@@ -130,6 +139,9 @@ public final class RiskCalibration {
     }
 
     public interface WindowDaysStage {
+        /**
+         * <p>How many days back it looks.</p>
+         */
         AssessmentsStage windowDays(long windowDays);
     }
 
@@ -154,12 +166,18 @@ public final class RiskCalibration {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>How each reason did against your feedback.</p>
+         */
         _FinalStage reasons(List<RiskCalibrationReason> reasons);
 
         _FinalStage addReasons(RiskCalibrationReason reasons);
 
         _FinalStage addAllReasons(List<RiskCalibrationReason> reasons);
 
+        /**
+         * <p>How each rule did against your feedback.</p>
+         */
         _FinalStage rules(List<RiskCalibrationRule> rules);
 
         _FinalStage addRules(RiskCalibrationRule rules);
@@ -205,6 +223,10 @@ public final class RiskCalibration {
             return this;
         }
 
+        /**
+         * <p>How many days back it looks.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("window_days")
         public AssessmentsStage windowDays(long windowDays) {
@@ -234,6 +256,10 @@ public final class RiskCalibration {
             return this;
         }
 
+        /**
+         * <p>How each rule did against your feedback.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllRules(List<RiskCalibrationRule> rules) {
             if (rules != null) {
@@ -242,12 +268,19 @@ public final class RiskCalibration {
             return this;
         }
 
+        /**
+         * <p>How each rule did against your feedback.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addRules(RiskCalibrationRule rules) {
             this.rules.add(rules);
             return this;
         }
 
+        /**
+         * <p>How each rule did against your feedback.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "rules", nulls = Nulls.SKIP)
         public _FinalStage rules(List<RiskCalibrationRule> rules) {
@@ -258,6 +291,10 @@ public final class RiskCalibration {
             return this;
         }
 
+        /**
+         * <p>How each reason did against your feedback.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllReasons(List<RiskCalibrationReason> reasons) {
             if (reasons != null) {
@@ -266,12 +303,19 @@ public final class RiskCalibration {
             return this;
         }
 
+        /**
+         * <p>How each reason did against your feedback.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addReasons(RiskCalibrationReason reasons) {
             this.reasons.add(reasons);
             return this;
         }
 
+        /**
+         * <p>How each reason did against your feedback.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reasons", nulls = Nulls.SKIP)
         public _FinalStage reasons(List<RiskCalibrationReason> reasons) {

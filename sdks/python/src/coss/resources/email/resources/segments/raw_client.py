@@ -178,6 +178,7 @@ class RawSegmentsClient:
         Parameters
         ----------
         name : str
+            Your name for the segment, unique in the environment.
 
         filter : SegmentFilter
 
@@ -328,6 +329,8 @@ class RawSegmentsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> HttpResponse[Segment]:
         """
+        One segment of the API key's environment, with its filter.
+
         Parameters
         ----------
         id : str
@@ -446,6 +449,8 @@ class RawSegmentsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> HttpResponse[DeletedSegment]:
         """
+        Deletes a segment. The contacts it matched stay.
+
         Parameters
         ----------
         id : str
@@ -569,12 +574,15 @@ class RawSegmentsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Segment]:
         """
+        Changes a segment's name or filter. Only the fields given change.
+
         Parameters
         ----------
         id : str
             The segment's id.
 
         name : typing.Optional[str]
+            Your name for the segment, unique in the environment.
 
         filter : typing.Optional[SegmentFilter]
 
@@ -1021,6 +1029,7 @@ class AsyncRawSegmentsClient:
         Parameters
         ----------
         name : str
+            Your name for the segment, unique in the environment.
 
         filter : SegmentFilter
 
@@ -1173,6 +1182,8 @@ class AsyncRawSegmentsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[Segment]:
         """
+        One segment of the API key's environment, with its filter.
+
         Parameters
         ----------
         id : str
@@ -1291,6 +1302,8 @@ class AsyncRawSegmentsClient:
         self, id: str, *, request_options: typing.Optional[RequestOptions] = None
     ) -> AsyncHttpResponse[DeletedSegment]:
         """
+        Deletes a segment. The contacts it matched stay.
+
         Parameters
         ----------
         id : str
@@ -1414,12 +1427,15 @@ class AsyncRawSegmentsClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Segment]:
         """
+        Changes a segment's name or filter. Only the fields given change.
+
         Parameters
         ----------
         id : str
             The segment's id.
 
         name : typing.Optional[str]
+            Your name for the segment, unique in the environment.
 
         filter : typing.Optional[SegmentFilter]
 

@@ -137,6 +137,9 @@ public final class CreateBroadcastRequest {
         return from;
     }
 
+    /**
+     * @return Addresses replies go to.
+     */
     @JsonProperty("reply_to")
     public Optional<List<String>> getReplyTo() {
         return replyTo;
@@ -166,11 +169,17 @@ public final class CreateBroadcastRequest {
         return html;
     }
 
+    /**
+     * @return The plain text part. Takes the same placeholders as <code>html</code>.
+     */
     @JsonProperty("text")
     public Optional<String> getText() {
         return text;
     }
 
+    /**
+     * @return Which opens and clicks are tracked.
+     */
     @JsonProperty("tracking")
     public Optional<CreateBroadcastRequestTracking> getTracking() {
         return tracking;
@@ -313,6 +322,9 @@ public final class CreateBroadcastRequest {
 
         _FinalStage topic(String topic);
 
+        /**
+         * <p>Addresses replies go to.</p>
+         */
         _FinalStage replyTo(Optional<List<String>> replyTo);
 
         _FinalStage replyTo(List<String> replyTo);
@@ -331,10 +343,16 @@ public final class CreateBroadcastRequest {
 
         _FinalStage html(String html);
 
+        /**
+         * <p>The plain text part. Takes the same placeholders as <code>html</code>.</p>
+         */
         _FinalStage text(Optional<String> text);
 
         _FinalStage text(String text);
 
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         */
         _FinalStage tracking(Optional<CreateBroadcastRequestTracking> tracking);
 
         _FinalStage tracking(CreateBroadcastRequestTracking tracking);
@@ -507,12 +525,19 @@ public final class CreateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage tracking(CreateBroadcastRequestTracking tracking) {
             this.tracking = Optional.ofNullable(tracking);
             return this;
         }
 
+        /**
+         * <p>Which opens and clicks are tracked.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "tracking", nulls = Nulls.SKIP)
         public _FinalStage tracking(Optional<CreateBroadcastRequestTracking> tracking) {
@@ -520,12 +545,19 @@ public final class CreateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>The plain text part. Takes the same placeholders as <code>html</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(String text) {
             this.text = Optional.ofNullable(text);
             return this;
         }
 
+        /**
+         * <p>The plain text part. Takes the same placeholders as <code>html</code>.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public _FinalStage text(Optional<String> text) {
@@ -573,12 +605,19 @@ public final class CreateBroadcastRequest {
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage replyTo(List<String> replyTo) {
             this.replyTo = Optional.ofNullable(replyTo);
             return this;
         }
 
+        /**
+         * <p>Addresses replies go to.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reply_to", nulls = Nulls.SKIP)
         public _FinalStage replyTo(Optional<List<String>> replyTo) {

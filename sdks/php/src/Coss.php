@@ -20,6 +20,7 @@ use Coss\LogDrains\LogDrainsClient;
 use Coss\Inboxes\InboxesClient;
 use Coss\Risk\RiskClient;
 use Coss\Hooks\HooksClient;
+use Coss\Scheduling\SchedulingClient;
 use Coss\Sign\SignClient;
 use Psr\Http\Client\ClientInterface;
 use Coss\Core\Client\RawClient;
@@ -118,6 +119,11 @@ class Coss
     public HooksClient $hooks;
 
     /**
+     * @var SchedulingClient $scheduling
+     */
+    public SchedulingClient $scheduling;
+
+    /**
      * @var SignClient $sign
      */
     public SignClient $sign;
@@ -160,8 +166,8 @@ class Coss
             'Authorization' => "Bearer $apiKey",
             'X-Fern-Language' => 'PHP',
             'X-Fern-SDK-Name' => 'Coss',
-            'X-Fern-SDK-Version' => '0.2.0',
-            'User-Agent' => 'coss-php/0.2.0',
+            'X-Fern-SDK-Version' => '0.3.0',
+            'User-Agent' => 'coss-php/0.3.0',
         ];
         if ($apiVersion != null) {
             $defaultHeaders['Coss-Version'] = $apiVersion;
@@ -196,6 +202,7 @@ class Coss
         $this->inboxes = new InboxesClient($this->client, $this->options);
         $this->risk = new RiskClient($this->client, $this->options);
         $this->hooks = new HooksClient($this->client, $this->options);
+        $this->scheduling = new SchedulingClient($this->client, $this->options);
         $this->sign = new SignClient($this->client, $this->options);
     }
 

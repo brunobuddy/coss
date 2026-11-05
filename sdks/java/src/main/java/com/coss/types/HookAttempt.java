@@ -78,16 +78,25 @@ public final class HookAttempt {
         return id;
     }
 
+    /**
+     * @return The id of the delivery this attempt belongs to.
+     */
     @JsonProperty("delivery_id")
     public String getDeliveryId() {
         return deliveryId;
     }
 
+    /**
+     * @return The id of the endpoint it was sent to.
+     */
     @JsonProperty("endpoint_id")
     public String getEndpointId() {
         return endpointId;
     }
 
+    /**
+     * @return When the attempt ran.
+     */
     @JsonProperty("attempted_at")
     public OffsetDateTime getAttemptedAt() {
         return attemptedAt;
@@ -105,11 +114,17 @@ public final class HookAttempt {
         return statusCode;
     }
 
+    /**
+     * @return How long it took, in milliseconds.
+     */
     @JsonProperty("duration_ms")
     public long getDurationMs() {
         return durationMs;
     }
 
+    /**
+     * @return Why it failed. <code>null</code>: it didn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("error")
     public OptionalNullable<String> getError() {
@@ -206,18 +221,30 @@ public final class HookAttempt {
     }
 
     public interface DeliveryIdStage {
+        /**
+         * <p>The id of the delivery this attempt belongs to.</p>
+         */
         EndpointIdStage deliveryId(@NotNull String deliveryId);
     }
 
     public interface EndpointIdStage {
+        /**
+         * <p>The id of the endpoint it was sent to.</p>
+         */
         AttemptedAtStage endpointId(@NotNull String endpointId);
     }
 
     public interface AttemptedAtStage {
+        /**
+         * <p>When the attempt ran.</p>
+         */
         DurationMsStage attemptedAt(@NotNull OffsetDateTime attemptedAt);
     }
 
     public interface DurationMsStage {
+        /**
+         * <p>How long it took, in milliseconds.</p>
+         */
         _FinalStage durationMs(long durationMs);
     }
 
@@ -239,6 +266,9 @@ public final class HookAttempt {
 
         _FinalStage statusCode(Nullable<Long> statusCode);
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         */
         _FinalStage error(OptionalNullable<String> error);
 
         _FinalStage error(String error);
@@ -319,6 +349,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>The id of the delivery this attempt belongs to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("delivery_id")
         public EndpointIdStage deliveryId(@NotNull String deliveryId) {
@@ -326,6 +360,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>The id of the endpoint it was sent to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("endpoint_id")
         public AttemptedAtStage endpointId(@NotNull String endpointId) {
@@ -333,6 +371,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>When the attempt ran.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("attempted_at")
         public DurationMsStage attemptedAt(@NotNull OffsetDateTime attemptedAt) {
@@ -340,6 +382,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("duration_ms")
         public _FinalStage durationMs(long durationMs) {
@@ -397,6 +443,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Nullable<String> error) {
             if (error.isNull()) {
@@ -409,6 +459,10 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Optional<String> error) {
             if (error.isPresent()) {
@@ -419,12 +473,19 @@ public final class HookAttempt {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(String error) {
             this.error = OptionalNullable.of(error);
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "error", nulls = Nulls.SKIP)
         public _FinalStage error(OptionalNullable<String> error) {

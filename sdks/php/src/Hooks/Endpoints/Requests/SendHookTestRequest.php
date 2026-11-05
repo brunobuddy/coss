@@ -9,7 +9,7 @@ use Coss\Core\Types\ArrayType;
 class SendHookTestRequest extends JsonSerializableType
 {
     /**
-     * @var string $eventType
+     * @var string $eventType The event type to send as.
      */
     #[JsonProperty('event_type')]
     public string $eventType;

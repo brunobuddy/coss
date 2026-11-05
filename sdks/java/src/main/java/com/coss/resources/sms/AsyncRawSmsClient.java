@@ -345,18 +345,30 @@ public class AsyncRawSmsClient {
         return future;
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<CossHttpResponse<Sms>> get(String id) {
         return get(id, GetSmsRequest.builder().build());
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<CossHttpResponse<Sms>> get(String id, RequestOptions requestOptions) {
         return get(id, GetSmsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<CossHttpResponse<Sms>> get(String id, GetSmsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<CossHttpResponse<Sms>> get(
             String id, GetSmsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

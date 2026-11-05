@@ -86,6 +86,9 @@ public final class UpdateFormRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the form, shown in the dashboard and in notifications.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -139,31 +142,49 @@ public final class UpdateFormRequest {
         return redirectUrl;
     }
 
+    /**
+     * @return How submissions are screened. Only the fields given change.
+     */
     @JsonProperty("spam")
     public Optional<UpdateFormRequestSpam> getSpam() {
         return spam;
     }
 
+    /**
+     * @return Who the submitter is, and whether they must confirm by email. Only the fields given change.
+     */
     @JsonProperty("submitter")
     public Optional<UpdateFormRequestSubmitter> getSubmitter() {
         return submitter;
     }
 
+    /**
+     * @return Emails about accepted submissions. Only the fields given change.
+     */
     @JsonProperty("notifications")
     public Optional<UpdateFormRequestNotifications> getNotifications() {
         return notifications;
     }
 
+    /**
+     * @return Turning submissions into contacts. Only the fields given change.
+     */
     @JsonProperty("contacts")
     public Optional<UpdateFormRequestContacts> getContacts() {
         return contacts;
     }
 
+    /**
+     * @return File uploads. Only the fields given change.
+     */
     @JsonProperty("files")
     public Optional<UpdateFormRequestFiles> getFiles() {
         return files;
     }
 
+    /**
+     * @return The page coss.com can serve for this form. Only the fields given change.
+     */
     @JsonProperty("hosted")
     public Optional<UpdateFormRequestHosted> getHosted() {
         return hosted;
@@ -280,6 +301,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the form, shown in the dashboard and in notifications.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;
@@ -401,6 +425,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>How submissions are screened. Only the fields given change.</p>
+         */
         @JsonSetter(value = "spam", nulls = Nulls.SKIP)
         public Builder spam(Optional<UpdateFormRequestSpam> spam) {
             this.spam = spam;
@@ -412,6 +439,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Who the submitter is, and whether they must confirm by email. Only the fields given change.</p>
+         */
         @JsonSetter(value = "submitter", nulls = Nulls.SKIP)
         public Builder submitter(Optional<UpdateFormRequestSubmitter> submitter) {
             this.submitter = submitter;
@@ -423,6 +453,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Emails about accepted submissions. Only the fields given change.</p>
+         */
         @JsonSetter(value = "notifications", nulls = Nulls.SKIP)
         public Builder notifications(Optional<UpdateFormRequestNotifications> notifications) {
             this.notifications = notifications;
@@ -434,6 +467,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>Turning submissions into contacts. Only the fields given change.</p>
+         */
         @JsonSetter(value = "contacts", nulls = Nulls.SKIP)
         public Builder contacts(Optional<UpdateFormRequestContacts> contacts) {
             this.contacts = contacts;
@@ -445,6 +481,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>File uploads. Only the fields given change.</p>
+         */
         @JsonSetter(value = "files", nulls = Nulls.SKIP)
         public Builder files(Optional<UpdateFormRequestFiles> files) {
             this.files = files;
@@ -456,6 +495,9 @@ public final class UpdateFormRequest {
             return this;
         }
 
+        /**
+         * <p>The page coss.com can serve for this form. Only the fields given change.</p>
+         */
         @JsonSetter(value = "hosted", nulls = Nulls.SKIP)
         public Builder hosted(Optional<UpdateFormRequestHosted> hosted) {
             this.hosted = hosted;

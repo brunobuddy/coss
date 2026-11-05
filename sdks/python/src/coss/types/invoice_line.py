@@ -13,15 +13,31 @@ from .invoice_line_period import InvoiceLinePeriod
 class InvoiceLine(UniversalBaseModel):
     object: InvoiceLineObject
     id: str
-    kind: InvoiceLineKind
-    description: str
-    meter: typing.Optional[InvoiceLineMeter] = pydantic.Field(default=None)
+    kind: InvoiceLineKind = pydantic.Field()
     """
-    What is counted, e.g. `email.recipients`.
+    What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.
     """
 
-    dimension: typing.Optional[str] = None
-    quantity: typing.Optional[int] = None
+    description: str = pydantic.Field()
+    """
+    The line as it reads on the invoice.
+    """
+
+    meter: typing.Optional[InvoiceLineMeter] = pydantic.Field(default=None)
+    """
+    The meter of a `usage` line. `null` for other lines.
+    """
+
+    dimension: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    What the meter is split by, such as `country=US`. `null`: not split.
+    """
+
+    quantity: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Units on this line. `null` when it isn't priced by the unit.
+    """
+
     included_quantity: typing.Optional[int] = pydantic.Field(default=None)
     """
     Units covered by an allowance or committed volume (not charged).
@@ -37,7 +53,10 @@ class InvoiceLine(UniversalBaseModel):
     An amount in cents (USD).
     """
 
-    period: InvoiceLinePeriod
+    period: InvoiceLinePeriod = pydantic.Field()
+    """
+    What period it covers.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -31,11 +31,17 @@ public final class SignTemplateRolesItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The role's id within the template.
+     */
     @JsonProperty("key")
     public String getKey() {
         return key;
     }
 
+    /**
+     * @return Shown in the builder, e.g. <code>Client</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -71,12 +77,18 @@ public final class SignTemplateRolesItem {
     }
 
     public interface KeyStage {
+        /**
+         * <p>The role's id within the template.</p>
+         */
         NameStage key(@NotNull String key);
 
         Builder from(SignTemplateRolesItem other);
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown in the builder, e.g. <code>Client</code>.</p>
+         */
         _FinalStage name(@NotNull String name);
     }
 
@@ -106,6 +118,10 @@ public final class SignTemplateRolesItem {
             return this;
         }
 
+        /**
+         * <p>The role's id within the template.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("key")
         public NameStage key(@NotNull String key) {
@@ -113,6 +129,10 @@ public final class SignTemplateRolesItem {
             return this;
         }
 
+        /**
+         * <p>Shown in the builder, e.g. <code>Client</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public _FinalStage name(@NotNull String name) {

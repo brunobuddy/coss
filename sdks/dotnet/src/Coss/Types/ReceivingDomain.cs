@@ -35,6 +35,9 @@ public record ReceivingDomain : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When it was last checked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_checked_at")]
     public DateTime? LastCheckedAt { get; set; }

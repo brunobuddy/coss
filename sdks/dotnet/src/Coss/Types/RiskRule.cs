@@ -17,9 +17,15 @@ public record RiskRule : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Your name for the rule, returned with reasons when it decides.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// `false`: it's kept, and no assessment applies it.
+    /// </summary>
     [JsonPropertyName("enabled")]
     public required bool Enabled { get; set; }
 
@@ -41,6 +47,9 @@ public record RiskRule : IJsonOnDeserialized
     [JsonPropertyName("match")]
     public required RiskRuleMatch Match { get; set; }
 
+    /// <summary>
+    /// What must hold, by `match`.
+    /// </summary>
     [JsonPropertyName("conditions")]
     public IEnumerable<RiskRuleCondition> Conditions { get; set; } = new List<RiskRuleCondition>();
 

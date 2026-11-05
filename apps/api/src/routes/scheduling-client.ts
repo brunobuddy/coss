@@ -5,42 +5,66 @@
  * checked against the environment's allowed origins. Each session reaches only its own scope.
  * Outside `/v1` and the OpenAPI document: `coss/scheduling` is its client.
  */
+import { db } from "@coss/db";
 import {
   type AuthenticatedSession,
   approveBooking,
+  assertManagedRun,
   attendeeEmailedOnConfirm,
   authenticateSchedulingSession,
+  awayNoticeOf,
   cancelBooking,
+  cancelReassignment,
   connectCaldav,
   connectSimulated,
   createBooking,
+  createOutOfOffice,
+  createReassignment,
   createSchedule,
   declineBooking,
+  deleteOutOfOffice,
   disconnectCalendar,
   fixedAttendee,
   getBooking,
   getEventType,
   getHost,
   getLogoRow,
+  getOutOfOffice,
+  getReassignment,
   getSettingsRow,
   hasOauthApp,
   listConnections,
   listEventTypeSlots,
+  listManagedBookings,
+  listOutOfOffice,
+  listOutOfOfficeConflicts,
+  listPossibleDelegates,
+  listReassignCandidates,
+  listReassignmentItems,
+  listReassignments,
   listRecentHostBookings,
   listRescheduleSlots,
   listSchedules,
   listUpcomingHostBookings,
   logoDataUrl,
+  managedHosts,
   markNoShow,
+  previewReassignment,
+  reassignBooking,
   rescheduleBooking,
+  resolveHost,
   type SchedulingDeps,
   SchedulingError,
+  schedulingSessionRefused,
   sessionActor,
   sessionAttributes,
   startCalendarAuthorization,
   toConnectionObject,
+  toManagedHost,
+  undoReassignment,
   updateCalendar,
   updateHost,
+  updateOutOfOffice,
   updateSchedule,
   zoomConnectable,
 } from "@coss/scheduling";
@@ -49,11 +73,21 @@ import {
   CancelBookingRequest,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
+  CreateReassignmentRequest,
+  HostOutOfOfficeRequest,
+  ManagerOutOfOfficeRequest,
+  OUT_OF_OFFICE_PRESET_REASONS,
+  OUT_OF_OFFICE_REASON_LABELS,
+  PreviewReassignmentRequest,
+  ReassignBookingRequest,
   RescheduleBookingRequest,
+  UndoReassignmentRequest,
   UpdateCalendarRequest,
   UpdateHostLocationsRequest,
+  UpdateOutOfOfficeRequest,
   UpsertScheduleRequest,
 } from "@coss/scheduling/schemas";
+import { memberStillHolds } from "@coss/tenancy";
 import { type Context, Hono, type MiddlewareHandler } from "hono";
 import { z } from "zod";
 import { ApiError } from "../errors.ts";
@@ -115,6 +149,17 @@ function parseJson(text: string): unknown {
 }
 
 const notFound = () => new SchedulingError("not_found", "That isn't available from this link.");
+
+const HostReassignRequest = z.strictObject({
+  to_host: z.string(),
+  note: z.string().max(500).optional(),
+});
+
+/** Moving bookings is its own step from a browser, with its own rules about who can. */
+const SessionOutOfOfficeChange = UpdateOutOfOfficeRequest.omit({
+  existing_bookings: true,
+  reassign: true,
+});
 
 /** What a browser booking may say: the event type and host come from the session. */
 const ClientBookingRequest = CreateBookingRequest.omit({
@@ -228,6 +273,23 @@ export function createSchedulingClientRoutes(opts: {
 
   router.use(authenticated);
 
+  // A team page a dashboard member opened reaches every host, on their say-so, so it lasts only as
+  // long as they could still do that. Refused like any session that's over.
+  router.use("/manager/*", async (c, next) => {
+    const { session, env } = c.var.session;
+    if (
+      session.createdByUserId &&
+      !(await memberStillHolds({
+        organizationId: env.organizationId,
+        userId: session.createdByUserId,
+        permissions: { scheduling: ["update"] },
+      }))
+    ) {
+      throw schedulingSessionRefused();
+    }
+    await next();
+  });
+
   const hostOf = (c: Context<ClientEnv>): string => {
     const { session } = c.var.session;
     if (session.kind !== "host" || !session.hostId) throw notFound();
@@ -316,12 +378,27 @@ export function createSchedulingClientRoutes(opts: {
         ...base,
         host: { id: host.id, name: host.name, time_zone: host.time_zone },
         zoom_available: zoomAvailable,
+        can_reassign: settings?.hostReassignment === "eligible",
         own_oauth_app: ownOauthApp,
         privacy_url: settings?.privacyUrl ?? null,
       });
     }
     return c.json(base);
   });
+
+  /** Only when one person can be booked here: "they're away" can't be said of a pool. */
+  const awayNoticeFor = async (
+    env: AuthenticatedSession["env"],
+    eventType: string,
+    pinnedHost: string | null,
+  ) => {
+    const now = deps.now?.() ?? new Date();
+    if (pinnedHost) return awayNoticeOf(env, pinnedHost, now);
+    const { hosts, kind } = await getEventType(env, eventType);
+    const [only] = hosts;
+    if (kind === "pool" || hosts.length !== 1 || !only) return null;
+    return awayNoticeOf(env, only.host, now);
+  };
 
   const slotWindow = (c: Context<ClientEnv>) => {
     const query = SlotQuery.safeParse({
@@ -342,6 +419,7 @@ export function createSchedulingClientRoutes(opts: {
   const slotList = (
     c: Context<ClientEnv>,
     slots: { startMs: number; endMs: number; seatsLeft?: number | null }[],
+    extra: Record<string, unknown> = {},
   ) =>
     c.json({
       object: "list" as const,
@@ -351,25 +429,8 @@ export function createSchedulingClientRoutes(opts: {
         seats_left: slot.seatsLeft ?? null,
       })),
       has_more: false,
+      ...extra,
     });
-
-  const slotsFor = async (
-    c: Context<ClientEnv>,
-    eventType: string,
-    hostRefs: readonly string[] | undefined,
-    attributes?: Record<string, string | string[]>,
-  ) => {
-    await limitSchedulingSlots(c.var.rateLimiter, c.var.session.env);
-    return slotList(
-      c,
-      await listEventTypeSlots(c.var.session.env, {
-        ...slotWindow(c),
-        eventTypeRef: eventType,
-        hostRefs,
-        attributes,
-      }),
-    );
-  };
 
   /** Where this booking could move to: its own hosts, length and buffers. */
   const rescheduleSlots = async (c: Context<ClientEnv>, id: string) => {
@@ -378,14 +439,19 @@ export function createSchedulingClientRoutes(opts: {
     return slotList(c, await listRescheduleSlots(c.var.session.env, id, { fromMs, toMs, nowMs }));
   };
 
-  router.get("/slots", async (c) =>
-    slotsFor(
-      c,
-      eventTypeOf(c),
-      c.var.session.session.hostId ? [c.var.session.session.hostId] : undefined,
-      sessionAttributes(c.var.session.session, deps),
-    ),
-  );
+  router.get("/slots", async (c) => {
+    // The session's kind first: the wrong one is a 404, whatever the query says.
+    const eventTypeRef = eventTypeOf(c);
+    const { env, session } = c.var.session;
+    await limitSchedulingSlots(c.var.rateLimiter, env);
+    const slots = await listEventTypeSlots(env, {
+      ...slotWindow(c),
+      eventTypeRef,
+      hostRefs: session.hostId ? [session.hostId] : undefined,
+      attributes: sessionAttributes(session, deps),
+    });
+    return slotList(c, slots, { away: await awayNoticeFor(env, eventTypeRef, session.hostId) });
+  });
 
   router.post("/bookings", async (c) => {
     const eventType = eventTypeOf(c);
@@ -557,6 +623,85 @@ export function createSchedulingClientRoutes(opts: {
     return c.json({ object: "list" as const, data, has_more: false });
   });
 
+  // A host's own time away. Whose it is comes from the session, so it never needs saying.
+  router.get("/host/out_of_office", async (c) => {
+    const hostId = hostOf(c);
+    const { env } = c.var.session;
+    const page = await listOutOfOffice(
+      env,
+      { hostIds: [hostId], fromMs: (deps.now?.() ?? new Date()).getTime(), limit: 100 },
+      deps,
+    );
+    const settings = await getSettingsRow(env);
+    return c.json({
+      object: "list" as const,
+      data: page.data,
+      has_more: page.hasMore,
+      reasons: [
+        ...OUT_OF_OFFICE_PRESET_REASONS.map((key) => ({
+          key,
+          label: OUT_OF_OFFICE_REASON_LABELS[key],
+        })),
+        ...(settings?.outOfOfficeReasons ?? []),
+      ],
+    });
+  });
+
+  /** Who they can name to cover for them. Ids and names, and only of people they share work with. */
+  const delegatesFor = async (env: AuthenticatedSession["env"], hostId: string) =>
+    (await listPossibleDelegates(env, hostId)).map((host) => host.id);
+
+  router.get("/host/delegates", async (c) => {
+    const data = await listPossibleDelegates(c.var.session.env, hostOf(c));
+    return c.json({ object: "list" as const, data, has_more: false });
+  });
+
+  router.post("/host/out_of_office", async (c) => {
+    const hostId = writableHost(c);
+    const { env } = c.var.session;
+    const [entry] = await createOutOfOffice(
+      env,
+      { ...(await parsed(c, HostOutOfOfficeRequest)), host: hostId },
+      deps,
+      sessionActor(c.var.session.session),
+      "host",
+      { allowedDelegates: await delegatesFor(env, hostId) },
+    );
+    return c.json(entry, 201);
+  });
+
+  router.patch("/host/out_of_office/:id", async (c) => {
+    const hostId = writableHost(c);
+    const entry = await updateOutOfOffice(
+      c.var.session.env,
+      c.req.param("id"),
+      await parsed(c, SessionOutOfOfficeChange),
+      deps,
+      sessionActor(c.var.session.session),
+      { hostId },
+      { allowedDelegates: await delegatesFor(c.var.session.env, hostId), startsNoRun: true },
+    );
+    return c.json(entry);
+  });
+
+  router.delete("/host/out_of_office/:id", async (c) => {
+    const hostId = writableHost(c);
+    await deleteOutOfOffice(c.var.session.env, c.req.param("id"), deps, { hostId });
+    return c.body(null, 204);
+  });
+
+  router.get("/host/out_of_office/:id/conflicts", async (c) => {
+    const hostId = hostOf(c);
+    const page = await listOutOfOfficeConflicts(
+      c.var.session.env,
+      c.req.param("id"),
+      { limit: 200 },
+      deps,
+      { hostId },
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
   router.get("/host/locations", async (c) => {
     const host = await getHost(c.var.session.env, hostOf(c));
     return c.json({ object: "list" as const, data: host.locations, has_more: false });
@@ -593,10 +738,291 @@ export function createSchedulingClientRoutes(opts: {
     );
     return c.json({
       object: "list" as const,
-      data: page.data,
+      // What this page shows and no more: not contact details, metadata or the other hosts.
+      data: page.data.map((booking) => ({
+        id: booking.id,
+        status: booking.status,
+        title: booking.title,
+        start: booking.start,
+        end: booking.end,
+        no_show_at: booking.no_show_at,
+        group_session: booking.group_session,
+        attendees: booking.attendees.map((attendee) => ({ name: attendee.name })),
+      })),
       has_more: page.nextCursor !== null,
       next_cursor: page.nextCursor,
     });
+  });
+
+  /** Off unless the environment says so, and then it looks like nothing's there. */
+  const reassigningHost = async (c: Context<ClientEnv>) => {
+    const settings = await getSettingsRow(c.var.session.env);
+    if (settings?.hostReassignment !== "eligible") throw notFound();
+  };
+
+  // Who's free and takes this event type, by name. Why anyone else can't isn't this host's to know.
+  router.get("/host/bookings/:id/reassign_candidates", async (c) => {
+    const hostId = hostOf(c);
+    await reassigningHost(c);
+    const id = c.req.param("id");
+    await hostsOwnBooking(c, hostId, id);
+    const page = await listReassignCandidates(c.var.session.env, id, { fromHost: hostId }, deps);
+    const data = page.data
+      .filter((candidate) => candidate.member && candidate.available)
+      .map((candidate) => ({ host: candidate.host, name: candidate.name }));
+    return c.json({ object: "list" as const, data, has_more: false });
+  });
+
+  router.post("/host/bookings/:id/reassign", async (c) => {
+    const hostId = writableHost(c);
+    await reassigningHost(c);
+    const id = c.req.param("id");
+    const body = await parsed(c, HostReassignRequest);
+    const { env, session } = c.var.session;
+    const booking = await reassignBooking(
+      env,
+      id,
+      {
+        changes: [{ from_host: hostId, to_host: body.to_host }],
+        reason_code: "host_unavailable",
+        ...(body.note ? { note: body.note } : {}),
+      },
+      deps,
+      sessionActor(session),
+      // Checked with the booking locked: it may have stopped being theirs since the page loaded.
+      { fromHosts: new Set([hostId]), namesOnly: true },
+    );
+    return c.json({ id: booking.id, status: booking.status });
+  });
+
+  // A team page. Whatever it reaches is worked out on each request, since a filter's answer changes.
+  const managerOf = (c: Context<ClientEnv>) => {
+    const { session, env } = c.var.session;
+    if (session.kind !== "manager") throw notFound();
+    return { session, env };
+  };
+  const writableManager = (c: Context<ClientEnv>) => {
+    const manager = managerOf(c);
+    if (manager.session.readOnly) {
+      throw new ApiError(403, {
+        type: "permission_error",
+        code: "read_only_session",
+        message: "This session can only read.",
+      });
+    }
+    return manager;
+  };
+  const teamOf = async (manager: ReturnType<typeof managerOf>) => {
+    const hosts = await managedHosts(manager.env, manager.session);
+    return { hosts, ids: hosts.map((host) => host.id), set: new Set(hosts.map((host) => host.id)) };
+  };
+  const managedEntry = async (manager: ReturnType<typeof managerOf>, id: string) => {
+    const entry = await getOutOfOffice(manager.env, id, deps);
+    const team = await teamOf(manager);
+    if (!team.set.has(entry.host)) throw notFound();
+    return { entry, team };
+  };
+  const managedRun = async (manager: ReturnType<typeof managerOf>, id: string) => {
+    const team = await teamOf(manager);
+    await assertManagedRun(manager.env, id, team.ids);
+  };
+
+  router.get("/manager/hosts", async (c) => {
+    const { hosts } = await teamOf(managerOf(c));
+    return c.json({ object: "list" as const, data: hosts.map(toManagedHost), has_more: false });
+  });
+
+  router.get("/manager/out_of_office", async (c) => {
+    const manager = managerOf(c);
+    const team = await teamOf(manager);
+    if (team.ids.length === 0)
+      return c.json({ object: "list" as const, data: [], has_more: false });
+    const page = await listOutOfOffice(
+      manager.env,
+      {
+        hostIds: team.ids,
+        fromMs: (deps.now?.() ?? new Date()).getTime(),
+        limit: Math.min(Math.max(Number(c.req.query("limit")) || 100, 1), 100),
+        after: c.req.query("after"),
+      },
+      deps,
+    );
+    const settings = await getSettingsRow(manager.env);
+    return c.json({
+      object: "list" as const,
+      data: page.data,
+      has_more: page.hasMore,
+      reasons: [
+        ...OUT_OF_OFFICE_PRESET_REASONS.map((key) => ({
+          key,
+          label: OUT_OF_OFFICE_REASON_LABELS[key],
+        })),
+        ...(settings?.outOfOfficeReasons ?? []),
+      ],
+    });
+  });
+
+  router.post("/manager/out_of_office", async (c) => {
+    const manager = writableManager(c);
+    const team = await teamOf(manager);
+    const body = await parsed(c, ManagerOutOfOfficeRequest);
+    const hosts: string[] = [];
+    for (const ref of body.hosts) {
+      const host = await resolveHost(db, manager.env, ref);
+      if (!team.set.has(host.id)) throw notFound();
+      hosts.push(host.id);
+    }
+    const data = await createOutOfOffice(
+      manager.env,
+      { ...body, hosts },
+      deps,
+      sessionActor(manager.session),
+      manager.session.createdByUserId ? "dashboard" : "manager",
+      { allowedDelegates: team.ids },
+    );
+    return c.json({ object: "list" as const, data, has_more: false }, 201);
+  });
+
+  router.patch("/manager/out_of_office/:id", async (c) => {
+    const manager = writableManager(c);
+    const { entry, team } = await managedEntry(manager, c.req.param("id"));
+    const updated = await updateOutOfOffice(
+      manager.env,
+      entry.id,
+      await parsed(c, SessionOutOfOfficeChange),
+      deps,
+      sessionActor(manager.session),
+      { hostId: entry.host },
+      { allowedDelegates: team.ids, startsNoRun: true },
+    );
+    return c.json(updated);
+  });
+
+  router.delete("/manager/out_of_office/:id", async (c) => {
+    const manager = writableManager(c);
+    const { entry } = await managedEntry(manager, c.req.param("id"));
+    await deleteOutOfOffice(manager.env, entry.id, deps, { hostId: entry.host });
+    return c.body(null, 204);
+  });
+
+  router.get("/manager/out_of_office/:id/conflicts", async (c) => {
+    const manager = managerOf(c);
+    const { entry } = await managedEntry(manager, c.req.param("id"));
+    const page = await listOutOfOfficeConflicts(manager.env, entry.id, { limit: 100 }, deps, {
+      hostId: entry.host,
+    });
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
+  router.get("/manager/bookings", async (c) => {
+    const manager = managerOf(c);
+    const team = await teamOf(manager);
+    const page = await listManagedBookings(manager.env, team.ids, {
+      hostId: c.req.query("host"),
+      bookingId: c.req.query("booking"),
+      needsCover: c.req.query("needs_cover") === "true",
+      now: deps.now?.() ?? new Date(),
+      limit: 100,
+    });
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
+  router.get("/manager/bookings/:id/reassign_candidates", async (c) => {
+    const manager = managerOf(c);
+    const team = await teamOf(manager);
+    const id = c.req.param("id");
+    const booking = await getBooking(manager.env, id, deps);
+    if (!booking.hosts.some((hostId) => team.set.has(hostId))) throw notFound();
+    const page = await listReassignCandidates(
+      manager.env,
+      id,
+      {
+        hostIds: team.ids,
+        ...(c.req.query("from_host") ? { fromHost: c.req.query("from_host") } : {}),
+      },
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
+  router.post("/manager/bookings/:id/reassign", async (c) => {
+    const manager = writableManager(c);
+    const team = await teamOf(manager);
+    const booking = await reassignBooking(
+      manager.env,
+      c.req.param("id"),
+      await parsed(c, ReassignBookingRequest),
+      deps,
+      sessionActor(manager.session),
+      { fromHosts: team.set, toHosts: team.set },
+    );
+    return c.json({ id: booking.id, status: booking.status, hosts: booking.hosts });
+  });
+
+  router.post("/manager/reassignments/preview", async (c) => {
+    const manager = managerOf(c);
+    const team = await teamOf(manager);
+    return c.json(
+      await previewReassignment(manager.env, await parsed(c, PreviewReassignmentRequest), deps, {
+        onlyHosts: team.set,
+      }),
+    );
+  });
+
+  router.post("/manager/reassignments", async (c) => {
+    const manager = writableManager(c);
+    const team = await teamOf(manager);
+    const { reassignment } = await createReassignment(
+      manager.env,
+      await parsed(c, CreateReassignmentRequest),
+      deps,
+      sessionActor(manager.session),
+      { onlyHosts: team.set, idempotencyKey: c.req.header("Idempotency-Key") },
+    );
+    return c.json(reassignment, 202);
+  });
+
+  router.get("/manager/reassignments", async (c) => {
+    const manager = managerOf(c);
+    const team = await teamOf(manager);
+    const page = await listReassignments(manager.env, { limit: 50, hostIds: team.ids });
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
+  router.get("/manager/reassignments/:id", async (c) => {
+    const manager = managerOf(c);
+    await managedRun(manager, c.req.param("id"));
+    return c.json(await getReassignment(manager.env, c.req.param("id")));
+  });
+
+  router.get("/manager/reassignments/:id/items", async (c) => {
+    const manager = managerOf(c);
+    await managedRun(manager, c.req.param("id"));
+    const page = await listReassignmentItems(manager.env, c.req.param("id"), { limit: 100 });
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore });
+  });
+
+  router.post("/manager/reassignments/:id/cancel", async (c) => {
+    const manager = writableManager(c);
+    await managedRun(manager, c.req.param("id"));
+    return c.json(await cancelReassignment(manager.env, c.req.param("id"), deps));
+  });
+
+  router.post("/manager/reassignments/:id/undo", async (c) => {
+    const manager = writableManager(c);
+    const team = await teamOf(manager);
+    await assertManagedRun(manager.env, c.req.param("id"), team.ids);
+    return c.json(
+      await undoReassignment(
+        manager.env,
+        c.req.param("id"),
+        await parsed(c, UndoReassignmentRequest),
+        deps,
+        sessionActor(manager.session),
+        { onlyHosts: team.set },
+      ),
+      202,
+    );
   });
 
   const hostsOwnBooking = async (c: Context<ClientEnv>, hostId: string, id: string) => {

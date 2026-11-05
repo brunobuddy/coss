@@ -57,16 +57,25 @@ public final class CreateTopicRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The <code>category</code> of the emails about this topic. Can't change.
+     */
     @JsonProperty("key")
     public String getKey() {
         return key;
     }
 
+    /**
+     * @return Shown in the preference center.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Shown in the preference center under its name. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("description")
     public OptionalNullable<String> getDescription() {
@@ -142,12 +151,18 @@ public final class CreateTopicRequest {
     }
 
     public interface KeyStage {
+        /**
+         * <p>The <code>category</code> of the emails about this topic. Can't change.</p>
+         */
         NameStage key(@NotNull String key);
 
         Builder from(CreateTopicRequest other);
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown in the preference center.</p>
+         */
         DefaultSubscriptionStage name(@NotNull String name);
     }
 
@@ -165,6 +180,9 @@ public final class CreateTopicRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         */
         _FinalStage description(OptionalNullable<String> description);
 
         _FinalStage description(String description);
@@ -218,6 +236,10 @@ public final class CreateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>The <code>category</code> of the emails about this topic. Can't change.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("key")
         public NameStage key(@NotNull String key) {
@@ -225,6 +247,10 @@ public final class CreateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public DefaultSubscriptionStage name(@NotNull String name) {
@@ -284,6 +310,10 @@ public final class CreateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Nullable<String> description) {
             if (description.isNull()) {
@@ -296,6 +326,10 @@ public final class CreateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(Optional<String> description) {
             if (description.isPresent()) {
@@ -306,12 +340,19 @@ public final class CreateTopicRequest {
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = OptionalNullable.of(description);
             return this;
         }
 
+        /**
+         * <p>Shown in the preference center under its name. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(OptionalNullable<String> description) {

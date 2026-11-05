@@ -125,6 +125,8 @@ module Coss
         end
       end
 
+      # One message sent from the API key's environment, with its current status.
+      #
       # @param request_options [Hash]
       # @param params [Hash]
       # @option request_options [String] :base_url

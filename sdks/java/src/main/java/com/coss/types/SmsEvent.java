@@ -61,16 +61,25 @@ public final class SmsEvent {
         return id;
     }
 
+    /**
+     * @return The id of the message.
+     */
     @JsonProperty("sms_id")
     public String getSmsId() {
         return smsId;
     }
 
+    /**
+     * @return What happened: <code>sms.scheduled</code>, <code>sms.sent</code>, <code>sms.delivered</code>, <code>sms.undelivered</code>, <code>sms.failed</code>, <code>sms.suppressed</code> or <code>sms.canceled</code>.
+     */
     @JsonProperty("type")
     public SmsEventType getType() {
         return type;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -126,14 +135,23 @@ public final class SmsEvent {
     }
 
     public interface SmsIdStage {
+        /**
+         * <p>The id of the message.</p>
+         */
         TypeStage smsId(@NotNull String smsId);
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened: <code>sms.scheduled</code>, <code>sms.sent</code>, <code>sms.delivered</code>, <code>sms.undelivered</code>, <code>sms.failed</code>, <code>sms.suppressed</code> or <code>sms.canceled</code>.</p>
+         */
         OccurredAtStage type(@NotNull SmsEventType type);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         DataStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -194,6 +212,10 @@ public final class SmsEvent {
             return this;
         }
 
+        /**
+         * <p>The id of the message.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sms_id")
         public TypeStage smsId(@NotNull String smsId) {
@@ -201,6 +223,10 @@ public final class SmsEvent {
             return this;
         }
 
+        /**
+         * <p>What happened: <code>sms.scheduled</code>, <code>sms.sent</code>, <code>sms.delivered</code>, <code>sms.undelivered</code>, <code>sms.failed</code>, <code>sms.suppressed</code> or <code>sms.canceled</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public OccurredAtStage type(@NotNull SmsEventType type) {
@@ -208,6 +234,10 @@ public final class SmsEvent {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public DataStage occurredAt(@NotNull OffsetDateTime occurredAt) {

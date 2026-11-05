@@ -15,6 +15,9 @@ public record SegmentFilter : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The filter's format. Always 1.
+    /// </summary>
     [JsonPropertyName("version")]
     public required double Version { get; set; }
 
@@ -24,6 +27,9 @@ public record SegmentFilter : IJsonOnDeserialized
     [JsonPropertyName("match")]
     public required SegmentFilterMatch Match { get; set; }
 
+    /// <summary>
+    /// Conditions, or `{ match, conditions }` groups of them. At most 20 in all.
+    /// </summary>
     [JsonPropertyName("conditions")]
     public IEnumerable<
         OneOf<

@@ -36,11 +36,17 @@ public final class DmarcReportRecordAuthResults {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Each DKIM signature's result.
+     */
     @JsonProperty("dkim")
     public List<DmarcReportRecordAuthResultsDkimItem> getDkim() {
         return dkim;
     }
 
+    /**
+     * @return Each SPF check's result.
+     */
     @JsonProperty("spf")
     public List<DmarcReportRecordAuthResultsSpfItem> getSpf() {
         return spf;
@@ -92,6 +98,9 @@ public final class DmarcReportRecordAuthResults {
             return this;
         }
 
+        /**
+         * <p>Each DKIM signature's result.</p>
+         */
         @JsonSetter(value = "dkim", nulls = Nulls.SKIP)
         public Builder dkim(List<DmarcReportRecordAuthResultsDkimItem> dkim) {
             this.dkim.clear();
@@ -113,6 +122,9 @@ public final class DmarcReportRecordAuthResults {
             return this;
         }
 
+        /**
+         * <p>Each SPF check's result.</p>
+         */
         @JsonSetter(value = "spf", nulls = Nulls.SKIP)
         public Builder spf(List<DmarcReportRecordAuthResultsSpfItem> spf) {
             this.spf.clear();

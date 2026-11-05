@@ -195,15 +195,19 @@ class EmailClient:
             An email address, optionally with a display name: "Acme <hello@acme.com>".
 
         to : SendEmailRequestTo
+            Who it goes to.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original email (with its current status) instead of sending again, for 24 hours. 1-256 characters.
 
         cc : typing.Optional[SendEmailRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendEmailRequestBcc]
+            Who it's blind copied to.
 
         reply_to : typing.Optional[SendEmailRequestReplyTo]
+            Where replies go.
 
         subject : typing.Optional[str]
             Required unless the email is sent from a template (`template_id`).
@@ -230,6 +234,7 @@ class EmailClient:
             Up to 15 custom headers. Names are case-insensitive.
 
         tags : typing.Optional[typing.Sequence[SendEmailRequestTagsItem]]
+            Your tags on the email.
 
         category : typing.Optional[str]
             What kind of email this is, e.g. "marketing". Recipients suppressed for this category (or for every email) are skipped.
@@ -833,15 +838,19 @@ class AsyncEmailClient:
             An email address, optionally with a display name: "Acme <hello@acme.com>".
 
         to : SendEmailRequestTo
+            Who it goes to.
 
         idempotency_key : typing.Optional[str]
             Makes retries safe: a repeated request with the same key and body returns the original email (with its current status) instead of sending again, for 24 hours. 1-256 characters.
 
         cc : typing.Optional[SendEmailRequestCc]
+            Who it's copied to.
 
         bcc : typing.Optional[SendEmailRequestBcc]
+            Who it's blind copied to.
 
         reply_to : typing.Optional[SendEmailRequestReplyTo]
+            Where replies go.
 
         subject : typing.Optional[str]
             Required unless the email is sent from a template (`template_id`).
@@ -868,6 +877,7 @@ class AsyncEmailClient:
             Up to 15 custom headers. Names are case-insensitive.
 
         tags : typing.Optional[typing.Sequence[SendEmailRequestTagsItem]]
+            Your tags on the email.
 
         category : typing.Optional[str]
             What kind of email this is, e.g. "marketing". Recipients suppressed for this category (or for every email) are skipped.

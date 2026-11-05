@@ -200,6 +200,8 @@ class SegmentsClient
     }
 
     /**
+     * One segment of the API key's environment, with its filter.
+     *
      * Example:
      * ```php
      * $client->email->segments->get(
@@ -253,6 +255,8 @@ class SegmentsClient
     }
 
     /**
+     * Deletes a segment. The contacts it matched stay.
+     *
      * Example:
      * ```php
      * $client->email->segments->remove(
@@ -306,6 +310,8 @@ class SegmentsClient
     }
 
     /**
+     * Changes a segment's name or filter. Only the fields given change.
+     *
      * Example:
      * ```php
      * $client->email->segments->update(

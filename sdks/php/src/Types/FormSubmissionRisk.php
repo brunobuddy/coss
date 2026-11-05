@@ -11,19 +11,19 @@ use Coss\Core\Json\JsonProperty;
 class FormSubmissionRisk extends JsonSerializableType
 {
     /**
-     * @var ?string $assessmentId
+     * @var ?string $assessmentId The id of Risk's assessment. `null`: none is recorded.
      */
     #[JsonProperty('assessment_id')]
     public ?string $assessmentId;
 
     /**
-     * @var ?value-of<FormSubmissionRiskDecision> $decision
+     * @var ?value-of<FormSubmissionRiskDecision> $decision Risk's decision. `null`: none is recorded.
      */
     #[JsonProperty('decision')]
     public ?string $decision;
 
     /**
-     * @var ?float $score
+     * @var ?float $score Risk's score. `null`: none is recorded.
      */
     #[JsonProperty('score')]
     public ?float $score;

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The sub-account's standing.
     class SubaccountWebhookEventData < Internal::Types::Model
       field :subaccount_id, -> { String }, optional: false, nullable: false
 

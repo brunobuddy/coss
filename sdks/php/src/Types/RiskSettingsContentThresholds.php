@@ -11,25 +11,25 @@ use Coss\Core\Json\JsonProperty;
 class RiskSettingsContentThresholds extends JsonSerializableType
 {
     /**
-     * @var ?float $spam
+     * @var ?float $spam The score at which `content.spam` fires. `null`: never.
      */
     #[JsonProperty('spam')]
     public ?float $spam;
 
     /**
-     * @var ?float $phishing
+     * @var ?float $phishing The score at which `content.phishing` fires. `null`: never.
      */
     #[JsonProperty('phishing')]
     public ?float $phishing;
 
     /**
-     * @var ?float $malware
+     * @var ?float $malware The score at which `content.malware` fires. `null`: never.
      */
     #[JsonProperty('malware')]
     public ?float $malware;
 
     /**
-     * @var ?float $fraud
+     * @var ?float $fraud The score at which `content.fraud` fires. `null`: never.
      */
     #[JsonProperty('fraud')]
     public ?float $fraud;

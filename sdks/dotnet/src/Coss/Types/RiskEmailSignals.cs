@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// What the address says. `null` on an assessment with no email.
+/// </summary>
 [Serializable]
 public record RiskEmailSignals : IJsonOnDeserialized
 {
@@ -18,9 +21,15 @@ public record RiskEmailSignals : IJsonOnDeserialized
     [JsonPropertyName("domain")]
     public string? Domain { get; set; }
 
+    /// <summary>
+    /// Whether it's syntactically valid.
+    /// </summary>
     [JsonPropertyName("valid")]
     public required bool Valid { get; set; }
 
+    /// <summary>
+    /// Whether its domain is a known burner service.
+    /// </summary>
     [JsonPropertyName("disposable")]
     public required bool Disposable { get; set; }
 
@@ -30,12 +39,21 @@ public record RiskEmailSignals : IJsonOnDeserialized
     [JsonPropertyName("deliverability")]
     public required RiskEmailSignalsDeliverability Deliverability { get; set; }
 
+    /// <summary>
+    /// Whether it's a role mailbox, like `info@`.
+    /// </summary>
     [JsonPropertyName("role_account")]
     public required bool RoleAccount { get; set; }
 
+    /// <summary>
+    /// Whether its domain is a free mailbox provider.
+    /// </summary>
     [JsonPropertyName("free_provider")]
     public required bool FreeProvider { get; set; }
 
+    /// <summary>
+    /// `email.typo`: the likely intended domain. `null` otherwise.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("suggestion")]
     public string? Suggestion { get; set; }

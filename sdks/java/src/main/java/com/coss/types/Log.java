@@ -127,6 +127,9 @@ public final class Log {
         return id;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -170,6 +173,9 @@ public final class Log {
         return requestId;
     }
 
+    /**
+     * @return The API key that made the request. <code>null</code>: not an API request.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("api_key_id")
     public OptionalNullable<String> getApiKeyId() {
@@ -179,6 +185,9 @@ public final class Log {
         return apiKeyId;
     }
 
+    /**
+     * @return The HTTP method. <code>null</code>: not an HTTP line.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("method")
     public OptionalNullable<String> getMethod() {
@@ -188,6 +197,9 @@ public final class Log {
         return method;
     }
 
+    /**
+     * @return The request's path. <code>null</code>: not an API request.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("path")
     public OptionalNullable<String> getPath() {
@@ -221,6 +233,9 @@ public final class Log {
         return statusCode;
     }
 
+    /**
+     * @return How long it took, in milliseconds. <code>null</code>: not timed.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("duration_ms")
     public OptionalNullable<Long> getDurationMs() {
@@ -230,6 +245,9 @@ public final class Log {
         return durationMs;
     }
 
+    /**
+     * @return The caller's address. <code>null</code>: not an API request.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("client_ip")
     public OptionalNullable<String> getClientIp() {
@@ -239,6 +257,9 @@ public final class Log {
         return clientIp;
     }
 
+    /**
+     * @return The caller's <code>User-Agent</code>. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -248,6 +269,9 @@ public final class Log {
         return userAgent;
     }
 
+    /**
+     * @return The error's <code>code</code>. <code>null</code>: no error.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("error_code")
     public OptionalNullable<String> getErrorCode() {
@@ -269,6 +293,9 @@ public final class Log {
         return resourceType;
     }
 
+    /**
+     * @return The id of what it's about. <code>null</code>: nothing in particular.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("resource_id")
     public OptionalNullable<String> getResourceId() {
@@ -278,6 +305,9 @@ public final class Log {
         return resourceId;
     }
 
+    /**
+     * @return The recipient an email event is about. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("recipient")
     public OptionalNullable<String> getRecipient() {
@@ -454,6 +484,9 @@ public final class Log {
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         SourceStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -497,6 +530,9 @@ public final class Log {
 
         _FinalStage requestId(Nullable<String> requestId);
 
+        /**
+         * <p>The API key that made the request. <code>null</code>: not an API request.</p>
+         */
         _FinalStage apiKeyId(OptionalNullable<String> apiKeyId);
 
         _FinalStage apiKeyId(String apiKeyId);
@@ -505,6 +541,9 @@ public final class Log {
 
         _FinalStage apiKeyId(Nullable<String> apiKeyId);
 
+        /**
+         * <p>The HTTP method. <code>null</code>: not an HTTP line.</p>
+         */
         _FinalStage method(OptionalNullable<String> method);
 
         _FinalStage method(String method);
@@ -513,6 +552,9 @@ public final class Log {
 
         _FinalStage method(Nullable<String> method);
 
+        /**
+         * <p>The request's path. <code>null</code>: not an API request.</p>
+         */
         _FinalStage path(OptionalNullable<String> path);
 
         _FinalStage path(String path);
@@ -543,6 +585,9 @@ public final class Log {
 
         _FinalStage statusCode(Nullable<Long> statusCode);
 
+        /**
+         * <p>How long it took, in milliseconds. <code>null</code>: not timed.</p>
+         */
         _FinalStage durationMs(OptionalNullable<Long> durationMs);
 
         _FinalStage durationMs(Long durationMs);
@@ -551,6 +596,9 @@ public final class Log {
 
         _FinalStage durationMs(Nullable<Long> durationMs);
 
+        /**
+         * <p>The caller's address. <code>null</code>: not an API request.</p>
+         */
         _FinalStage clientIp(OptionalNullable<String> clientIp);
 
         _FinalStage clientIp(String clientIp);
@@ -559,6 +607,9 @@ public final class Log {
 
         _FinalStage clientIp(Nullable<String> clientIp);
 
+        /**
+         * <p>The caller's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         _FinalStage userAgent(OptionalNullable<String> userAgent);
 
         _FinalStage userAgent(String userAgent);
@@ -567,6 +618,9 @@ public final class Log {
 
         _FinalStage userAgent(Nullable<String> userAgent);
 
+        /**
+         * <p>The error's <code>code</code>. <code>null</code>: no error.</p>
+         */
         _FinalStage errorCode(OptionalNullable<String> errorCode);
 
         _FinalStage errorCode(String errorCode);
@@ -586,6 +640,9 @@ public final class Log {
 
         _FinalStage resourceType(Nullable<String> resourceType);
 
+        /**
+         * <p>The id of what it's about. <code>null</code>: nothing in particular.</p>
+         */
         _FinalStage resourceId(OptionalNullable<String> resourceId);
 
         _FinalStage resourceId(String resourceId);
@@ -594,6 +651,9 @@ public final class Log {
 
         _FinalStage resourceId(Nullable<String> resourceId);
 
+        /**
+         * <p>The recipient an email event is about. <code>null</code>: none.</p>
+         */
         _FinalStage recipient(OptionalNullable<String> recipient);
 
         _FinalStage recipient(String recipient);
@@ -709,6 +769,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public SourceStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -787,6 +851,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The recipient an email event is about. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage recipient(Nullable<String> recipient) {
             if (recipient.isNull()) {
@@ -799,6 +867,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The recipient an email event is about. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage recipient(Optional<String> recipient) {
             if (recipient.isPresent()) {
@@ -809,12 +881,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The recipient an email event is about. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage recipient(String recipient) {
             this.recipient = OptionalNullable.of(recipient);
             return this;
         }
 
+        /**
+         * <p>The recipient an email event is about. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "recipient", nulls = Nulls.SKIP)
         public _FinalStage recipient(OptionalNullable<String> recipient) {
@@ -822,6 +901,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The id of what it's about. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage resourceId(Nullable<String> resourceId) {
             if (resourceId.isNull()) {
@@ -834,6 +917,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The id of what it's about. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage resourceId(Optional<String> resourceId) {
             if (resourceId.isPresent()) {
@@ -844,12 +931,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The id of what it's about. <code>null</code>: nothing in particular.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage resourceId(String resourceId) {
             this.resourceId = OptionalNullable.of(resourceId);
             return this;
         }
 
+        /**
+         * <p>The id of what it's about. <code>null</code>: nothing in particular.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "resource_id", nulls = Nulls.SKIP)
         public _FinalStage resourceId(OptionalNullable<String> resourceId) {
@@ -907,6 +1001,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The error's <code>code</code>. <code>null</code>: no error.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage errorCode(Nullable<String> errorCode) {
             if (errorCode.isNull()) {
@@ -919,6 +1017,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The error's <code>code</code>. <code>null</code>: no error.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage errorCode(Optional<String> errorCode) {
             if (errorCode.isPresent()) {
@@ -929,12 +1031,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The error's <code>code</code>. <code>null</code>: no error.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage errorCode(String errorCode) {
             this.errorCode = OptionalNullable.of(errorCode);
             return this;
         }
 
+        /**
+         * <p>The error's <code>code</code>. <code>null</code>: no error.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "error_code", nulls = Nulls.SKIP)
         public _FinalStage errorCode(OptionalNullable<String> errorCode) {
@@ -942,6 +1051,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Nullable<String> userAgent) {
             if (userAgent.isNull()) {
@@ -954,6 +1067,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Optional<String> userAgent) {
             if (userAgent.isPresent()) {
@@ -964,12 +1081,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(String userAgent) {
             this.userAgent = OptionalNullable.of(userAgent);
             return this;
         }
 
+        /**
+         * <p>The caller's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public _FinalStage userAgent(OptionalNullable<String> userAgent) {
@@ -977,6 +1101,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's address. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(Nullable<String> clientIp) {
             if (clientIp.isNull()) {
@@ -989,6 +1117,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's address. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(Optional<String> clientIp) {
             if (clientIp.isPresent()) {
@@ -999,12 +1131,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The caller's address. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage clientIp(String clientIp) {
             this.clientIp = OptionalNullable.of(clientIp);
             return this;
         }
 
+        /**
+         * <p>The caller's address. <code>null</code>: not an API request.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "client_ip", nulls = Nulls.SKIP)
         public _FinalStage clientIp(OptionalNullable<String> clientIp) {
@@ -1012,6 +1151,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds. <code>null</code>: not timed.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage durationMs(Nullable<Long> durationMs) {
             if (durationMs.isNull()) {
@@ -1024,6 +1167,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds. <code>null</code>: not timed.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage durationMs(Optional<Long> durationMs) {
             if (durationMs.isPresent()) {
@@ -1034,12 +1181,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds. <code>null</code>: not timed.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage durationMs(Long durationMs) {
             this.durationMs = OptionalNullable.of(durationMs);
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds. <code>null</code>: not timed.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "duration_ms", nulls = Nulls.SKIP)
         public _FinalStage durationMs(OptionalNullable<Long> durationMs) {
@@ -1147,6 +1301,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The request's path. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage path(Nullable<String> path) {
             if (path.isNull()) {
@@ -1159,6 +1317,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The request's path. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage path(Optional<String> path) {
             if (path.isPresent()) {
@@ -1169,12 +1331,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The request's path. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage path(String path) {
             this.path = OptionalNullable.of(path);
             return this;
         }
 
+        /**
+         * <p>The request's path. <code>null</code>: not an API request.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "path", nulls = Nulls.SKIP)
         public _FinalStage path(OptionalNullable<String> path) {
@@ -1182,6 +1351,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The HTTP method. <code>null</code>: not an HTTP line.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage method(Nullable<String> method) {
             if (method.isNull()) {
@@ -1194,6 +1367,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The HTTP method. <code>null</code>: not an HTTP line.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage method(Optional<String> method) {
             if (method.isPresent()) {
@@ -1204,12 +1381,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The HTTP method. <code>null</code>: not an HTTP line.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage method(String method) {
             this.method = OptionalNullable.of(method);
             return this;
         }
 
+        /**
+         * <p>The HTTP method. <code>null</code>: not an HTTP line.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "method", nulls = Nulls.SKIP)
         public _FinalStage method(OptionalNullable<String> method) {
@@ -1217,6 +1401,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The API key that made the request. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage apiKeyId(Nullable<String> apiKeyId) {
             if (apiKeyId.isNull()) {
@@ -1229,6 +1417,10 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The API key that made the request. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage apiKeyId(Optional<String> apiKeyId) {
             if (apiKeyId.isPresent()) {
@@ -1239,12 +1431,19 @@ public final class Log {
             return this;
         }
 
+        /**
+         * <p>The API key that made the request. <code>null</code>: not an API request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage apiKeyId(String apiKeyId) {
             this.apiKeyId = OptionalNullable.of(apiKeyId);
             return this;
         }
 
+        /**
+         * <p>The API key that made the request. <code>null</code>: not an API request.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "api_key_id", nulls = Nulls.SKIP)
         public _FinalStage apiKeyId(OptionalNullable<String> apiKeyId) {

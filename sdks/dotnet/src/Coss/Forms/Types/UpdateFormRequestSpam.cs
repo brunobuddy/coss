@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// How submissions are screened. Only the fields given change.
+/// </summary>
 [Serializable]
 public record UpdateFormRequestSpam : IJsonOnDeserialized
 {

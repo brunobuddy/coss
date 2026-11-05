@@ -17,19 +17,34 @@ public record InvoiceSummary : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The invoice number. `null` until it's finalized.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("number")]
     public string? Number { get; set; }
 
+    /// <summary>
+    /// `period`: a billing month. `plan_change`: a change of plan. `one_off`: a single charge. `final`: the last invoice of an account. `threshold`: usage charged early, taken off the month's invoice.
+    /// </summary>
     [JsonPropertyName("kind")]
     public required InvoiceSummaryKind Kind { get; set; }
 
+    /// <summary>
+    /// `open`: not paid yet. `paid`: settled. `void`: canceled. `uncollectible`: written off.
+    /// </summary>
     [JsonPropertyName("status")]
     public required InvoiceSummaryStatus Status { get; set; }
 
+    /// <summary>
+    /// Always `usd`.
+    /// </summary>
     [JsonPropertyName("currency")]
     public required InvoiceSummaryCurrency Currency { get; set; }
 
+    /// <summary>
+    /// What period it covers.
+    /// </summary>
     [JsonPropertyName("period")]
     public required InvoiceSummaryPeriod Period { get; set; }
 
@@ -75,21 +90,36 @@ public record InvoiceSummary : IJsonOnDeserialized
     [JsonPropertyName("amount_due")]
     public required long AmountDue { get; set; }
 
+    /// <summary>
+    /// `charge_automatically`: charged to the payment method. `send_invoice`: paid by `due_at`.
+    /// </summary>
     [JsonPropertyName("collection_method")]
     public required InvoiceSummaryCollectionMethod CollectionMethod { get; set; }
 
+    /// <summary>
+    /// When payment is due. `null`: not set.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("due_at")]
     public DateTime? DueAt { get; set; }
 
+    /// <summary>
+    /// When it was finalized. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("finalized_at")]
     public DateTime? FinalizedAt { get; set; }
 
+    /// <summary>
+    /// When it was paid. `null`: not paid.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("paid_at")]
     public DateTime? PaidAt { get; set; }
 
+    /// <summary>
+    /// When it was voided. `null`: it wasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("voided_at")]
     public DateTime? VoidedAt { get; set; }
@@ -101,6 +131,9 @@ public record InvoiceSummary : IJsonOnDeserialized
     [JsonPropertyName("hosted_url")]
     public string? HostedUrl { get; set; }
 
+    /// <summary>
+    /// The invoice as a PDF. `null`: not available.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("pdf_url")]
     public string? PdfUrl { get; set; }

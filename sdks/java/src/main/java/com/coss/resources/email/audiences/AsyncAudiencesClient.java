@@ -66,26 +66,44 @@ public class AsyncAudiencesClient {
         return this.rawClient.list(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public CompletableFuture<Audience> create(CreateAudienceRequest request) {
         return this.rawClient.create(request).thenApply(response -> response.body());
     }
 
+    /**
+     * Creates a static contact list in the API key's environment. Names are unique within it (<code>name_taken</code>). Add its members with <code>POST /v1/audiences/{id}/contacts</code>.
+     */
     public CompletableFuture<Audience> create(CreateAudienceRequest request, RequestOptions requestOptions) {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CompletableFuture<Audience> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CompletableFuture<Audience> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CompletableFuture<Audience> get(String id, GetAudiencesRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One audience of the API key's environment.
+     */
     public CompletableFuture<Audience> get(String id, GetAudiencesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }
@@ -119,10 +137,16 @@ public class AsyncAudiencesClient {
         return this.rawClient.remove(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public CompletableFuture<Audience> update(String id, UpdateAudienceRequest request) {
         return this.rawClient.update(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Renames an audience. Its members stay.
+     */
     public CompletableFuture<Audience> update(String id, UpdateAudienceRequest request, RequestOptions requestOptions) {
         return this.rawClient.update(id, request, requestOptions).thenApply(response -> response.body());
     }
@@ -171,20 +195,32 @@ public class AsyncAudiencesClient {
         return this.rawClient.addContacts(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CompletableFuture<RemoveContactAudiencesResponse> removeContact(String id, String contactId) {
         return this.rawClient.removeContact(id, contactId).thenApply(response -> response.body());
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CompletableFuture<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RequestOptions requestOptions) {
         return this.rawClient.removeContact(id, contactId, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CompletableFuture<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request) {
         return this.rawClient.removeContact(id, contactId, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Takes a contact out of the audience. The contact itself stays.
+     */
     public CompletableFuture<RemoveContactAudiencesResponse> removeContact(
             String id, String contactId, RemoveContactAudiencesRequest request, RequestOptions requestOptions) {
         return this.rawClient

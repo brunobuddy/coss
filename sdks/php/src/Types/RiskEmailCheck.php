@@ -15,7 +15,7 @@ class RiskEmailCheck extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $email
+     * @var string $email The address checked.
      */
     #[JsonProperty('email')]
     public string $email;
@@ -27,7 +27,7 @@ class RiskEmailCheck extends JsonSerializableType
     public bool $valid;
 
     /**
-     * @var ?string $domain
+     * @var ?string $domain Its domain. `null` when it isn't valid.
      */
     #[JsonProperty('domain')]
     public ?string $domain;
@@ -39,7 +39,7 @@ class RiskEmailCheck extends JsonSerializableType
     public ?string $canonical;
 
     /**
-     * @var bool $disposable
+     * @var bool $disposable Whether its domain is a known burner service.
      */
     #[JsonProperty('disposable')]
     public bool $disposable;
@@ -51,13 +51,13 @@ class RiskEmailCheck extends JsonSerializableType
     public string $deliverability;
 
     /**
-     * @var bool $roleAccount
+     * @var bool $roleAccount Whether it's a role mailbox, like `info@`.
      */
     #[JsonProperty('role_account')]
     public bool $roleAccount;
 
     /**
-     * @var bool $freeProvider
+     * @var bool $freeProvider Whether its domain is a free mailbox provider.
      */
     #[JsonProperty('free_provider')]
     public bool $freeProvider;

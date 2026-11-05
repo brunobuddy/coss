@@ -9,6 +9,10 @@ from .subaccount_reputation_status import SubaccountReputationStatus
 
 
 class SubaccountReputation(UniversalBaseModel):
+    """
+    Its own sending standing.
+    """
+
     status: SubaccountReputationStatus = pydantic.Field()
     """
     `warning`: a rate is close to its limit. `paused`: its live sends are refused (`subaccount_paused`) until you reinstate it.
@@ -19,8 +23,15 @@ class SubaccountReputation(UniversalBaseModel):
     What last changed it, e.g. `bounce_rate`, `complaint_rate`, `content_screening`.
     """
 
-    changed_at: typing.Optional[dt.datetime] = None
-    reinstated_at: typing.Optional[dt.datetime] = None
+    changed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When its status last changed. `null`: never.
+    """
+
+    reinstated_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was last reinstated. `null`: never.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

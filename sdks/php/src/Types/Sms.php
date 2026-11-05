@@ -23,19 +23,19 @@ class Sms extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $from
+     * @var string $from The number it's sent from, in E.164.
      */
     #[JsonProperty('from')]
     public string $from;
 
     /**
-     * @var string $to
+     * @var string $to The recipient's number, in E.164.
      */
     #[JsonProperty('to')]
     public string $to;
 
     /**
-     * @var string $body
+     * @var string $body The text. Empty once discarded.
      */
     #[JsonProperty('body')]
     public string $body;
@@ -53,7 +53,7 @@ class Sms extends JsonSerializableType
     public int $segments;
 
     /**
-     * @var value-of<SmsEncoding> $encoding
+     * @var value-of<SmsEncoding> $encoding `gsm7` fits the basic alphabet; `ucs2` is used for anything else, with smaller segments.
      */
     #[JsonProperty('encoding')]
     public string $encoding;
@@ -65,7 +65,7 @@ class Sms extends JsonSerializableType
     public string $country;
 
     /**
-     * @var array<SmsTagsItem> $tags
+     * @var array<SmsTagsItem> $tags Your tags on the message.
      */
     #[JsonProperty('tags'), ArrayType([SmsTagsItem::class])]
     public array $tags;
@@ -83,19 +83,19 @@ class Sms extends JsonSerializableType
     public bool $sandbox;
 
     /**
-     * @var ?DateTime $scheduledAt
+     * @var ?DateTime $scheduledAt When it's set to send. `null`: it was sent at once.
      */
     #[JsonProperty('scheduled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $scheduledAt;
 
     /**
-     * @var ?DateTime $sentAt
+     * @var ?DateTime $sentAt When it was handed to the carrier. `null`: not yet.
      */
     #[JsonProperty('sent_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $sentAt;
 
     /**
-     * @var ?DateTime $deliveredAt
+     * @var ?DateTime $deliveredAt When the carrier reported delivery. `null`: not delivered, or not reported.
      */
     #[JsonProperty('delivered_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $deliveredAt;

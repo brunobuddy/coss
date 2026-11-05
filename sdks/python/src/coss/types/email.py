@@ -22,18 +22,68 @@ from .email_tracking import EmailTracking
 class Email(UniversalBaseModel):
     object: EmailObject
     id: str
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: typing.List[str]
-    cc: typing.List[str]
-    bcc: typing.List[str]
-    reply_to: typing.List[str]
-    subject: str
-    html: typing.Optional[str] = None
-    text: typing.Optional[str] = None
-    headers: typing.Dict[str, str]
-    tags: typing.List[EmailTagsItem]
-    category: typing.Optional[str] = None
-    stream: EmailStream
+    from_: typing_extensions.Annotated[
+        str, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="Who it's sent from.")
+    ]
+    """
+    Who it's sent from.
+    """
+
+    to: typing.List[str] = pydantic.Field()
+    """
+    The `To` addresses.
+    """
+
+    cc: typing.List[str] = pydantic.Field()
+    """
+    The `Cc` addresses.
+    """
+
+    bcc: typing.List[str] = pydantic.Field()
+    """
+    The `Bcc` addresses.
+    """
+
+    reply_to: typing.List[str] = pydantic.Field()
+    """
+    The `Reply-To` addresses.
+    """
+
+    subject: str = pydantic.Field()
+    """
+    The subject, rendered if it came from a template.
+    """
+
+    html: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The HTML part. `null`: none, or the body was discarded.
+    """
+
+    text: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The plain text part. `null`: none, or the body was discarded.
+    """
+
+    headers: typing.Dict[str, str] = pydantic.Field()
+    """
+    The custom headers it was sent with.
+    """
+
+    tags: typing.List[EmailTagsItem] = pydantic.Field()
+    """
+    Your tags on the email.
+    """
+
+    category: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The email's category, which suppressions and tracking rules can scope to. `null`: none.
+    """
+
+    stream: EmailStream = pydantic.Field()
+    """
+    `transactional` or `marketing`.
+    """
+
     status: EmailStatus = pydantic.Field()
     """
     Whether the email was handed to the delivery provider. `scheduled` emails wait for `scheduled_at`; `canceled` ones were canceled before that. Per-recipient delivery is in `recipients`.
@@ -44,7 +94,11 @@ class Email(UniversalBaseModel):
     Why the email failed; `null` unless `status` is `failed`.
     """
 
-    recipients: typing.List[EmailRecipient]
+    recipients: typing.List[EmailRecipient] = pydantic.Field()
+    """
+    Each recipient, with how delivery to them went.
+    """
+
     attachments: typing.List[EmailAttachment] = pydantic.Field()
     """
     Attachment metadata. Content is never returned, and is discarded once sent.
@@ -57,7 +111,11 @@ class Email(UniversalBaseModel):
 
     tracking: EmailTracking
     created_at: dt.datetime
-    sent_at: typing.Optional[dt.datetime] = None
+    sent_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was handed to the provider. `null`: not yet.
+    """
+
     scheduled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the email was scheduled to be sent; `null` if it was not.

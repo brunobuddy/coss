@@ -5,6 +5,7 @@ module Coss
     module Contacts
       module Properties
         module Types
+          # Used in templates for contacts without a value.
           class CreateContactPropertyRequestFallback < Internal::Types::Model
             extend Coss::Internal::Types::Union
 

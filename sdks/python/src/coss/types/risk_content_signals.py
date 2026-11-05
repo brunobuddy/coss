@@ -11,10 +11,25 @@ class RiskContentSignals(UniversalBaseModel):
     Per category, the model's probability (0-1) that the content belongs to it. Scores are not calibrated: pick thresholds by looking at your own traffic.
     """
 
-    spam: float
-    phishing: float
-    malware: float
-    fraud: float
+    spam: float = pydantic.Field()
+    """
+    The model's probability (0-1) that it's spam.
+    """
+
+    phishing: float = pydantic.Field()
+    """
+    The model's probability (0-1) that it's phishing.
+    """
+
+    malware: float = pydantic.Field()
+    """
+    The model's probability (0-1) that it's malware.
+    """
+
+    fraud: float = pydantic.Field()
+    """
+    The model's probability (0-1) that it's fraud.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

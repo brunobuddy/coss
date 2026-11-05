@@ -101,6 +101,9 @@ public final class WebhookDelivery {
         return id;
     }
 
+    /**
+     * @return The id of the endpoint it's delivered to.
+     */
     @JsonProperty("endpoint_id")
     public String getEndpointId() {
         return endpointId;
@@ -124,6 +127,9 @@ public final class WebhookDelivery {
         return status;
     }
 
+    /**
+     * @return How many attempts were made so far.
+     */
     @JsonProperty("attempt_count")
     public long getAttemptCount() {
         return attemptCount;
@@ -141,6 +147,9 @@ public final class WebhookDelivery {
         return nextAttemptAt;
     }
 
+    /**
+     * @return The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_status_code")
     public OptionalNullable<Long> getLastStatusCode() {
@@ -150,6 +159,9 @@ public final class WebhookDelivery {
         return lastStatusCode;
     }
 
+    /**
+     * @return Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_error")
     public OptionalNullable<String> getLastError() {
@@ -270,6 +282,9 @@ public final class WebhookDelivery {
     }
 
     public interface EndpointIdStage {
+        /**
+         * <p>The id of the endpoint it's delivered to.</p>
+         */
         EventIdStage endpointId(@NotNull String endpointId);
     }
 
@@ -289,6 +304,9 @@ public final class WebhookDelivery {
     }
 
     public interface AttemptCountStage {
+        /**
+         * <p>How many attempts were made so far.</p>
+         */
         CreatedAtStage attemptCount(long attemptCount);
     }
 
@@ -318,6 +336,9 @@ public final class WebhookDelivery {
 
         _FinalStage nextAttemptAt(Nullable<OffsetDateTime> nextAttemptAt);
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode);
 
         _FinalStage lastStatusCode(Long lastStatusCode);
@@ -326,6 +347,9 @@ public final class WebhookDelivery {
 
         _FinalStage lastStatusCode(Nullable<Long> lastStatusCode);
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         _FinalStage lastError(OptionalNullable<String> lastError);
 
         _FinalStage lastError(String lastError);
@@ -431,6 +455,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>The id of the endpoint it's delivered to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("endpoint_id")
         public EventIdStage endpointId(@NotNull String endpointId) {
@@ -463,6 +491,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>How many attempts were made so far.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("attempt_count")
         public CreatedAtStage attemptCount(long attemptCount) {
@@ -554,6 +586,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Nullable<String> lastError) {
             if (lastError.isNull()) {
@@ -566,6 +602,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Optional<String> lastError) {
             if (lastError.isPresent()) {
@@ -576,12 +616,19 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(String lastError) {
             this.lastError = OptionalNullable.of(lastError);
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_error", nulls = Nulls.SKIP)
         public _FinalStage lastError(OptionalNullable<String> lastError) {
@@ -589,6 +636,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Nullable<Long> lastStatusCode) {
             if (lastStatusCode.isNull()) {
@@ -601,6 +652,10 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Optional<Long> lastStatusCode) {
             if (lastStatusCode.isPresent()) {
@@ -611,12 +666,19 @@ public final class WebhookDelivery {
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Long lastStatusCode) {
             this.lastStatusCode = OptionalNullable.of(lastStatusCode);
             return this;
         }
 
+        /**
+         * <p>The endpoint's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_status_code", nulls = Nulls.SKIP)
         public _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode) {

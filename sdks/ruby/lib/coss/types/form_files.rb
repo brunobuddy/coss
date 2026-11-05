@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # File uploads.
     class FormFiles < Internal::Types::Model
       field :enabled, -> { Internal::Types::Boolean }, optional: false, nullable: false
 

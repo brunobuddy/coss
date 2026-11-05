@@ -130,6 +130,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One segment of the API key's environment, with its filter.
+//
 // Example:
 //
 //	request := &email.GetSegmentsRequest{
@@ -155,6 +157,8 @@ func (c *Client) Get(
 	return response.Body, nil
 }
 
+// Deletes a segment. The contacts it matched stay.
+//
 // Example:
 //
 //	request := &email.RemoveSegmentsRequest{
@@ -180,6 +184,8 @@ func (c *Client) Remove(
 	return response.Body, nil
 }
 
+// Changes a segment's name or filter. Only the fields given change.
+//
 // Example:
 //
 //	request := &email.UpdateSegmentRequest{

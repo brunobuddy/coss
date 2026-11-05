@@ -14,6 +14,9 @@ public record TrackingDomainRecord : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The record's type.
+    /// </summary>
     [JsonPropertyName("type")]
     public required TrackingDomainRecordType Type { get; set; }
 

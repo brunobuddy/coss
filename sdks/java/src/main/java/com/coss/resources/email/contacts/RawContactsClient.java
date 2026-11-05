@@ -702,18 +702,30 @@ public class RawContactsClient {
         }
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CossHttpResponse<Contact> get(String id) {
         return get(id, GetContactsRequest.builder().build());
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CossHttpResponse<Contact> get(String id, RequestOptions requestOptions) {
         return get(id, GetContactsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CossHttpResponse<Contact> get(String id, GetContactsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One contact of the API key's environment.
+     */
     public CossHttpResponse<Contact> get(String id, GetContactsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()

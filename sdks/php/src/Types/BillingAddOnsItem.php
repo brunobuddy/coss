@@ -14,13 +14,13 @@ class BillingAddOnsItem extends JsonSerializableType
     public string $key;
 
     /**
-     * @var string $name
+     * @var string $name The add-on's name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var int $quantity
+     * @var int $quantity How many units are on the contract.
      */
     #[JsonProperty('quantity')]
     public int $quantity;
@@ -32,7 +32,7 @@ class BillingAddOnsItem extends JsonSerializableType
     public int $unitAmount;
 
     /**
-     * @var value-of<BillingAddOnsItemInterval> $interval
+     * @var value-of<BillingAddOnsItemInterval> $interval How often it's charged.
      */
     #[JsonProperty('interval')]
     public string $interval;

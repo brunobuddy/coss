@@ -30,6 +30,7 @@ const {
   schedulingCalendarEvent,
   schedulingEventType,
   schedulingGroupSession,
+  schedulingOutOfOffice,
   organization,
 } = schema;
 
@@ -44,6 +45,8 @@ type SessionRow = typeof schedulingGroupSession.$inferSelect;
 const LEASE_MS = 2 * 60_000;
 const MAX_ATTEMPTS = 8;
 const MAX_BACKOFF_MS = 6 * 60 * 60_000;
+// Colleagues may see this, which is why it never says why.
+const OUT_OF_OFFICE_TITLE = "Out of office";
 
 type Scan = { limit?: number; scope?: { organizationIds: readonly string[] } };
 
@@ -104,9 +107,19 @@ async function renewLease(row: LedgerRow, now: Date): Promise<LedgerRow | null> 
   return renewed ?? null;
 }
 
-// A session's event can go and come back, as a new row, while a booking's key lasts for good.
+/**
+ * A session's event can go and come back, as a new row. A booking's row comes back itself when a
+ * host leaves and returns, so its generation makes a key not yet used: Graph's answer to a repeated
+ * `transactionId` is undocumented, and it could be the deleted event. It goes first because Meet's
+ * `requestId` is the key's first 64 characters, and a new event needs a new one of those too.
+ */
 const eventKey = (row: LedgerRow) =>
-  (row.groupSessionId ? row.id : `${row.bookingId}-${row.calendarId}`).replace(/[^a-z0-9_-]/gi, "");
+  (row.groupSessionId
+    ? row.id
+    : `${row.keyGeneration > 0 ? `g${row.keyGeneration}-` : ""}${
+        row.outOfOfficeId ?? row.bookingId
+      }-${row.calendarId}`
+  ).replace(/[^a-z0-9_-]/gi, "");
 
 type Location = BookingRow["location"];
 
@@ -215,10 +228,15 @@ async function setMeetingLink(
     const [updated] = await tx
       .update(schedulingBooking)
       .set({
-        // Remembers where the link came from, for when another host takes the booking.
+        // Remembers where the link came from and whose it is, for when hosts change.
         location: zoom
           ? { type: "zoom", url }
-          : ({ type: "link", url, conference: location.type } as never),
+          : ({
+              type: "link",
+              url,
+              conference: location.type,
+              conference_host_id: hostId,
+            } as never),
         version: sql`${schedulingBooking.version} + 1`,
       })
       .where(
@@ -230,30 +248,34 @@ async function setMeetingLink(
       .returning();
     if (!updated) return;
     await carryAnchorlessReminders(tx, updated);
-    // The host's calendar event went out without the link.
-    if (zoom) {
-      await tx
-        .update(schedulingCalendarEvent)
-        .set({
-          desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
-          nextAttemptAt: now,
-          attempts: 0,
-        })
-        .where(
-          and(
-            eq(schedulingCalendarEvent.bookingId, booking.id),
-            eq(schedulingCalendarEvent.organizationId, booking.organizationId),
-            eq(schedulingCalendarEvent.desiredState, "present"),
-            notZoomMeeting(),
-          ),
-        );
-    }
+    // Other events went out without the link. A Meet's own event already shows it.
+    await tx
+      .update(schedulingCalendarEvent)
+      .set({
+        desiredVersion: sql`${schedulingCalendarEvent.desiredVersion} + 1`,
+        nextAttemptAt: now,
+        attempts: 0,
+      })
+      .where(
+        and(
+          eq(schedulingCalendarEvent.bookingId, booking.id),
+          eq(schedulingCalendarEvent.organizationId, booking.organizationId),
+          eq(schedulingCalendarEvent.desiredState, "present"),
+          notZoomMeeting(),
+          zoom ? undefined : ne(schedulingCalendarEvent.hostId, hostId),
+        ),
+      );
     await announce(tx, updated, "scheduling.booking.location_ready", "Meeting link ready", now);
   });
 }
 
 /** Every confirmed seat gets the session's link, unless they've all left since the write. */
-async function setSessionMeetingLink(session: SessionRow, url: string, now: Date): Promise<void> {
+async function setSessionMeetingLink(
+  session: SessionRow,
+  hostId: string,
+  url: string,
+  now: Date,
+): Promise<void> {
   await db.transaction(async (tx) => {
     const [locked] = await tx
       .select()
@@ -266,6 +288,8 @@ async function setSessionMeetingLink(session: SessionRow, url: string, now: Date
       )
       .for("update");
     if (!locked || locked.meetingUrl === url || locked.location?.type === "link") return;
+    // A slow answer for a host who's since been replaced: their meeting isn't this session's.
+    if (locked.hostId !== hostId) return;
     const seats = await confirmedSeats(tx, locked);
     if (seats.length === 0) return;
     await tx
@@ -288,6 +312,7 @@ async function bookingsOfRow(tx: Executor, row: LedgerRow): Promise<BookingRow[]
   if (row.groupSessionId) {
     return confirmedSeats(tx, { id: row.groupSessionId, organizationId: row.organizationId });
   }
+  if (!row.bookingId) return [];
   return tx
     .select()
     .from(schedulingBooking)
@@ -471,7 +496,18 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
           ),
         )
     : [];
-  if (!target || !(booking || session)) return;
+  const [away] = row.outOfOfficeId
+    ? await db
+        .select({ id: schedulingOutOfOffice.id })
+        .from(schedulingOutOfOffice)
+        .where(
+          and(
+            eq(schedulingOutOfOffice.id, row.outOfOfficeId),
+            eq(schedulingOutOfOffice.organizationId, row.organizationId),
+          ),
+        )
+    : [];
+  if (!target || !(booking || session || away)) return;
   const location = session ? locationOfSession(session) : (booking?.location ?? null);
   const { calendar, connection } = target;
   // Waits for the host to reconnect, without using up attempts.
@@ -499,6 +535,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       await settle({
         appliedVersion: row.desiredVersion,
         providerEventId: null,
+        keyGeneration: row.keyGeneration + 1,
         ...clearedUnlessNewer(row),
         attempts: 0,
         lastErrorCode: null,
@@ -513,7 +550,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
     sent = true;
     const event: CalendarEventWrite = {
       key: eventKey(row),
-      title: text.title,
+      title: away ? OUT_OF_OFFICE_TITLE : text.title,
       // An event that never held details keeps whatever the host wrote on it.
       ...(text.description || held ? { description: text.description } : {}),
       startMs: row.desiredStart.getTime(),
@@ -540,7 +577,7 @@ async function writeOne(claimed: LedgerRow, deps: CalendarWriteDeps): Promise<vo
       return;
     }
     if (written.meetingUrl) {
-      if (session) await setSessionMeetingLink(session, written.meetingUrl, now);
+      if (session) await setSessionMeetingLink(session, row.hostId, written.meetingUrl, now);
       else if (booking) await setMeetingLink(booking, row.hostId, written.meetingUrl, now);
     }
   } catch (error) {
@@ -656,6 +693,8 @@ export async function checkHostEditedEvents(deps: CalendarDeps, opts: Scan = {})
       and(
         eq(schedulingCalendarEvent.desiredState, "present"),
         eq(schedulingCalendarEvent.externalState, "in_sync"),
+        // Someone removing their own time off from their calendar isn't a conflict with anything.
+        isNull(schedulingCalendarEvent.outOfOfficeId),
         isNotNull(schedulingCalendarEvent.providerEventId),
         gt(schedulingCalendarEvent.desiredStart, now),
         eq(schedulingCalendarConnection.status, "active"),

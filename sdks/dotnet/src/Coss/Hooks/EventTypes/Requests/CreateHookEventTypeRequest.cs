@@ -6,9 +6,15 @@ namespace Coss.Hooks;
 [Serializable]
 public record CreateHookEventTypeRequest
 {
+    /// <summary>
+    /// The type's name, which messages send as `event_type`. Letters, digits and `. _ -`.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// What this event means, shown to your users.
+    /// </summary>
     [Optional]
     [JsonPropertyName("description")]
     public string? Description { get; set; }

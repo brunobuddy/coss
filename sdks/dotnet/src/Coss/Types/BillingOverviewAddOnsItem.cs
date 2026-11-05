@@ -17,9 +17,15 @@ public record BillingOverviewAddOnsItem : IJsonOnDeserialized
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 
+    /// <summary>
+    /// The add-on's name.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// How many units are on the contract.
+    /// </summary>
     [JsonPropertyName("quantity")]
     public required long Quantity { get; set; }
 
@@ -29,6 +35,9 @@ public record BillingOverviewAddOnsItem : IJsonOnDeserialized
     [JsonPropertyName("unit_amount")]
     public required long UnitAmount { get; set; }
 
+    /// <summary>
+    /// How often it's charged.
+    /// </summary>
     [JsonPropertyName("interval")]
     public required BillingOverviewAddOnsItemInterval Interval { get; set; }
 

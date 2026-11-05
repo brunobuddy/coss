@@ -29,10 +29,26 @@ class SendEmailRequest(UniversalBaseModel):
     An email address, optionally with a display name: "Acme <hello@acme.com>".
     """
 
-    to: SendEmailRequestTo
-    cc: typing.Optional[SendEmailRequestCc] = None
-    bcc: typing.Optional[SendEmailRequestBcc] = None
-    reply_to: typing.Optional[SendEmailRequestReplyTo] = None
+    to: SendEmailRequestTo = pydantic.Field()
+    """
+    Who it goes to.
+    """
+
+    cc: typing.Optional[SendEmailRequestCc] = pydantic.Field(default=None)
+    """
+    Who it's copied to.
+    """
+
+    bcc: typing.Optional[SendEmailRequestBcc] = pydantic.Field(default=None)
+    """
+    Who it's blind copied to.
+    """
+
+    reply_to: typing.Optional[SendEmailRequestReplyTo] = pydantic.Field(default=None)
+    """
+    Where replies go.
+    """
+
     subject: typing.Optional[str] = pydantic.Field(default=None)
     """
     Required unless the email is sent from a template (`template_id`).
@@ -73,7 +89,11 @@ class SendEmailRequest(UniversalBaseModel):
     Up to 15 custom headers. Names are case-insensitive.
     """
 
-    tags: typing.Optional[typing.List[SendEmailRequestTagsItem]] = None
+    tags: typing.Optional[typing.List[SendEmailRequestTagsItem]] = pydantic.Field(default=None)
+    """
+    Your tags on the email.
+    """
+
     category: typing.Optional[str] = pydantic.Field(default=None)
     """
     What kind of email this is, e.g. "marketing". Recipients suppressed for this category (or for every email) are skipped.

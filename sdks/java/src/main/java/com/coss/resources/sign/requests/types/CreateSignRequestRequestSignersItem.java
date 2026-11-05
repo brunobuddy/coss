@@ -55,11 +55,17 @@ public final class CreateSignRequestRequestSignersItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Shown on the signing page and on the certificate.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return Where a <code>delivery: email</code> signer gets their link. Unique within a request.
+     */
     @JsonProperty("email")
     public String getEmail() {
         return email;
@@ -133,12 +139,18 @@ public final class CreateSignRequestRequestSignersItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>Shown on the signing page and on the certificate.</p>
+         */
         EmailStage name(@NotNull String name);
 
         Builder from(CreateSignRequestRequestSignersItem other);
     }
 
     public interface EmailStage {
+        /**
+         * <p>Where a <code>delivery: email</code> signer gets their link. Unique within a request.</p>
+         */
         _FinalStage email(@NotNull String email);
     }
 
@@ -210,6 +222,10 @@ public final class CreateSignRequestRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>Shown on the signing page and on the certificate.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public EmailStage name(@NotNull String name) {
@@ -217,6 +233,10 @@ public final class CreateSignRequestRequestSignersItem {
             return this;
         }
 
+        /**
+         * <p>Where a <code>delivery: email</code> signer gets their link. Unique within a request.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("email")
         public _FinalStage email(@NotNull String email) {

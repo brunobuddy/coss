@@ -22,17 +22,41 @@ class DmarcPublishedRecord(UniversalBaseModel):
     The `v=DMARC1` TXT record as published.
     """
 
-    p: typing.Optional[DmarcPublishedRecordP] = None
-    sp: typing.Optional[DmarcPublishedRecordSp] = None
-    np: typing.Optional[DmarcPublishedRecordNp] = None
-    adkim: typing.Optional[DmarcPublishedRecordAdkim] = None
-    aspf: typing.Optional[DmarcPublishedRecordAspf] = None
+    p: typing.Optional[DmarcPublishedRecordP] = pydantic.Field(default=None)
+    """
+    The domain's policy tag.
+    """
+
+    sp: typing.Optional[DmarcPublishedRecordSp] = pydantic.Field(default=None)
+    """
+    The subdomain policy tag. `null`: not published.
+    """
+
+    np: typing.Optional[DmarcPublishedRecordNp] = pydantic.Field(default=None)
+    """
+    The policy tag for non-existent subdomains. `null`: not published.
+    """
+
+    adkim: typing.Optional[DmarcPublishedRecordAdkim] = pydantic.Field(default=None)
+    """
+    The DKIM alignment tag. `null`: not published.
+    """
+
+    aspf: typing.Optional[DmarcPublishedRecordAspf] = pydantic.Field(default=None)
+    """
+    The SPF alignment tag. `null`: not published.
+    """
+
     pct: typing.Optional[int] = pydantic.Field(default=None)
     """
     Removed by RFC 9989 but still honored by many receivers.
     """
 
-    t: typing.Optional[DmarcPublishedRecordT] = None
+    t: typing.Optional[DmarcPublishedRecordT] = pydantic.Field(default=None)
+    """
+    The testing tag. `null`: not published.
+    """
+
     rua: typing.List[str] = pydantic.Field()
     """
     Aggregate report addresses.

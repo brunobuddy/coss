@@ -304,18 +304,30 @@ public class AsyncRawFormsClient {
         return future;
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public CompletableFuture<CossHttpResponse<Form>> get(String id) {
         return get(id, GetFormsRequest.builder().build());
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public CompletableFuture<CossHttpResponse<Form>> get(String id, RequestOptions requestOptions) {
         return get(id, GetFormsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public CompletableFuture<CossHttpResponse<Form>> get(String id, GetFormsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * A form's settings, with the <code>endpoint</code> it posts to and its <code>hosted_url</code>.
+     */
     public CompletableFuture<CossHttpResponse<Form>> get(
             String id, GetFormsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

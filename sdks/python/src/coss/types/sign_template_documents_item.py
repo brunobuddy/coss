@@ -9,10 +9,25 @@ from .sign_template_documents_item_pages_item import SignTemplateDocumentsItemPa
 
 class SignTemplateDocumentsItem(UniversalBaseModel):
     id: str
-    filename: str
-    sha256: str
-    page_count: int
-    pages: typing.List[SignTemplateDocumentsItemPagesItem]
+    filename: str = pydantic.Field()
+    """
+    The file's name.
+    """
+
+    sha256: str = pydantic.Field()
+    """
+    Hex SHA-256 of the uploaded bytes.
+    """
+
+    page_count: int = pydantic.Field()
+    """
+    How many pages it has.
+    """
+
+    pages: typing.List[SignTemplateDocumentsItemPagesItem] = pydantic.Field()
+    """
+    Each page's size, in order.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

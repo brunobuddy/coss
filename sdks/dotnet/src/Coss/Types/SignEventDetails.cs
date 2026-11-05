@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// What this event recorded, depending on its type.
+/// </summary>
 [Serializable]
 public record SignEventDetails : IJsonOnDeserialized
 {
@@ -11,6 +14,9 @@ public record SignEventDetails : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// `declined`: the signer's reason.
+    /// </summary>
     [Optional]
     [JsonPropertyName("reason")]
     public string? Reason { get; set; }
@@ -29,6 +35,9 @@ public record SignEventDetails : IJsonOnDeserialized
     [JsonPropertyName("disclosure_sha256")]
     public string? DisclosureSha256 { get; set; }
 
+    /// <summary>
+    /// `signed`: the fields the signer filled.
+    /// </summary>
     [Optional]
     [JsonPropertyName("field_ids")]
     public IEnumerable<string>? FieldIds { get; set; }
@@ -40,6 +49,9 @@ public record SignEventDetails : IJsonOnDeserialized
     [JsonPropertyName("signature_sha256")]
     public string? SignatureSha256 { get; set; }
 
+    /// <summary>
+    /// SHA-256 of the initials image the signer adopted.
+    /// </summary>
     [Optional]
     [JsonPropertyName("initials_sha256")]
     public string? InitialsSha256 { get; set; }

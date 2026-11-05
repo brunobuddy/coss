@@ -9,7 +9,11 @@ from .billing_webhook_event_four_data_reason import BillingWebhookEventFourDataR
 
 
 class BillingWebhookEventFourData(UniversalBaseModel):
-    organization_id: str
+    organization_id: str = pydantic.Field()
+    """
+    The organization's id.
+    """
+
     occurred_at: dt.datetime = pydantic.Field()
     """
     When it happened: sort events by it.

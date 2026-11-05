@@ -3,6 +3,7 @@
 module Coss
   module Forms
     module Types
+      # The page coss.com can serve for this form. Only the fields given change.
       class CreateFormRequestHosted < Internal::Types::Model
         field :enabled, -> { Internal::Types::Boolean }, optional: true, nullable: false
 

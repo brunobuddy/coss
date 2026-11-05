@@ -58,18 +58,30 @@ public class LimitBucketsClient {
         return this.rawClient.create(request, requestOptions).body();
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public RiskLimitBucket get(String id) {
         return this.rawClient.get(id).body();
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public RiskLimitBucket get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).body();
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public RiskLimitBucket get(String id, GetLimitBucketsRequest request) {
         return this.rawClient.get(id, request).body();
     }
 
+    /**
+     * One of the rate limit buckets you defined for <code>POST /v1/risk/limit</code>.
+     */
     public RiskLimitBucket get(String id, GetLimitBucketsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).body();
     }

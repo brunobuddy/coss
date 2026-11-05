@@ -42,14 +42,23 @@ public record TrackingDomain : IJsonOnDeserialized
     [JsonPropertyName("created_at")]
     public required DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When it was last checked. `null`: not yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_checked_at")]
     public DateTime? LastCheckedAt { get; set; }
 
+    /// <summary>
+    /// When it became active. `null`: it isn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("activated_at")]
     public DateTime? ActivatedAt { get; set; }
 
+    /// <summary>
+    /// When it failed. `null`: it hasn't.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("failed_at")]
     public DateTime? FailedAt { get; set; }

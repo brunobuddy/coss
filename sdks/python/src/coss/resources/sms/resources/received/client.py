@@ -88,6 +88,8 @@ class ReceivedClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> ReceivedSms:
         """
+        One message received on a number of the organization and routed to the API key's environment.
+
         Parameters
         ----------
         id : str
@@ -203,6 +205,8 @@ class AsyncReceivedClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> ReceivedSms:
         """
+        One message received on a number of the organization and routed to the API key's environment.
+
         Parameters
         ----------
         id : str

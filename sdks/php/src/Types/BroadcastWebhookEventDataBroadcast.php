@@ -8,19 +8,19 @@ use Coss\Core\Json\JsonProperty;
 class BroadcastWebhookEventDataBroadcast extends JsonSerializableType
 {
     /**
-     * @var string $id
+     * @var string $id The broadcast's id.
      */
     #[JsonProperty('id')]
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Its name.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var value-of<BroadcastWebhookEventDataBroadcastStatus> $status
+     * @var value-of<BroadcastWebhookEventDataBroadcastStatus> $status Its status after this event.
      */
     #[JsonProperty('status')]
     public string $status;

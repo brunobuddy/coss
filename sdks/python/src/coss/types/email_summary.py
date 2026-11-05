@@ -25,15 +25,53 @@ class EmailSummary(UniversalBaseModel):
 
     object: EmailSummaryObject
     id: str
-    from_: typing_extensions.Annotated[str, FieldMetadata(alias="from"), pydantic.Field(alias="from")]
-    to: typing.List[str]
-    cc: typing.List[str]
-    bcc: typing.List[str]
-    reply_to: typing.List[str]
-    subject: str
-    tags: typing.List[EmailSummaryTagsItem]
-    category: typing.Optional[str] = None
-    stream: EmailSummaryStream
+    from_: typing_extensions.Annotated[
+        str, FieldMetadata(alias="from"), pydantic.Field(alias="from", description="Who it's sent from.")
+    ]
+    """
+    Who it's sent from.
+    """
+
+    to: typing.List[str] = pydantic.Field()
+    """
+    The `To` addresses.
+    """
+
+    cc: typing.List[str] = pydantic.Field()
+    """
+    The `Cc` addresses.
+    """
+
+    bcc: typing.List[str] = pydantic.Field()
+    """
+    The `Bcc` addresses.
+    """
+
+    reply_to: typing.List[str] = pydantic.Field()
+    """
+    The `Reply-To` addresses.
+    """
+
+    subject: str = pydantic.Field()
+    """
+    The subject, rendered if it came from a template.
+    """
+
+    tags: typing.List[EmailSummaryTagsItem] = pydantic.Field()
+    """
+    Your tags on the email.
+    """
+
+    category: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The email's category, which suppressions and tracking rules can scope to. `null`: none.
+    """
+
+    stream: EmailSummaryStream = pydantic.Field()
+    """
+    `transactional` or `marketing`.
+    """
+
     status: EmailSummaryStatus = pydantic.Field()
     """
     Whether the email was handed to the delivery provider. `scheduled` emails wait for `scheduled_at`; `canceled` ones were canceled before that. Per-recipient delivery is in `recipients`.
@@ -44,7 +82,11 @@ class EmailSummary(UniversalBaseModel):
     Why the email failed; `null` unless `status` is `failed`.
     """
 
-    recipients: typing.List[EmailRecipient]
+    recipients: typing.List[EmailRecipient] = pydantic.Field()
+    """
+    Each recipient, with how delivery to them went.
+    """
+
     sandbox: bool = pydantic.Field()
     """
     True when sent from a sandbox environment (never delivered).
@@ -52,7 +94,11 @@ class EmailSummary(UniversalBaseModel):
 
     tracking: EmailTracking
     created_at: dt.datetime
-    sent_at: typing.Optional[dt.datetime] = None
+    sent_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was handed to the provider. `null`: not yet.
+    """
+
     scheduled_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the email was scheduled to be sent; `null` if it was not.

@@ -7,10 +7,12 @@ from importlib import import_module
 
 if typing.TYPE_CHECKING:
     from .types import ListVerifyRequestStatus, StartVerificationRequestChannel, StartVerificationRequestTagsItem
+    from .resources import settings
 _dynamic_imports: typing.Dict[str, str] = {
     "ListVerifyRequestStatus": ".types",
     "StartVerificationRequestChannel": ".types",
     "StartVerificationRequestTagsItem": ".types",
+    "settings": ".resources",
 }
 
 
@@ -35,4 +37,4 @@ def __dir__():
     return sorted(lazy_attrs)
 
 
-__all__ = ["ListVerifyRequestStatus", "StartVerificationRequestChannel", "StartVerificationRequestTagsItem"]
+__all__ = ["ListVerifyRequestStatus", "StartVerificationRequestChannel", "StartVerificationRequestTagsItem", "settings"]

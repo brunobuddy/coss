@@ -5,6 +5,7 @@ import {
   createBooking,
   createEventType,
   createHost,
+  createOutOfOffice,
   createSchedule,
   explainSlot,
   listEventTypeSlots,
@@ -56,6 +57,63 @@ async function eventTypeFor(
     ...overrides,
   } as never);
 }
+
+describe("explaining a slot, with people away", () => {
+  const FAR = { nowMs: NOW };
+  const away = (env: SchedulingEnvironment, host: string, delegates: string[] = []) =>
+    createOutOfOffice(
+      env,
+      {
+        host,
+        start: new Date(at("09:00")).toISOString(),
+        end: new Date(at("11:00")).toISOString(),
+        delegates,
+      } as never,
+      deps,
+      actor,
+      "api",
+    );
+
+  test("someone covering is only free while they are, as booking says", async () => {
+    const env = await tenantEnv();
+    const [principal, cover] = await Promise.all([hostWithHours(env), hostWithHours(env)]);
+    const eventType = await eventTypeFor(env, [member(principal.id)]);
+    await away(env, principal.id, [cover.id]);
+    const during = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("09:30"),
+      ...FAR,
+    });
+    expect(during.available).toBe(true);
+    const after = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("12:00"),
+      ...FAR,
+    });
+    const reasons = Object.fromEntries(after.hosts.map((host) => [host.hostId, host.reason]));
+    expect(reasons[cover.id]).toBe("outside_coverage");
+    expect(reasons[principal.id]).toBeNull();
+  });
+
+  test("a running session can't be joined while its host is away", async () => {
+    const env = await tenantEnv();
+    const host = await hostWithHours(env);
+    const eventType = await eventTypeFor(env, [member(host.id)], { kind: "group", capacity: 5 });
+    await createBooking(
+      env,
+      { eventType: eventType.id, startMs: at("10:00"), attendee },
+      deps,
+      actor,
+    );
+    await away(env, host.id);
+    const explained = await explainSlot(env, {
+      eventTypeRef: eventType.id,
+      startMs: at("10:00"),
+      ...FAR,
+    });
+    expect(explained).toMatchObject({ available: false, reason: "out_of_office" });
+  });
+});
 
 describe("explaining a slot", () => {
   test("says a free start is free", async () => {

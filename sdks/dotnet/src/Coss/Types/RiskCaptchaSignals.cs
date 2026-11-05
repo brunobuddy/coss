@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// How the captcha went. `null` when no captcha applies.
+/// </summary>
 [Serializable]
 public record RiskCaptchaSignals : IJsonOnDeserialized
 {
@@ -11,6 +14,9 @@ public record RiskCaptchaSignals : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// Whether the request carried a token.
+    /// </summary>
     [JsonPropertyName("provided")]
     public required bool Provided { get; set; }
 

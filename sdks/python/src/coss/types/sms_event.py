@@ -13,9 +13,21 @@ from .sms_event_type import SmsEventType
 class SmsEvent(UniversalBaseModel):
     object: SmsEventObject
     id: str
-    sms_id: str
-    type: SmsEventType
-    occurred_at: dt.datetime
+    sms_id: str = pydantic.Field()
+    """
+    The id of the message.
+    """
+
+    type: SmsEventType = pydantic.Field()
+    """
+    What happened: `sms.scheduled`, `sms.sent`, `sms.delivered`, `sms.undelivered`, `sms.failed`, `sms.suppressed` or `sms.canceled`.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When it happened.
+    """
+
     data: SmsEventData
 
     if IS_PYDANTIC_V2:

@@ -6,28 +6,31 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * File uploads.
+ */
 class FormFiles extends JsonSerializableType
 {
     /**
-     * @var bool $enabled
+     * @var bool $enabled Whether uploads are accepted (`multipart/form-data`).
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
 
     /**
-     * @var int $maxFiles
+     * @var int $maxFiles Most files per submission.
      */
     #[JsonProperty('max_files')]
     public int $maxFiles;
 
     /**
-     * @var int $maxFileBytes
+     * @var int $maxFileBytes Largest file, in bytes.
      */
     #[JsonProperty('max_file_bytes')]
     public int $maxFileBytes;
 
     /**
-     * @var array<string> $allowedTypes
+     * @var array<string> $allowedTypes MIME types accepted. Empty: images, PDFs, text and Office.
      */
     #[JsonProperty('allowed_types'), ArrayType(['string'])]
     public array $allowedTypes;

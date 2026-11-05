@@ -17,23 +17,35 @@ public record InvoiceLine : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// What it's for: `plan_fee`, `proration`, `usage`, `credit`, `discount`, `commitment_fee`, `commitment_shortfall`, `add_on`, `adjustment` or `write_off`.
+    /// </summary>
     [JsonPropertyName("kind")]
     public required InvoiceLineKind Kind { get; set; }
 
+    /// <summary>
+    /// The line as it reads on the invoice.
+    /// </summary>
     [JsonPropertyName("description")]
     public required string Description { get; set; }
 
     /// <summary>
-    /// What is counted, e.g. `email.recipients`.
+    /// The meter of a `usage` line. `null` for other lines.
     /// </summary>
     [Nullable]
     [JsonPropertyName("meter")]
     public InvoiceLineMeter? Meter { get; set; }
 
+    /// <summary>
+    /// What the meter is split by, such as `country=US`. `null`: not split.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("dimension")]
     public string? Dimension { get; set; }
 
+    /// <summary>
+    /// Units on this line. `null` when it isn't priced by the unit.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("quantity")]
     public long? Quantity { get; set; }
@@ -58,6 +70,9 @@ public record InvoiceLine : IJsonOnDeserialized
     [JsonPropertyName("amount")]
     public required long Amount { get; set; }
 
+    /// <summary>
+    /// What period it covers.
+    /// </summary>
     [JsonPropertyName("period")]
     public required InvoiceLinePeriod Period { get; set; }
 

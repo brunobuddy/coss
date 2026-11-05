@@ -99,6 +99,9 @@ public final class DomainDmarc {
         return object;
     }
 
+    /**
+     * @return The domain's id.
+     */
     @JsonProperty("domain_id")
     public String getDomainId() {
         return domainId;
@@ -213,11 +216,17 @@ public final class DomainDmarc {
         return checks;
     }
 
+    /**
+     * @return Things to look at before tightening the policy.
+     */
     @JsonProperty("warnings")
     public List<String> getWarnings() {
         return warnings;
     }
 
+    /**
+     * @return What the aggregate reports of this period say.
+     */
     @JsonProperty("report_summary")
     public DomainDmarcReportSummary getReportSummary() {
         return reportSummary;
@@ -324,6 +333,9 @@ public final class DomainDmarc {
     }
 
     public interface DomainIdStage {
+        /**
+         * <p>The domain's id.</p>
+         */
         StageStage domainId(@NotNull String domainId);
     }
 
@@ -356,6 +368,9 @@ public final class DomainDmarc {
     }
 
     public interface ReportSummaryStage {
+        /**
+         * <p>What the aggregate reports of this period say.</p>
+         */
         _FinalStage reportSummary(@NotNull DomainDmarcReportSummary reportSummary);
     }
 
@@ -438,6 +453,9 @@ public final class DomainDmarc {
 
         _FinalStage addAllChecks(List<DomainDmarcChecksItem> checks);
 
+        /**
+         * <p>Things to look at before tightening the policy.</p>
+         */
         _FinalStage warnings(List<String> warnings);
 
         _FinalStage addWarnings(String warnings);
@@ -517,6 +535,10 @@ public final class DomainDmarc {
             return this;
         }
 
+        /**
+         * <p>The domain's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("domain_id")
         public StageStage domainId(@NotNull String domainId) {
@@ -568,6 +590,10 @@ public final class DomainDmarc {
             return this;
         }
 
+        /**
+         * <p>What the aggregate reports of this period say.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("report_summary")
         public _FinalStage reportSummary(@NotNull DomainDmarcReportSummary reportSummary) {
@@ -575,6 +601,10 @@ public final class DomainDmarc {
             return this;
         }
 
+        /**
+         * <p>Things to look at before tightening the policy.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addAllWarnings(List<String> warnings) {
             if (warnings != null) {
@@ -583,12 +613,19 @@ public final class DomainDmarc {
             return this;
         }
 
+        /**
+         * <p>Things to look at before tightening the policy.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage addWarnings(String warnings) {
             this.warnings.add(warnings);
             return this;
         }
 
+        /**
+         * <p>Things to look at before tightening the policy.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "warnings", nulls = Nulls.SKIP)
         public _FinalStage warnings(List<String> warnings) {

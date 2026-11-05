@@ -61,14 +61,14 @@ public class AsyncRawRiskClient {
     }
 
     /**
-     * Assesses a sign-up, login or other event in the API key's environment and returns a decision (<code>allow</code>, <code>review</code> or <code>block</code>) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in <code>degraded</code>. Call it from your server, never from the browser, and treat errors as <code>allow</code> (fail open) so an outage never locks your users out. <code>review</code> decisions also fire a <code>risk.assessment.review</code> webhook. Sandbox (<code>coss_test_…</code>) keys accept documented test addresses (<code>192.0.2.x</code>, <code>@disposable.test</code>, <code>@undeliverable.test</code>).
+     * Assesses a sign-up, login or other event in the API key's environment and returns a decision (<code>allow</code>, <code>review</code> or <code>block</code>) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in <code>degraded</code>. Call it from your server, never from the browser, and treat errors as <code>allow</code> (fail open) so an outage never locks your users out. <code>review</code> decisions also fire a <code>risk.assessment.review</code> webhook. Live assessments are billed (<code>risk.assessments</code>; plans include some every month) unless they end in <code>block</code>. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (<code>usage_limit</code> in <code>degraded</code>); they never fail over billing. Sandbox (<code>coss_test_…</code>) keys accept documented test addresses (<code>192.0.2.x</code>, <code>@disposable.test</code>, <code>@undeliverable.test</code>).
      */
     public CompletableFuture<CossHttpResponse<RiskAssessment>> assess(CreateRiskAssessmentRequest request) {
         return assess(request, null);
     }
 
     /**
-     * Assesses a sign-up, login or other event in the API key's environment and returns a decision (<code>allow</code>, <code>review</code> or <code>block</code>) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in <code>degraded</code>. Call it from your server, never from the browser, and treat errors as <code>allow</code> (fail open) so an outage never locks your users out. <code>review</code> decisions also fire a <code>risk.assessment.review</code> webhook. Sandbox (<code>coss_test_…</code>) keys accept documented test addresses (<code>192.0.2.x</code>, <code>@disposable.test</code>, <code>@undeliverable.test</code>).
+     * Assesses a sign-up, login or other event in the API key's environment and returns a decision (<code>allow</code>, <code>review</code> or <code>block</code>) with a score and the reasons behind it. coss.com combines email and IP signals with what it has seen in this environment (velocity, accounts sharing a mailbox, identifiers you reported) and your allow and block lists. Signals that are unavailable at the moment are skipped and listed in <code>degraded</code>. Call it from your server, never from the browser, and treat errors as <code>allow</code> (fail open) so an outage never locks your users out. <code>review</code> decisions also fire a <code>risk.assessment.review</code> webhook. Live assessments are billed (<code>risk.assessments</code>; plans include some every month) unless they end in <code>block</code>. Past Free's allowance, on a billing hold or over a budget, they are free and made without velocity, memory or content (<code>usage_limit</code> in <code>degraded</code>); they never fail over billing. Sandbox (<code>coss_test_…</code>) keys accept documented test addresses (<code>192.0.2.x</code>, <code>@disposable.test</code>, <code>@undeliverable.test</code>).
      */
     public CompletableFuture<CossHttpResponse<RiskAssessment>> assess(
             CreateRiskAssessmentRequest request, RequestOptions requestOptions) {
@@ -837,14 +837,14 @@ public class AsyncRawRiskClient {
     }
 
     /**
-     * Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: <code>[coss-test:phishing]</code> scores 0.99, <code>[coss-test:spam:0.4]</code> exactly 0.4, everything else 0.01.
+     * Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (<code>risk.content_checks</code>; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: <code>[coss-test:phishing]</code> scores 0.99, <code>[coss-test:spam:0.4]</code> exactly 0.4, everything else 0.01.
      */
     public CompletableFuture<CossHttpResponse<RiskContentClassification>> classify(RiskContentClassifyRequest request) {
         return classify(request, null);
     }
 
     /**
-     * Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Limited per organization as well as per key. Sandbox keys use markers instead of a model: <code>[coss-test:phishing]</code> scores 0.99, <code>[coss-test:spam:0.4]</code> exactly 0.4, everything else 0.01.
+     * Scores text people post on your platform (a profile bio, a comment, a listing) for spam, phishing, malware and fraud with an AI model, with zero data retention. Returns scores only: you decide what they mean. Neither the text nor the scores are stored, and request logs keep no body for this endpoint. Takes up to 3 seconds; a failure is a 503 you can retry or treat as unknown. Each live classification the model answered is billed (<code>risk.content_checks</code>; plans include some every month, and Free stops at its allowance). Limited per organization as well as per key. Sandbox keys use markers instead of a model: <code>[coss-test:phishing]</code> scores 0.99, <code>[coss-test:spam:0.4]</code> exactly 0.4, everything else 0.01.
      */
     public CompletableFuture<CossHttpResponse<RiskContentClassification>> classify(
             RiskContentClassifyRequest request, RequestOptions requestOptions) {
@@ -875,15 +875,10 @@ public class AsyncRawRiskClient {
         if (requestOptions != null && requestOptions.getTimeout().isPresent()) {
             client = clientOptions.httpClientWithTimeout(requestOptions);
         }
-        if (requestOptions != null && requestOptions.getMaxRetries().isPresent()) {
-            okhttpRequest = okhttpRequest
-                    .newBuilder()
-                    .tag(
-                            RetryInterceptor.MaxRetriesOverride.class,
-                            new RetryInterceptor.MaxRetriesOverride(
-                                    requestOptions.getMaxRetries().get()))
-                    .build();
-        }
+        okhttpRequest = okhttpRequest
+                .newBuilder()
+                .tag(RetryInterceptor.MaxRetriesOverride.class, new RetryInterceptor.MaxRetriesOverride(0))
+                .build();
         CompletableFuture<CossHttpResponse<RiskContentClassification>> future = new CompletableFuture<>();
         client.newCall(okhttpRequest).enqueue(new Callback() {
             @Override
@@ -906,6 +901,11 @@ public class AsyncRawRiskClient {
                                 return;
                             case 401:
                                 future.completeExceptionally(new UnauthorizedError(
+                                        ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
+                                        response));
+                                return;
+                            case 402:
+                                future.completeExceptionally(new PaymentRequiredError(
                                         ObjectMappers.JSON_MAPPER.readValue(responseBodyString, Error.class),
                                         response));
                                 return;

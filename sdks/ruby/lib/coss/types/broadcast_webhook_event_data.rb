@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The broadcast and how it fared.
     class BroadcastWebhookEventData < Internal::Types::Model
       field :broadcast, -> { Coss::Types::BroadcastWebhookEventDataBroadcast }, optional: false, nullable: false
 

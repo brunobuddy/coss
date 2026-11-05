@@ -22,12 +22,18 @@ public partial interface ISuppressionsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// Whether a phone number is on the SMS suppression list of the API key's environment, with its entry if it is.
+    /// </summary>
     WithRawResponseTask<SmsSuppressionCheck> CheckAsync(
         CheckSuppressionsRequest request,
         RequestOptions? options = null,
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One entry of the SMS suppression list of the API key's environment.
+    /// </summary>
     WithRawResponseTask<SmsSuppression> GetAsync(
         GetSuppressionsRequest request,
         RequestOptions? options = null,

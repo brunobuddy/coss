@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Which opens and clicks are tracked.
     class BroadcastTracking < Internal::Types::Model
       field :opens, -> { Internal::Types::Boolean }, optional: false, nullable: false
 

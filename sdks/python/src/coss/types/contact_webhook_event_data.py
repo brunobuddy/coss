@@ -10,14 +10,25 @@ from .contact_webhook_event_data_source import ContactWebhookEventDataSource
 
 
 class ContactWebhookEventData(UniversalBaseModel):
+    """
+    The contact, without its properties.
+    """
+
     contact: ContactWebhookEventDataContact
-    source: ContactWebhookEventDataSource
+    source: ContactWebhookEventDataSource = pydantic.Field()
+    """
+    How the contact was created.
+    """
+
     topic: typing.Optional[str] = pydantic.Field(default=None)
     """
     `contact.unsubscribed` from one topic (its key); `null`: from marketing altogether.
     """
 
-    occurred_at: dt.datetime
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The submission.
     class FormSubmissionWebhookEventData < Internal::Types::Model
       field :form_id, -> { String }, optional: false, nullable: false
 

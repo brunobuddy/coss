@@ -3,6 +3,7 @@
  * reading them directly keeps lookups explicit (by slug or id) instead of relying on the
  * session's active organization.
  */
+import { type OrgPermissions, orgRoleCan } from "@coss/auth/permissions";
 import { hipaaModeSql, isHipaaMode } from "@coss/compliance";
 import { db, schema } from "@coss/db";
 import { and, asc, desc, eq, gt, sql } from "drizzle-orm";
@@ -85,6 +86,30 @@ const memberColumns = {
 };
 
 /** The user's membership in the organization with this slug, or `null` if they are not a member. */
+/** Better Auth's admin ban: `banned`, until `banExpires` if set. */
+export function isBanned(banned: boolean | null, banExpires: Date | null, now: Date): boolean {
+  return banned === true && (banExpires === null || banExpires.getTime() > now.getTime());
+}
+
+/**
+ * Whether someone can still do this in an organization: for what a member started that outlives the
+ * request, such as a team page open in another tab. Their role now, not when they started it, and a
+ * ban ends it as it ends their sessions.
+ */
+export async function memberStillHolds(input: {
+  organizationId: string;
+  userId: string;
+  permissions: OrgPermissions;
+}): Promise<boolean> {
+  const [row] = await db
+    .select({ role: member.role, banned: user.banned, banExpires: user.banExpires })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(and(eq(member.organizationId, input.organizationId), eq(member.userId, input.userId)));
+  if (!row || isBanned(row.banned, row.banExpires, new Date())) return false;
+  return orgRoleCan(row.role, input.permissions);
+}
+
 export async function getMembership(input: {
   userId: string;
   organizationSlug: string;

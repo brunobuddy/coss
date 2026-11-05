@@ -23,13 +23,13 @@ class Form extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $name
+     * @var string $name Your name for the form, shown in the dashboard and in notifications.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var bool $enabled
+     * @var bool $enabled `false`: submissions are refused.
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
@@ -47,61 +47,61 @@ class Form extends JsonSerializableType
     public ?string $hostedUrl;
 
     /**
-     * @var ?array<FormField> $fields
+     * @var ?array<FormField> $fields The form's fields. `null`: any field is accepted, without validation.
      */
     #[JsonProperty('fields'), ArrayType([FormField::class])]
     public ?array $fields;
 
     /**
-     * @var bool $strictFields
+     * @var bool $strictFields With `fields`: whether fields the form doesn't define are refused.
      */
     #[JsonProperty('strict_fields')]
     public bool $strictFields;
 
     /**
-     * @var array<string> $allowedOrigins
+     * @var array<string> $allowedOrigins Sites that may post to the form. Empty: any.
      */
     #[JsonProperty('allowed_origins'), ArrayType(['string'])]
     public array $allowedOrigins;
 
     /**
-     * @var ?string $redirectUrl
+     * @var ?string $redirectUrl Where browsers go after an HTML post. `null`: coss.com's thank-you page.
      */
     #[JsonProperty('redirect_url')]
     public ?string $redirectUrl;
 
     /**
-     * @var FormSpam $spam
+     * @var FormSpam $spam How submissions are screened.
      */
     #[JsonProperty('spam')]
     public FormSpam $spam;
 
     /**
-     * @var FormSubmitter $submitter
+     * @var FormSubmitter $submitter Who the submitter is, and whether they must confirm by email.
      */
     #[JsonProperty('submitter')]
     public FormSubmitter $submitter;
 
     /**
-     * @var FormNotifications $notifications
+     * @var FormNotifications $notifications Emails about accepted submissions.
      */
     #[JsonProperty('notifications')]
     public FormNotifications $notifications;
 
     /**
-     * @var FormContacts $contacts
+     * @var FormContacts $contacts Turning submissions into contacts.
      */
     #[JsonProperty('contacts')]
     public FormContacts $contacts;
 
     /**
-     * @var FormFiles $files
+     * @var FormFiles $files File uploads.
      */
     #[JsonProperty('files')]
     public FormFiles $files;
 
     /**
-     * @var FormHosted $hosted
+     * @var FormHosted $hosted The page coss.com can serve for this form.
      */
     #[JsonProperty('hosted')]
     public FormHosted $hosted;
@@ -113,7 +113,7 @@ class Form extends JsonSerializableType
     public bool $disabledByAdmin;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether the form belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;

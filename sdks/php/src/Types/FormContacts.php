@@ -6,46 +6,49 @@ use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 use Coss\Core\Types\ArrayType;
 
+/**
+ * Turning submissions into contacts.
+ */
 class FormContacts extends JsonSerializableType
 {
     /**
-     * @var bool $enabled
+     * @var bool $enabled Whether each accepted submission becomes a contact.
      */
     #[JsonProperty('enabled')]
     public bool $enabled;
 
     /**
-     * @var array<string> $audienceIds
+     * @var array<string> $audienceIds Audiences the contact joins.
      */
     #[JsonProperty('audience_ids'), ArrayType(['string'])]
     public array $audienceIds;
 
     /**
-     * @var array<string> $topics
+     * @var array<string> $topics Topic keys the contact is opted into.
      */
     #[JsonProperty('topics'), ArrayType(['string'])]
     public array $topics;
 
     /**
-     * @var ?bool $doubleOptIn
+     * @var ?bool $doubleOptIn Whether new contacts confirm by email first. `null`: the environment's marketing settings decide.
      */
     #[JsonProperty('double_opt_in')]
     public ?bool $doubleOptIn;
 
     /**
-     * @var ?string $firstNameField
+     * @var ?string $firstNameField The field holding the contact's first name. `null`: none.
      */
     #[JsonProperty('first_name_field')]
     public ?string $firstNameField;
 
     /**
-     * @var ?string $lastNameField
+     * @var ?string $lastNameField The field holding the contact's last name. `null`: none.
      */
     #[JsonProperty('last_name_field')]
     public ?string $lastNameField;
 
     /**
-     * @var array<string, string> $properties
+     * @var array<string, string> $properties Contact property key → the field whose value it takes.
      */
     #[JsonProperty('properties'), ArrayType(['string' => 'string'])]
     public array $properties;

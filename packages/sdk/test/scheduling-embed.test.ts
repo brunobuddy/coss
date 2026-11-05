@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mountBooker, mountHostPortal } from "../src/scheduling.ts";
+import { mountBooker, mountHostPortal, mountTeamPortal } from "../src/scheduling.ts";
 
 function fakeDocument() {
   const listeners = new Map<string, (event: unknown) => void>();
@@ -73,5 +73,13 @@ describe("coss/scheduling", () => {
     const { container, listeners } = fakeDocument();
     mountBooker({ url: URL_WITH_TOKEN, container }).destroy();
     expect(listeners.size).toBe(0);
+  });
+
+  test("a team page is an iframe like the others, keeping its token to itself", () => {
+    const { iframe, container } = fakeDocument();
+    mountTeamPortal({ url: URL_WITH_TOKEN, container });
+    expect(iframe.src).toBe(URL_WITH_TOKEN);
+    expect(iframe.referrerPolicy).toBe("no-referrer");
+    expect(iframe.title).toBe("Team cover");
   });
 });

@@ -23,9 +23,15 @@ public record Inbox : IJsonOnDeserialized
     [JsonPropertyName("address")]
     public required string Address { get; set; }
 
+    /// <summary>
+    /// The part of the address before the `@`.
+    /// </summary>
     [JsonPropertyName("username")]
     public required string Username { get; set; }
 
+    /// <summary>
+    /// The part of the address after the `@`.
+    /// </summary>
     [JsonPropertyName("domain")]
     public required string Domain { get; set; }
 

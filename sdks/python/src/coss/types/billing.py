@@ -6,6 +6,7 @@ import pydantic
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from .billing_add_ons_item import BillingAddOnsItem
 from .billing_contract import BillingContract
+from .billing_credit_limit import BillingCreditLimit
 from .billing_currency import BillingCurrency
 from .billing_estimate import BillingEstimate
 from .billing_features import BillingFeatures
@@ -22,7 +23,11 @@ from .billing_usage_item import BillingUsageItem
 
 class Billing(UniversalBaseModel):
     object: BillingObject
-    organization_id: str
+    organization_id: str = pydantic.Field()
+    """
+    The organization's id.
+    """
+
     plan: BillingPlan = pydantic.Field()
     """
     The plan in effect now (`free` without a contract).
@@ -48,13 +53,21 @@ class Billing(UniversalBaseModel):
     Billing holds on live sending (sandbox keys keep working).
     """
 
-    currency: BillingCurrency
+    currency: BillingCurrency = pydantic.Field()
+    """
+    Always `usd`.
+    """
+
     period: BillingPeriod = pydantic.Field()
     """
     The current billing month (UTC).
     """
 
-    usage: typing.List[BillingUsageItem]
+    usage: typing.List[BillingUsageItem] = pydantic.Field()
+    """
+    This month's usage per meter.
+    """
+
     estimate: BillingEstimate = pydantic.Field()
     """
     This month so far, as it would be invoiced if it ended now.
@@ -70,13 +83,26 @@ class Billing(UniversalBaseModel):
     Usage beyond the credit past which live sending is held; `null`: none.
     """
 
-    payment_method: typing.Optional[BillingPaymentMethod] = None
+    credit_limit: typing.Optional[BillingCreditLimit] = pydantic.Field(default=None)
+    """
+    Where the organization stands against its credit limit; `null`: it has none.
+    """
+
+    payment_method: typing.Optional[BillingPaymentMethod] = pydantic.Field(default=None)
+    """
+    The payment method on file. `null`: none.
+    """
+
     add_ons: typing.List[BillingAddOnsItem] = pydantic.Field()
     """
     Add-ons of the contract in effect, charged on top of the plan.
     """
 
-    features: BillingFeatures
+    features: BillingFeatures = pydantic.Field()
+    """
+    Which features the plan includes.
+    """
+
     limits: BillingLimits = pydantic.Field()
     """
     Resource limits (`null`: unlimited).

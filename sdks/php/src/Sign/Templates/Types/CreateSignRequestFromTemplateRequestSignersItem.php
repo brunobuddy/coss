@@ -8,37 +8,37 @@ use Coss\Core\Json\JsonProperty;
 class CreateSignRequestFromTemplateRequestSignersItem extends JsonSerializableType
 {
     /**
-     * @var string $role The role's key, e.g. `client`.
+     * @var string $role The `key` of the template's role they sign as.
      */
     #[JsonProperty('role')]
     public string $role;
 
     /**
-     * @var string $name
+     * @var string $name Shown on the signing page and on the certificate.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var string $email
+     * @var string $email Where a `delivery: email` signer gets their link.
      */
     #[JsonProperty('email')]
     public string $email;
 
     /**
-     * @var ?value-of<CreateSignRequestFromTemplateRequestSignersItemDelivery> $delivery
+     * @var ?value-of<CreateSignRequestFromTemplateRequestSignersItemDelivery> $delivery `email` (default): coss.com emails the signer a link. `embedded`: your app shows the signing page.
      */
     #[JsonProperty('delivery')]
     public ?string $delivery;
 
     /**
-     * @var ?int $order
+     * @var ?int $order With `sequential` signing, signers sign in increasing `order`.
      */
     #[JsonProperty('order')]
     public ?int $order;
 
     /**
-     * @var ?string $clientRef
+     * @var ?string $clientRef Your own id for the signer, recorded in the audit trail.
      */
     #[JsonProperty('client_ref')]
     public ?string $clientRef;

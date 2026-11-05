@@ -61,6 +61,9 @@ public final class BroadcastWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What happened to the broadcast.
+     */
     @JsonProperty("type")
     public BroadcastWebhookEventType getType() {
         return type;
@@ -74,11 +77,17 @@ public final class BroadcastWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
+    /**
+     * @return The broadcast and how it fared.
+     */
     @JsonProperty("data")
     public BroadcastWebhookEventData getData() {
         return data;
@@ -129,6 +138,9 @@ public final class BroadcastWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened to the broadcast.</p>
+         */
         ApiVersionStage type(@NotNull BroadcastWebhookEventType type);
     }
 
@@ -140,10 +152,16 @@ public final class BroadcastWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
     public interface DataStage {
+        /**
+         * <p>The broadcast and how it fared.</p>
+         */
         _FinalStage data(@NotNull BroadcastWebhookEventData data);
     }
 
@@ -200,6 +218,10 @@ public final class BroadcastWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What happened to the broadcast.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull BroadcastWebhookEventType type) {
@@ -218,6 +240,10 @@ public final class BroadcastWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {
@@ -225,6 +251,10 @@ public final class BroadcastWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The broadcast and how it fared.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("data")
         public _FinalStage data(@NotNull BroadcastWebhookEventData data) {

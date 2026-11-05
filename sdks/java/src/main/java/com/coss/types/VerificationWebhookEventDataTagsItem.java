@@ -31,11 +31,17 @@ public final class VerificationWebhookEventDataTagsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The tag's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return The tag's value.
+     */
     @JsonProperty("value")
     public String getValue() {
         return value;
@@ -72,12 +78,18 @@ public final class VerificationWebhookEventDataTagsItem {
     }
 
     public interface NameStage {
+        /**
+         * <p>The tag's name.</p>
+         */
         ValueStage name(@NotNull String name);
 
         Builder from(VerificationWebhookEventDataTagsItem other);
     }
 
     public interface ValueStage {
+        /**
+         * <p>The tag's value.</p>
+         */
         _FinalStage value(@NotNull String value);
     }
 
@@ -107,6 +119,10 @@ public final class VerificationWebhookEventDataTagsItem {
             return this;
         }
 
+        /**
+         * <p>The tag's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public ValueStage name(@NotNull String name) {
@@ -114,6 +130,10 @@ public final class VerificationWebhookEventDataTagsItem {
             return this;
         }
 
+        /**
+         * <p>The tag's value.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("value")
         public _FinalStage value(@NotNull String value) {

@@ -16,8 +16,11 @@ var (
 )
 
 type CreateContactPropertyRequest struct {
-	Key      string                                `json:"key" url:"-"`
-	Type     CreateContactPropertyRequestType      `json:"type" url:"-"`
+	// How contacts and templates name it. Lower-case letters, digits and `_`, starting with a letter. Can't change.
+	Key string `json:"key" url:"-"`
+	// What values it takes. `date` values are ISO 8601 strings. Can't change.
+	Type CreateContactPropertyRequestType `json:"type" url:"-"`
+	// Used in templates for contacts without a value.
 	Fallback *CreateContactPropertyRequestFallback `json:"fallback,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -131,6 +134,7 @@ func (r *RemovePropertiesRequest) SetID(id string) {
 	r.require(removePropertiesRequestFieldID)
 }
 
+// Used in templates for contacts without a value.
 type CreateContactPropertyRequestFallback struct {
 	String  string
 	Double  float64
@@ -214,6 +218,7 @@ func (c *CreateContactPropertyRequestFallback) Accept(visitor CreateContactPrope
 	return fmt.Errorf("type %T does not include a non-empty union type", c)
 }
 
+// What values it takes. `date` values are ISO 8601 strings. Can't change.
 type CreateContactPropertyRequestType string
 
 const (
@@ -242,6 +247,7 @@ func (c CreateContactPropertyRequestType) Ptr() *CreateContactPropertyRequestTyp
 	return &c
 }
 
+// Used in templates for contacts without a value. `null` removes it.
 type UpdateContactPropertyRequestFallback struct {
 	String  string
 	Double  float64
@@ -332,7 +338,8 @@ var (
 
 type UpdateContactPropertyRequest struct {
 	// The property's id.
-	ID       string                                `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Used in templates for contacts without a value. `null` removes it.
 	Fallback *UpdateContactPropertyRequestFallback `json:"fallback,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted

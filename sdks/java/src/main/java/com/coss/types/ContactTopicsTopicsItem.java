@@ -47,11 +47,17 @@ public final class ContactTopicsTopicsItem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The topic's key.
+     */
     @JsonProperty("topic")
     public String getTopic() {
         return topic;
     }
 
+    /**
+     * @return The topic's name.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
@@ -116,12 +122,18 @@ public final class ContactTopicsTopicsItem {
     }
 
     public interface TopicStage {
+        /**
+         * <p>The topic's key.</p>
+         */
         NameStage topic(@NotNull String topic);
 
         Builder from(ContactTopicsTopicsItem other);
     }
 
     public interface NameStage {
+        /**
+         * <p>The topic's name.</p>
+         */
         SubscribedStage name(@NotNull String name);
     }
 
@@ -175,6 +187,10 @@ public final class ContactTopicsTopicsItem {
             return this;
         }
 
+        /**
+         * <p>The topic's key.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("topic")
         public NameStage topic(@NotNull String topic) {
@@ -182,6 +198,10 @@ public final class ContactTopicsTopicsItem {
             return this;
         }
 
+        /**
+         * <p>The topic's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public SubscribedStage name(@NotNull String name) {

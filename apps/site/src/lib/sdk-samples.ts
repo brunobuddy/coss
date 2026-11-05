@@ -308,6 +308,70 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "GET /v1/sms/received": { method: "sms.received.list", args: (r) => [queryParams(r)] },
   "GET /v1/sms/received/{id}": { method: "sms.received.get", args: (r) => [pathId(r)] },
   "GET /v1/sms/numbers": { method: "sms.numbers.list", args: () => [] },
+  "POST /v1/scheduling/bookings/{id}/reassign": {
+    method: "scheduling.bookings.reassign",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/bookings/{id}/reassign_candidates": {
+    method: "scheduling.bookings.reassignCandidates",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
+  "POST /v1/scheduling/reassignments": {
+    method: "scheduling.reassignments.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/reassignments/preview": {
+    method: "scheduling.reassignments.preview",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/reassignments": {
+    method: "scheduling.reassignments.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/reassignments/{id}": {
+    method: "scheduling.reassignments.get",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/reassignments/{id}/items": {
+    method: "scheduling.reassignments.items",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
+  "POST /v1/scheduling/reassignments/{id}/cancel": {
+    method: "scheduling.reassignments.cancel",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/reassignments/{id}/undo": {
+    method: "scheduling.reassignments.undo",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/out_of_office": {
+    method: "scheduling.outOfOffice.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/out_of_office": {
+    method: "scheduling.outOfOffice.list",
+    args: (r) => [queryParams(r)],
+  },
+  "GET /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.get",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "PUT /v1/scheduling/out_of_office/by_external_id/{external_id}": {
+    method: "scheduling.outOfOffice.put",
+    args: (r) => [tsValue(r.path.external_id), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/out_of_office/{id}": {
+    method: "scheduling.outOfOffice.remove",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/out_of_office/{id}/conflicts": {
+    method: "scheduling.outOfOffice.conflicts",
+    args: (r) => [pathId(r), queryParams(r)],
+  },
   "POST /v1/scheduling/hosts": {
     method: "scheduling.hosts.create",
     args: (r) => [tsValue(r.body ?? {})],
@@ -520,6 +584,34 @@ export const SDK_SAMPLES: Record<string, SdkSample> = {
   "POST /v1/scheduling/hosts/{host}/sessions": {
     method: "scheduling.sessions.createForHost",
     args: (r) => [tsValue(r.path.host), tsValue(r.body ?? {})],
+  },
+  "POST /v1/scheduling/holiday_calendars": {
+    method: "scheduling.holidayCalendars.create",
+    args: (r) => [tsValue(r.body ?? {})],
+  },
+  "GET /v1/scheduling/holiday_calendars": {
+    method: "scheduling.holidayCalendars.list",
+    args: () => [],
+  },
+  "GET /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.get",
+    args: (r) => [pathId(r)],
+  },
+  "GET /v1/scheduling/holiday_calendars/{id}/holidays": {
+    method: "scheduling.holidayCalendars.holidays",
+    args: (r) => [pathId(r)],
+  },
+  "PATCH /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.update",
+    args: (r) => [pathId(r), tsValue(r.body ?? {})],
+  },
+  "DELETE /v1/scheduling/holiday_calendars/{id}": {
+    method: "scheduling.holidayCalendars.remove",
+    args: (r) => [pathId(r)],
+  },
+  "POST /v1/scheduling/manager_sessions": {
+    method: "scheduling.sessions.createForManager",
+    args: (r) => [tsValue(r.body ?? {})],
   },
   "POST /v1/scheduling/booker_sessions": {
     method: "scheduling.sessions.createForBooker",

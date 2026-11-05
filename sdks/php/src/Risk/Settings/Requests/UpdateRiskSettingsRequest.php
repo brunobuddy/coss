@@ -13,19 +13,19 @@ use Coss\Risk\Settings\Types\UpdateRiskSettingsRequestReasonWeights;
 class UpdateRiskSettingsRequest extends JsonSerializableType
 {
     /**
-     * @var ?float $reviewThreshold
+     * @var ?float $reviewThreshold Scores at or above it are `review`.
      */
     #[JsonProperty('review_threshold')]
     public ?float $reviewThreshold;
 
     /**
-     * @var ?float $blockThreshold
+     * @var ?float $blockThreshold Scores at or above it are `block`.
      */
     #[JsonProperty('block_threshold')]
     public ?float $blockThreshold;
 
     /**
-     * @var ?array<value-of<UpdateRiskSettingsRequestDisabledReasonsItem>> $disabledReasons
+     * @var ?array<value-of<UpdateRiskSettingsRequestDisabledReasonsItem>> $disabledReasons Reasons that never fire in this environment. Replaces the list.
      */
     #[JsonProperty('disabled_reasons'), ArrayType(['string'])]
     public ?array $disabledReasons;

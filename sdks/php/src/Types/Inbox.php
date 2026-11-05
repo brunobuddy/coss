@@ -28,13 +28,13 @@ class Inbox extends JsonSerializableType
     public string $address;
 
     /**
-     * @var string $username
+     * @var string $username The part of the address before the `@`.
      */
     #[JsonProperty('username')]
     public string $username;
 
     /**
-     * @var string $domain
+     * @var string $domain The part of the address after the `@`.
      */
     #[JsonProperty('domain')]
     public string $domain;

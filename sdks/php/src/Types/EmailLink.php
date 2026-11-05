@@ -22,7 +22,7 @@ class EmailLink extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $emailId
+     * @var string $emailId The email's id.
      */
     #[JsonProperty('email_id')]
     public string $emailId;
@@ -34,25 +34,25 @@ class EmailLink extends JsonSerializableType
     public int $position;
 
     /**
-     * @var string $url
+     * @var string $url The original link.
      */
     #[JsonProperty('url')]
     public string $url;
 
     /**
-     * @var int $clickCount
+     * @var int $clickCount Times it was clicked. Link scanners inflate it.
      */
     #[JsonProperty('click_count')]
     public int $clickCount;
 
     /**
-     * @var ?DateTime $firstClickedAt
+     * @var ?DateTime $firstClickedAt When it was first clicked. `null`: not yet.
      */
     #[JsonProperty('first_clicked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $firstClickedAt;
 
     /**
-     * @var ?DateTime $lastClickedAt
+     * @var ?DateTime $lastClickedAt When it was last clicked. `null`: not yet.
      */
     #[JsonProperty('last_clicked_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $lastClickedAt;

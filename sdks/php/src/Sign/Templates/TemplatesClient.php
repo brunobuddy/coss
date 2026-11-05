@@ -230,6 +230,8 @@ class TemplatesClient
     }
 
     /**
+     * A template with its documents, roles and fields. `ready` says whether requests can be made from it.
+     *
      * Example:
      * ```php
      * $client->sign->templates->get(

@@ -14,17 +14,29 @@ public record HookEventType : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required HookEventTypeObject Object { get; set; }
 
+    /// <summary>
+    /// The type's name, which messages send as `event_type`.
+    /// </summary>
     [JsonPropertyName("name")]
     public required string Name { get; set; }
 
+    /// <summary>
+    /// What this event means, shown to your users. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
 
+    /// <summary>
+    /// A JSON Schema of the payload, shown to your users (not enforced). `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("schema")]
     public Dictionary<string, object?>? Schema { get; set; }
 
+    /// <summary>
+    /// Sample payloads, shown to your users. Test sends use the first.
+    /// </summary>
     [JsonPropertyName("examples")]
     public IEnumerable<Dictionary<string, object?>> Examples { get; set; } =
         new List<Dictionary<string, object?>>();

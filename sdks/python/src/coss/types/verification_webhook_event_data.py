@@ -13,15 +13,54 @@ from .verification_webhook_event_data_tags_item import VerificationWebhookEventD
 
 
 class VerificationWebhookEventData(UniversalBaseModel):
-    verification_id: str
-    channel: VerificationWebhookEventDataChannel
-    to: str
-    status: VerificationWebhookEventDataStatus
-    failure: typing.Optional[VerificationWebhookEventDataFailure] = None
-    reasons: typing.List[VerificationWebhookEventDataReasonsItem]
-    tags: typing.List[VerificationWebhookEventDataTagsItem]
-    sandbox: bool
-    occurred_at: dt.datetime
+    """
+    The verification. Never its code.
+    """
+
+    verification_id: str = pydantic.Field()
+    """
+    The verification's id.
+    """
+
+    channel: VerificationWebhookEventDataChannel = pydantic.Field()
+    """
+    `sms` or `email`.
+    """
+
+    to: str = pydantic.Field()
+    """
+    The phone number (E.164) or address the code goes to.
+    """
+
+    status: VerificationWebhookEventDataStatus = pydantic.Field()
+    """
+    Its status after this event.
+    """
+
+    failure: typing.Optional[VerificationWebhookEventDataFailure] = pydantic.Field(default=None)
+    """
+    Why it `failed`. `null` otherwise.
+    """
+
+    reasons: typing.List[VerificationWebhookEventDataReasonsItem] = pydantic.Field()
+    """
+    Why it was `blocked`. Empty otherwise.
+    """
+
+    tags: typing.List[VerificationWebhookEventDataTagsItem] = pydantic.Field()
+    """
+    Your tags on the verification.
+    """
+
+    sandbox: bool = pydantic.Field()
+    """
+    Whether it's made in a sandbox environment: simulated.
+    """
+
+    occurred_at: dt.datetime = pydantic.Field()
+    """
+    When this happened.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

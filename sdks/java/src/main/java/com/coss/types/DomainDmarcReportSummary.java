@@ -74,41 +74,65 @@ public final class DomainDmarcReportSummary {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return When the period starts.
+     */
     @JsonProperty("period_start")
     public OffsetDateTime getPeriodStart() {
         return periodStart;
     }
 
+    /**
+     * @return When the period ends.
+     */
     @JsonProperty("period_end")
     public OffsetDateTime getPeriodEnd() {
         return periodEnd;
     }
 
+    /**
+     * @return Reports received.
+     */
     @JsonProperty("reports")
     public long getReports() {
         return reports;
     }
 
+    /**
+     * @return Messages they cover.
+     */
     @JsonProperty("messages")
     public long getMessages() {
         return messages;
     }
 
+    /**
+     * @return Of those, how many passed DMARC.
+     */
     @JsonProperty("passing")
     public long getPassing() {
         return passing;
     }
 
+    /**
+     * @return Of those, how many were sent through coss.com.
+     */
     @JsonProperty("coss_messages")
     public long getCossMessages() {
         return cossMessages;
     }
 
+    /**
+     * @return Of those, how many passed DMARC.
+     */
     @JsonProperty("coss_passing")
     public long getCossPassing() {
         return cossPassing;
     }
 
+    /**
+     * @return When the first report arrived. <code>null</code>: none yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("first_report_at")
     public OptionalNullable<OffsetDateTime> getFirstReportAt() {
@@ -118,6 +142,9 @@ public final class DomainDmarcReportSummary {
         return firstReportAt;
     }
 
+    /**
+     * @return When the latest report arrived. <code>null</code>: none yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_report_at")
     public OptionalNullable<OffsetDateTime> getLastReportAt() {
@@ -196,32 +223,53 @@ public final class DomainDmarcReportSummary {
     }
 
     public interface PeriodStartStage {
+        /**
+         * <p>When the period starts.</p>
+         */
         PeriodEndStage periodStart(@NotNull OffsetDateTime periodStart);
 
         Builder from(DomainDmarcReportSummary other);
     }
 
     public interface PeriodEndStage {
+        /**
+         * <p>When the period ends.</p>
+         */
         ReportsStage periodEnd(@NotNull OffsetDateTime periodEnd);
     }
 
     public interface ReportsStage {
+        /**
+         * <p>Reports received.</p>
+         */
         MessagesStage reports(long reports);
     }
 
     public interface MessagesStage {
+        /**
+         * <p>Messages they cover.</p>
+         */
         PassingStage messages(long messages);
     }
 
     public interface PassingStage {
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         */
         CossMessagesStage passing(long passing);
     }
 
     public interface CossMessagesStage {
+        /**
+         * <p>Of those, how many were sent through coss.com.</p>
+         */
         CossPassingStage cossMessages(long cossMessages);
     }
 
     public interface CossPassingStage {
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         */
         _FinalStage cossPassing(long cossPassing);
     }
 
@@ -232,6 +280,9 @@ public final class DomainDmarcReportSummary {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>When the first report arrived. <code>null</code>: none yet.</p>
+         */
         _FinalStage firstReportAt(OptionalNullable<OffsetDateTime> firstReportAt);
 
         _FinalStage firstReportAt(OffsetDateTime firstReportAt);
@@ -240,6 +291,9 @@ public final class DomainDmarcReportSummary {
 
         _FinalStage firstReportAt(Nullable<OffsetDateTime> firstReportAt);
 
+        /**
+         * <p>When the latest report arrived. <code>null</code>: none yet.</p>
+         */
         _FinalStage lastReportAt(OptionalNullable<OffsetDateTime> lastReportAt);
 
         _FinalStage lastReportAt(OffsetDateTime lastReportAt);
@@ -308,6 +362,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the period starts.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period_start")
         public PeriodEndStage periodStart(@NotNull OffsetDateTime periodStart) {
@@ -315,6 +373,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the period ends.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("period_end")
         public ReportsStage periodEnd(@NotNull OffsetDateTime periodEnd) {
@@ -322,6 +384,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Reports received.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("reports")
         public MessagesStage reports(long reports) {
@@ -329,6 +395,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Messages they cover.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("messages")
         public PassingStage messages(long messages) {
@@ -336,6 +406,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("passing")
         public CossMessagesStage passing(long passing) {
@@ -343,6 +417,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Of those, how many were sent through coss.com.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("coss_messages")
         public CossPassingStage cossMessages(long cossMessages) {
@@ -350,6 +428,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>Of those, how many passed DMARC.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("coss_passing")
         public _FinalStage cossPassing(long cossPassing) {
@@ -392,6 +474,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the latest report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastReportAt(Nullable<OffsetDateTime> lastReportAt) {
             if (lastReportAt.isNull()) {
@@ -404,6 +490,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the latest report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastReportAt(Optional<OffsetDateTime> lastReportAt) {
             if (lastReportAt.isPresent()) {
@@ -414,12 +504,19 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the latest report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastReportAt(OffsetDateTime lastReportAt) {
             this.lastReportAt = OptionalNullable.of(lastReportAt);
             return this;
         }
 
+        /**
+         * <p>When the latest report arrived. <code>null</code>: none yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_report_at", nulls = Nulls.SKIP)
         public _FinalStage lastReportAt(OptionalNullable<OffsetDateTime> lastReportAt) {
@@ -427,6 +524,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the first report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstReportAt(Nullable<OffsetDateTime> firstReportAt) {
             if (firstReportAt.isNull()) {
@@ -439,6 +540,10 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the first report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstReportAt(Optional<OffsetDateTime> firstReportAt) {
             if (firstReportAt.isPresent()) {
@@ -449,12 +554,19 @@ public final class DomainDmarcReportSummary {
             return this;
         }
 
+        /**
+         * <p>When the first report arrived. <code>null</code>: none yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage firstReportAt(OffsetDateTime firstReportAt) {
             this.firstReportAt = OptionalNullable.of(firstReportAt);
             return this;
         }
 
+        /**
+         * <p>When the first report arrived. <code>null</code>: none yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "first_report_at", nulls = Nulls.SKIP)
         public _FinalStage firstReportAt(OptionalNullable<OffsetDateTime> firstReportAt) {

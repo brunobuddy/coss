@@ -94,11 +94,17 @@ public final class ReceivedSms {
         return to;
     }
 
+    /**
+     * @return The text.
+     */
     @JsonProperty("body")
     public String getBody() {
         return body;
     }
 
+    /**
+     * @return Segments the text took.
+     */
     @JsonProperty("segments")
     public long getSegments() {
         return segments;
@@ -116,6 +122,9 @@ public final class ReceivedSms {
         return keyword;
     }
 
+    /**
+     * @return Whether it's a simulated message of a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
@@ -203,14 +212,23 @@ public final class ReceivedSms {
     }
 
     public interface BodyStage {
+        /**
+         * <p>The text.</p>
+         */
         SegmentsStage body(@NotNull String body);
     }
 
     public interface SegmentsStage {
+        /**
+         * <p>Segments the text took.</p>
+         */
         SandboxStage segments(long segments);
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it's a simulated message of a sandbox environment.</p>
+         */
         CreatedAtStage sandbox(boolean sandbox);
     }
 
@@ -321,6 +339,10 @@ public final class ReceivedSms {
             return this;
         }
 
+        /**
+         * <p>The text.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("body")
         public SegmentsStage body(@NotNull String body) {
@@ -328,6 +350,10 @@ public final class ReceivedSms {
             return this;
         }
 
+        /**
+         * <p>Segments the text took.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("segments")
         public SandboxStage segments(long segments) {
@@ -335,6 +361,10 @@ public final class ReceivedSms {
             return this;
         }
 
+        /**
+         * <p>Whether it's a simulated message of a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public CreatedAtStage sandbox(boolean sandbox) {

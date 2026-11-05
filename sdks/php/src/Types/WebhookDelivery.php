@@ -23,7 +23,7 @@ class WebhookDelivery extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $endpointId
+     * @var string $endpointId The id of the endpoint it's delivered to.
      */
     #[JsonProperty('endpoint_id')]
     public string $endpointId;
@@ -47,7 +47,7 @@ class WebhookDelivery extends JsonSerializableType
     public string $status;
 
     /**
-     * @var int $attemptCount
+     * @var int $attemptCount How many attempts were made so far.
      */
     #[JsonProperty('attempt_count')]
     public int $attemptCount;
@@ -59,13 +59,13 @@ class WebhookDelivery extends JsonSerializableType
     public ?DateTime $nextAttemptAt;
 
     /**
-     * @var ?int $lastStatusCode
+     * @var ?int $lastStatusCode The endpoint's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
      */
     #[JsonProperty('last_status_code')]
     public ?int $lastStatusCode;
 
     /**
-     * @var ?string $lastError
+     * @var ?string $lastError Why the latest attempt failed. `null`: it didn't, or no attempt yet.
      */
     #[JsonProperty('last_error')]
     public ?string $lastError;

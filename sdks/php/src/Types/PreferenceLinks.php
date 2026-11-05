@@ -14,7 +14,7 @@ class PreferenceLinks extends JsonSerializableType
     public string $object;
 
     /**
-     * @var string $contactId
+     * @var string $contactId The contact's id.
      */
     #[JsonProperty('contact_id')]
     public string $contactId;

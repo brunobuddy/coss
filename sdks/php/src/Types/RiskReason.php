@@ -8,13 +8,13 @@ use Coss\Core\Json\JsonProperty;
 class RiskReason extends JsonSerializableType
 {
     /**
-     * @var value-of<RiskReasonCode> $code
+     * @var value-of<RiskReasonCode> $code The reason's code, listed under Risk's reasons in the docs.
      */
     #[JsonProperty('code')]
     public string $code;
 
     /**
-     * @var string $message
+     * @var string $message What it means, in words. May change.
      */
     #[JsonProperty('message')]
     public string $message;
@@ -32,7 +32,7 @@ class RiskReason extends JsonSerializableType
     public ?float $threshold;
 
     /**
-     * @var ?value-of<RiskReasonWindow> $window
+     * @var ?value-of<RiskReasonWindow> $window `velocity.*`: the window it's counted over.
      */
     #[JsonProperty('window')]
     public ?string $window;

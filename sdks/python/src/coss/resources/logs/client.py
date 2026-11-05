@@ -130,6 +130,8 @@ class LogsClient:
 
     def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Log:
         """
+        One line of the API key's environment log.
+
         Parameters
         ----------
         id : str
@@ -287,6 +289,8 @@ class AsyncLogsClient:
 
     async def get(self, id: str, *, request_options: typing.Optional[RequestOptions] = None) -> Log:
         """
+        One line of the API key's environment log.
+
         Parameters
         ----------
         id : str

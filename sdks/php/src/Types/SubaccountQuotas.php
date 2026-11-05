@@ -5,6 +5,9 @@ namespace Coss\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Its own sending limits.
+ */
 class SubaccountQuotas extends JsonSerializableType
 {
     /**

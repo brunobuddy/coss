@@ -5,24 +5,30 @@ package com.coss.resources.verify;
 
 import com.coss.core.ClientOptions;
 import com.coss.core.RequestOptions;
+import com.coss.core.Suppliers;
 import com.coss.resources.verify.requests.CancelVerifyRequest;
 import com.coss.resources.verify.requests.CheckVerificationRequest;
 import com.coss.resources.verify.requests.GetVerifyRequest;
 import com.coss.resources.verify.requests.ListVerifyRequest;
 import com.coss.resources.verify.requests.StartVerificationRequest;
+import com.coss.resources.verify.settings.AsyncSettingsClient;
 import com.coss.types.Verification;
 import com.coss.types.VerificationCheck;
 import com.coss.types.VerificationList;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class AsyncVerifyClient {
     protected final ClientOptions clientOptions;
 
     private final AsyncRawVerifyClient rawClient;
 
+    protected final Supplier<AsyncSettingsClient> settingsClient;
+
     public AsyncVerifyClient(ClientOptions clientOptions) {
         this.clientOptions = clientOptions;
         this.rawClient = new AsyncRawVerifyClient(clientOptions);
+        this.settingsClient = Suppliers.memoize(() -> new AsyncSettingsClient(clientOptions));
     }
 
     /**
@@ -88,18 +94,30 @@ public class AsyncVerifyClient {
         return this.rawClient.check(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<Verification> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<Verification> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<Verification> get(String id, GetVerifyRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * A verification's status and destination. Its code is never returned.
+     */
     public CompletableFuture<Verification> get(String id, GetVerifyRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }
@@ -131,5 +149,9 @@ public class AsyncVerifyClient {
     public CompletableFuture<Verification> cancel(
             String id, CancelVerifyRequest request, RequestOptions requestOptions) {
         return this.rawClient.cancel(id, request, requestOptions).thenApply(response -> response.body());
+    }
+
+    public AsyncSettingsClient settings() {
+        return this.settingsClient.get();
     }
 }

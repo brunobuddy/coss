@@ -11,13 +11,21 @@ from .webhook_attempt_object import WebhookAttemptObject
 class WebhookAttempt(UniversalBaseModel):
     object: WebhookAttemptObject
     id: str
-    attempted_at: dt.datetime
+    attempted_at: dt.datetime = pydantic.Field()
+    """
+    When the attempt ran.
+    """
+
     status_code: typing.Optional[int] = pydantic.Field(default=None)
     """
     The endpoint's HTTP status; `null` when no response arrived.
     """
 
-    duration_ms: int
+    duration_ms: int = pydantic.Field()
+    """
+    How long it took, in milliseconds.
+    """
+
     error: typing.Optional[str] = pydantic.Field(default=None)
     """
     Why the attempt failed (e.g. `HTTP 500`, a timeout); `null` on success.

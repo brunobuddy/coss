@@ -7,7 +7,15 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class RiskCaptchaSignals(UniversalBaseModel):
-    provided: bool
+    """
+    How the captcha went. `null` when no captcha applies.
+    """
+
+    provided: bool = pydantic.Field()
+    """
+    Whether the request carried a token.
+    """
+
     passed: typing.Optional[bool] = pydantic.Field(default=None)
     """
     `null` when it couldn't be checked (no captcha configured, or the provider was unreachable).

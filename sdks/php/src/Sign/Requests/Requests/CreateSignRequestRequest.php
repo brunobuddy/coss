@@ -42,7 +42,7 @@ class CreateSignRequestRequest extends JsonSerializableType
     public array $documents;
 
     /**
-     * @var array<CreateSignRequestRequestSignersItem> $signers
+     * @var array<CreateSignRequestRequestSignersItem> $signers Who signs, and what each fills.
      */
     #[JsonProperty('signers'), ArrayType([CreateSignRequestRequestSignersItem::class])]
     public array $signers;

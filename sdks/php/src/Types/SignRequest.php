@@ -29,49 +29,49 @@ class SignRequest extends JsonSerializableType
     public string $status;
 
     /**
-     * @var string $title
+     * @var string $title Shown to signers.
      */
     #[JsonProperty('title')]
     public string $title;
 
     /**
-     * @var ?string $message
+     * @var ?string $message A note to signers. `null`: none.
      */
     #[JsonProperty('message')]
     public ?string $message;
 
     /**
-     * @var value-of<SignRequestSigningOrder> $signingOrder
+     * @var value-of<SignRequestSigningOrder> $signingOrder `parallel`: everyone at once. `sequential`: in each signer's `order`.
      */
     #[JsonProperty('signing_order')]
     public string $signingOrder;
 
     /**
-     * @var array<SignRequestDocumentsItem> $documents
+     * @var array<SignRequestDocumentsItem> $documents The documents to sign, in order.
      */
     #[JsonProperty('documents'), ArrayType([SignRequestDocumentsItem::class])]
     public array $documents;
 
     /**
-     * @var array<SignSigner> $signers
+     * @var array<SignSigner> $signers Who signs.
      */
     #[JsonProperty('signers'), ArrayType([SignSigner::class])]
     public array $signers;
 
     /**
-     * @var array<SignField> $fields
+     * @var array<SignField> $fields What each signer fills.
      */
     #[JsonProperty('fields'), ArrayType([SignField::class])]
     public array $fields;
 
     /**
-     * @var array<string, string> $metadata
+     * @var array<string, string> $metadata Your own key-value pairs.
      */
     #[JsonProperty('metadata'), ArrayType(['string' => 'string'])]
     public array $metadata;
 
     /**
-     * @var bool $sandbox
+     * @var bool $sandbox Whether it belongs to a sandbox environment.
      */
     #[JsonProperty('sandbox')]
     public bool $sandbox;
@@ -83,37 +83,37 @@ class SignRequest extends JsonSerializableType
     public ?int $reminderIntervalDays;
 
     /**
-     * @var ?DateTime $expiresAt
+     * @var ?DateTime $expiresAt When it expires if it isn't finished. `null`: never.
      */
     #[JsonProperty('expires_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiresAt;
 
     /**
-     * @var ?DateTime $expiredAt
+     * @var ?DateTime $expiredAt When it expired. `null`: it hasn't.
      */
     #[JsonProperty('expired_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $expiredAt;
 
     /**
-     * @var ?DateTime $sentAt
+     * @var ?DateTime $sentAt When it was sent. `null`: still a draft.
      */
     #[JsonProperty('sent_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $sentAt;
 
     /**
-     * @var ?DateTime $completedAt
+     * @var ?DateTime $completedAt When the last signer signed. `null`: not yet.
      */
     #[JsonProperty('completed_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $completedAt;
 
     /**
-     * @var ?DateTime $canceledAt
+     * @var ?DateTime $canceledAt When it was canceled. `null`: it wasn't.
      */
     #[JsonProperty('canceled_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $canceledAt;
 
     /**
-     * @var ?DateTime $declinedAt
+     * @var ?DateTime $declinedAt When a signer declined it. `null`: nobody has.
      */
     #[JsonProperty('declined_at'), Date(Date::TYPE_DATETIME)]
     public ?DateTime $declinedAt;

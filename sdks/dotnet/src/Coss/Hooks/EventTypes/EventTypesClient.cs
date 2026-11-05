@@ -958,7 +958,7 @@ public partial class EventTypesClient : IEventTypesClient
     /// The environment's event types by name; archived ones only with `include_archived`.
     /// </summary>
     /// <example><code>
-    /// await client.Hooks.EventTypes.ListAsync(new ListEventTypesRequest());
+    /// await client.Hooks.EventTypes.ListAsync(new Coss.Hooks.ListEventTypesRequest());
     /// </code></example>
     public WithRawResponseTask<HookEventTypeList> ListAsync(
         ListEventTypesRequest request,
@@ -1007,7 +1007,9 @@ public partial class EventTypesClient : IEventTypesClient
     /// An event type of the API key's environment, archived or not.
     /// </summary>
     /// <example><code>
-    /// await client.Hooks.EventTypes.GetAsync(new GetEventTypesRequest { Name = "invoice.paid" });
+    /// await client.Hooks.EventTypes.GetAsync(
+    ///     new Coss.Hooks.GetEventTypesRequest { Name = "invoice.paid" }
+    /// );
     /// </code></example>
     public WithRawResponseTask<HookEventType> GetAsync(
         GetEventTypesRequest request,

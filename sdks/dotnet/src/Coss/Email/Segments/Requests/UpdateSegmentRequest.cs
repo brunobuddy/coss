@@ -13,6 +13,9 @@ public record UpdateSegmentRequest
     [JsonIgnore]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// Your name for the segment, unique in the environment.
+    /// </summary>
     [Optional]
     [JsonPropertyName("name")]
     public string? Name { get; set; }

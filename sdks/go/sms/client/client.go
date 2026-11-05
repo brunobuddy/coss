@@ -114,6 +114,8 @@ func (c *Client) Send(
 	return response.Body, nil
 }
 
+// One message sent from the API key's environment, with its current status.
+//
 // Example:
 //
 //	request := &coss.GetSmsRequest{

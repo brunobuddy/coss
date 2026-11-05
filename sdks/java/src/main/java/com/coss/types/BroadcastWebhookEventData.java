@@ -57,6 +57,9 @@ public final class BroadcastWebhookEventData {
         return broadcast;
     }
 
+    /**
+     * @return Why a paused broadcast waits. <code>null</code>: it isn't paused.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("pause_reason")
     public OptionalNullable<String> getPauseReason() {
@@ -66,6 +69,9 @@ public final class BroadcastWebhookEventData {
         return pauseReason;
     }
 
+    /**
+     * @return Why it failed. <code>null</code>: it didn't.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("error")
     public OptionalNullable<BroadcastWebhookEventDataError> getError() {
@@ -80,6 +86,9 @@ public final class BroadcastWebhookEventData {
         return stats;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -141,6 +150,9 @@ public final class BroadcastWebhookEventData {
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -151,6 +163,9 @@ public final class BroadcastWebhookEventData {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>Why a paused broadcast waits. <code>null</code>: it isn't paused.</p>
+         */
         _FinalStage pauseReason(OptionalNullable<String> pauseReason);
 
         _FinalStage pauseReason(String pauseReason);
@@ -159,6 +174,9 @@ public final class BroadcastWebhookEventData {
 
         _FinalStage pauseReason(Nullable<String> pauseReason);
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         */
         _FinalStage error(OptionalNullable<BroadcastWebhookEventDataError> error);
 
         _FinalStage error(BroadcastWebhookEventDataError error);
@@ -209,6 +227,10 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -216,6 +238,10 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Nullable<BroadcastWebhookEventDataError> error) {
             if (error.isNull()) {
@@ -228,6 +254,10 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(Optional<BroadcastWebhookEventDataError> error) {
             if (error.isPresent()) {
@@ -238,12 +268,19 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage error(BroadcastWebhookEventDataError error) {
             this.error = OptionalNullable.of(error);
             return this;
         }
 
+        /**
+         * <p>Why it failed. <code>null</code>: it didn't.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "error", nulls = Nulls.SKIP)
         public _FinalStage error(OptionalNullable<BroadcastWebhookEventDataError> error) {
@@ -251,6 +288,10 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why a paused broadcast waits. <code>null</code>: it isn't paused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pauseReason(Nullable<String> pauseReason) {
             if (pauseReason.isNull()) {
@@ -263,6 +304,10 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why a paused broadcast waits. <code>null</code>: it isn't paused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pauseReason(Optional<String> pauseReason) {
             if (pauseReason.isPresent()) {
@@ -273,12 +318,19 @@ public final class BroadcastWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why a paused broadcast waits. <code>null</code>: it isn't paused.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage pauseReason(String pauseReason) {
             this.pauseReason = OptionalNullable.of(pauseReason);
             return this;
         }
 
+        /**
+         * <p>Why a paused broadcast waits. <code>null</code>: it isn't paused.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "pause_reason", nulls = Nulls.SKIP)
         public _FinalStage pauseReason(OptionalNullable<String> pauseReason) {

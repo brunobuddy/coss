@@ -62,6 +62,9 @@ public final class RiskAssessmentSignals {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return What the address says. <code>null</code>: no email was given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("email")
     public OptionalNullable<RiskEmailSignals> getEmail() {
@@ -71,6 +74,9 @@ public final class RiskAssessmentSignals {
         return email;
     }
 
+    /**
+     * @return What the IP address says. <code>null</code>: none was given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("ip")
     public OptionalNullable<RiskIpSignals> getIp() {
@@ -92,6 +98,9 @@ public final class RiskAssessmentSignals {
         return velocity;
     }
 
+    /**
+     * @return How the captcha went. <code>null</code>: no captcha applied.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("captcha")
     public OptionalNullable<RiskCaptchaSignals> getCaptcha() {
@@ -101,6 +110,9 @@ public final class RiskAssessmentSignals {
         return captcha;
     }
 
+    /**
+     * @return Whether a login is new for this user. <code>null</code>: not a login of a user with history.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("login")
     public OptionalNullable<RiskLoginSignals> getLogin() {
@@ -122,6 +134,9 @@ public final class RiskAssessmentSignals {
         return content;
     }
 
+    /**
+     * @return What you sent in <code>checkout</code>. <code>null</code>: not given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("checkout")
     public OptionalNullable<RiskCheckoutSignals> getCheckout() {
@@ -131,6 +146,9 @@ public final class RiskAssessmentSignals {
         return checkout;
     }
 
+    /**
+     * @return What the device token said. <code>null</code>: none was given.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("device")
     public OptionalNullable<RiskDeviceSignals> getDevice() {
@@ -260,6 +278,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>What the address says. <code>null</code>: no email was given.</p>
+         */
         @JsonSetter(value = "email", nulls = Nulls.SKIP)
         public Builder email(OptionalNullable<RiskEmailSignals> email) {
             this.email = email;
@@ -291,6 +312,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>What the IP address says. <code>null</code>: none was given.</p>
+         */
         @JsonSetter(value = "ip", nulls = Nulls.SKIP)
         public Builder ip(OptionalNullable<RiskIpSignals> ip) {
             this.ip = ip;
@@ -356,6 +380,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>How the captcha went. <code>null</code>: no captcha applied.</p>
+         */
         @JsonSetter(value = "captcha", nulls = Nulls.SKIP)
         public Builder captcha(OptionalNullable<RiskCaptchaSignals> captcha) {
             this.captcha = captcha;
@@ -387,6 +414,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>Whether a login is new for this user. <code>null</code>: not a login of a user with history.</p>
+         */
         @JsonSetter(value = "login", nulls = Nulls.SKIP)
         public Builder login(OptionalNullable<RiskLoginSignals> login) {
             this.login = login;
@@ -452,6 +482,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>What you sent in <code>checkout</code>. <code>null</code>: not given.</p>
+         */
         @JsonSetter(value = "checkout", nulls = Nulls.SKIP)
         public Builder checkout(OptionalNullable<RiskCheckoutSignals> checkout) {
             this.checkout = checkout;
@@ -483,6 +516,9 @@ public final class RiskAssessmentSignals {
             return this;
         }
 
+        /**
+         * <p>What the device token said. <code>null</code>: none was given.</p>
+         */
         @JsonSetter(value = "device", nulls = Nulls.SKIP)
         public Builder device(OptionalNullable<RiskDeviceSignals> device) {
             this.device = device;

@@ -9,7 +9,11 @@ from .invoice_summary import InvoiceSummary
 
 
 class BillingWebhookEventZeroData(UniversalBaseModel):
-    organization_id: str
+    organization_id: str = pydantic.Field()
+    """
+    The organization's id.
+    """
+
     occurred_at: dt.datetime = pydantic.Field()
     """
     When it happened: sort events by it.

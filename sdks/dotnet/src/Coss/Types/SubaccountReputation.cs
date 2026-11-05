@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// Its own sending standing.
+/// </summary>
 [Serializable]
 public record SubaccountReputation : IJsonOnDeserialized
 {
@@ -24,10 +27,16 @@ public record SubaccountReputation : IJsonOnDeserialized
     [JsonPropertyName("trigger")]
     public string? Trigger { get; set; }
 
+    /// <summary>
+    /// When its status last changed. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("changed_at")]
     public DateTime? ChangedAt { get; set; }
 
+    /// <summary>
+    /// When it was last reinstated. `null`: never.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("reinstated_at")]
     public DateTime? ReinstatedAt { get; set; }

@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Who it goes to.
     class SendEmailRequestTo < Internal::Types::Model
       extend Coss::Internal::Types::Union
 

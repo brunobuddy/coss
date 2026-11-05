@@ -8,7 +8,11 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class SubaccountStatsDay(UniversalBaseModel):
-    date: dt.date
+    date: dt.date = pydantic.Field()
+    """
+    The UTC date.
+    """
+
     recipients: int = pydantic.Field()
     """
     Recipients of the emails sent that day.
@@ -19,10 +23,26 @@ class SubaccountStatsDay(UniversalBaseModel):
     Handed to the provider (delivered or not).
     """
 
-    delivered: int
-    bounced: int
-    complained: int
-    failed: int
+    delivered: int = pydantic.Field()
+    """
+    Deliveries that day.
+    """
+
+    bounced: int = pydantic.Field()
+    """
+    Bounces that day.
+    """
+
+    complained: int = pydantic.Field()
+    """
+    Complaints that day.
+    """
+
+    failed: int = pydantic.Field()
+    """
+    Failures that day.
+    """
+
     suppressed: int = pydantic.Field()
     """
     Skipped: on a suppression list.

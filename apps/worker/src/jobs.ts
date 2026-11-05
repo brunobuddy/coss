@@ -66,16 +66,20 @@ import {
 import { RETENTION_DAYS } from "@coss/retention";
 import { refreshDueDatasets } from "@coss/risk";
 import {
+  announceDueOutOfOffice,
   chargeDueHostFees,
   checkHostEditedEvents,
   expireDueBookings,
   type NotificationDeps,
+  pinnedDavTransport,
   refreshIdleZoomConnections,
   releaseOrganizationCalendars,
   renewDueCalendarChannels,
   runDueCalendarDelegations,
   runDueCalendarSyncs,
   runDueCalendarWrites,
+  runDueHolidayCalendars,
+  runDueReassignments,
   runDueReminderSyncs,
   runDueSchedulingNotifications,
   type SchedulingWorkerDeps,
@@ -266,6 +270,9 @@ export const WORKER_LOOP_NAMES = [
   "scheduling-calendar-channels",
   "scheduling-calendar-delegations",
   "scheduling-calendar-host-edits",
+  "scheduling-out-of-office",
+  "scheduling-reassignments",
+  "scheduling-holidays",
   "email-dispatch",
   "email-dispatch-marketing",
   "webhooks",
@@ -766,6 +773,30 @@ export function startJobs(deps: WorkerDeps): Loop[] {
         name: "scheduling-expiry",
         intervalMs: 30_000,
         run: async () => (await expireDueBookings(scheduling)) === SCHEDULING_BATCH,
+      }),
+      start({
+        // Only what customers are told: entries block bookings by their times, whether or not this ran.
+        name: "scheduling-out-of-office",
+        intervalMs: 30_000,
+        run: async () =>
+          (await announceDueOutOfOffice(scheduling, { limit: SCHEDULING_BATCH })) ===
+          SCHEDULING_BATCH,
+      }),
+      start({
+        // A run's fifty bookings at a time, one transaction each. Soon, since someone's waiting.
+        name: "scheduling-reassignments",
+        intervalMs: 2000,
+        run: async () => (await runDueReassignments(scheduling, { limit: 5 })) > 0,
+      }),
+      start({
+        // Feeds are read daily at most, and a pass does a little: nothing here's urgent.
+        name: "scheduling-holidays",
+        intervalMs: 60_000,
+        run: async () =>
+          (await runDueHolidayCalendars({
+            ...scheduling,
+            transport: pinnedDavTransport(),
+          })) > 0,
       }),
       start({
         // A changed `reminders` list reaching the bookings that already exist.

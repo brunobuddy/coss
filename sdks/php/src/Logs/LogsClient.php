@@ -152,6 +152,8 @@ class LogsClient
     }
 
     /**
+     * One line of the API key's environment log.
+     *
      * Example:
      * ```php
      * $client->logs->get(

@@ -14,12 +14,21 @@ public record SubaccountStats : IJsonOnDeserialized
     [JsonPropertyName("object")]
     public required SubaccountStatsObject Object { get; set; }
 
+    /// <summary>
+    /// The sub-account's id.
+    /// </summary>
     [JsonPropertyName("subaccount_id")]
     public required string SubaccountId { get; set; }
 
+    /// <summary>
+    /// The first date included.
+    /// </summary>
     [JsonPropertyName("from")]
     public required DateOnly From { get; set; }
 
+    /// <summary>
+    /// The last date included.
+    /// </summary>
     [JsonPropertyName("to")]
     public required DateOnly To { get; set; }
 

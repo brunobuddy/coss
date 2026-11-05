@@ -68,6 +68,9 @@ public final class SubaccountReputation {
         return trigger;
     }
 
+    /**
+     * @return When its status last changed. <code>null</code>: never.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("changed_at")
     public OptionalNullable<OffsetDateTime> getChangedAt() {
@@ -77,6 +80,9 @@ public final class SubaccountReputation {
         return changedAt;
     }
 
+    /**
+     * @return When it was last reinstated. <code>null</code>: never.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("reinstated_at")
     public OptionalNullable<OffsetDateTime> getReinstatedAt() {
@@ -163,6 +169,9 @@ public final class SubaccountReputation {
 
         _FinalStage trigger(Nullable<String> trigger);
 
+        /**
+         * <p>When its status last changed. <code>null</code>: never.</p>
+         */
         _FinalStage changedAt(OptionalNullable<OffsetDateTime> changedAt);
 
         _FinalStage changedAt(OffsetDateTime changedAt);
@@ -171,6 +180,9 @@ public final class SubaccountReputation {
 
         _FinalStage changedAt(Nullable<OffsetDateTime> changedAt);
 
+        /**
+         * <p>When it was last reinstated. <code>null</code>: never.</p>
+         */
         _FinalStage reinstatedAt(OptionalNullable<OffsetDateTime> reinstatedAt);
 
         _FinalStage reinstatedAt(OffsetDateTime reinstatedAt);
@@ -215,6 +227,10 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When it was last reinstated. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage reinstatedAt(Nullable<OffsetDateTime> reinstatedAt) {
             if (reinstatedAt.isNull()) {
@@ -227,6 +243,10 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When it was last reinstated. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage reinstatedAt(Optional<OffsetDateTime> reinstatedAt) {
             if (reinstatedAt.isPresent()) {
@@ -237,12 +257,19 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When it was last reinstated. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage reinstatedAt(OffsetDateTime reinstatedAt) {
             this.reinstatedAt = OptionalNullable.of(reinstatedAt);
             return this;
         }
 
+        /**
+         * <p>When it was last reinstated. <code>null</code>: never.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "reinstated_at", nulls = Nulls.SKIP)
         public _FinalStage reinstatedAt(OptionalNullable<OffsetDateTime> reinstatedAt) {
@@ -250,6 +277,10 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When its status last changed. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage changedAt(Nullable<OffsetDateTime> changedAt) {
             if (changedAt.isNull()) {
@@ -262,6 +293,10 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When its status last changed. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage changedAt(Optional<OffsetDateTime> changedAt) {
             if (changedAt.isPresent()) {
@@ -272,12 +307,19 @@ public final class SubaccountReputation {
             return this;
         }
 
+        /**
+         * <p>When its status last changed. <code>null</code>: never.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage changedAt(OffsetDateTime changedAt) {
             this.changedAt = OptionalNullable.of(changedAt);
             return this;
         }
 
+        /**
+         * <p>When its status last changed. <code>null</code>: never.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "changed_at", nulls = Nulls.SKIP)
         public _FinalStage changedAt(OptionalNullable<OffsetDateTime> changedAt) {

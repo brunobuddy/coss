@@ -18,6 +18,9 @@ public record ContactProperty : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// How contacts and templates name it (`{{{contact.&lt;key&gt;}}}`). Can't change.
+    /// </summary>
     [JsonPropertyName("key")]
     public required string Key { get; set; }
 

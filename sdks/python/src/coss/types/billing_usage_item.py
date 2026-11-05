@@ -13,7 +13,11 @@ class BillingUsageItem(UniversalBaseModel):
     What is counted, e.g. `email.recipients`.
     """
 
-    quantity: int
+    quantity: int = pydantic.Field()
+    """
+    Units used so far this month.
+    """
+
     included: typing.Optional[int] = pydantic.Field(default=None)
     """
     The plan's monthly allowance where usage stops (Free), else `null`.

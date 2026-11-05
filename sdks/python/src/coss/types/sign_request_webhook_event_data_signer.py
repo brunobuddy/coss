@@ -12,11 +12,30 @@ class SignRequestWebhookEventDataSigner(UniversalBaseModel):
     The signer who viewed, signed or declined; `null` otherwise.
     """
 
-    id: str
-    name: str
-    email: str
-    client_ref: typing.Optional[str] = None
-    status: SignRequestWebhookEventDataSignerStatus
+    id: str = pydantic.Field()
+    """
+    The signer's id.
+    """
+
+    name: str = pydantic.Field()
+    """
+    The signer's name.
+    """
+
+    email: str = pydantic.Field()
+    """
+    The signer's email address.
+    """
+
+    client_ref: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Your own id for the signer. `null`: none given.
+    """
+
+    status: SignRequestWebhookEventDataSignerStatus = pydantic.Field()
+    """
+    The signer's status after the event.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

@@ -43,16 +43,25 @@ public final class EmailWebhookEventDataBounce {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return <code>permanent</code>, <code>transient</code> or <code>undetermined</code>.
+     */
     @JsonProperty("type")
     public EmailWebhookEventDataBounceType getType() {
         return type;
     }
 
+    /**
+     * @return The provider's finer classification of the bounce.
+     */
     @JsonProperty("sub_type")
     public String getSubType() {
         return subType;
     }
 
+    /**
+     * @return What the receiving server answered. <code>null</code>: not reported.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("diagnostic_code")
     public OptionalNullable<String> getDiagnosticCode() {
@@ -98,12 +107,18 @@ public final class EmailWebhookEventDataBounce {
     }
 
     public interface TypeStage {
+        /**
+         * <p><code>permanent</code>, <code>transient</code> or <code>undetermined</code>.</p>
+         */
         SubTypeStage type(@NotNull EmailWebhookEventDataBounceType type);
 
         Builder from(EmailWebhookEventDataBounce other);
     }
 
     public interface SubTypeStage {
+        /**
+         * <p>The provider's finer classification of the bounce.</p>
+         */
         _FinalStage subType(@NotNull String subType);
     }
 
@@ -114,6 +129,9 @@ public final class EmailWebhookEventDataBounce {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         */
         _FinalStage diagnosticCode(OptionalNullable<String> diagnosticCode);
 
         _FinalStage diagnosticCode(String diagnosticCode);
@@ -144,6 +162,10 @@ public final class EmailWebhookEventDataBounce {
             return this;
         }
 
+        /**
+         * <p><code>permanent</code>, <code>transient</code> or <code>undetermined</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public SubTypeStage type(@NotNull EmailWebhookEventDataBounceType type) {
@@ -151,6 +173,10 @@ public final class EmailWebhookEventDataBounce {
             return this;
         }
 
+        /**
+         * <p>The provider's finer classification of the bounce.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sub_type")
         public _FinalStage subType(@NotNull String subType) {
@@ -158,6 +184,10 @@ public final class EmailWebhookEventDataBounce {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(Nullable<String> diagnosticCode) {
             if (diagnosticCode.isNull()) {
@@ -170,6 +200,10 @@ public final class EmailWebhookEventDataBounce {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(Optional<String> diagnosticCode) {
             if (diagnosticCode.isPresent()) {
@@ -180,12 +214,19 @@ public final class EmailWebhookEventDataBounce {
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage diagnosticCode(String diagnosticCode) {
             this.diagnosticCode = OptionalNullable.of(diagnosticCode);
             return this;
         }
 
+        /**
+         * <p>What the receiving server answered. <code>null</code>: not reported.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "diagnostic_code", nulls = Nulls.SKIP)
         public _FinalStage diagnosticCode(OptionalNullable<String> diagnosticCode) {

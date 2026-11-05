@@ -68,16 +68,25 @@ public final class ReceivedSmsWebhookEventData {
         return receivedSmsId;
     }
 
+    /**
+     * @return Who sent it.
+     */
     @JsonProperty("from")
     public String getFrom() {
         return from;
     }
 
+    /**
+     * @return Your number that received it.
+     */
     @JsonProperty("to")
     public String getTo() {
         return to;
     }
 
+    /**
+     * @return The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("keyword")
     public OptionalNullable<ReceivedSmsWebhookEventDataKeyword> getKeyword() {
@@ -87,11 +96,17 @@ public final class ReceivedSmsWebhookEventData {
         return keyword;
     }
 
+    /**
+     * @return Whether it's a simulated message of a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
     }
 
+    /**
+     * @return When it happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -144,20 +159,32 @@ public final class ReceivedSmsWebhookEventData {
     }
 
     public interface FromStage {
+        /**
+         * <p>Who sent it.</p>
+         */
         ToStage from(@NotNull String from);
 
         Builder from(ReceivedSmsWebhookEventData other);
     }
 
     public interface ToStage {
+        /**
+         * <p>Your number that received it.</p>
+         */
         SandboxStage to(@NotNull String to);
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it's a simulated message of a sandbox environment.</p>
+         */
         OccurredAtStage sandbox(boolean sandbox);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When it happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -179,6 +206,9 @@ public final class ReceivedSmsWebhookEventData {
 
         _FinalStage receivedSmsId(Nullable<String> receivedSmsId);
 
+        /**
+         * <p>The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.</p>
+         */
         _FinalStage keyword(OptionalNullable<ReceivedSmsWebhookEventDataKeyword> keyword);
 
         _FinalStage keyword(ReceivedSmsWebhookEventDataKeyword keyword);
@@ -218,6 +248,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Who sent it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("from")
         public ToStage from(@NotNull String from) {
@@ -225,6 +259,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Your number that received it.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("to")
         public SandboxStage to(@NotNull String to) {
@@ -232,6 +270,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Whether it's a simulated message of a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public OccurredAtStage sandbox(boolean sandbox) {
@@ -239,6 +281,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When it happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -246,6 +292,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage keyword(Nullable<ReceivedSmsWebhookEventDataKeyword> keyword) {
             if (keyword.isNull()) {
@@ -258,6 +308,10 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage keyword(Optional<ReceivedSmsWebhookEventDataKeyword> keyword) {
             if (keyword.isPresent()) {
@@ -268,12 +322,19 @@ public final class ReceivedSmsWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage keyword(ReceivedSmsWebhookEventDataKeyword keyword) {
             this.keyword = OptionalNullable.of(keyword);
             return this;
         }
 
+        /**
+         * <p>The keyword it is, if any: <code>stop</code>, <code>start</code> or <code>help</code>. <code>null</code>: none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "keyword", nulls = Nulls.SKIP)
         public _FinalStage keyword(OptionalNullable<ReceivedSmsWebhookEventDataKeyword> keyword) {

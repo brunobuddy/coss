@@ -14,22 +14,46 @@ from .contact_status import ContactStatus
 class Contact(UniversalBaseModel):
     object: ContactObject
     id: str
-    email: str
-    first_name: typing.Optional[str] = None
-    last_name: typing.Optional[str] = None
+    email: str = pydantic.Field()
+    """
+    The contact's address. Unique in the environment, case-insensitively.
+    """
+
+    first_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Their first name. `null`: not set.
+    """
+
+    last_name: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Their last name. `null`: not set.
+    """
+
     status: ContactStatus = pydantic.Field()
     """
     Consent to marketing email: `subscribed`, `unsubscribed` (never receives marketing email; transactional email is unaffected) or `pending` (waiting for a double opt-in confirmation).
     """
 
-    properties: typing.Dict[str, ContactPropertiesValue]
+    properties: typing.Dict[str, ContactPropertiesValue] = pydantic.Field()
+    """
+    Custom properties by key.
+    """
+
     source: ContactSource = pydantic.Field()
     """
     How the contact was created.
     """
 
-    subscribed_at: typing.Optional[dt.datetime] = None
-    unsubscribed_at: typing.Optional[dt.datetime] = None
+    subscribed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it last became `subscribed`. `null`: it hasn't.
+    """
+
+    unsubscribed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it became `unsubscribed`. `null` unless it is.
+    """
+
     confirmed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
     """
     When the contact confirmed a double opt-in.

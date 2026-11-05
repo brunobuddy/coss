@@ -10,19 +10,19 @@ use Coss\Email\Topics\Types\CreateTopicRequestVisibility;
 class CreateTopicRequest extends JsonSerializableType
 {
     /**
-     * @var string $key
+     * @var string $key The `category` of the emails about this topic. Can't change.
      */
     #[JsonProperty('key')]
     public string $key;
 
     /**
-     * @var string $name
+     * @var string $name Shown in the preference center.
      */
     #[JsonProperty('name')]
     public string $name;
 
     /**
-     * @var ?string $description
+     * @var ?string $description Shown in the preference center under its name. `null`: none.
      */
     #[JsonProperty('description')]
     public ?string $description;

@@ -18,6 +18,7 @@ import com.coss.resources.logdrains.AsyncLogDrainsClient;
 import com.coss.resources.logs.AsyncLogsClient;
 import com.coss.resources.reputation.AsyncReputationClient;
 import com.coss.resources.risk.AsyncRiskClient;
+import com.coss.resources.scheduling.AsyncSchedulingClient;
 import com.coss.resources.sign.AsyncSignClient;
 import com.coss.resources.sms.AsyncSmsClient;
 import com.coss.resources.verify.AsyncVerifyClient;
@@ -65,6 +66,8 @@ public class AsyncCoss implements AutoCloseable {
 
     protected final Supplier<AsyncHooksClient> hooksClient;
 
+    protected final Supplier<AsyncSchedulingClient> schedulingClient;
+
     protected final Supplier<AsyncSignClient> signClient;
 
     public AsyncCoss(ClientOptions clientOptions) {
@@ -87,6 +90,7 @@ public class AsyncCoss implements AutoCloseable {
         this.inboxesClient = Suppliers.memoize(() -> new AsyncInboxesClient(clientOptions));
         this.riskClient = Suppliers.memoize(() -> new AsyncRiskClient(clientOptions));
         this.hooksClient = Suppliers.memoize(() -> new AsyncHooksClient(clientOptions));
+        this.schedulingClient = Suppliers.memoize(() -> new AsyncSchedulingClient(clientOptions));
         this.signClient = Suppliers.memoize(() -> new AsyncSignClient(clientOptions));
     }
 
@@ -160,6 +164,10 @@ public class AsyncCoss implements AutoCloseable {
 
     public AsyncHooksClient hooks() {
         return this.hooksClient.get();
+    }
+
+    public AsyncSchedulingClient scheduling() {
+        return this.schedulingClient.get();
     }
 
     public AsyncSignClient sign() {

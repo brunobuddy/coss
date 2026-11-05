@@ -215,7 +215,8 @@ type AuditEvent struct {
 	Action string `json:"action" url:"action"`
 	// What was changed: `domain`, `api_key`, `member`…
 	TargetType *string `json:"target_type,omitempty" url:"target_type,omitempty"`
-	TargetID   *string `json:"target_id,omitempty" url:"target_id,omitempty"`
+	// The id of what it acted on. `null`: nothing in particular.
+	TargetID *string `json:"target_id,omitempty" url:"target_id,omitempty"`
 	// A readable name for the target when it was changed.
 	TargetLabel *string `json:"target_label,omitempty" url:"target_label,omitempty"`
 	// `null` for organization-wide changes (domains, members…).
@@ -223,9 +224,11 @@ type AuditEvent struct {
 	// `null` for organization-wide changes (domains, members…).
 	EnvironmentID *string `json:"environment_id,omitempty" url:"environment_id,omitempty"`
 	// Details of the change; API changes include their `request_id`.
-	Metadata  map[string]any `json:"metadata" url:"metadata"`
-	ClientIP  *string        `json:"client_ip,omitempty" url:"client_ip,omitempty"`
-	UserAgent *string        `json:"user_agent,omitempty" url:"user_agent,omitempty"`
+	Metadata map[string]any `json:"metadata" url:"metadata"`
+	// The actor's address. `null`: unknown.
+	ClientIP *string `json:"client_ip,omitempty" url:"client_ip,omitempty"`
+	// The actor's `User-Agent`. `null`: unknown.
+	UserAgent *string `json:"user_agent,omitempty" url:"user_agent,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

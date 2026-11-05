@@ -59,34 +59,58 @@ public class AsyncRulesClient {
         return this.rawClient.create(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<RiskRule> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<RiskRule> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<RiskRule> get(String id, GetRulesRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One rule of the API key's environment.
+     */
     public CompletableFuture<RiskRule> get(String id, GetRulesRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<DeletedRiskRule> delete(String id) {
         return this.rawClient.delete(id).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<DeletedRiskRule> delete(String id, RequestOptions requestOptions) {
         return this.rawClient.delete(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<DeletedRiskRule> delete(String id, DeleteRulesRequest request) {
         return this.rawClient.delete(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * Deletes a rule. Later assessments no longer apply it.
+     */
     public CompletableFuture<DeletedRiskRule> delete(
             String id, DeleteRulesRequest request, RequestOptions requestOptions) {
         return this.rawClient.delete(id, request, requestOptions).thenApply(response -> response.body());

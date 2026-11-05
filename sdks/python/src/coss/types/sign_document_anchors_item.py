@@ -11,12 +11,35 @@ class SignDocumentAnchorsItem(UniversalBaseModel):
     A text anchor found in the document, in points from the page's top left.
     """
 
-    text: str
-    page: int
-    x: float
-    y: float
-    width: float
-    height: float
+    text: str = pydantic.Field()
+    """
+    The anchor as it appears in the document.
+    """
+
+    page: int = pydantic.Field()
+    """
+    1-based page number.
+    """
+
+    x: float = pydantic.Field()
+    """
+    Left edge, in PDF points from the page's left.
+    """
+
+    y: float = pydantic.Field()
+    """
+    Top edge, in PDF points from the page's top.
+    """
+
+    width: float = pydantic.Field()
+    """
+    In PDF points.
+    """
+
+    height: float = pydantic.Field()
+    """
+    In PDF points.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

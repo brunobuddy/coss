@@ -1,5 +1,34 @@
 # coss
 
+## 0.12.0
+
+### Minor Changes
+
+- 2012767: Setup and diagnosis know every product. `fetchSetupReport(coss, { product })`, the MCP server's `get_setup` and `coss init --product` say what a product still needs or how to try it in a sandbox, and report `products` and `products_in_use` next to the fields they had. `coss/diagnose` adds SMS, Verify, Sign, Forms, Hooks and Scheduling, as MCP tools (`diagnose_verification`, `diagnose_sign_request`, `diagnose_form_submission`, `diagnose_hook_delivery`, `diagnose_scheduling_slots`) and CLI commands (`coss sms diagnose`, `coss verify diagnose`, `coss sign diagnose`, `coss forms diagnose`, `coss hooks diagnose`, `coss scheduling diagnose`). The MCP server also gets `list_email_templates`, log drain and sub-account tools, `api_get` (a read-only fallback for any `/v1/` path), output schemas on `get_setup` and the diagnose tools, and its first prompts and resources.
+- a7ff535: Verify's settings have an API: `coss.verify.settings.get()` and `.update()`. The MCP server gets tools for marketing (contacts, audiences, segments, topics, broadcasts), Verify and Sign, and more for Forms, Scheduling, Hooks and Risk, plus `COSS_MCP_TOOLSETS` to offer fewer of them. The CLI gets `coss verify`, `coss contacts`, `coss broadcasts` and `coss sign`, and more of `coss sms`, `coss forms` and `coss scheduling`.
+- 05dd81b: Scheduling's calendar delegations: `coss.scheduling.calendarDelegations` lets an admin authorize a Google Workspace or Microsoft 365 domain once, so every host on it gets their calendar with no consent screen. Hosts gain `calendar_account`, calendar connections gain `delegation`, and there are `scheduling.calendar_delegation.failing` and `.restored` webhooks. `coss open scheduling-calendar-delegation` opens its dashboard page.
+- 9e79d10: Billing has a credit limit: `coss.billing.get()` returns `credit_limit` (`limit`, `used`, `charge_threshold`), holds can have the reason `credit_limit`, invoices the kind `threshold` (usage charged early) and credits the source `threshold`.
+- 8dacd0f: `BillingMeter` adds `email.attachment_data` and `email.received_data`: attachments and received messages past an email's first MB, billed by the MB.
+- 411767c: `coss.environment.get()` and the MCP server's `get_account_status` say whether the organization is in HIPAA mode (`organization.hipaa_mode`). The MCP server explains `hipaa_mode_restriction` refusals.
+- 97e84b2: Scheduling hosts have `locations`: their own office, meeting link and phone number. An event type's location that leaves its value blank uses the booked host's.
+- 56a7443: Scheduling event types take `max_active_bookings_per_attendee`, which caps how many upcoming bookings one person can have at a time. Booking past it answers `attendee_limit_reached`.
+- 17ac7bc: Scheduling bookings have a readable history: `coss.scheduling.bookings.events(id)`, the MCP server's `list_scheduling_booking_events` and `coss scheduling booking-events`. A cancelled booking says who cancelled it in `cancelled_by`, and `bookings.cancel` takes an optional `reason`, which only retrieving that booking returns. `bookings.cancel`'s second argument is now its parameters, and request options moved to the third, as on `series.cancel`.
+- 346c63f: Scheduling event types take a `description`, shown on hosted booking pages and never in emails. Its links must be on your organization's verified domains and use `https`.
+- 4168d9e: Scheduling slots explain themselves. `coss.scheduling.slots.explain(eventType, { start })`, the MCP server's `explain_scheduling_slot` and `coss scheduling slots explain` say whether one start can be booked right now and, host by host, why not. Slots also carry `seats_left` for group event types.
+- f099789: Scheduling bookings can have guests: set an event type's `max_guests`, then pass `guests` when booking. They're emailed about it, and `coss.scheduling.attendees.eraseByEmail()` erases someone known only by their address. An event type's `host_calendar_details: "full"` puts its title and who's coming on hosts' calendars instead of a neutral "Appointment". The MCP server's `create_scheduling_booking` takes `guests`.
+- cee7e38: Scheduling hosts take a `locale`, which their notifications are written in. Emails and texts about a booking are now written in the attendee's or host's locale when coss.com has it, and in English otherwise.
+- 11286f6: Scheduling settings take a `logo`, shown on the hosted pages and on emails sent from your own address.
+- 6d31dd3: Scheduling reminders: `reminders` on `coss.scheduling.settings` and event types say what goes out around a booking, timed from its start, end or any change to it, to attendees, hosts, fixed addresses or a webhook, in your own words if you like. `coss.scheduling.bookings.notifications()` lists what was queued and why anything wasn't sent. New webhooks: `scheduling.booking.started`, `scheduling.booking.ended` and `scheduling.booking.reminder`. Hosts take a `phone`, event types take `notifications`, and settings take `email_reply_to`. The MCP server gets `get_scheduling_reminders`, `save_scheduling_reminders`, `list_scheduling_booking_notifications` and `mark_scheduling_no_show`, and the CLI `coss scheduling reminders`, `notifications` and `no-show`.
+- 0101bab: Scheduling: a booker session can take `attributes`, so hosted and embedded bookers can route to a specialist.
+- ddf6142: Scheduling: `zoom` as a location, and `provider: "zoom"` when authorizing a host's connection.
+
+### Patch Changes
+
+- fb681ad: Billing's meter type includes `hooks.messages`: live Hooks messages are now billed.
+- cbed6ab: Risk: the `Meter` type gains `risk.assessments` and `risk.content_checks`, and `RiskDegradedSignal` gains `usage_limit` (an assessment that ran without velocity, memory or content because the plan's included assessments are used up, or a billing hold or budget applies). `coss.risk.classify()` is billed now, so it is no longer retried automatically.
+- 895ef91: Billing: the `scheduling.hosts` meter is new, and the unreleased `video.participant_minutes` is gone.
+- 7452381: Avoid regular expressions that slow down on unusual input when trimming base URLs and reading From headers.
+
 ## 0.11.0
 
 ### Minor Changes

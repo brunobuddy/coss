@@ -46,26 +46,41 @@ public final class TemplateProblem {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The locale whose content it's in.
+     */
     @JsonProperty("locale")
     public String getLocale() {
         return locale;
     }
 
+    /**
+     * @return The part of the content it's in.
+     */
     @JsonProperty("field")
     public TemplateProblemField getField() {
         return field;
     }
 
+    /**
+     * @return What's wrong.
+     */
     @JsonProperty("message")
     public String getMessage() {
         return message;
     }
 
+    /**
+     * @return The line it's on, from 1.
+     */
     @JsonProperty("line")
     public long getLine() {
         return line;
     }
 
+    /**
+     * @return The column it's at, from 1.
+     */
     @JsonProperty("column")
     public long getColumn() {
         return column;
@@ -105,24 +120,39 @@ public final class TemplateProblem {
     }
 
     public interface LocaleStage {
+        /**
+         * <p>The locale whose content it's in.</p>
+         */
         FieldStage locale(@NotNull String locale);
 
         Builder from(TemplateProblem other);
     }
 
     public interface FieldStage {
+        /**
+         * <p>The part of the content it's in.</p>
+         */
         MessageStage field(@NotNull TemplateProblemField field);
     }
 
     public interface MessageStage {
+        /**
+         * <p>What's wrong.</p>
+         */
         LineStage message(@NotNull String message);
     }
 
     public interface LineStage {
+        /**
+         * <p>The line it's on, from 1.</p>
+         */
         ColumnStage line(long line);
     }
 
     public interface ColumnStage {
+        /**
+         * <p>The column it's at, from 1.</p>
+         */
         _FinalStage column(long column);
     }
 
@@ -162,6 +192,10 @@ public final class TemplateProblem {
             return this;
         }
 
+        /**
+         * <p>The locale whose content it's in.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("locale")
         public FieldStage locale(@NotNull String locale) {
@@ -169,6 +203,10 @@ public final class TemplateProblem {
             return this;
         }
 
+        /**
+         * <p>The part of the content it's in.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("field")
         public MessageStage field(@NotNull TemplateProblemField field) {
@@ -176,6 +214,10 @@ public final class TemplateProblem {
             return this;
         }
 
+        /**
+         * <p>What's wrong.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("message")
         public LineStage message(@NotNull String message) {
@@ -183,6 +225,10 @@ public final class TemplateProblem {
             return this;
         }
 
+        /**
+         * <p>The line it's on, from 1.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("line")
         public ColumnStage line(long line) {
@@ -190,6 +236,10 @@ public final class TemplateProblem {
             return this;
         }
 
+        /**
+         * <p>The column it's at, from 1.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("column")
         public _FinalStage column(long column) {

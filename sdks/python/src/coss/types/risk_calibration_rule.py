@@ -7,8 +7,16 @@ from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 
 
 class RiskCalibrationRule(UniversalBaseModel):
-    rule: str
-    name: str
+    rule: str = pydantic.Field()
+    """
+    The rule's id.
+    """
+
+    name: str = pydantic.Field()
+    """
+    The rule's name.
+    """
+
     matched: int = pydantic.Field()
     """
     Assessments it decided.

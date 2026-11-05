@@ -59,6 +59,9 @@ public final class EmailWebhookEventDataClick {
         return linkPosition;
     }
 
+    /**
+     * @return The client's <code>User-Agent</code>. <code>null</code>: not sent.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("user_agent")
     public OptionalNullable<String> getUserAgent() {
@@ -126,6 +129,9 @@ public final class EmailWebhookEventDataClick {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         _FinalStage userAgent(OptionalNullable<String> userAgent);
 
         _FinalStage userAgent(String userAgent);
@@ -178,6 +184,10 @@ public final class EmailWebhookEventDataClick {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Nullable<String> userAgent) {
             if (userAgent.isNull()) {
@@ -190,6 +200,10 @@ public final class EmailWebhookEventDataClick {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(Optional<String> userAgent) {
             if (userAgent.isPresent()) {
@@ -200,12 +214,19 @@ public final class EmailWebhookEventDataClick {
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage userAgent(String userAgent) {
             this.userAgent = OptionalNullable.of(userAgent);
             return this;
         }
 
+        /**
+         * <p>The client's <code>User-Agent</code>. <code>null</code>: not sent.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "user_agent", nulls = Nulls.SKIP)
         public _FinalStage userAgent(OptionalNullable<String> userAgent) {

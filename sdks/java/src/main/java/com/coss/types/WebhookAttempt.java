@@ -70,6 +70,9 @@ public final class WebhookAttempt {
         return id;
     }
 
+    /**
+     * @return When the attempt ran.
+     */
     @JsonProperty("attempted_at")
     public OffsetDateTime getAttemptedAt() {
         return attemptedAt;
@@ -87,6 +90,9 @@ public final class WebhookAttempt {
         return statusCode;
     }
 
+    /**
+     * @return How long it took, in milliseconds.
+     */
     @JsonProperty("duration_ms")
     public long getDurationMs() {
         return durationMs;
@@ -187,10 +193,16 @@ public final class WebhookAttempt {
     }
 
     public interface AttemptedAtStage {
+        /**
+         * <p>When the attempt ran.</p>
+         */
         DurationMsStage attemptedAt(@NotNull OffsetDateTime attemptedAt);
     }
 
     public interface DurationMsStage {
+        /**
+         * <p>How long it took, in milliseconds.</p>
+         */
         _FinalStage durationMs(long durationMs);
     }
 
@@ -282,6 +294,10 @@ public final class WebhookAttempt {
             return this;
         }
 
+        /**
+         * <p>When the attempt ran.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("attempted_at")
         public DurationMsStage attemptedAt(@NotNull OffsetDateTime attemptedAt) {
@@ -289,6 +305,10 @@ public final class WebhookAttempt {
             return this;
         }
 
+        /**
+         * <p>How long it took, in milliseconds.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("duration_ms")
         public _FinalStage durationMs(long durationMs) {

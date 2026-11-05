@@ -16,7 +16,7 @@ use Coss\Forms\Types\UpdateFormRequestHosted;
 class UpdateFormRequest extends JsonSerializableType
 {
     /**
-     * @var ?string $name
+     * @var ?string $name Your name for the form, shown in the dashboard and in notifications.
      */
     #[JsonProperty('name')]
     public ?string $name;
@@ -52,37 +52,37 @@ class UpdateFormRequest extends JsonSerializableType
     public ?string $redirectUrl;
 
     /**
-     * @var ?UpdateFormRequestSpam $spam
+     * @var ?UpdateFormRequestSpam $spam How submissions are screened. Only the fields given change.
      */
     #[JsonProperty('spam')]
     public ?UpdateFormRequestSpam $spam;
 
     /**
-     * @var ?UpdateFormRequestSubmitter $submitter
+     * @var ?UpdateFormRequestSubmitter $submitter Who the submitter is, and whether they must confirm by email. Only the fields given change.
      */
     #[JsonProperty('submitter')]
     public ?UpdateFormRequestSubmitter $submitter;
 
     /**
-     * @var ?UpdateFormRequestNotifications $notifications
+     * @var ?UpdateFormRequestNotifications $notifications Emails about accepted submissions. Only the fields given change.
      */
     #[JsonProperty('notifications')]
     public ?UpdateFormRequestNotifications $notifications;
 
     /**
-     * @var ?UpdateFormRequestContacts $contacts
+     * @var ?UpdateFormRequestContacts $contacts Turning submissions into contacts. Only the fields given change.
      */
     #[JsonProperty('contacts')]
     public ?UpdateFormRequestContacts $contacts;
 
     /**
-     * @var ?UpdateFormRequestFiles $files
+     * @var ?UpdateFormRequestFiles $files File uploads. Only the fields given change.
      */
     #[JsonProperty('files')]
     public ?UpdateFormRequestFiles $files;
 
     /**
-     * @var ?UpdateFormRequestHosted $hosted
+     * @var ?UpdateFormRequestHosted $hosted The page coss.com can serve for this form. Only the fields given change.
      */
     #[JsonProperty('hosted')]
     public ?UpdateFormRequestHosted $hosted;

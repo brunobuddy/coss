@@ -20,6 +20,9 @@ public record LogDrainBatch : IJsonOnDeserialized
     [JsonPropertyName("id")]
     public required string Id { get; set; }
 
+    /// <summary>
+    /// The id of the drain it's posted to.
+    /// </summary>
     [JsonPropertyName("drain_id")]
     public required string DrainId { get; set; }
 
@@ -27,7 +30,7 @@ public record LogDrainBatch : IJsonOnDeserialized
     public required LogDrainBatchStatus Status { get; set; }
 
     /// <summary>
-    /// Lines in the batch (one per NDJSON line).
+    /// Lines in the batch.
     /// </summary>
     [JsonPropertyName("line_count")]
     public required long LineCount { get; set; }
@@ -38,6 +41,9 @@ public record LogDrainBatch : IJsonOnDeserialized
     [JsonPropertyName("byte_size")]
     public required long ByteSize { get; set; }
 
+    /// <summary>
+    /// How many attempts were made so far.
+    /// </summary>
     [JsonPropertyName("attempt_count")]
     public required long AttemptCount { get; set; }
 
@@ -48,10 +54,16 @@ public record LogDrainBatch : IJsonOnDeserialized
     [JsonPropertyName("next_attempt_at")]
     public DateTime? NextAttemptAt { get; set; }
 
+    /// <summary>
+    /// The drain's HTTP status on the latest attempt. `null`: no response arrived, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_status_code")]
     public long? LastStatusCode { get; set; }
 
+    /// <summary>
+    /// Why the latest attempt failed. `null`: it didn't, or no attempt yet.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("last_error")]
     public string? LastError { get; set; }

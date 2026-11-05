@@ -32,22 +32,42 @@ class Domain(UniversalBaseModel):
     Whether live keys may send from this domain right now.
     """
 
-    region: typing.Optional[str] = None
+    region: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    The provider region it sends from. `null`: not set up there.
+    """
+
     mail_from_domain: str = pydantic.Field()
     """
     The envelope sender subdomain bounces come back to.
     """
 
-    mail_from_status: DomainMailFromStatus
+    mail_from_status: DomainMailFromStatus = pydantic.Field()
+    """
+    How setting up its bounce-handling `MAIL FROM` domain went.
+    """
+
     records: typing.List[DomainRecord] = pydantic.Field()
     """
     The DNS records to publish, with the result of the last check.
     """
 
     created_at: dt.datetime
-    last_checked_at: typing.Optional[dt.datetime] = None
-    verified_at: typing.Optional[dt.datetime] = None
-    failed_at: typing.Optional[dt.datetime] = None
+    last_checked_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When DNS was last checked. `null`: not yet.
+    """
+
+    verified_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When it was verified. `null`: it isn't.
+    """
+
+    failed_at: typing.Optional[dt.datetime] = pydantic.Field(default=None)
+    """
+    When verification failed. `null`: it hasn't.
+    """
+
     tracking: typing.Optional[TrackingDomain] = None
     receiving: typing.Optional[ReceivingDomain] = None
     bimi: DomainBimi

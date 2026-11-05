@@ -99,6 +99,9 @@ public final class LogDrainBatch {
         return id;
     }
 
+    /**
+     * @return The id of the drain it's posted to.
+     */
     @JsonProperty("drain_id")
     public String getDrainId() {
         return drainId;
@@ -110,7 +113,7 @@ public final class LogDrainBatch {
     }
 
     /**
-     * @return Lines in the batch (one per NDJSON line).
+     * @return Lines in the batch.
      */
     @JsonProperty("line_count")
     public long getLineCount() {
@@ -125,6 +128,9 @@ public final class LogDrainBatch {
         return byteSize;
     }
 
+    /**
+     * @return How many attempts were made so far.
+     */
     @JsonProperty("attempt_count")
     public long getAttemptCount() {
         return attemptCount;
@@ -142,6 +148,9 @@ public final class LogDrainBatch {
         return nextAttemptAt;
     }
 
+    /**
+     * @return The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_status_code")
     public OptionalNullable<Long> getLastStatusCode() {
@@ -151,6 +160,9 @@ public final class LogDrainBatch {
         return lastStatusCode;
     }
 
+    /**
+     * @return Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("last_error")
     public OptionalNullable<String> getLastError() {
@@ -264,6 +276,9 @@ public final class LogDrainBatch {
     }
 
     public interface DrainIdStage {
+        /**
+         * <p>The id of the drain it's posted to.</p>
+         */
         StatusStage drainId(@NotNull String drainId);
     }
 
@@ -273,7 +288,7 @@ public final class LogDrainBatch {
 
     public interface LineCountStage {
         /**
-         * <p>Lines in the batch (one per NDJSON line).</p>
+         * <p>Lines in the batch.</p>
          */
         ByteSizeStage lineCount(long lineCount);
     }
@@ -286,6 +301,9 @@ public final class LogDrainBatch {
     }
 
     public interface AttemptCountStage {
+        /**
+         * <p>How many attempts were made so far.</p>
+         */
         CreatedAtStage attemptCount(long attemptCount);
     }
 
@@ -315,6 +333,9 @@ public final class LogDrainBatch {
 
         _FinalStage nextAttemptAt(Nullable<OffsetDateTime> nextAttemptAt);
 
+        /**
+         * <p>The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode);
 
         _FinalStage lastStatusCode(Long lastStatusCode);
@@ -323,6 +344,9 @@ public final class LogDrainBatch {
 
         _FinalStage lastStatusCode(Nullable<Long> lastStatusCode);
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         _FinalStage lastError(OptionalNullable<String> lastError);
 
         _FinalStage lastError(String lastError);
@@ -420,6 +444,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>The id of the drain it's posted to.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("drain_id")
         public StatusStage drainId(@NotNull String drainId) {
@@ -435,7 +463,7 @@ public final class LogDrainBatch {
         }
 
         /**
-         * <p>Lines in the batch (one per NDJSON line).</p>
+         * <p>Lines in the batch.</p>
          * @return Reference to {@code this} so that method calls can be chained together.
          */
         @java.lang.Override
@@ -456,6 +484,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>How many attempts were made so far.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("attempt_count")
         public CreatedAtStage attemptCount(long attemptCount) {
@@ -512,6 +544,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Nullable<String> lastError) {
             if (lastError.isNull()) {
@@ -524,6 +560,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(Optional<String> lastError) {
             if (lastError.isPresent()) {
@@ -534,12 +574,19 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastError(String lastError) {
             this.lastError = OptionalNullable.of(lastError);
             return this;
         }
 
+        /**
+         * <p>Why the latest attempt failed. <code>null</code>: it didn't, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_error", nulls = Nulls.SKIP)
         public _FinalStage lastError(OptionalNullable<String> lastError) {
@@ -547,6 +594,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Nullable<Long> lastStatusCode) {
             if (lastStatusCode.isNull()) {
@@ -559,6 +610,10 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Optional<Long> lastStatusCode) {
             if (lastStatusCode.isPresent()) {
@@ -569,12 +624,19 @@ public final class LogDrainBatch {
             return this;
         }
 
+        /**
+         * <p>The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage lastStatusCode(Long lastStatusCode) {
             this.lastStatusCode = OptionalNullable.of(lastStatusCode);
             return this;
         }
 
+        /**
+         * <p>The drain's HTTP status on the latest attempt. <code>null</code>: no response arrived, or no attempt yet.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "last_status_code", nulls = Nulls.SKIP)
         public _FinalStage lastStatusCode(OptionalNullable<Long> lastStatusCode) {

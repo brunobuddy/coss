@@ -23,13 +23,13 @@ class HookMessage extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $applicationId
+     * @var string $applicationId The id of the application it was sent to.
      */
     #[JsonProperty('application_id')]
     public string $applicationId;
 
     /**
-     * @var string $eventType
+     * @var string $eventType The event type it was sent as.
      */
     #[JsonProperty('event_type')]
     public string $eventType;

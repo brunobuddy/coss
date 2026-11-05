@@ -15,25 +15,25 @@ class SignTemplateDocumentsItem extends JsonSerializableType
     public string $id;
 
     /**
-     * @var string $filename
+     * @var string $filename The file's name.
      */
     #[JsonProperty('filename')]
     public string $filename;
 
     /**
-     * @var string $sha256
+     * @var string $sha256 Hex SHA-256 of the uploaded bytes.
      */
     #[JsonProperty('sha256')]
     public string $sha256;
 
     /**
-     * @var int $pageCount
+     * @var int $pageCount How many pages it has.
      */
     #[JsonProperty('page_count')]
     public int $pageCount;
 
     /**
-     * @var array<SignTemplateDocumentsItemPagesItem> $pages
+     * @var array<SignTemplateDocumentsItemPagesItem> $pages Each page's size, in order.
      */
     #[JsonProperty('pages'), ArrayType([SignTemplateDocumentsItemPagesItem::class])]
     public array $pages;

@@ -88,18 +88,30 @@ public class AsyncSmsClient {
         return this.rawClient.send(request, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<Sms> get(String id) {
         return this.rawClient.get(id).thenApply(response -> response.body());
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<Sms> get(String id, RequestOptions requestOptions) {
         return this.rawClient.get(id, requestOptions).thenApply(response -> response.body());
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<Sms> get(String id, GetSmsRequest request) {
         return this.rawClient.get(id, request).thenApply(response -> response.body());
     }
 
+    /**
+     * One message sent from the API key's environment, with its current status.
+     */
     public CompletableFuture<Sms> get(String id, GetSmsRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(id, request, requestOptions).thenApply(response -> response.body());
     }

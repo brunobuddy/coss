@@ -10,4 +10,5 @@ enum CreditSource: string
     case Promotion = "promotion";
     case Refund = "refund";
     case Sla = "sla";
+    case Threshold = "threshold";
 }

@@ -51,6 +51,9 @@ public final class ReceivedSmsWebhookEvent {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The event id.
+     */
     @JsonProperty("id")
     public String getId() {
         return id;
@@ -61,6 +64,9 @@ public final class ReceivedSmsWebhookEvent {
         return object;
     }
 
+    /**
+     * @return <code>sms.received</code>: a message arrived. <code>sms.opted_out</code>: the sender replied with an opt-out keyword. <code>sms.opted_in</code>: the sender replied with an opt-in keyword.
+     */
     @JsonProperty("type")
     public ReceivedSmsWebhookEventType getType() {
         return type;
@@ -74,6 +80,9 @@ public final class ReceivedSmsWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
@@ -119,6 +128,9 @@ public final class ReceivedSmsWebhookEvent {
     }
 
     public interface IdStage {
+        /**
+         * <p>The event id.</p>
+         */
         ObjectStage id(@NotNull String id);
 
         Builder from(ReceivedSmsWebhookEvent other);
@@ -129,6 +141,9 @@ public final class ReceivedSmsWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p><code>sms.received</code>: a message arrived. <code>sms.opted_out</code>: the sender replied with an opt-out keyword. <code>sms.opted_in</code>: the sender replied with an opt-in keyword.</p>
+         */
         ApiVersionStage type(@NotNull ReceivedSmsWebhookEventType type);
     }
 
@@ -140,6 +155,9 @@ public final class ReceivedSmsWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
@@ -186,6 +204,10 @@ public final class ReceivedSmsWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>The event id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("id")
         public ObjectStage id(@NotNull String id) {
@@ -200,6 +222,10 @@ public final class ReceivedSmsWebhookEvent {
             return this;
         }
 
+        /**
+         * <p><code>sms.received</code>: a message arrived. <code>sms.opted_out</code>: the sender replied with an opt-out keyword. <code>sms.opted_in</code>: the sender replied with an opt-in keyword.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull ReceivedSmsWebhookEventType type) {
@@ -218,6 +244,10 @@ public final class ReceivedSmsWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {

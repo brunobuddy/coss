@@ -10,7 +10,11 @@ from .suppression_check_object import SuppressionCheckObject
 
 class SuppressionCheck(UniversalBaseModel):
     object: SuppressionCheckObject
-    address: str
+    address: str = pydantic.Field()
+    """
+    The address checked.
+    """
+
     suppressed: bool = pydantic.Field()
     """
     Whether a send (with the given category) would skip this address.

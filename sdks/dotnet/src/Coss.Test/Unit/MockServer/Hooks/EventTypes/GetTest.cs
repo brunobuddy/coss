@@ -1,4 +1,3 @@
-using Coss.Hooks;
 using Coss.Test.Unit.MockServer;
 using Coss.Test.Utils;
 using NUnit.Framework;
@@ -55,7 +54,7 @@ public class GetTest : BaseMockServerTest
             );
 
         var response = await Client.Hooks.EventTypes.GetAsync(
-            new GetEventTypesRequest { Name = "name" }
+            new Coss.Hooks.GetEventTypesRequest { Name = "name" }
         );
         JsonAssert.AreEqual(response, mockResponse);
     }
@@ -107,7 +106,7 @@ public class GetTest : BaseMockServerTest
             );
 
         var response = await Client.Hooks.EventTypes.GetAsync(
-            new GetEventTypesRequest { Name = "invoice.paid" }
+            new Coss.Hooks.GetEventTypesRequest { Name = "invoice.paid" }
         );
         JsonAssert.AreEqual(response, mockResponse);
     }

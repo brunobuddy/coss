@@ -15,6 +15,9 @@ public record CreateHookEndpointRequest
     [JsonPropertyName("url")]
     public required string Url { get; set; }
 
+    /// <summary>
+    /// Your note about it.
+    /// </summary>
     [Optional]
     [JsonPropertyName("description")]
     public string? Description { get; set; }
@@ -47,6 +50,9 @@ public record CreateHookEndpointRequest
     [JsonPropertyName("metadata")]
     public Dictionary<string, string>? Metadata { get; set; }
 
+    /// <summary>
+    /// Default `true`. `false` creates it disabled, with `disabled_reason: manual`.
+    /// </summary>
     [Optional]
     [JsonPropertyName("enabled")]
     public bool? Enabled { get; set; }

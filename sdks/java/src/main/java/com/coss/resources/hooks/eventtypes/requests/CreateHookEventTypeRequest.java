@@ -45,11 +45,17 @@ public final class CreateHookEventTypeRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The type's name, which messages send as <code>event_type</code>. Letters, digits and <code>. _ -</code>.
+     */
     @JsonProperty("name")
     public String getName() {
         return name;
     }
 
+    /**
+     * @return What this event means, shown to your users.
+     */
     @JsonProperty("description")
     public Optional<String> getDescription() {
         return description;
@@ -104,6 +110,9 @@ public final class CreateHookEventTypeRequest {
     }
 
     public interface NameStage {
+        /**
+         * <p>The type's name, which messages send as <code>event_type</code>. Letters, digits and <code>. _ -</code>.</p>
+         */
         _FinalStage name(@NotNull String name);
 
         Builder from(CreateHookEventTypeRequest other);
@@ -116,6 +125,9 @@ public final class CreateHookEventTypeRequest {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>What this event means, shown to your users.</p>
+         */
         _FinalStage description(Optional<String> description);
 
         _FinalStage description(String description);
@@ -159,6 +171,10 @@ public final class CreateHookEventTypeRequest {
             return this;
         }
 
+        /**
+         * <p>The type's name, which messages send as <code>event_type</code>. Letters, digits and <code>. _ -</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("name")
         public _FinalStage name(@NotNull String name) {
@@ -206,12 +222,19 @@ public final class CreateHookEventTypeRequest {
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage description(String description) {
             this.description = Optional.ofNullable(description);
             return this;
         }
 
+        /**
+         * <p>What this event means, shown to your users.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "description", nulls = Nulls.SKIP)
         public _FinalStage description(Optional<String> description) {

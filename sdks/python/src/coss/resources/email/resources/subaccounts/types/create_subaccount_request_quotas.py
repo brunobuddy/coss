@@ -11,9 +11,20 @@ class CreateSubaccountRequestQuotas(UniversalBaseModel):
     Fields left out keep their value; `null` removes a quota.
     """
 
-    recipients_per_day: typing.Optional[int] = None
-    recipients_per_second: typing.Optional[int] = None
-    burst: typing.Optional[int] = None
+    recipients_per_day: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Most recipients a day. `null` removes the limit.
+    """
+
+    recipients_per_second: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    Most recipients a second. `null` removes the limit.
+    """
+
+    burst: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    How many recipients a moment may take before the per-second rate applies. `null` removes it.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

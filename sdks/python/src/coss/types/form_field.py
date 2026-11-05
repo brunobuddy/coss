@@ -8,13 +8,40 @@ from .form_field_type import FormFieldType
 
 
 class FormField(UniversalBaseModel):
-    name: str
-    type: FormFieldType
-    label: typing.Optional[str] = None
-    required: bool
-    placeholder: typing.Optional[str] = None
-    options: typing.List[str]
-    max_length: typing.Optional[int] = None
+    name: str = pydantic.Field()
+    """
+    The `name` the form's input posts.
+    """
+
+    type: FormFieldType = pydantic.Field()
+    """
+    Validates the value and picks the input on hosted pages.
+    """
+
+    label: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown on hosted pages and in notifications. `null`: the name.
+    """
+
+    required: bool = pydantic.Field()
+    """
+    Whether a submission must include it.
+    """
+
+    placeholder: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown in the empty input on hosted pages. `null`: none.
+    """
+
+    options: typing.List[str] = pydantic.Field()
+    """
+    The choices of `select`, `radio` and `checkbox` fields. Empty for other types.
+    """
+
+    max_length: typing.Optional[int] = pydantic.Field(default=None)
+    """
+    The longest value accepted, in characters. `null`: only the overall limit.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

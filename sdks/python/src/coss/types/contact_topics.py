@@ -10,8 +10,15 @@ from .contact_topics_topics_item import ContactTopicsTopicsItem
 
 class ContactTopics(UniversalBaseModel):
     object: ContactTopicsObject
-    contact_id: str
-    topics: typing.List[ContactTopicsTopicsItem]
+    contact_id: str = pydantic.Field()
+    """
+    The contact's id.
+    """
+
+    topics: typing.List[ContactTopicsTopicsItem] = pydantic.Field()
+    """
+    Every topic of the environment, with this contact's standing.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

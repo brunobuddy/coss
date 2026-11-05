@@ -9,7 +9,7 @@ from ......core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 class CreateSignTemplateRequestRolesItem(UniversalBaseModel):
     key: str = pydantic.Field()
     """
-    The role's key, e.g. `client`.
+    The role's id within the template, used by fields and signers.
     """
 
     name: str = pydantic.Field()

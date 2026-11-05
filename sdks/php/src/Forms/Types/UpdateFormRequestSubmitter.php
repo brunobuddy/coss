@@ -5,6 +5,9 @@ namespace Coss\Forms\Types;
 use Coss\Core\Json\JsonSerializableType;
 use Coss\Core\Json\JsonProperty;
 
+/**
+ * Who the submitter is, and whether they must confirm by email. Only the fields given change.
+ */
 class UpdateFormRequestSubmitter extends JsonSerializableType
 {
     /**

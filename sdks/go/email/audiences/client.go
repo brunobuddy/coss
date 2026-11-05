@@ -68,6 +68,8 @@ func (c *Client) List(
 	return response.Body, nil
 }
 
+// Creates a static contact list in the API key's environment. Names are unique within it (`name_taken`). Add its members with `POST /v1/audiences/{id}/contacts`.
+//
 // Example:
 //
 //	request := &email.CreateAudienceRequest{
@@ -93,6 +95,8 @@ func (c *Client) Create(
 	return response.Body, nil
 }
 
+// One audience of the API key's environment.
+//
 // Example:
 //
 //	request := &email.GetAudiencesRequest{
@@ -145,6 +149,8 @@ func (c *Client) Remove(
 	return response.Body, nil
 }
 
+// Renames an audience. Its members stay.
+//
 // Example:
 //
 //	request := &email.UpdateAudienceRequest{
@@ -229,6 +235,8 @@ func (c *Client) AddContacts(
 	return response.Body, nil
 }
 
+// Takes a contact out of the audience. The contact itself stays.
+//
 // Example:
 //
 //	request := &email.RemoveContactAudiencesRequest{

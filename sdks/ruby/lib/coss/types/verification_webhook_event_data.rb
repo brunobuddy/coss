@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # The verification. Never its code.
     class VerificationWebhookEventData < Internal::Types::Model
       field :verification_id, -> { String }, optional: false, nullable: false
 

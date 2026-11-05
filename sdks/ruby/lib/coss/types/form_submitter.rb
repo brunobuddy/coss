@@ -2,6 +2,7 @@
 
 module Coss
   module Types
+    # Who the submitter is, and whether they must confirm by email.
     class FormSubmitter < Internal::Types::Model
       field :email_field, -> { String }, optional: false, nullable: false
 

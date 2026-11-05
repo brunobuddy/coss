@@ -10,8 +10,15 @@ from .segment_filter_conditions_item_audience_id_op import SegmentFilterConditio
 
 class SegmentFilterConditionsItemAudienceId(UniversalBaseModel):
     field: SegmentFilterConditionsItemAudienceIdField
-    op: SegmentFilterConditionsItemAudienceIdOp
-    audience_id: str
+    op: SegmentFilterConditionsItemAudienceIdOp = pydantic.Field()
+    """
+    Whether the contact is in the audience.
+    """
+
+    audience_id: str = pydantic.Field()
+    """
+    The audience's id.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

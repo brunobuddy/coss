@@ -66,16 +66,19 @@ type CreateBroadcastRequest struct {
 	// …or to this segment (one of the two).
 	SegmentID *string `json:"segment_id,omitempty" url:"-"`
 	// The topic the broadcast is about (its key): only contacts it reaches get it, and its unsubscribe link leaves just that topic. It is the emails' `category`.
-	Topic   *string  `json:"topic,omitempty" url:"-"`
-	From    string   `json:"from" url:"-"`
+	Topic *string `json:"topic,omitempty" url:"-"`
+	From  string  `json:"from" url:"-"`
+	// Addresses replies go to.
 	ReplyTo []string `json:"reply_to,omitempty" url:"-"`
 	// May use `{{{contact.<key>|fallback}}}` (e.g. `{{{contact.first_name|there}}}`).
 	Subject string `json:"subject" url:"-"`
 	// The inbox preview line (a hidden preheader at the start of the HTML).
 	PreviewText *string `json:"preview_text,omitempty" url:"-"`
 	// `{{{contact.<key>|fallback}}}` for contact fields and properties (escaped), and `{{{unsubscribe_url}}}`, `{{{preferences_url}}}`, `{{{mailing_address}}}`; a footer with the postal address and an unsubscribe link is added unless they are there.
-	HTML     *string                         `json:"html,omitempty" url:"-"`
-	Text     *string                         `json:"text,omitempty" url:"-"`
+	HTML *string `json:"html,omitempty" url:"-"`
+	// The plain text part. Takes the same placeholders as `html`.
+	Text *string `json:"text,omitempty" url:"-"`
+	// Which opens and clicks are tracked.
 	Tracking *CreateBroadcastRequestTracking `json:"tracking,omitempty" url:"-"`
 	// Recipients per second, at most the plan's marketing rate (the default).
 	RatePerSecond *int `json:"rate_per_second,omitempty" url:"-"`
@@ -513,7 +516,8 @@ var (
 
 type TestBroadcastRequest struct {
 	// The broadcast's id.
-	ID string   `json:"-" url:"-"`
+	ID string `json:"-" url:"-"`
+	// Who gets the test, at most 5 addresses.
 	To []string `json:"to" url:"-"`
 	// A contact (id or address) whose values fill the template; default: fallbacks.
 	Contact *string `json:"contact,omitempty" url:"-"`
@@ -578,8 +582,11 @@ var (
 	createBroadcastRequestTrackingFieldClicks = big.NewInt(1 << 1)
 )
 
+// Which opens and clicks are tracked.
 type CreateBroadcastRequestTracking struct {
-	Opens  *bool `json:"opens,omitempty" url:"opens,omitempty"`
+	// Track opens with a pixel.
+	Opens *bool `json:"opens,omitempty" url:"opens,omitempty"`
+	// Track clicks by rewriting links.
 	Clicks *bool `json:"clicks,omitempty" url:"clicks,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -717,8 +724,11 @@ var (
 	updateBroadcastRequestTrackingFieldClicks = big.NewInt(1 << 1)
 )
 
+// Which opens and clicks are tracked.
 type UpdateBroadcastRequestTracking struct {
-	Opens  *bool `json:"opens,omitempty" url:"opens,omitempty"`
+	// Track opens with a pixel.
+	Opens *bool `json:"opens,omitempty" url:"opens,omitempty"`
+	// Track clicks by rewriting links.
 	Clicks *bool `json:"clicks,omitempty" url:"clicks,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
@@ -834,19 +844,28 @@ type UpdateBroadcastRequest struct {
 	// The broadcast's id.
 	ID string `json:"-" url:"-"`
 	// Shown only to you.
-	Name       *string  `json:"name,omitempty" url:"-"`
-	AudienceID *string  `json:"audience_id,omitempty" url:"-"`
-	SegmentID  *string  `json:"segment_id,omitempty" url:"-"`
-	Topic      *string  `json:"topic,omitempty" url:"-"`
-	From       *string  `json:"from,omitempty" url:"-"`
-	ReplyTo    []string `json:"reply_to,omitempty" url:"-"`
+	Name *string `json:"name,omitempty" url:"-"`
+	// Send to this audience. `null` clears it.
+	AudienceID *string `json:"audience_id,omitempty" url:"-"`
+	// Send to this segment. `null` clears it.
+	SegmentID *string `json:"segment_id,omitempty" url:"-"`
+	// The topic it's about (its key). `null` clears it.
+	Topic *string `json:"topic,omitempty" url:"-"`
+	From  *string `json:"from,omitempty" url:"-"`
+	// Addresses replies go to.
+	ReplyTo []string `json:"reply_to,omitempty" url:"-"`
 	// May use `{{{contact.<key>|fallback}}}` (e.g. `{{{contact.first_name|there}}}`).
-	Subject       *string                         `json:"subject,omitempty" url:"-"`
-	PreviewText   *string                         `json:"preview_text,omitempty" url:"-"`
-	HTML          *string                         `json:"html,omitempty" url:"-"`
-	Text          *string                         `json:"text,omitempty" url:"-"`
-	Tracking      *UpdateBroadcastRequestTracking `json:"tracking,omitempty" url:"-"`
-	RatePerSecond *int                            `json:"rate_per_second,omitempty" url:"-"`
+	Subject *string `json:"subject,omitempty" url:"-"`
+	// The inbox preview line. `null` removes it.
+	PreviewText *string `json:"preview_text,omitempty" url:"-"`
+	// The HTML part. `null` removes it, if `text` remains.
+	HTML *string `json:"html,omitempty" url:"-"`
+	// The plain text part. `null` removes it, if `html` remains.
+	Text *string `json:"text,omitempty" url:"-"`
+	// Which opens and clicks are tracked.
+	Tracking *UpdateBroadcastRequestTracking `json:"tracking,omitempty" url:"-"`
+	// Recipients per second. `null`: the plan's marketing rate.
+	RatePerSecond *int `json:"rate_per_second,omitempty" url:"-"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`

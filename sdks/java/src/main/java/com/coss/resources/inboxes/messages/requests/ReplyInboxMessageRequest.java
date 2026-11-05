@@ -81,11 +81,17 @@ public final class ReplyInboxMessageRequest {
         return replyAll;
     }
 
+    /**
+     * @return Who it's copied to.
+     */
     @JsonProperty("cc")
     public Optional<ReplyInboxMessageRequestCc> getCc() {
         return cc;
     }
 
+    /**
+     * @return Who it's blind copied to.
+     */
     @JsonProperty("bcc")
     public Optional<ReplyInboxMessageRequestBcc> getBcc() {
         return bcc;
@@ -115,6 +121,9 @@ public final class ReplyInboxMessageRequest {
         return attachments;
     }
 
+    /**
+     * @return Your tags on the email.
+     */
     @JsonProperty("tags")
     public Optional<List<ReplyInboxMessageRequestTagsItem>> getTags() {
         return tags;
@@ -226,6 +235,9 @@ public final class ReplyInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's copied to.</p>
+         */
         @JsonSetter(value = "cc", nulls = Nulls.SKIP)
         public Builder cc(Optional<ReplyInboxMessageRequestCc> cc) {
             this.cc = cc;
@@ -237,6 +249,9 @@ public final class ReplyInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Who it's blind copied to.</p>
+         */
         @JsonSetter(value = "bcc", nulls = Nulls.SKIP)
         public Builder bcc(Optional<ReplyInboxMessageRequestBcc> bcc) {
             this.bcc = bcc;
@@ -290,6 +305,9 @@ public final class ReplyInboxMessageRequest {
             return this;
         }
 
+        /**
+         * <p>Your tags on the email.</p>
+         */
         @JsonSetter(value = "tags", nulls = Nulls.SKIP)
         public Builder tags(Optional<List<ReplyInboxMessageRequestTagsItem>> tags) {
             this.tags = tags;

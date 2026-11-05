@@ -7,6 +7,13 @@ export type SchedulingErrorCode =
   | "invalid_answers"
   | "invalid_time"
   | "invalid_logo"
+  | "invalid_out_of_office"
+  | "invalid_reassignment"
+  | "no_reassign_candidate"
+  | "reassign_target_unavailable"
+  | "reassignment_not_finished"
+  | "invalid_session"
+  | "invalid_holiday_calendar"
   | "invalid_reminder"
   | "uid_taken"
   | "slot_unavailable"
@@ -42,6 +49,13 @@ const STATUS_BY_CODE = {
   invalid_answers: 422,
   invalid_time: 422,
   invalid_logo: 422,
+  invalid_out_of_office: 422,
+  invalid_reassignment: 422,
+  no_reassign_candidate: 422,
+  reassign_target_unavailable: 422,
+  reassignment_not_finished: 422,
+  invalid_session: 422,
+  invalid_holiday_calendar: 422,
   uid_taken: 422,
   slot_unavailable: 422,
   attendee_limit_reached: 422,

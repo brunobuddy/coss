@@ -14,10 +14,13 @@ import type { SchedulingDeps, SchedulingEnvironment } from "./types.ts";
 const {
   schedulingAttendee,
   schedulingBooking,
+  schedulingBookingEvent,
   schedulingClaim,
   schedulingGroupSession,
   schedulingLimitBucket,
   schedulingOauthState,
+  schedulingOutOfOffice,
+  schedulingReassignment,
   schedulingSeries,
   schedulingSession,
 } = schema;
@@ -109,8 +112,23 @@ export async function redactExpiredBookings(opts: PurgeOptions = {}): Promise<nu
     }
     await tx
       .update(schedulingBooking)
-      .set({ metadata: {}, location: null, encryptedCancellationReason: null, redactedAt: now })
+      .set({
+        metadata: {},
+        location: null,
+        encryptedAttributes: null,
+        encryptedCancellationReason: null,
+        redactedAt: now,
+      })
       .where(inArray(schedulingBooking.id, ids));
+    await tx
+      .update(schedulingBookingEvent)
+      .set({ encryptedNote: null })
+      .where(
+        and(
+          inArray(schedulingBookingEvent.bookingId, ids),
+          isNotNull(schedulingBookingEvent.encryptedNote),
+        ),
+      );
     return ids.length;
   });
 }
@@ -128,6 +146,91 @@ export async function purgeExpiredBookings(opts: PurgeOptions = {}): Promise<num
     .delete(schedulingBooking)
     .where(and(inArray(schedulingBooking.id, due), lt(schedulingBooking.endAt, cutoff)))
     .returning({ id: schedulingBooking.id });
+  return deleted.length;
+}
+
+/** What someone wrote about their time off goes well before the fact that they had it. */
+export async function redactExpiredOutOfOffice(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingOutOfOfficeNotes * DAY_MS);
+  const where = and(
+    lt(schedulingOutOfOffice.endAt, cutoff),
+    or(
+      isNotNull(schedulingOutOfOffice.encryptedNotes),
+      isNotNull(schedulingOutOfOffice.publicMessage),
+    ),
+    scoped(schedulingOutOfOffice.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingOutOfOffice.id })
+    .from(schedulingOutOfOffice)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const redacted = await db
+    .update(schedulingOutOfOffice)
+    .set({ encryptedNotes: null, publicMessage: null })
+    .where(and(inArray(schedulingOutOfOffice.id, due), where))
+    .returning({ id: schedulingOutOfOffice.id });
+  return redacted.length;
+}
+
+// Long enough for a deleted entry's calendar event to have gone, which its row's ledger row does.
+const DELETED_OUT_OF_OFFICE_DAYS = 30;
+
+/** Past the policy's whole period, or deleted a while ago. Holidays' stay as their tombstones. */
+export async function purgeExpiredOutOfOffice(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingOutOfOffice * DAY_MS);
+  const deletedCutoff = new Date(now.getTime() - DELETED_OUT_OF_OFFICE_DAYS * DAY_MS);
+  const where = and(
+    or(
+      lt(schedulingOutOfOffice.endAt, cutoff),
+      and(
+        lt(schedulingOutOfOffice.deletedAt, deletedCutoff),
+        sql`${schedulingOutOfOffice.source} <> 'holiday'`,
+      ),
+    ),
+    scoped(schedulingOutOfOffice.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingOutOfOffice.id })
+    .from(schedulingOutOfOffice)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const deleted = await db
+    .delete(schedulingOutOfOffice)
+    .where(and(inArray(schedulingOutOfOffice.id, due), where))
+    .returning({ id: schedulingOutOfOffice.id });
+  return deleted.length;
+}
+
+/** A run's report goes when its bookings' rows do. Its note went when it finished. */
+export async function purgeExpiredReassignments(opts: PurgeOptions = {}): Promise<number> {
+  const now = opts.now ?? new Date();
+  const cutoff = new Date(now.getTime() - RETENTION_DAYS.schedulingBookings * DAY_MS);
+  const where = and(
+    lt(schedulingReassignment.createdAt, cutoff),
+    or(
+      eq(schedulingReassignment.status, "completed"),
+      eq(schedulingReassignment.status, "cancelled"),
+    ),
+    // Its items go with their bookings, whose time runs from when they end, which can be a while.
+    sql`not exists (
+      select 1 from scheduling_reassignment_item item
+      where item.reassignment_id = ${schedulingReassignment.id}
+        and item.organization_id = ${schedulingReassignment.organizationId}
+    )`,
+    scoped(schedulingReassignment.organizationId, opts),
+  );
+  const due = db
+    .select({ id: schedulingReassignment.id })
+    .from(schedulingReassignment)
+    .where(where)
+    .limit(opts.limit ?? 1000);
+  const deleted = await db
+    .delete(schedulingReassignment)
+    .where(and(inArray(schedulingReassignment.id, due), where))
+    .returning({ id: schedulingReassignment.id });
   return deleted.length;
 }
 
@@ -257,15 +360,28 @@ async function eraseMatching(
       .returning({ bookingId: schedulingAttendee.bookingId });
     const bookingIds = [...new Set(erased.map((row) => row.bookingId))];
     await rewriteDetailedEvents(tx, scope, bookingIds, now);
+    // What they were routed with can say what they needed, as their answers can, and whoever wrote
+    // a cancellation's reason may have said anything about this person.
     if (bookingIds.length > 0) {
-      // Whoever wrote it may have said anything about this person.
       await tx
         .update(schedulingBooking)
-        .set({ encryptedCancellationReason: null })
+        .set({ encryptedAttributes: null, encryptedCancellationReason: null })
         .where(
           and(
-            inArray(schedulingBooking.id, bookingIds),
             eq(schedulingBooking.organizationId, scope.organizationId),
+            eq(schedulingBooking.environmentId, scope.environmentId),
+            inArray(schedulingBooking.id, bookingIds),
+          ),
+        );
+      // Written about them, whoever wrote it.
+      await tx
+        .update(schedulingBookingEvent)
+        .set({ encryptedNote: null })
+        .where(
+          and(
+            eq(schedulingBookingEvent.organizationId, scope.organizationId),
+            inArray(schedulingBookingEvent.bookingId, bookingIds),
+            isNotNull(schedulingBookingEvent.encryptedNote),
           ),
         );
     }

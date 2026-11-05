@@ -216,6 +216,8 @@ class RequestsClient
     }
 
     /**
+     * A signature request with its documents, signers and fields, and `signed_document` once it's sealed.
+     *
      * Example:
      * ```php
      * $client->sign->requests->get(

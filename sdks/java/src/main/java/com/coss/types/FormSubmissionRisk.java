@@ -42,6 +42,9 @@ public final class FormSubmissionRisk {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The id of Risk's assessment. <code>null</code>: none is recorded.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("assessment_id")
     public OptionalNullable<String> getAssessmentId() {
@@ -51,6 +54,9 @@ public final class FormSubmissionRisk {
         return assessmentId;
     }
 
+    /**
+     * @return Risk's decision. <code>null</code>: none is recorded.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("decision")
     public OptionalNullable<FormSubmissionRiskDecision> getDecision() {
@@ -60,6 +66,9 @@ public final class FormSubmissionRisk {
         return decision;
     }
 
+    /**
+     * @return Risk's score. <code>null</code>: none is recorded.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("score")
     public OptionalNullable<Double> getScore() {
@@ -136,6 +145,9 @@ public final class FormSubmissionRisk {
             return this;
         }
 
+        /**
+         * <p>The id of Risk's assessment. <code>null</code>: none is recorded.</p>
+         */
         @JsonSetter(value = "assessment_id", nulls = Nulls.SKIP)
         public Builder assessmentId(OptionalNullable<String> assessmentId) {
             this.assessmentId = assessmentId;
@@ -167,6 +179,9 @@ public final class FormSubmissionRisk {
             return this;
         }
 
+        /**
+         * <p>Risk's decision. <code>null</code>: none is recorded.</p>
+         */
         @JsonSetter(value = "decision", nulls = Nulls.SKIP)
         public Builder decision(OptionalNullable<FormSubmissionRiskDecision> decision) {
             this.decision = decision;
@@ -198,6 +213,9 @@ public final class FormSubmissionRisk {
             return this;
         }
 
+        /**
+         * <p>Risk's score. <code>null</code>: none is recorded.</p>
+         */
         @JsonSetter(value = "score", nulls = Nulls.SKIP)
         public Builder score(OptionalNullable<Double> score) {
             this.score = score;

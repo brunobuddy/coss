@@ -17,6 +17,9 @@ public record SignRequestSignedDocument : IJsonOnDeserialized
     [JsonPropertyName("sha256")]
     public required string Sha256 { get; set; }
 
+    /// <summary>
+    /// When it was sealed.
+    /// </summary>
     [JsonPropertyName("sealed_at")]
     public required DateTime SealedAt { get; set; }
 

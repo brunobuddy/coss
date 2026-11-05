@@ -13,13 +13,20 @@ class SegmentFilter(UniversalBaseModel):
     Which contacts belong to the segment. Conditions on `property` (custom properties), `email`, `audience` membership, `topic` subscription and `created_at`; one level of nested `{ match, conditions }` groups.
     """
 
-    version: float
+    version: float = pydantic.Field()
+    """
+    The filter's format. Always 1.
+    """
+
     match: SegmentFilterMatch = pydantic.Field()
     """
     `all`: every condition must hold; `any`: one is enough.
     """
 
-    conditions: typing.List[SegmentFilterConditionsItem]
+    conditions: typing.List[SegmentFilterConditionsItem] = pydantic.Field()
+    """
+    Conditions, or `{ match, conditions }` groups of them. At most 20 in all.
+    """
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

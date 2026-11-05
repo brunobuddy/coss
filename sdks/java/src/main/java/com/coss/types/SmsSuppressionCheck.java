@@ -52,6 +52,9 @@ public final class SmsSuppressionCheck {
         return object;
     }
 
+    /**
+     * @return The number checked, in E.164.
+     */
     @JsonProperty("phone_number")
     public String getPhoneNumber() {
         return phoneNumber;
@@ -65,6 +68,9 @@ public final class SmsSuppressionCheck {
         return suppressed;
     }
 
+    /**
+     * @return A number sends skip.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("suppression")
     public OptionalNullable<SmsSuppressionCheckSuppression> getSuppression() {
@@ -119,6 +125,9 @@ public final class SmsSuppressionCheck {
     }
 
     public interface PhoneNumberStage {
+        /**
+         * <p>The number checked, in E.164.</p>
+         */
         SuppressedStage phoneNumber(@NotNull String phoneNumber);
     }
 
@@ -136,6 +145,9 @@ public final class SmsSuppressionCheck {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>A number sends skip.</p>
+         */
         _FinalStage suppression(OptionalNullable<SmsSuppressionCheckSuppression> suppression);
 
         _FinalStage suppression(SmsSuppressionCheckSuppression suppression);
@@ -176,6 +188,10 @@ public final class SmsSuppressionCheck {
             return this;
         }
 
+        /**
+         * <p>The number checked, in E.164.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("phone_number")
         public SuppressedStage phoneNumber(@NotNull String phoneNumber) {
@@ -194,6 +210,10 @@ public final class SmsSuppressionCheck {
             return this;
         }
 
+        /**
+         * <p>A number sends skip.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suppression(Nullable<SmsSuppressionCheckSuppression> suppression) {
             if (suppression.isNull()) {
@@ -206,6 +226,10 @@ public final class SmsSuppressionCheck {
             return this;
         }
 
+        /**
+         * <p>A number sends skip.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suppression(Optional<SmsSuppressionCheckSuppression> suppression) {
             if (suppression.isPresent()) {
@@ -216,12 +240,19 @@ public final class SmsSuppressionCheck {
             return this;
         }
 
+        /**
+         * <p>A number sends skip.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suppression(SmsSuppressionCheckSuppression suppression) {
             this.suppression = OptionalNullable.of(suppression);
             return this;
         }
 
+        /**
+         * <p>A number sends skip.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "suppression", nulls = Nulls.SKIP)
         public _FinalStage suppression(OptionalNullable<SmsSuppressionCheckSuppression> suppression) {

@@ -1,4 +1,3 @@
-using Coss.Hooks;
 using Coss.Test.Unit.MockServer;
 using Coss.Test.Utils;
 using NUnit.Framework;
@@ -85,7 +84,9 @@ public class ListTest : BaseMockServerTest
                     .WithBody(mockResponse)
             );
 
-        var response = await Client.Hooks.EventTypes.ListAsync(new ListEventTypesRequest());
+        var response = await Client.Hooks.EventTypes.ListAsync(
+            new Coss.Hooks.ListEventTypesRequest()
+        );
         JsonAssert.AreEqual(response, mockResponse);
     }
 
@@ -141,7 +142,9 @@ public class ListTest : BaseMockServerTest
                     .WithBody(mockResponse)
             );
 
-        var response = await Client.Hooks.EventTypes.ListAsync(new ListEventTypesRequest());
+        var response = await Client.Hooks.EventTypes.ListAsync(
+            new Coss.Hooks.ListEventTypesRequest()
+        );
         JsonAssert.AreEqual(response, mockResponse);
     }
 }

@@ -75,21 +75,33 @@ public final class FormSubmissionWebhookEventData {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The form's id.
+     */
     @JsonProperty("form_id")
     public String getFormId() {
         return formId;
     }
 
+    /**
+     * @return The form's name.
+     */
     @JsonProperty("form_name")
     public String getFormName() {
         return formName;
     }
 
+    /**
+     * @return The submission's id.
+     */
     @JsonProperty("submission_id")
     public String getSubmissionId() {
         return submissionId;
     }
 
+    /**
+     * @return The submission's status after this event.
+     */
     @JsonProperty("status")
     public FormSubmissionWebhookEventDataStatus getStatus() {
         return status;
@@ -103,6 +115,9 @@ public final class FormSubmissionWebhookEventData {
         return data;
     }
 
+    /**
+     * @return The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("submitter_email")
     public OptionalNullable<String> getSubmitterEmail() {
@@ -120,6 +135,9 @@ public final class FormSubmissionWebhookEventData {
         return files;
     }
 
+    /**
+     * @return Why it was flagged. <code>null</code>: not flagged.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("spam_reason")
     public OptionalNullable<FormSubmissionWebhookEventDataSpamReason> getSpamReason() {
@@ -129,11 +147,17 @@ public final class FormSubmissionWebhookEventData {
         return spamReason;
     }
 
+    /**
+     * @return Whether it belongs to a sandbox environment.
+     */
     @JsonProperty("sandbox")
     public boolean getSandbox() {
         return sandbox;
     }
 
+    /**
+     * @return When this happened.
+     */
     @JsonProperty("occurred_at")
     public OffsetDateTime getOccurredAt() {
         return occurredAt;
@@ -200,28 +224,46 @@ public final class FormSubmissionWebhookEventData {
     }
 
     public interface FormIdStage {
+        /**
+         * <p>The form's id.</p>
+         */
         FormNameStage formId(@NotNull String formId);
 
         Builder from(FormSubmissionWebhookEventData other);
     }
 
     public interface FormNameStage {
+        /**
+         * <p>The form's name.</p>
+         */
         SubmissionIdStage formName(@NotNull String formName);
     }
 
     public interface SubmissionIdStage {
+        /**
+         * <p>The submission's id.</p>
+         */
         StatusStage submissionId(@NotNull String submissionId);
     }
 
     public interface StatusStage {
+        /**
+         * <p>The submission's status after this event.</p>
+         */
         SandboxStage status(@NotNull FormSubmissionWebhookEventDataStatus status);
     }
 
     public interface SandboxStage {
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         */
         OccurredAtStage sandbox(boolean sandbox);
     }
 
     public interface OccurredAtStage {
+        /**
+         * <p>When this happened.</p>
+         */
         _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt);
     }
 
@@ -241,6 +283,9 @@ public final class FormSubmissionWebhookEventData {
 
         _FinalStage data(String key, FormSubmissionWebhookEventDataDataValue value);
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         */
         _FinalStage submitterEmail(OptionalNullable<String> submitterEmail);
 
         _FinalStage submitterEmail(String submitterEmail);
@@ -258,6 +303,9 @@ public final class FormSubmissionWebhookEventData {
 
         _FinalStage addAllFiles(List<FormSubmissionFile> files);
 
+        /**
+         * <p>Why it was flagged. <code>null</code>: not flagged.</p>
+         */
         _FinalStage spamReason(OptionalNullable<FormSubmissionWebhookEventDataSpamReason> spamReason);
 
         _FinalStage spamReason(FormSubmissionWebhookEventDataSpamReason spamReason);
@@ -316,6 +364,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The form's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("form_id")
         public FormNameStage formId(@NotNull String formId) {
@@ -323,6 +375,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The form's name.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("form_name")
         public SubmissionIdStage formName(@NotNull String formName) {
@@ -330,6 +386,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The submission's id.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("submission_id")
         public StatusStage submissionId(@NotNull String submissionId) {
@@ -337,6 +397,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The submission's status after this event.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("status")
         public SandboxStage status(@NotNull FormSubmissionWebhookEventDataStatus status) {
@@ -344,6 +408,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Whether it belongs to a sandbox environment.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("sandbox")
         public OccurredAtStage sandbox(boolean sandbox) {
@@ -351,6 +419,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>When this happened.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("occurred_at")
         public _FinalStage occurredAt(@NotNull OffsetDateTime occurredAt) {
@@ -358,6 +430,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(Nullable<FormSubmissionWebhookEventDataSpamReason> spamReason) {
             if (spamReason.isNull()) {
@@ -370,6 +446,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(Optional<FormSubmissionWebhookEventDataSpamReason> spamReason) {
             if (spamReason.isPresent()) {
@@ -380,12 +460,19 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>null</code>: not flagged.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage spamReason(FormSubmissionWebhookEventDataSpamReason spamReason) {
             this.spamReason = OptionalNullable.of(spamReason);
             return this;
         }
 
+        /**
+         * <p>Why it was flagged. <code>null</code>: not flagged.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "spam_reason", nulls = Nulls.SKIP)
         public _FinalStage spamReason(OptionalNullable<FormSubmissionWebhookEventDataSpamReason> spamReason) {
@@ -428,6 +515,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(Nullable<String> submitterEmail) {
             if (submitterEmail.isNull()) {
@@ -440,6 +531,10 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(Optional<String> submitterEmail) {
             if (submitterEmail.isPresent()) {
@@ -450,12 +545,19 @@ public final class FormSubmissionWebhookEventData {
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage submitterEmail(String submitterEmail) {
             this.submitterEmail = OptionalNullable.of(submitterEmail);
             return this;
         }
 
+        /**
+         * <p>The value of the form's <code>submitter.email_field</code>. <code>null</code> when it has none.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "submitter_email", nulls = Nulls.SKIP)
         public _FinalStage submitterEmail(OptionalNullable<String> submitterEmail) {

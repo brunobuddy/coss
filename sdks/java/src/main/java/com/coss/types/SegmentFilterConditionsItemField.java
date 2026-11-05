@@ -43,6 +43,9 @@ public final class SegmentFilterConditionsItemField {
         return field;
     }
 
+    /**
+     * @return <code>before</code> or <code>after</code> a time, or created <code>within_days</code> the last days.
+     */
     @JsonProperty("op")
     public SegmentFilterConditionsItemFieldOp getOp() {
         return op;
@@ -92,6 +95,9 @@ public final class SegmentFilterConditionsItemField {
     }
 
     public interface OpStage {
+        /**
+         * <p><code>before</code> or <code>after</code> a time, or created <code>within_days</code> the last days.</p>
+         */
         ValueStage op(@NotNull SegmentFilterConditionsItemFieldOp op);
     }
 
@@ -138,6 +144,10 @@ public final class SegmentFilterConditionsItemField {
             return this;
         }
 
+        /**
+         * <p><code>before</code> or <code>after</code> a time, or created <code>within_days</code> the last days.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("op")
         public ValueStage op(@NotNull SegmentFilterConditionsItemFieldOp op) {

@@ -4,6 +4,9 @@ using global::System.Text.Json.Serialization;
 
 namespace Coss;
 
+/// <summary>
+/// The sub-account's standing.
+/// </summary>
 [Serializable]
 public record SubaccountWebhookEventData : IJsonOnDeserialized
 {
@@ -11,16 +14,28 @@ public record SubaccountWebhookEventData : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    /// <summary>
+    /// The sub-account's id.
+    /// </summary>
     [JsonPropertyName("subaccount_id")]
     public required string SubaccountId { get; set; }
 
+    /// <summary>
+    /// Your own id for it. `null`: none.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("uid")]
     public string? Uid { get; set; }
 
+    /// <summary>
+    /// Its status after this event.
+    /// </summary>
     [JsonPropertyName("status")]
     public required SubaccountWebhookEventDataStatus Status { get; set; }
 
+    /// <summary>
+    /// Its status before.
+    /// </summary>
     [JsonPropertyName("previous_status")]
     public required SubaccountWebhookEventDataPreviousStatus PreviousStatus { get; set; }
 
@@ -31,6 +46,9 @@ public record SubaccountWebhookEventData : IJsonOnDeserialized
     [JsonPropertyName("trigger")]
     public string? Trigger { get; set; }
 
+    /// <summary>
+    /// When this happened.
+    /// </summary>
     [JsonPropertyName("occurred_at")]
     public required DateTime OccurredAt { get; set; }
 

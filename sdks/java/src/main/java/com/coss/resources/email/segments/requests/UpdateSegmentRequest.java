@@ -34,6 +34,9 @@ public final class UpdateSegmentRequest {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return Your name for the segment, unique in the environment.
+     */
     @JsonProperty("name")
     public Optional<String> getName() {
         return name;
@@ -90,6 +93,9 @@ public final class UpdateSegmentRequest {
             return this;
         }
 
+        /**
+         * <p>Your name for the segment, unique in the environment.</p>
+         */
         @JsonSetter(value = "name", nulls = Nulls.SKIP)
         public Builder name(Optional<String> name) {
             this.name = name;

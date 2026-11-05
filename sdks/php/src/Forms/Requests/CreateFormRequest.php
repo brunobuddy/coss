@@ -16,7 +16,7 @@ use Coss\Forms\Types\CreateFormRequestHosted;
 class CreateFormRequest extends JsonSerializableType
 {
     /**
-     * @var string $name
+     * @var string $name Your name for the form, shown in the dashboard and in notifications.
      */
     #[JsonProperty('name')]
     public string $name;
@@ -52,37 +52,37 @@ class CreateFormRequest extends JsonSerializableType
     public ?string $redirectUrl;
 
     /**
-     * @var ?CreateFormRequestSpam $spam
+     * @var ?CreateFormRequestSpam $spam How submissions are screened. Only the fields given change.
      */
     #[JsonProperty('spam')]
     public ?CreateFormRequestSpam $spam;
 
     /**
-     * @var ?CreateFormRequestSubmitter $submitter
+     * @var ?CreateFormRequestSubmitter $submitter Who the submitter is, and whether they must confirm by email. Only the fields given change.
      */
     #[JsonProperty('submitter')]
     public ?CreateFormRequestSubmitter $submitter;
 
     /**
-     * @var ?CreateFormRequestNotifications $notifications
+     * @var ?CreateFormRequestNotifications $notifications Emails about accepted submissions. Only the fields given change.
      */
     #[JsonProperty('notifications')]
     public ?CreateFormRequestNotifications $notifications;
 
     /**
-     * @var ?CreateFormRequestContacts $contacts
+     * @var ?CreateFormRequestContacts $contacts Turning submissions into contacts. Only the fields given change.
      */
     #[JsonProperty('contacts')]
     public ?CreateFormRequestContacts $contacts;
 
     /**
-     * @var ?CreateFormRequestFiles $files
+     * @var ?CreateFormRequestFiles $files File uploads. Only the fields given change.
      */
     #[JsonProperty('files')]
     public ?CreateFormRequestFiles $files;
 
     /**
-     * @var ?CreateFormRequestHosted $hosted
+     * @var ?CreateFormRequestHosted $hosted The page coss.com can serve for this form. Only the fields given change.
      */
     #[JsonProperty('hosted')]
     public ?CreateFormRequestHosted $hosted;

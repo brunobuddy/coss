@@ -19,6 +19,7 @@ const {
   riskSettings,
   schedulingCalendarConnection,
   schedulingCalendarDelegation,
+  schedulingHolidayCalendar,
   schedulingOauthApp,
   smsAccount,
   webhookEndpoint,
@@ -76,6 +77,7 @@ export async function reencryptWebhookSecrets(opts: {
   await reencryptMigrationCredentials({ ...opts, batchSize }, result);
   await reencryptCalendarCredentials({ ...opts, batchSize }, result);
   await reencryptCalendarDelegations({ ...opts, batchSize }, result);
+  await reencryptHolidayFeeds({ ...opts, batchSize }, result);
   await reencryptSchedulingOauthApps({ ...opts, batchSize }, result);
   return result;
 }
@@ -304,6 +306,77 @@ async function reencryptSmsAuthTokens(
  * Scheduling's calendar credentials. Refreshes rewrite these rows all the time, so a conflict just
  * means the row now holds a newer value, which the writer encrypted with the primary key already.
  */
+/** A holiday feed's URL, which can hold an access token. */
+async function reencryptHolidayFeeds(
+  opts: {
+    keys: SecretsKeyRing;
+    dryRun?: boolean;
+    batchSize: number;
+    scope?: { organizationIds: string[] };
+  },
+  result: ReencryptResult,
+): Promise<void> {
+  const { keys } = opts;
+  let after = "";
+  for (;;) {
+    const rows = await db
+      .select({
+        id: schedulingHolidayCalendar.id,
+        organizationId: schedulingHolidayCalendar.organizationId,
+        stored: schedulingHolidayCalendar.encryptedIcsUrl,
+      })
+      .from(schedulingHolidayCalendar)
+      .where(
+        and(
+          gt(schedulingHolidayCalendar.id, after),
+          isNotNull(schedulingHolidayCalendar.encryptedIcsUrl),
+          opts.scope
+            ? inArray(schedulingHolidayCalendar.organizationId, opts.scope.organizationIds)
+            : undefined,
+        ),
+      )
+      .orderBy(asc(schedulingHolidayCalendar.id))
+      .limit(opts.batchSize);
+    for (const row of rows) {
+      const stored = row.stored;
+      if (!stored) continue;
+      result.checked++;
+      if (isEncryptedWithPrimary(stored, keys)) continue;
+      let encryptedIcsUrl: string;
+      try {
+        encryptedIcsUrl = encryptSecret(decryptSecret(stored, keys), keys);
+      } catch (error) {
+        result.unreadable.push({
+          id: row.id,
+          organizationId: row.organizationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+      if (opts.dryRun) {
+        result.reencrypted++;
+        continue;
+      }
+      const [updated] = await db
+        .update(schedulingHolidayCalendar)
+        .set({ encryptedIcsUrl })
+        .where(
+          and(
+            eq(schedulingHolidayCalendar.id, row.id),
+            eq(schedulingHolidayCalendar.organizationId, row.organizationId),
+            eq(schedulingHolidayCalendar.encryptedIcsUrl, stored),
+          ),
+        )
+        .returning({ id: schedulingHolidayCalendar.id });
+      if (updated) result.reencrypted++;
+      else result.conflicts++;
+    }
+    const last = rows.at(-1);
+    if (!last || rows.length < opts.batchSize) return;
+    after = last.id;
+  }
+}
+
 async function reencryptCalendarCredentials(
   opts: {
     keys: SecretsKeyRing;

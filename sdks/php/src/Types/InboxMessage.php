@@ -53,19 +53,19 @@ class InboxMessage extends JsonSerializableType
     public ?string $from;
 
     /**
-     * @var array<string> $to
+     * @var array<string> $to Addresses in the `To` header.
      */
     #[JsonProperty('to'), ArrayType(['string'])]
     public array $to;
 
     /**
-     * @var array<string> $cc
+     * @var array<string> $cc Addresses in the `Cc` header.
      */
     #[JsonProperty('cc'), ArrayType(['string'])]
     public array $cc;
 
     /**
-     * @var ?string $subject
+     * @var ?string $subject The subject. `null`: none.
      */
     #[JsonProperty('subject')]
     public ?string $subject;
@@ -107,7 +107,7 @@ class InboxMessage extends JsonSerializableType
     public DateTime $createdAt;
 
     /**
-     * @var array<string> $replyTo
+     * @var array<string> $replyTo Addresses in the `Reply-To` header.
      */
     #[JsonProperty('reply_to'), ArrayType(['string'])]
     public array $replyTo;
@@ -119,19 +119,19 @@ class InboxMessage extends JsonSerializableType
     public ?string $messageId;
 
     /**
-     * @var ?string $inReplyTo
+     * @var ?string $inReplyTo The message it answers, by `Message-ID`. `null`: none.
      */
     #[JsonProperty('in_reply_to')]
     public ?string $inReplyTo;
 
     /**
-     * @var array<string> $references
+     * @var array<string> $references The `Message-ID`s of the conversation so far.
      */
     #[JsonProperty('references'), ArrayType(['string'])]
     public array $references;
 
     /**
-     * @var ?string $text
+     * @var ?string $text The plain text part. `null`: none.
      */
     #[JsonProperty('text')]
     public ?string $text;

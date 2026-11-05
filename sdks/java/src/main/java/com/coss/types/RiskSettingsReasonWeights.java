@@ -215,236 +215,377 @@ public final class RiskSettingsReasonWeights {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.invalid")
     public Optional<Double> getEmailInvalid() {
         return emailInvalid;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.disposable")
     public Optional<Double> getEmailDisposable() {
         return emailDisposable;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.undeliverable")
     public Optional<Double> getEmailUndeliverable() {
         return emailUndeliverable;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.role_account")
     public Optional<Double> getEmailRoleAccount() {
         return emailRoleAccount;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.typo")
     public Optional<Double> getEmailTypo() {
         return emailTypo;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("email.domain_new")
     public Optional<Double> getEmailDomainNew() {
         return emailDomainNew;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.tor")
     public Optional<Double> getIpTor() {
         return ipTor;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.vpn_network")
     public Optional<Double> getIpVpnNetwork() {
         return ipVpnNetwork;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.hosting_provider")
     public Optional<Double> getIpHostingProvider() {
         return ipHostingProvider;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.vpn")
     public Optional<Double> getIpVpn() {
         return ipVpn;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.proxy")
     public Optional<Double> getIpProxy() {
         return ipProxy;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.relay")
     public Optional<Double> getIpRelay() {
         return ipRelay;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("ip.private")
     public Optional<Double> getIpPrivate() {
         return ipPrivate;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_ip_1h")
     public Optional<Double> getVelocitySignupsPerIp1H() {
         return velocitySignupsPerIp1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_ip_24h")
     public Optional<Double> getVelocitySignupsPerIp24H() {
         return velocitySignupsPerIp24H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_subnet_1h")
     public Optional<Double> getVelocitySignupsPerSubnet1H() {
         return velocitySignupsPerSubnet1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_email_domain_1h")
     public Optional<Double> getVelocitySignupsPerEmailDomain1H() {
         return velocitySignupsPerEmailDomain1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_mailbox_24h")
     public Optional<Double> getVelocitySignupsPerMailbox24H() {
         return velocitySignupsPerMailbox24H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.signups_per_device_24h")
     public Optional<Double> getVelocitySignupsPerDevice24H() {
         return velocitySignupsPerDevice24H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.checkouts_per_ip_1h")
     public Optional<Double> getVelocityCheckoutsPerIp1H() {
         return velocityCheckoutsPerIp1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.checkouts_per_user_1h")
     public Optional<Double> getVelocityCheckoutsPerUser1H() {
         return velocityCheckoutsPerUser1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.checkouts_per_card_24h")
     public Optional<Double> getVelocityCheckoutsPerCard24H() {
         return velocityCheckoutsPerCard24H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.logins_per_ip_1h")
     public Optional<Double> getVelocityLoginsPerIp1H() {
         return velocityLoginsPerIp1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.logins_per_user_1h")
     public Optional<Double> getVelocityLoginsPerUser1H() {
         return velocityLoginsPerUser1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.events_per_ip_1h")
     public Optional<Double> getVelocityEventsPerIp1H() {
         return velocityEventsPerIp1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("velocity.events_per_user_1h")
     public Optional<Double> getVelocityEventsPerUser1H() {
         return velocityEventsPerUser1H;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("duplicate.canonical_mailbox")
     public Optional<Double> getDuplicateCanonicalMailbox() {
         return duplicateCanonicalMailbox;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("duplicate.device")
     public Optional<Double> getDuplicateDevice() {
         return duplicateDevice;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_mailbox")
     public Optional<Double> getHistoryFraudMailbox() {
         return historyFraudMailbox;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_user")
     public Optional<Double> getHistoryFraudUser() {
         return historyFraudUser;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_ip")
     public Optional<Double> getHistoryFraudIp() {
         return historyFraudIp;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_subnet")
     public Optional<Double> getHistoryFraudSubnet() {
         return historyFraudSubnet;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_card")
     public Optional<Double> getHistoryFraudCard() {
         return historyFraudCard;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("history.fraud_device")
     public Optional<Double> getHistoryFraudDevice() {
         return historyFraudDevice;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("checkout.card_country_mismatch")
     public Optional<Double> getCheckoutCardCountryMismatch() {
         return checkoutCardCountryMismatch;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("checkout.billing_country_mismatch")
     public Optional<Double> getCheckoutBillingCountryMismatch() {
         return checkoutBillingCountryMismatch;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("checkout.prepaid_card")
     public Optional<Double> getCheckoutPrepaidCard() {
         return checkoutPrepaidCard;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("device.automation")
     public Optional<Double> getDeviceAutomation() {
         return deviceAutomation;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("device.invalid")
     public Optional<Double> getDeviceInvalid() {
         return deviceInvalid;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("login.new_country")
     public Optional<Double> getLoginNewCountry() {
         return loginNewCountry;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("login.new_network")
     public Optional<Double> getLoginNewNetwork() {
         return loginNewNetwork;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("captcha.failed")
     public Optional<Double> getCaptchaFailed() {
         return captchaFailed;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("captcha.missing")
     public Optional<Double> getCaptchaMissing() {
         return captchaMissing;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("content.spam")
     public Optional<Double> getContentSpam() {
         return contentSpam;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("content.phishing")
     public Optional<Double> getContentPhishing() {
         return contentPhishing;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("content.malware")
     public Optional<Double> getContentMalware() {
         return contentMalware;
     }
 
+    /**
+     * @return This reason's weight in this environment.
+     */
     @JsonProperty("content.fraud")
     public Optional<Double> getContentFraud() {
         return contentFraud;
@@ -724,6 +865,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.invalid", nulls = Nulls.SKIP)
         public Builder emailInvalid(Optional<Double> emailInvalid) {
             this.emailInvalid = emailInvalid;
@@ -735,6 +879,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.disposable", nulls = Nulls.SKIP)
         public Builder emailDisposable(Optional<Double> emailDisposable) {
             this.emailDisposable = emailDisposable;
@@ -746,6 +893,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.undeliverable", nulls = Nulls.SKIP)
         public Builder emailUndeliverable(Optional<Double> emailUndeliverable) {
             this.emailUndeliverable = emailUndeliverable;
@@ -757,6 +907,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.role_account", nulls = Nulls.SKIP)
         public Builder emailRoleAccount(Optional<Double> emailRoleAccount) {
             this.emailRoleAccount = emailRoleAccount;
@@ -768,6 +921,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.typo", nulls = Nulls.SKIP)
         public Builder emailTypo(Optional<Double> emailTypo) {
             this.emailTypo = emailTypo;
@@ -779,6 +935,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "email.domain_new", nulls = Nulls.SKIP)
         public Builder emailDomainNew(Optional<Double> emailDomainNew) {
             this.emailDomainNew = emailDomainNew;
@@ -790,6 +949,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.tor", nulls = Nulls.SKIP)
         public Builder ipTor(Optional<Double> ipTor) {
             this.ipTor = ipTor;
@@ -801,6 +963,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.vpn_network", nulls = Nulls.SKIP)
         public Builder ipVpnNetwork(Optional<Double> ipVpnNetwork) {
             this.ipVpnNetwork = ipVpnNetwork;
@@ -812,6 +977,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.hosting_provider", nulls = Nulls.SKIP)
         public Builder ipHostingProvider(Optional<Double> ipHostingProvider) {
             this.ipHostingProvider = ipHostingProvider;
@@ -823,6 +991,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.vpn", nulls = Nulls.SKIP)
         public Builder ipVpn(Optional<Double> ipVpn) {
             this.ipVpn = ipVpn;
@@ -834,6 +1005,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.proxy", nulls = Nulls.SKIP)
         public Builder ipProxy(Optional<Double> ipProxy) {
             this.ipProxy = ipProxy;
@@ -845,6 +1019,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.relay", nulls = Nulls.SKIP)
         public Builder ipRelay(Optional<Double> ipRelay) {
             this.ipRelay = ipRelay;
@@ -856,6 +1033,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "ip.private", nulls = Nulls.SKIP)
         public Builder ipPrivate(Optional<Double> ipPrivate) {
             this.ipPrivate = ipPrivate;
@@ -867,6 +1047,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerIp1H(Optional<Double> velocitySignupsPerIp1H) {
             this.velocitySignupsPerIp1H = velocitySignupsPerIp1H;
@@ -878,6 +1061,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_ip_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerIp24H(Optional<Double> velocitySignupsPerIp24H) {
             this.velocitySignupsPerIp24H = velocitySignupsPerIp24H;
@@ -889,6 +1075,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_subnet_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerSubnet1H(Optional<Double> velocitySignupsPerSubnet1H) {
             this.velocitySignupsPerSubnet1H = velocitySignupsPerSubnet1H;
@@ -900,6 +1089,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_email_domain_1h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerEmailDomain1H(Optional<Double> velocitySignupsPerEmailDomain1H) {
             this.velocitySignupsPerEmailDomain1H = velocitySignupsPerEmailDomain1H;
@@ -911,6 +1103,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_mailbox_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerMailbox24H(Optional<Double> velocitySignupsPerMailbox24H) {
             this.velocitySignupsPerMailbox24H = velocitySignupsPerMailbox24H;
@@ -922,6 +1117,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.signups_per_device_24h", nulls = Nulls.SKIP)
         public Builder velocitySignupsPerDevice24H(Optional<Double> velocitySignupsPerDevice24H) {
             this.velocitySignupsPerDevice24H = velocitySignupsPerDevice24H;
@@ -933,6 +1131,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerIp1H(Optional<Double> velocityCheckoutsPerIp1H) {
             this.velocityCheckoutsPerIp1H = velocityCheckoutsPerIp1H;
@@ -944,6 +1145,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerUser1H(Optional<Double> velocityCheckoutsPerUser1H) {
             this.velocityCheckoutsPerUser1H = velocityCheckoutsPerUser1H;
@@ -955,6 +1159,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.checkouts_per_card_24h", nulls = Nulls.SKIP)
         public Builder velocityCheckoutsPerCard24H(Optional<Double> velocityCheckoutsPerCard24H) {
             this.velocityCheckoutsPerCard24H = velocityCheckoutsPerCard24H;
@@ -966,6 +1173,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.logins_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityLoginsPerIp1H(Optional<Double> velocityLoginsPerIp1H) {
             this.velocityLoginsPerIp1H = velocityLoginsPerIp1H;
@@ -977,6 +1187,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.logins_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityLoginsPerUser1H(Optional<Double> velocityLoginsPerUser1H) {
             this.velocityLoginsPerUser1H = velocityLoginsPerUser1H;
@@ -988,6 +1201,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.events_per_ip_1h", nulls = Nulls.SKIP)
         public Builder velocityEventsPerIp1H(Optional<Double> velocityEventsPerIp1H) {
             this.velocityEventsPerIp1H = velocityEventsPerIp1H;
@@ -999,6 +1215,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "velocity.events_per_user_1h", nulls = Nulls.SKIP)
         public Builder velocityEventsPerUser1H(Optional<Double> velocityEventsPerUser1H) {
             this.velocityEventsPerUser1H = velocityEventsPerUser1H;
@@ -1010,6 +1229,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "duplicate.canonical_mailbox", nulls = Nulls.SKIP)
         public Builder duplicateCanonicalMailbox(Optional<Double> duplicateCanonicalMailbox) {
             this.duplicateCanonicalMailbox = duplicateCanonicalMailbox;
@@ -1021,6 +1243,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "duplicate.device", nulls = Nulls.SKIP)
         public Builder duplicateDevice(Optional<Double> duplicateDevice) {
             this.duplicateDevice = duplicateDevice;
@@ -1032,6 +1257,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_mailbox", nulls = Nulls.SKIP)
         public Builder historyFraudMailbox(Optional<Double> historyFraudMailbox) {
             this.historyFraudMailbox = historyFraudMailbox;
@@ -1043,6 +1271,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_user", nulls = Nulls.SKIP)
         public Builder historyFraudUser(Optional<Double> historyFraudUser) {
             this.historyFraudUser = historyFraudUser;
@@ -1054,6 +1285,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_ip", nulls = Nulls.SKIP)
         public Builder historyFraudIp(Optional<Double> historyFraudIp) {
             this.historyFraudIp = historyFraudIp;
@@ -1065,6 +1299,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_subnet", nulls = Nulls.SKIP)
         public Builder historyFraudSubnet(Optional<Double> historyFraudSubnet) {
             this.historyFraudSubnet = historyFraudSubnet;
@@ -1076,6 +1313,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_card", nulls = Nulls.SKIP)
         public Builder historyFraudCard(Optional<Double> historyFraudCard) {
             this.historyFraudCard = historyFraudCard;
@@ -1087,6 +1327,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "history.fraud_device", nulls = Nulls.SKIP)
         public Builder historyFraudDevice(Optional<Double> historyFraudDevice) {
             this.historyFraudDevice = historyFraudDevice;
@@ -1098,6 +1341,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "checkout.card_country_mismatch", nulls = Nulls.SKIP)
         public Builder checkoutCardCountryMismatch(Optional<Double> checkoutCardCountryMismatch) {
             this.checkoutCardCountryMismatch = checkoutCardCountryMismatch;
@@ -1109,6 +1355,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "checkout.billing_country_mismatch", nulls = Nulls.SKIP)
         public Builder checkoutBillingCountryMismatch(Optional<Double> checkoutBillingCountryMismatch) {
             this.checkoutBillingCountryMismatch = checkoutBillingCountryMismatch;
@@ -1120,6 +1369,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "checkout.prepaid_card", nulls = Nulls.SKIP)
         public Builder checkoutPrepaidCard(Optional<Double> checkoutPrepaidCard) {
             this.checkoutPrepaidCard = checkoutPrepaidCard;
@@ -1131,6 +1383,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "device.automation", nulls = Nulls.SKIP)
         public Builder deviceAutomation(Optional<Double> deviceAutomation) {
             this.deviceAutomation = deviceAutomation;
@@ -1142,6 +1397,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "device.invalid", nulls = Nulls.SKIP)
         public Builder deviceInvalid(Optional<Double> deviceInvalid) {
             this.deviceInvalid = deviceInvalid;
@@ -1153,6 +1411,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "login.new_country", nulls = Nulls.SKIP)
         public Builder loginNewCountry(Optional<Double> loginNewCountry) {
             this.loginNewCountry = loginNewCountry;
@@ -1164,6 +1425,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "login.new_network", nulls = Nulls.SKIP)
         public Builder loginNewNetwork(Optional<Double> loginNewNetwork) {
             this.loginNewNetwork = loginNewNetwork;
@@ -1175,6 +1439,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "captcha.failed", nulls = Nulls.SKIP)
         public Builder captchaFailed(Optional<Double> captchaFailed) {
             this.captchaFailed = captchaFailed;
@@ -1186,6 +1453,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "captcha.missing", nulls = Nulls.SKIP)
         public Builder captchaMissing(Optional<Double> captchaMissing) {
             this.captchaMissing = captchaMissing;
@@ -1197,6 +1467,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "content.spam", nulls = Nulls.SKIP)
         public Builder contentSpam(Optional<Double> contentSpam) {
             this.contentSpam = contentSpam;
@@ -1208,6 +1481,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "content.phishing", nulls = Nulls.SKIP)
         public Builder contentPhishing(Optional<Double> contentPhishing) {
             this.contentPhishing = contentPhishing;
@@ -1219,6 +1495,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "content.malware", nulls = Nulls.SKIP)
         public Builder contentMalware(Optional<Double> contentMalware) {
             this.contentMalware = contentMalware;
@@ -1230,6 +1509,9 @@ public final class RiskSettingsReasonWeights {
             return this;
         }
 
+        /**
+         * <p>This reason's weight in this environment.</p>
+         */
         @JsonSetter(value = "content.fraud", nulls = Nulls.SKIP)
         public Builder contentFraud(Optional<Double> contentFraud) {
             this.contentFraud = contentFraud;

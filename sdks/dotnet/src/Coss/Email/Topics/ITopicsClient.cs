@@ -22,6 +22,9 @@ public partial interface ITopicsClient
         CancellationToken cancellationToken = default
     );
 
+    /// <summary>
+    /// One topic of the API key's environment.
+    /// </summary>
     WithRawResponseTask<Topic> GetAsync(
         GetTopicsRequest request,
         RequestOptions? options = null,

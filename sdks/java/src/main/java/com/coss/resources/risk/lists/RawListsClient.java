@@ -257,18 +257,30 @@ public class RawListsClient {
         }
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CossHttpResponse<RiskListEntry> get(String id) {
         return get(id, GetListsRequest.builder().build());
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CossHttpResponse<RiskListEntry> get(String id, RequestOptions requestOptions) {
         return get(id, GetListsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CossHttpResponse<RiskListEntry> get(String id, GetListsRequest request) {
         return get(id, request, null);
     }
 
+    /**
+     * One allow or block list entry of the API key's environment.
+     */
     public CossHttpResponse<RiskListEntry> get(String id, GetListsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())
                 .newBuilder()
@@ -342,18 +354,30 @@ public class RawListsClient {
         }
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CossHttpResponse<DeletedRiskListEntry> remove(String id) {
         return remove(id, RemoveListsRequest.builder().build());
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CossHttpResponse<DeletedRiskListEntry> remove(String id, RequestOptions requestOptions) {
         return remove(id, RemoveListsRequest.builder().build(), requestOptions);
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CossHttpResponse<DeletedRiskListEntry> remove(String id, RemoveListsRequest request) {
         return remove(id, request, null);
     }
 
+    /**
+     * Removes an entry from its list. Later assessments no longer see it.
+     */
     public CossHttpResponse<DeletedRiskListEntry> remove(
             String id, RemoveListsRequest request, RequestOptions requestOptions) {
         HttpUrl.Builder httpUrl = HttpUrl.parse(this.clientOptions.environment().getUrl())

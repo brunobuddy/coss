@@ -8,7 +8,7 @@ use Coss\Core\Json\JsonProperty;
 class TemplateContentInput extends JsonSerializableType
 {
     /**
-     * @var string $locale A BCP 47 language tag, e.g. "en" or "pt-BR".
+     * @var string $locale The BCP 47 language tag this content is for, unique in `contents`.
      */
     #[JsonProperty('locale')]
     public string $locale;

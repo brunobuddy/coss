@@ -64,6 +64,9 @@ public final class SmsWebhookEvent {
         return object;
     }
 
+    /**
+     * @return What happened to the message.
+     */
     @JsonProperty("type")
     public SmsWebhookEventType getType() {
         return type;
@@ -77,6 +80,9 @@ public final class SmsWebhookEvent {
         return apiVersion;
     }
 
+    /**
+     * @return When the event was created.
+     */
     @JsonProperty("created_at")
     public OffsetDateTime getCreatedAt() {
         return createdAt;
@@ -135,6 +141,9 @@ public final class SmsWebhookEvent {
     }
 
     public interface TypeStage {
+        /**
+         * <p>What happened to the message.</p>
+         */
         ApiVersionStage type(@NotNull SmsWebhookEventType type);
     }
 
@@ -146,6 +155,9 @@ public final class SmsWebhookEvent {
     }
 
     public interface CreatedAtStage {
+        /**
+         * <p>When the event was created.</p>
+         */
         DataStage createdAt(@NotNull OffsetDateTime createdAt);
     }
 
@@ -210,6 +222,10 @@ public final class SmsWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>What happened to the message.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("type")
         public ApiVersionStage type(@NotNull SmsWebhookEventType type) {
@@ -228,6 +244,10 @@ public final class SmsWebhookEvent {
             return this;
         }
 
+        /**
+         * <p>When the event was created.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("created_at")
         public DataStage createdAt(@NotNull OffsetDateTime createdAt) {

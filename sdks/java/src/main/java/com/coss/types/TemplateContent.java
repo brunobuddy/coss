@@ -47,16 +47,25 @@ public final class TemplateContent {
         this.additionalProperties = additionalProperties;
     }
 
+    /**
+     * @return The BCP 47 language tag this content is for.
+     */
     @JsonProperty("locale")
     public String getLocale() {
         return locale;
     }
 
+    /**
+     * @return The subject template.
+     */
     @JsonProperty("subject")
     public String getSubject() {
         return subject;
     }
 
+    /**
+     * @return The HTML template. <code>null</code>: text only.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("html")
     public OptionalNullable<String> getHtml() {
@@ -66,6 +75,9 @@ public final class TemplateContent {
         return html;
     }
 
+    /**
+     * @return The plain-text template. <code>null</code>: HTML only.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("text")
     public OptionalNullable<String> getText() {
@@ -120,12 +132,18 @@ public final class TemplateContent {
     }
 
     public interface LocaleStage {
+        /**
+         * <p>The BCP 47 language tag this content is for.</p>
+         */
         SubjectStage locale(@NotNull String locale);
 
         Builder from(TemplateContent other);
     }
 
     public interface SubjectStage {
+        /**
+         * <p>The subject template.</p>
+         */
         _FinalStage subject(@NotNull String subject);
     }
 
@@ -136,6 +154,9 @@ public final class TemplateContent {
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
 
+        /**
+         * <p>The HTML template. <code>null</code>: text only.</p>
+         */
         _FinalStage html(OptionalNullable<String> html);
 
         _FinalStage html(String html);
@@ -144,6 +165,9 @@ public final class TemplateContent {
 
         _FinalStage html(Nullable<String> html);
 
+        /**
+         * <p>The plain-text template. <code>null</code>: HTML only.</p>
+         */
         _FinalStage text(OptionalNullable<String> text);
 
         _FinalStage text(String text);
@@ -177,6 +201,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The BCP 47 language tag this content is for.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("locale")
         public SubjectStage locale(@NotNull String locale) {
@@ -184,6 +212,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The subject template.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("subject")
         public _FinalStage subject(@NotNull String subject) {
@@ -191,6 +223,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The plain-text template. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Nullable<String> text) {
             if (text.isNull()) {
@@ -203,6 +239,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The plain-text template. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(Optional<String> text) {
             if (text.isPresent()) {
@@ -213,12 +253,19 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The plain-text template. <code>null</code>: HTML only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage text(String text) {
             this.text = OptionalNullable.of(text);
             return this;
         }
 
+        /**
+         * <p>The plain-text template. <code>null</code>: HTML only.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "text", nulls = Nulls.SKIP)
         public _FinalStage text(OptionalNullable<String> text) {
@@ -226,6 +273,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The HTML template. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Nullable<String> html) {
             if (html.isNull()) {
@@ -238,6 +289,10 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The HTML template. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(Optional<String> html) {
             if (html.isPresent()) {
@@ -248,12 +303,19 @@ public final class TemplateContent {
             return this;
         }
 
+        /**
+         * <p>The HTML template. <code>null</code>: text only.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage html(String html) {
             this.html = OptionalNullable.of(html);
             return this;
         }
 
+        /**
+         * <p>The HTML template. <code>null</code>: text only.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "html", nulls = Nulls.SKIP)
         public _FinalStage html(OptionalNullable<String> html) {

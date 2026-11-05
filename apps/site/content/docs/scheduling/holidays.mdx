@@ -1,0 +1,74 @@
+---
+title: Holidays
+description: Apply a country's public holidays, or your own feed, to some hosts as time away.
+---
+
+A holiday calendar keeps [out of office](/docs/scheduling/out-of-office) entries up to date for the hosts you choose, one
+per host and day, in each host's own time zone.
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: calendar } = await coss.scheduling.holidayCalendars.create({
+  name: "UK team",
+  country: "GB",
+  host_filter: { team: "london" },
+});
+```
+
+`host_filter` is asked again at every sync, so someone joining the team picks up its holidays. Or name `hosts`. Holidays
+are looked at a year ahead, and synced daily.
+
+## Regional holidays
+
+Some of a country's holidays aren't everyone's: Germany's list has Saxony's Repentance Day, and most of Australia's are
+for one state. All of them apply unless you say otherwise, since showing a host as away on a day they work costs less than
+booking them on a day they don't. Name who to keep:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+await coss.scheduling.holidayCalendars.create({
+  name: "London",
+  country: "GB",
+  regions: ["England"],
+  host_filter: { office: "london" },
+});
+```
+
+`regions` matches how the calendar names them, which [its list of holidays](/docs/api-reference/scheduling-holiday-calendars)
+shows as `region`: `England` matches "England, Wales, Northern Ireland". An empty list keeps only nationwide holidays. A
+half-day holiday counts as the whole day.
+
+## Your own feed
+
+Give `ics_url` instead of `country`, for company closures or anything else. It's https or webcal, and stored encrypted,
+since links like these often hold an access token, so it's never shown again. Only whole-day events count. Feeds are only
+read in live environments.
+
+If a feed can't be read, what's there stays, and `last_error` says so. It never takes holidays away because of a bad read,
+and a feed that's suddenly empty counts as one: delete the calendar to take them all away.
+
+## Cover and bookings
+
+`delegates` can be [booked in their place](/docs/scheduling/out-of-office#name-who-covers) on those days. With
+`existing_bookings: "reassign"`, bookings already on a holiday [move](/docs/scheduling/reassigning#many-at-once) to them,
+and otherwise to whoever's free. By default they stay, and the host's told how many there are.
+
+## Opting out
+
+Entries are ordinary ones, so a host can remove one, and it stays removed: coss.com won't add that day back. A holiday that
+drops out of the feed, or a host who leaves the calendar, loses its future entries.
+
+## What people booking see
+
+Nothing about why: entries say `public_holiday`, and a holiday's name only appears on the calendar's own
+[list of holidays](/docs/api-reference/scheduling-holiday-calendars). Names come from outside and aren't screened, so they
+never go in an email.
+
+## Which calendars there are
+
+Countries use their ISO code, such as `GB` or `US`, and there are five faiths: `CHRISTIAN`, `HINDU`, `JEWISH`, `MUSLIM`
+and `ORTHODOX`. They come from Google's public calendars.

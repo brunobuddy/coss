@@ -20,22 +20,37 @@ public record DmarcPublishedRecord : IJsonOnDeserialized
     [JsonPropertyName("value")]
     public required string Value { get; set; }
 
+    /// <summary>
+    /// The domain's policy tag.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("p")]
     public DmarcPublishedRecordP? P { get; set; }
 
+    /// <summary>
+    /// The subdomain policy tag. `null`: not published.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("sp")]
     public DmarcPublishedRecordSp? Sp { get; set; }
 
+    /// <summary>
+    /// The policy tag for non-existent subdomains. `null`: not published.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("np")]
     public DmarcPublishedRecordNp? Np { get; set; }
 
+    /// <summary>
+    /// The DKIM alignment tag. `null`: not published.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("adkim")]
     public DmarcPublishedRecordAdkim? Adkim { get; set; }
 
+    /// <summary>
+    /// The SPF alignment tag. `null`: not published.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("aspf")]
     public DmarcPublishedRecordAspf? Aspf { get; set; }
@@ -47,6 +62,9 @@ public record DmarcPublishedRecord : IJsonOnDeserialized
     [JsonPropertyName("pct")]
     public long? Pct { get; set; }
 
+    /// <summary>
+    /// The testing tag. `null`: not published.
+    /// </summary>
     [Nullable]
     [JsonPropertyName("t")]
     public DmarcPublishedRecordT? T { get; set; }

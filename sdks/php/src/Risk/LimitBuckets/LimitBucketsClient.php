@@ -171,6 +171,8 @@ class LimitBucketsClient
     }
 
     /**
+     * One of the rate limit buckets you defined for `POST /v1/risk/limit`.
+     *
      * Example:
      * ```php
      * $client->risk->limitBuckets->get(

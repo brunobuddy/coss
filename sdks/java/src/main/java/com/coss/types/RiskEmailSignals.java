@@ -75,11 +75,17 @@ public final class RiskEmailSignals {
         return domain;
     }
 
+    /**
+     * @return Whether it's syntactically valid.
+     */
     @JsonProperty("valid")
     public boolean getValid() {
         return valid;
     }
 
+    /**
+     * @return Whether its domain is a known burner service.
+     */
     @JsonProperty("disposable")
     public boolean getDisposable() {
         return disposable;
@@ -93,16 +99,25 @@ public final class RiskEmailSignals {
         return deliverability;
     }
 
+    /**
+     * @return Whether it's a role mailbox, like <code>info@</code>.
+     */
     @JsonProperty("role_account")
     public boolean getRoleAccount() {
         return roleAccount;
     }
 
+    /**
+     * @return Whether its domain is a free mailbox provider.
+     */
     @JsonProperty("free_provider")
     public boolean getFreeProvider() {
         return freeProvider;
     }
 
+    /**
+     * @return <code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.
+     */
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("suggestion")
     public OptionalNullable<String> getSuggestion() {
@@ -187,12 +202,18 @@ public final class RiskEmailSignals {
     }
 
     public interface ValidStage {
+        /**
+         * <p>Whether it's syntactically valid.</p>
+         */
         DisposableStage valid(boolean valid);
 
         Builder from(RiskEmailSignals other);
     }
 
     public interface DisposableStage {
+        /**
+         * <p>Whether its domain is a known burner service.</p>
+         */
         DeliverabilityStage disposable(boolean disposable);
     }
 
@@ -204,10 +225,16 @@ public final class RiskEmailSignals {
     }
 
     public interface RoleAccountStage {
+        /**
+         * <p>Whether it's a role mailbox, like <code>info@</code>.</p>
+         */
         FreeProviderStage roleAccount(boolean roleAccount);
     }
 
     public interface FreeProviderStage {
+        /**
+         * <p>Whether its domain is a free mailbox provider.</p>
+         */
         _FinalStage freeProvider(boolean freeProvider);
     }
 
@@ -229,6 +256,9 @@ public final class RiskEmailSignals {
 
         _FinalStage domain(Nullable<String> domain);
 
+        /**
+         * <p><code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.</p>
+         */
         _FinalStage suggestion(OptionalNullable<String> suggestion);
 
         _FinalStage suggestion(String suggestion);
@@ -291,6 +321,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p>Whether it's syntactically valid.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("valid")
         public DisposableStage valid(boolean valid) {
@@ -298,6 +332,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p>Whether its domain is a known burner service.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("disposable")
         public DeliverabilityStage disposable(boolean disposable) {
@@ -316,6 +354,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p>Whether it's a role mailbox, like <code>info@</code>.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("role_account")
         public FreeProviderStage roleAccount(boolean roleAccount) {
@@ -323,6 +365,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p>Whether its domain is a free mailbox provider.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         @JsonSetter("free_provider")
         public _FinalStage freeProvider(boolean freeProvider) {
@@ -380,6 +426,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p><code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suggestion(Nullable<String> suggestion) {
             if (suggestion.isNull()) {
@@ -392,6 +442,10 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p><code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suggestion(Optional<String> suggestion) {
             if (suggestion.isPresent()) {
@@ -402,12 +456,19 @@ public final class RiskEmailSignals {
             return this;
         }
 
+        /**
+         * <p><code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.</p>
+         * @return Reference to {@code this} so that method calls can be chained together.
+         */
         @java.lang.Override
         public _FinalStage suggestion(String suggestion) {
             this.suggestion = OptionalNullable.of(suggestion);
             return this;
         }
 
+        /**
+         * <p><code>email.typo</code>: the likely intended domain. <code>null</code> otherwise.</p>
+         */
         @java.lang.Override
         @JsonSetter(value = "suggestion", nulls = Nulls.SKIP)
         public _FinalStage suggestion(OptionalNullable<String> suggestion) {

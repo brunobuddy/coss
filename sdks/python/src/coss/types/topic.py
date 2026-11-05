@@ -18,11 +18,31 @@ class Topic(UniversalBaseModel):
     The `category` of the emails about this topic. Can't change.
     """
 
-    name: str
-    description: typing.Optional[str] = None
-    default_subscription: TopicDefaultSubscription
-    visibility: TopicVisibility
-    position: int
+    name: str = pydantic.Field()
+    """
+    Shown in the preference center.
+    """
+
+    description: typing.Optional[str] = pydantic.Field(default=None)
+    """
+    Shown in the preference center under its name. `null`: none.
+    """
+
+    default_subscription: TopicDefaultSubscription = pydantic.Field()
+    """
+    `opt_in`: every subscribed contact gets the topic's emails unless they opt out. `opt_out`: only contacts who opted in do.
+    """
+
+    visibility: TopicVisibility = pydantic.Field()
+    """
+    `private` topics never show in the preference center.
+    """
+
+    position: int = pydantic.Field()
+    """
+    Order in the preference center (ascending).
+    """
+
     created_at: dt.datetime
     updated_at: dt.datetime
 

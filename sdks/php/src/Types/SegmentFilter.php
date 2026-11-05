@@ -13,7 +13,7 @@ use Coss\Core\Types\Union;
 class SegmentFilter extends JsonSerializableType
 {
     /**
-     * @var float $version
+     * @var float $version The filter's format. Always 1.
      */
     #[JsonProperty('version')]
     public float $version;
@@ -32,7 +32,7 @@ class SegmentFilter extends JsonSerializableType
      *   |SegmentFilterConditionsItemTopic
      *   |SegmentFilterConditionsItemField
      *   |SegmentFilterConditionsItemConditions
-     * )> $conditions
+     * )> $conditions Conditions, or `{ match, conditions }` groups of them. At most 20 in all.
      */
     #[JsonProperty('conditions'), ArrayType([new Union(SegmentFilterConditionsItemKey::class, SegmentFilterConditionsItemOne::class, SegmentFilterConditionsItemAudienceId::class, SegmentFilterConditionsItemTopic::class, SegmentFilterConditionsItemField::class, SegmentFilterConditionsItemConditions::class)])]
     public array $conditions;
