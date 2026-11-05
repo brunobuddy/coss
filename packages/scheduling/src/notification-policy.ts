@@ -17,7 +17,8 @@ export type NotificationEvent =
   | "rescheduled"
   | "cancelled"
   | "declined"
-  | "reminder";
+  | "reminder"
+  | "reassigned";
 
 const DEFAULT_POLICY: Record<NotificationEvent, Policy[string]> = {
   confirmed: { emailAttendee: true, emailHost: true },
@@ -26,6 +27,7 @@ const DEFAULT_POLICY: Record<NotificationEvent, Policy[string]> = {
   cancelled: { emailAttendee: true, emailHost: true },
   declined: { emailAttendee: true },
   reminder: { emailAttendee: true },
+  reassigned: { emailAttendee: true, emailHost: true },
 };
 
 /** Defaults, then the environment's choices, then the event type's. */

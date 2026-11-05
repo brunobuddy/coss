@@ -153,9 +153,10 @@ describe("reencryptSchedulingData", () => {
         and column_name like 'encrypted\\_%'
       order by 1
     `);
-    // These two hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
+    // These hold the webhook key ring's values (`CalendarDeps.secretsKeys`).
     const onWebhookKeys = [
       "scheduling_calendar_connection.encrypted_credentials",
+      "scheduling_holiday_calendar.encrypted_ics_url",
       "scheduling_calendar_delegation.encrypted_credentials",
       "scheduling_oauth_state.encrypted_code_verifier",
     ];
@@ -175,9 +176,10 @@ describe("reencryptSchedulingData", () => {
     const currentRow = await attendeeRow(current.id);
     const oldSessionRow = await sessionRow(oldSession.id);
 
+    // Two each of attendees, bookings and sessions, one of each on the old key.
     const planned = {
-      checked: 4,
-      reencrypted: 2,
+      checked: 6,
+      reencrypted: 3,
       unreadableCount: 0,
       unreadable: [],
       conflicts: 0,
@@ -244,9 +246,10 @@ describe("reencryptSchedulingData", () => {
     const erased = await book(fixture, 11, before, "patient_erased");
     await eraseAttendee(env, { uid: "patient_erased" });
 
+    // One attendee and its booking: erasing took what the other booking was routed with too.
     expect(await reencryptSchedulingData({ keys: during, scope })).toMatchObject({
-      checked: 1,
-      reencrypted: 1,
+      checked: 2,
+      reencrypted: 2,
     });
     const row = await attendeeRow(booking.id);
     expect(row.encryptedAnswers).toBeNull();
@@ -264,7 +267,8 @@ describe("reencryptSchedulingData", () => {
     const lostSession = await bookerSession(fixture, unknown);
 
     const result = await reencryptSchedulingData({ keys: during, scope });
-    expect(result).toMatchObject({ checked: 3, reencrypted: 1, unreadableCount: 3, conflicts: 0 });
+    // The fine attendee and booking move. The lost attendee's two columns, booking and session don't.
+    expect(result).toMatchObject({ checked: 5, reencrypted: 2, unreadableCount: 4, conflicts: 0 });
     expect(result.unreadable).toEqual(
       expect.arrayContaining([
         {
@@ -300,7 +304,8 @@ describe("reencryptSchedulingData", () => {
       .where(eq(schedulingAttendee.id, row.id));
 
     const result = await reencryptSchedulingData({ keys: during, scope });
-    expect(result).toMatchObject({ reencrypted: 0, unreadableCount: 1 });
+    // Only the booking, whose one column can be read.
+    expect(result).toMatchObject({ reencrypted: 1, unreadableCount: 1 });
     expect((await attendeeRow(booking.id)).encryptedContact).toBe(row.encryptedContact);
   });
 
@@ -435,7 +440,7 @@ describe("reencryptSchedulingData", () => {
     for (const hour of [1, 3, 5, 7, 9]) await book(fixture, hour, before);
     await book(fixture, 11, secretsKeyRing([OTHER_KEY]));
     const result = await reencryptSchedulingData({ keys: during, scope, batchSize: 2 });
-    expect(result).toMatchObject({ checked: 6, reencrypted: 5, unreadableCount: 2 });
+    expect(result).toMatchObject({ checked: 12, reencrypted: 10, unreadableCount: 3 });
 
     const reported = JSON.stringify(result);
     for (const secret of [

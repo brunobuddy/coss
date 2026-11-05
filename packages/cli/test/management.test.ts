@@ -156,6 +156,7 @@ const eventType = {
   status: "active",
   duration_minutes: 30,
   requires_approval: false,
+  reassignment_enabled: true,
   hosts: [{ host: "host_1", role: "member", weight: 1, schedule: null }],
 };
 const booking = {

@@ -6,6 +6,9 @@
   "pages": [
     "index",
     "hosts",
+    "out-of-office",
+    "holidays",
+    "reassigning",
     "calendars",
     "delegation",
     "zoom",

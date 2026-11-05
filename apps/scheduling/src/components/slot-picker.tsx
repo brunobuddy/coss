@@ -11,6 +11,8 @@ const DAY_MS = 86_400_000;
 const EMPTY_MONTHS_TO_SKIP = 2;
 
 export type Slot = { start: string; end: string; seats_left?: number | null };
+/** The only person who could take this is away. Never says why. */
+type AwayNotice = { until: string; message: string | null; covered: boolean };
 
 function seatsLabel(seats: number): string {
   return seats === 1 ? "1 seat left" : `${seats} seats left`;
@@ -63,6 +65,7 @@ export function SlotPicker(props: {
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [away, setAway] = useState<AwayNotice | null>(null);
   const [chosenDay, setChosenDay] = useState<string | null>(null);
   const emptyMonthsSkipped = useRef(0);
   const today = useMemo(() => new Date(), []);
@@ -78,9 +81,10 @@ export function SlotPicker(props: {
     const end = new Date(new Date(month.getFullYear(), month.getMonth() + 1, 1).getTime() + DAY_MS);
     const query = new URLSearchParams({ start: start.toISOString(), end: end.toISOString() });
     if (durationMinutes) query.set("duration_minutes", String(durationMinutes));
-    call<{ data: Slot[] }>(`${path}?${query}`)
+    call<{ data: Slot[]; away?: AwayNotice | null }>(`${path}?${query}`)
       .then((response) => {
         if (cancelled) return;
+        setAway(response.away ?? null);
         const inMonth = response.data.filter((slot) =>
           dayKey(slot.start, timeZone).startsWith(cellKey(month).slice(0, 7)),
         );
@@ -128,7 +132,21 @@ export function SlotPicker(props: {
   const times = chosenDay ? (days.get(chosenDay) ?? []) : [];
 
   return (
-    <div className="@container">
+    <div className="@container flex flex-col gap-4">
+      {away && (!away.covered || away.message) ? (
+        <p className="text-pretty rounded-xl border bg-muted/50 p-3 text-sm">
+          {away.covered ? null : (
+            <>
+              Away until{" "}
+              {new Intl.DateTimeFormat(undefined, { timeZone, dateStyle: "long" }).format(
+                new Date(away.until),
+              )}
+              .{away.message ? " " : ""}
+            </>
+          )}
+          {away.message ?? ""}
+        </p>
+      ) : null}
       <div className="grid @xl:grid-cols-[auto_minmax(0,1fr)] gap-x-8 gap-y-6">
         <Calendar
           classNames={{

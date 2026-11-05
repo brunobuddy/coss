@@ -23,6 +23,8 @@ import { chosenLocation, withSessionLocation } from "./group-sessions.ts";
 import { dateLocale, messageLanguage, type Translate, translator } from "./i18n.ts";
 import { getLogoRow, LOGO_CONTENT_ID, type SchedulingLogoRow } from "./logo.ts";
 import { type NotificationEvent, policiesOf, resolvePolicy } from "./notification-policy.ts";
+import { countHostConflicts } from "./out-of-office.ts";
+import { reassignmentCountsForHost } from "./reassignment-counts.ts";
 import {
   type CopyAudience,
   type CopyKind,
@@ -127,7 +129,7 @@ export async function attendeeEmailedOnConfirm(
 export async function enqueueBookingNotifications(
   tx: Executor,
   booking: BookingRow,
-  event: Exclude<NotificationEvent, "reminder">,
+  event: Exclude<NotificationEvent, "reminder" | "reassigned">,
   now: Date,
 ): Promise<void> {
   const policies = await policiesOf(tx, booking);
@@ -213,6 +215,93 @@ export async function enqueueNoShowReminders(
     "no_show",
     now,
   );
+}
+
+/**
+ * A booking has new hosts. Those joining and leaving are told apart, by `hostId`: the rest of the
+ * booking's hosts have nothing new to hear. What someone hears is what's changed since they last
+ * heard. Someone who hasn't yet been told about the last change has nothing to hear from this one
+ * either way (it's undone it), and someone it doesn't touch keeps what's coming to them: going
+ * A to B to C still tells A, and tells B nothing. Back to A tells nobody anything.
+ */
+export async function enqueueReassignment(
+  tx: Executor,
+  booking: BookingRow,
+  people: { added: readonly string[]; removed: readonly string[]; attendee: boolean },
+  now: Date,
+): Promise<void> {
+  const moved = [...people.added, ...people.removed];
+  const superseded = await tx
+    .update(schedulingNotification)
+    .set({ finishedAt: now, outcome: "superseded", leaseUntil: null })
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reassigned"),
+        isNull(schedulingNotification.finishedAt),
+        lt(schedulingNotification.bookingVersion, booking.version),
+        or(isNull(schedulingNotification.hostId), inArray(schedulingNotification.hostId, moved)),
+      ),
+    )
+    .returning({ hostId: schedulingNotification.hostId });
+  const untold = new Set(superseded.map((row) => row.hostId));
+  // Everyone it touches is back where they last heard, and nobody else is waiting to hear of a
+  // change this didn't touch: only then is the attendee's news gone as well.
+  const [elsewhere] = await tx
+    .select({ id: schedulingNotification.id })
+    .from(schedulingNotification)
+    .where(
+      and(
+        eq(schedulingNotification.bookingId, booking.id),
+        eq(schedulingNotification.organizationId, booking.organizationId),
+        eq(schedulingNotification.kind, "reassigned"),
+        isNull(schedulingNotification.finishedAt),
+      ),
+    )
+    .limit(1);
+  const undone =
+    moved.length > 0 && untold.has(null) && moved.every((id) => untold.has(id)) && !elsewhere;
+  const policies = await policiesOf(tx, booking);
+  const policy = resolvePolicy("reassigned", policies.environment, policies.eventType);
+  const base = {
+    organizationId: booking.organizationId,
+    environmentId: booking.environmentId,
+    bookingId: booking.id,
+    kind: "reassigned",
+    bookingVersion: booking.version,
+    dueAt: now,
+  };
+  const rows: (typeof schedulingNotification.$inferInsert)[] = [];
+  if (policy.emailHost) {
+    for (const hostId of moved) {
+      if (untold.has(hostId)) continue;
+      rows.push({
+        ...base,
+        hostId,
+        channel: "email",
+        recipient: "host",
+        dedupeKey: `reassigned:email:host:${hostId}:${booking.id}:${booking.version}`,
+      });
+    }
+  }
+  if (people.attendee && !undone && policy.emailAttendee) {
+    rows.push({
+      ...base,
+      channel: "email",
+      recipient: "attendee",
+      dedupeKey: `reassigned:email:attendee:${booking.id}:${booking.version}`,
+    });
+  }
+  if (people.attendee && !undone && policy.smsAttendee) {
+    rows.push({
+      ...base,
+      channel: "sms",
+      recipient: "attendee",
+      dedupeKey: `reassigned:sms:attendee:${booking.id}:${booking.version}`,
+    });
+  }
+  if (rows.length > 0) await tx.insert(schedulingNotification).values(rows).onConflictDoNothing();
 }
 
 export type SchedulingEmail = {
@@ -442,6 +531,25 @@ function isStale(row: Claimed, booking: BookingRow): boolean {
   return false;
 }
 
+/**
+ * A cancellation only reaches the booking's hosts by then, so whoever had it just before still needs
+ * this, or the invitation they accepted stays on their calendar. Those who were joining don't.
+ */
+async function lostItBeforeItEnded(row: Claimed, booking: BookingRow): Promise<boolean> {
+  if (row.kind !== "reassigned" || row.recipient !== "host" || !row.hostId) return false;
+  const [stillHost] = await db
+    .select({ hostId: schedulingBookingHost.hostId })
+    .from(schedulingBookingHost)
+    .where(
+      and(
+        eq(schedulingBookingHost.bookingId, booking.id),
+        eq(schedulingBookingHost.organizationId, booking.organizationId),
+        eq(schedulingBookingHost.hostId, row.hostId),
+      ),
+    );
+  return !stillHost;
+}
+
 async function environmentOf(row: Claimed): Promise<SchedulingEmail["environment"] | null> {
   const [found] = await db
     .select({ projectId: environment.projectId, mode: environment.mode })
@@ -531,9 +639,12 @@ async function sendBookingEmail(
   const senderName = oneLine(settings?.brandName ?? titleOf(booking));
   const uid = `${booking.id}@coss.com`;
   const icsMethod = isEnded(booking) ? ("CANCEL" as const) : ("REQUEST" as const);
-  const ics = (to: { name: string | null; email: string }) => ({
+  const ics = (
+    to: { name: string | null; email: string },
+    method: "REQUEST" | "CANCEL" = icsMethod,
+  ) => ({
     filename: "booking.ics",
-    method: icsMethod,
+    method,
     content: buildIcs({
       uid,
       title: titleOf(booking),
@@ -541,7 +652,7 @@ async function sendBookingEmail(
       endMs: booking.endAt.getTime(),
       stampMs: now.getTime(),
       sequence: booking.version,
-      method: icsMethod,
+      method,
       location: locationLine(booking),
       attendee: to,
     }),
@@ -551,7 +662,8 @@ async function sendBookingEmail(
     ? rule.include_invite && (isEnded(booking) || booking.status === "confirmed")
     : copyKind === "cancelled" ||
       copyKind === "declined" ||
-      ((copyKind === "confirmed" || copyKind === "rescheduled") && booking.status === "confirmed");
+      ((copyKind === "confirmed" || copyKind === "rescheduled" || copyKind === "reassigned") &&
+        booking.status === "confirmed");
   const key = `scheduling:${row.id}`;
   const custom = rule && hasCustomEmail(rule) && settings?.emailFrom ? rule : null;
   const replyTo = settings?.emailFrom ? (settings.emailReplyTo ?? null) : null;
@@ -572,6 +684,9 @@ async function sendBookingEmail(
     whenText: string;
     manageUrl: string | null;
     reason: string;
+    /** Words of its own, for who's joining or leaving a booking. */
+    lead?: string;
+    subject?: string;
   }): { content: EmailContent; fixed: EmailContent } => {
     const t = translator(input.locale);
     const lang = messageLanguage(input.locale);
@@ -579,8 +694,8 @@ async function sendBookingEmail(
     const manageButton: EmailBlock[] = input.manageUrl
       ? [{ button: { label: manageLabel, url: input.manageUrl } }]
       : [];
-    const standard = standardLead(copyKind, input.audience, input.locale);
-    const subject = standardSubject(copyKind, titleOf(booking), input.locale);
+    const standard = input.lead ?? standardLead(copyKind, input.audience, input.locale);
+    const subject = input.subject ?? standardSubject(copyKind, titleOf(booking), input.locale);
     const fixed: EmailContent = {
       lang,
       subject,
@@ -649,6 +764,14 @@ async function sendBookingEmail(
       const message = content({
         audience: guest ? "guest" : "attendee",
         locale: attendee.locale,
+        // Emails name no host unless the customer asked: someone may not know who else works there.
+        ...(row.kind === "reassigned" && !guest && settings?.nameHostInAttendeeEmails
+          ? {
+              lead: translator(attendee.locale)("lead_reassigned_named", {
+                names: oneLine(hostNamesOf(hosts)),
+              }),
+            }
+          : {}),
         whenText: formatWhen(booking.startAt, attendee.timeZone, attendee.locale),
         manageUrl: manage?.url ?? null,
         reason: translator(attendee.locale)(guest ? "reason_guest" : "reason_attendee", {
@@ -696,9 +819,28 @@ async function sendBookingEmail(
   const attendeeName = firstAttendee
     ? decryptContact(firstAttendee.encryptedContact, deps).name
     : null;
+  // A reassignment says who it's for, and one of them isn't on the booking any more.
+  const addressed =
+    row.kind === "reassigned" && row.hostId
+      ? await db
+          .select({
+            email: schedulingHost.email,
+            name: schedulingHost.name,
+            timeZone: schedulingHost.timeZone,
+            locale: schedulingHost.locale,
+            id: schedulingHost.id,
+          })
+          .from(schedulingHost)
+          .where(
+            and(
+              eq(schedulingHost.id, row.hostId),
+              eq(schedulingHost.organizationId, row.organizationId),
+            ),
+          )
+      : null;
   const staffRecipients =
     row.recipient === "host"
-      ? hosts.flatMap((host) =>
+      ? (addressed ?? hosts).flatMap((host) =>
           host.email
             ? [
                 {
@@ -722,9 +864,19 @@ async function sendBookingEmail(
   let sent = false;
   let refused = false;
   for (const recipient of staffRecipients) {
+    const gone = row.kind === "reassigned" && !hosts.some((host) => host.id === recipient.id);
+    const hostT = translator(recipient.locale);
     const message = content({
       audience: "host",
       locale: recipient.locale,
+      ...(row.kind === "reassigned"
+        ? {
+            subject: hostT(gone ? "subject_no_longer_yours" : "subject_assigned", {
+              title: titleOf(booking),
+            }),
+            ...(gone ? { lead: hostT("lead_reassigned_gone") } : {}),
+          }
+        : {}),
       whenText: formatWhen(booking.startAt, recipient.timeZone, recipient.locale),
       manageUrl: null,
       reason: translator(recipient.locale)(
@@ -754,7 +906,11 @@ async function sendBookingEmail(
       cossText: rendered.cossText,
       cossHtml: rendered.cossHtml,
       replyTo,
-      ics: withIcs ? ics({ name: recipient.name, email: recipient.email }) : null,
+      // Gone, and the booking's ended since: the cancellation only reaches who had it by then.
+      ics:
+        withIcs || (gone && isEnded(booking))
+          ? ics({ name: recipient.name, email: recipient.email }, gone ? "CANCEL" : icsMethod)
+          : null,
       logo: rendered.logo,
       idempotencyKey: `${key}:${recipient.id}`,
       ownSenderOnly,
@@ -973,6 +1129,26 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
       and(eq(schedulingHost.id, row.hostId), eq(schedulingHost.organizationId, row.organizationId)),
     );
   if (!host?.email) return "no_address";
+  const summary =
+    row.kind === "reassignment_summary" && row.reassignmentId
+      ? await reassignmentCountsForHost(
+          {
+            organizationId: row.organizationId,
+            environmentId: row.environmentId,
+            reassignmentId: row.reassignmentId,
+          },
+          host.id,
+        )
+      : null;
+  if (row.kind === "reassignment_summary" && (!summary || summary.joined + summary.left === 0)) {
+    return "stale";
+  }
+  // Counted now: they may have been moved since this was decided, and then there's nothing to say.
+  const conflicts =
+    row.kind === "out_of_office_conflicts"
+      ? await countHostConflicts(row.organizationId, host.id, now)
+      : 0;
+  if (row.kind === "out_of_office_conflicts" && conflicts === 0) return "stale";
   const branding = await brandingOf(row);
   const { settings } = branding;
   const t = translator(host.locale);
@@ -981,21 +1157,42 @@ async function sendHostNews(row: Claimed, deps: NotificationDeps, now: Date): Pr
     ? await createHostInvitationSession(env, host.id, deps.publicUrl, now)
     : null;
   const zoom = row.kind === "zoom_needs_reauth";
+  const content = (() => {
+    if (summary) {
+      return {
+        subject: t("summary_subject"),
+        paragraph: [
+          ...(summary.joined ? [t("summary_came", { count: String(summary.joined) })] : []),
+          ...(summary.left ? [t("summary_went", { count: String(summary.left) })] : []),
+          t("summary_note"),
+        ].join(" "),
+        button: t("button_see_bookings"),
+        fallback: t("see_through", { sender: senderName }),
+      };
+    }
+    if (row.kind === "out_of_office_conflicts") {
+      return {
+        subject: t("conflicts_subject"),
+        paragraph: t("conflicts_body", { count: String(conflicts) }),
+        button: t("button_see_bookings"),
+        fallback: t("see_through", { sender: senderName }),
+      };
+    }
+    return {
+      subject: t(zoom ? "zoom_subject" : "calendar_subject"),
+      paragraph: t(zoom ? "zoom_body" : "calendar_body"),
+      button: t(zoom ? "zoom_button" : "calendar_button"),
+      fallback: t("reconnect_through", { sender: senderName }),
+    };
+  })();
   const message = renderMessage(branding, senderName, {
     lang: messageLanguage(host.locale),
-    subject: t(zoom ? "zoom_subject" : "calendar_subject"),
+    subject: content.subject,
     blocks: [
-      { paragraph: t(zoom ? "zoom_body" : "calendar_body") },
-      ...(session?.url
-        ? [
-            {
-              button: {
-                label: t(zoom ? "zoom_button" : "calendar_button"),
-                url: session.url,
-              },
-            } as EmailBlock,
-          ]
-        : [{ paragraph: t("reconnect_through", { sender: senderName }) } as EmailBlock]),
+      { paragraph: content.paragraph },
+      session?.url
+        ? ({ button: { label: content.button, url: session.url } } as EmailBlock)
+        : ({ paragraph: content.fallback } as EmailBlock),
     ],
     reason: t("reason_host", { sender: senderName }),
   });
@@ -1051,7 +1248,8 @@ export async function runDueSchedulingNotifications(
         .from(schedulingNotification)
         .where(eq(schedulingNotification.id, row.id));
       if (!current || current.finishedAt || current.dueAt > now) continue;
-      if (!found || isStale({ ...row, bookingVersion: current.bookingVersion }, found)) {
+      const stale = !found || isStale({ ...row, bookingVersion: current.bookingVersion }, found);
+      if (!found || (stale && !(await lostItBeforeItEnded(row, found)))) {
         await finish(row, "stale", now);
         continue;
       }

@@ -46,6 +46,7 @@ export type CopyKind =
   | "cancelled"
   | "declined"
   | "reminder"
+  | "reassigned"
   | "happening"
   | "finished"
   | "no_show";
@@ -57,6 +58,7 @@ const SUBJECT_KEYS: Record<CopyKind, MessageKey> = {
   cancelled: "subject_cancelled",
   declined: "subject_declined",
   reminder: "subject_reminder",
+  reassigned: "subject_reassigned",
   happening: "subject_happening",
   finished: "subject_finished",
   no_show: "subject_no_show",
@@ -90,6 +92,11 @@ const LEAD_KEYS: Record<
   },
   declined: { attendee: "lead_declined_attendee", host: "lead_declined_host", guest: null },
   reminder: { attendee: "lead_reminder", host: "lead_reminder", guest: "lead_reminder" },
+  reassigned: {
+    attendee: "lead_reassigned_attendee",
+    host: "lead_reassigned_host",
+    guest: "lead_reassigned_guest",
+  },
   happening: { attendee: "lead_happening", host: "lead_happening", guest: "lead_happening" },
   finished: {
     attendee: "lead_finished_attendee",

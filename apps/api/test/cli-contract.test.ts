@@ -819,6 +819,28 @@ describe("coss-cli against the API", () => {
     expect(await shown.code).toBe(0);
     expect(shown.cli.stdout()).toContain("confirmed");
     expect(await coss(["scheduling", "calendars", "ada"]).code).toBe(0);
+    await client.scheduling.hosts.create({ uid: "grace", name: "Grace", time_zone: "UTC" });
+    await client.scheduling.schedules.create("grace", {
+      rules: [{ days: [0, 1, 2, 3, 4, 5, 6], start: "00:00", end: "24:00" }],
+    });
+    const candidates = coss(["scheduling", "candidates", id, "--json"]);
+    expect(await candidates.code).toBe(0);
+    expect(lines(candidates.cli.stdout())[0]).toMatchObject({ uid: "grace", member: false });
+    expect(await coss(["scheduling", "reassign", id]).code).toBe(2);
+    expect(await coss(["scheduling", "reassign", id, "--to", "grace"]).code).toBe(1);
+    const moved = coss([
+      "scheduling",
+      "reassign",
+      id,
+      "--to",
+      "grace",
+      "--any-host",
+      "--reason",
+      "out_of_office",
+      "--json",
+    ]);
+    expect(await moved.code).toBe(0);
+    expect(await coss(["scheduling", "ooo", "--host", "grace"]).code).toBe(0);
     expect(await coss(["scheduling", "cancel", id]).code).toBe(0);
   });
 

@@ -12,6 +12,7 @@ import {
   createBooking,
   createEventType,
   createHost,
+  createOutOfOffice,
   createSchedule,
   listEventTypes,
   listHosts,
@@ -177,6 +178,25 @@ async function seedEnvironment(env: SchedulingEnvironment, now: Date) {
   if (approved) await approveBooking(env, approved.id, baseDeps, actor).catch(() => null);
   const cancelled = await book(intro.id, -4, 0, 2);
   if (cancelled) await cancelBooking(env, cancelled.id, baseDeps, actor).catch(() => null);
+
+  // Away over a day with a booking on it, so the page shows a conflict.
+  const away = hosts.find((row) => row.uid === HOSTS[1]?.uid);
+  if (away) {
+    const date = new Date(weekdayAt(now, 3, 12)).toISOString().slice(0, 10);
+    await createOutOfOffice(
+      env,
+      {
+        host: away.id,
+        start_date: date,
+        end_date: date,
+        reason: "vacation",
+        public_message: "Back the next day.",
+      },
+      baseDeps,
+      actor,
+      "api",
+    );
+  }
   return created;
 }
 

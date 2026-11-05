@@ -3,11 +3,13 @@
  * bookings, holds and series. Tenancy comes only from the API key.
  */
 
+import { db } from "@coss/db";
 import {
   approveBooking,
   type BookingActor,
   type CalendarDeps,
   cancelBooking,
+  cancelReassignment,
   cancelSeries,
   confirmHold,
   connectCaldav,
@@ -17,15 +19,21 @@ import {
   createCalendarDelegation,
   createEventType,
   createHold,
+  createHolidayCalendar,
   createHost,
   createHostSession,
+  createManagerSession,
   createManageSession,
+  createOutOfOffice,
+  createReassignment,
   createSchedule,
   createSeries,
   declineBooking,
   deleteCalendarDelegation,
   deleteHold,
+  deleteHolidayCalendar,
   deleteHost,
+  deleteOutOfOffice,
   deleteSchedule,
   disconnectCalendar,
   eraseAttendee,
@@ -34,7 +42,10 @@ import {
   getBooking,
   getCalendarDelegation,
   getEventType,
+  getHolidayCalendar,
   getHost,
+  getOutOfOffice,
+  getReassignment,
   getSchedule,
   getSettings,
   getSettingsRow,
@@ -45,23 +56,37 @@ import {
   listConnections,
   listEventTypeSlots,
   listEventTypes,
+  listHolidayCalendars,
+  listHolidays,
   listHosts,
+  listOutOfOffice,
+  listOutOfOfficeConflicts,
+  listReassignCandidates,
+  listReassignmentItems,
+  listReassignments,
   listSchedules,
   markNoShow,
+  previewReassignment,
   previewSeries,
+  putOutOfOffice,
+  reassignBooking,
   requireRouting,
   rescheduleBooking,
+  resolveHost,
   type SchedulingDeps,
   SchedulingError,
   searchAvailability,
   setSimulatedBusy,
   startCalendarAuthorization,
   toConnectionObject,
+  undoReassignment,
   updateBookingLocation,
   updateCalendar,
   updateCalendarDelegation,
   updateEventType,
+  updateHolidayCalendar,
   updateHost,
+  updateOutOfOffice,
   updateSchedule,
   updateSettings,
   verifyCalendarDelegation,
@@ -83,16 +108,22 @@ import {
   CancelledSeries,
   CancelSeriesRequest,
   ConfirmHoldRequest,
+  ConflictsQuery,
   CreateBookingRequest,
   CreateCalendarConnectionRequest,
   CreateCalendarDelegationRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
+  CreateHolidayCalendarRequest,
   CreateHostRequest,
+  CreateOutOfOfficeRequest,
+  CreateReassignmentRequest,
   CreateSeriesRequest,
   DeletedCalendarConnection,
   DeletedCalendarDelegation,
+  DeletedHolidayCalendar,
   DeletedHost,
+  DeletedOutOfOffice,
   DeletedSchedule,
   EraseAttendeeByEmailRequest,
   ErasedAttendee,
@@ -100,11 +131,27 @@ import {
   EventTypeList,
   EventTypeObject,
   ExplainSlotQuery,
+  HolidayCalendarList,
+  HolidayCalendarObject,
+  HolidayList,
   HostList,
   HostObject,
   ListBookingEventsQuery,
   ListBookingsQuery,
+  ListOutOfOfficeQuery,
+  OutOfOfficeConflictList,
+  OutOfOfficeList,
+  OutOfOfficeObject,
   PageQuery,
+  PreviewReassignmentRequest,
+  PutOutOfOfficeRequest,
+  ReassignBookingRequest,
+  ReassignCandidateList,
+  ReassignCandidatesQuery,
+  ReassignmentItemList,
+  ReassignmentList,
+  ReassignmentObject,
+  ReassignmentPreview,
   RescheduleBookingRequest,
   ScheduleList,
   ScheduleObject,
@@ -115,17 +162,22 @@ import {
   SlotExplanation,
   SlotList,
   SlotsQuery,
+  UndoReassignmentRequest,
   UpdateBookingLocationRequest,
   UpdateCalendarDelegationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
+  UpdateHolidayCalendarRequest,
   UpdateHostRequest,
+  UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
   VerifyCalendarDelegationRequest,
 } from "@coss/scheduling/schemas";
+import { apiKeyHasPermissions } from "@coss/tenancy";
 import { secretsKeyRing } from "@coss/webhooks";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+import type { Context } from "hono";
 import { createMiddleware } from "hono/factory";
 import { z } from "zod";
 import { recordApiAudit } from "../audit.ts";
@@ -145,6 +197,23 @@ const TAG_BOOKINGS = "Scheduling bookings";
 const TAG_SERIES = "Scheduling series";
 const TAG_SETTINGS = "Scheduling settings";
 const TAG_CALENDARS = "Scheduling calendars";
+const TAG_OUT_OF_OFFICE = "Scheduling out of office";
+const TAG_REASSIGNMENTS = "Scheduling reassignments";
+const TAG_HOLIDAY_CALENDARS = "Scheduling holiday calendars";
+
+/**
+ * A key that can only create can't reassign, and something it creates that moves bookings is
+ * reassigning them, later and from the worker, where nothing would ask.
+ */
+async function requireMovingBookings(c: Context<AppEnv>, existing: string | undefined) {
+  if (existing !== "reassign") return;
+  if (await apiKeyHasPermissions(c.var.auth.apiKeyId, { scheduling: ["update"] })) return;
+  throw new ApiError(403, {
+    type: "permission_error",
+    code: "insufficient_permissions",
+    message: "Moving existing bookings needs the scheduling:update permission.",
+  });
+}
 
 const read = () => [requireApiKey({ scheduling: ["read"] }), rateLimit("api.read")];
 const writing = (
@@ -187,6 +256,12 @@ const DelegationParams = z.object({
   id: param("The delegation's id.", "caldlg_01kd2m9a0b1c2d3e4f5g6h7j8m"),
 });
 const AttendeeParams = z.object({ uid: param("Your id for the attendee.", "patient_77") });
+const OutOfOfficeParams = z.object({
+  id: param("The entry's id.", "ooo_01kd2m9a0b1c2d3e4f5g6h7j8m"),
+});
+const ExternalOutOfOfficeParams = z.object({
+  external_id: param("Your own id for the entry.", "hr_leave_4471"),
+});
 
 const bodyErrors = {
   400: errorDoc("The body is not valid JSON (`invalid_json`)."),
@@ -244,6 +319,14 @@ const refusedChange = errorDoc(
 const BookingIdempotency = idempotencyHeaders(
   "Makes retries safe: a repeated request with the same key and body returns the original " +
     "booking instead of creating another, for 24 hours. A refused request keeps no key.",
+);
+
+const ReassignmentParams = z.object({
+  id: z.string().meta({ description: "The reassignment's id." }),
+});
+const ReassignmentIdempotency = idempotencyHeaders(
+  "Makes retries safe: a repeated request with the same key and body returns the original run " +
+    "instead of starting another, for 24 hours.",
 );
 
 const createdBooking = (description: string, schema: z.ZodType = BookingObject) => ({
@@ -1310,6 +1393,23 @@ const CreateHostSessionRequest = z
   })
   .meta({ id: "CreateSchedulingHostSessionRequest", examples: [{ expires_in: 3600 }] });
 
+const CreateManagerSessionRequest = z
+  .strictObject({
+    hosts: z.array(z.string()).min(1).max(1000).optional().meta({
+      description: "The hosts this page can reach, by id or uid.",
+    }),
+    host_filter: z
+      .record(z.string(), z.union([z.string(), z.array(z.string())]))
+      .optional()
+      .meta({ description: "Everyone matching these attributes, asked again on every request." }),
+    expires_in: SessionExpiry,
+    read_only: z.boolean().optional(),
+  })
+  .meta({
+    id: "CreateSchedulingManagerSessionRequest",
+    examples: [{ host_filter: { team: "cardiology" }, expires_in: 3600 }],
+  });
+
 const CreateBookerSessionRequest = z
   .strictObject({
     event_type: z.string().meta({ description: "The event type's id or uid." }),
@@ -1350,6 +1450,31 @@ export const createHostSessionRoute = createRoute({
   },
   responses: {
     402: planRefused,
+    201: jsonDoc("The session.", CreatedSessionBody),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const createManagerSessionRoute = createRoute({
+  method: "post",
+  path: "/scheduling/manager_sessions",
+  operationId: "createSchedulingManagerSession",
+  tags: [TAG_HOSTS],
+  summary: "Create a manager session",
+  description:
+    "Lets a team lead manage cover for the hosts you name, or those matching an attribute filter whenever it's asked: time off, bookings that need someone else, and moving them. It never sees attendees' details. Send the `url` to their browser, or embed it with `coss/scheduling`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/manager_sessions"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateManagerSessionRequest } },
+    },
+  },
+  responses: {
     201: jsonDoc("The session.", CreatedSessionBody),
     ...commonErrors,
     ...bodyErrors,
@@ -1400,6 +1525,449 @@ export const createManageSessionRoute = createRoute({
     201: jsonDoc("The session.", CreatedSessionBody),
     ...commonErrors,
     404: notFound,
+  },
+});
+
+export const reassignBookingRoute = createRoute({
+  method: "post",
+  path: "/scheduling/bookings/{id}/reassign",
+  operationId: "reassignSchedulingBooking",
+  tags: [TAG_BOOKINGS],
+  summary: "Reassign a booking",
+  description:
+    "Gives a booking to another host, keeping its id and time. Works for every kind: a group session moves as a whole, from any of its seats, and one that's already started changes for the record, with nobody told. Whoever leaves and joins is told, and the attendee unless you say not to.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/bookings/{id}/reassign"),
+  request: {
+    params: BookingParams,
+    body: { required: true, content: { "application/json": { schema: ReassignBookingRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The booking.", BookingObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc(
+      "The request doesn't make sense (`invalid_reassignment`), that host can't take it " +
+        "(`reassign_target_unavailable`), nobody can (`no_reassign_candidate`), or the booking can't change (`booking_not_changeable`, `hold_expired`).",
+    ),
+  },
+});
+
+export const listReassignCandidatesRoute = createRoute({
+  method: "get",
+  path: "/scheduling/bookings/{id}/reassign_candidates",
+  operationId: "listSchedulingReassignCandidates",
+  tags: [TAG_BOOKINGS],
+  summary: "List who a booking could go to",
+  description:
+    "The environment's other active hosts: members of the event type first, in the order a pool would pick them, each saying whether they're free and why not. Things can change before you ask: reassigning decides again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: BookingParams, query: ReassignCandidatesQuery },
+  responses: {
+    200: jsonDoc("The candidates.", ReassignCandidateList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const previewReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/preview",
+  operationId: "previewSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Preview a bulk reassignment",
+  description:
+    "Who each booking would go to, and why not when nobody can take it, without moving anything. It works down them in order, so two can't both be promised the same free hour. Change any of it and start the run with `assignments`. Covers the first 500. Things can change before you start it: the run decides again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: PreviewReassignmentRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("What would happen.", ReassignmentPreview),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("The selection or strategy doesn't make sense (`invalid_reassignment`)."),
+  },
+});
+
+export const createReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments",
+  operationId: "createSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Start a bulk reassignment",
+  description:
+    "Moves up to 5,000 bookings in the background, each on its own, so one that can't move never holds up the rest. Nothing's ever cancelled: a booking nobody can take stays where it is, and its item says so. It answers at once: follow the run by its id, or wait for `scheduling.reassignment.completed`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments"),
+  request: {
+    headers: ReassignmentIdempotency,
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateReassignmentRequest } },
+    },
+  },
+  responses: {
+    202: createdBooking("The run, waiting to start.", ReassignmentObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    409: errorDoc("A request with this key is still running (`idempotency_in_progress`)."),
+    422: errorDoc(
+      "The selection or strategy doesn't make sense, or covers too many bookings (`invalid_reassignment`).",
+    ),
+  },
+});
+
+export const listReassignmentsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments",
+  operationId: "listSchedulingReassignments",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "List bulk reassignments",
+  description: "Newest first, with how each is going.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { query: PageQuery },
+  responses: {
+    200: jsonDoc("The runs.", ReassignmentList),
+    ...commonErrors,
+    422: invalid,
+  },
+});
+
+export const getReassignmentRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments/{id}",
+  operationId: "getSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Retrieve a bulk reassignment",
+  description: "How it's going.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: ReassignmentParams },
+  responses: {
+    200: jsonDoc("The run.", ReassignmentObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const listReassignmentItemsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/reassignments/{id}/items",
+  operationId: "listSchedulingReassignmentItems",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "List a bulk reassignment's bookings",
+  description:
+    "Each booking it covers and what happened to it. A group session has one, for one of its seats. Empty until the worker's started on it.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: ReassignmentParams, query: PageQuery },
+  responses: {
+    200: jsonDoc("The items.", ReassignmentItemList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const cancelReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/{id}/cancel",
+  operationId: "cancelSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Cancel a bulk reassignment",
+  description:
+    "Stops what hasn't happened yet. What's moved stays moved: undo it for that. Cancelling one that's finished changes nothing.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments/{id}/cancel"),
+  request: { params: ReassignmentParams },
+  responses: {
+    200: jsonDoc("The run.", ReassignmentObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const undoReassignmentRoute = createRoute({
+  method: "post",
+  path: "/scheduling/reassignments/{id}/undo",
+  operationId: "undoSchedulingReassignment",
+  tags: [TAG_REASSIGNMENTS],
+  summary: "Undo a bulk reassignment",
+  description:
+    "Gives back what a finished run moved, as a new run. A booking that's moved on since stays where it went, and a former host who's no longer free keeps it from going back, unless you pass `overrides`.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "POST /v1/scheduling/reassignments/{id}/undo"),
+  request: {
+    params: ReassignmentParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UndoReassignmentRequest } },
+    },
+  },
+  responses: {
+    202: jsonDoc("The new run.", ReassignmentObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("It's still running (`reassignment_not_finished`)."),
+  },
+});
+
+const HolidayCalendarParams = z.object({
+  id: z.string().meta({ description: "The holiday calendar's id." }),
+});
+
+export const createHolidayCalendarRoute = createRoute({
+  method: "post",
+  path: "/scheduling/holiday_calendars",
+  operationId: "createSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Create a holiday calendar",
+  description:
+    "Applies a country's public holidays, or your own feed, to some hosts as ordinary out of office entries, kept up to date by coss.com. A host who removes one keeps it removed.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("create", "POST /v1/scheduling/holiday_calendars"),
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: CreateHolidayCalendarRequest } },
+    },
+  },
+  responses: {
+    201: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: errorDoc("That isn't something to read (`invalid_holiday_calendar`)."),
+  },
+});
+
+export const listHolidayCalendarsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars",
+  operationId: "listSchedulingHolidayCalendars",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "List holiday calendars",
+  description: "By name. A feed's URL is never shown again.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  responses: { 200: jsonDoc("The calendars.", HolidayCalendarList), ...commonErrors },
+});
+
+export const getHolidayCalendarRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "getSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Retrieve a holiday calendar",
+  description: "With when it was last read, and why not if it couldn't be.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: HolidayCalendarParams },
+  responses: {
+    200: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const listHolidaysRoute = createRoute({
+  method: "get",
+  path: "/scheduling/holiday_calendars/{id}/holidays",
+  operationId: "listSchedulingHolidays",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "List a calendar's holidays",
+  description: "What's coming, with names, as last read. Empty until its first read.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: HolidayCalendarParams },
+  responses: { 200: jsonDoc("The holidays.", HolidayList), ...commonErrors, 404: notFound },
+});
+
+export const updateHolidayCalendarRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "updateSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Update a holiday calendar",
+  description: "Who it applies to, who covers and what happens to bookings. Takes effect shortly.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/holiday_calendars/{id}"),
+  request: {
+    params: HolidayCalendarParams,
+    body: {
+      required: true,
+      content: { "application/json": { schema: UpdateHolidayCalendarRequest } },
+    },
+  },
+  responses: {
+    200: jsonDoc("The calendar.", HolidayCalendarObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const deleteHolidayCalendarRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/holiday_calendars/{id}",
+  operationId: "deleteSchedulingHolidayCalendar",
+  tags: [TAG_HOLIDAY_CALENDARS],
+  summary: "Delete a holiday calendar",
+  description: "Hosts can be booked on its days again, shortly: past entries stay.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("delete", "DELETE /v1/scheduling/holiday_calendars/{id}"),
+  request: { params: HolidayCalendarParams },
+  responses: {
+    200: jsonDoc("It's going.", DeletedHolidayCalendar),
+    ...commonErrors,
+    404: notFound,
+  },
+});
+
+export const createOutOfOfficeRoute = createRoute({
+  method: "post",
+  path: "/scheduling/out_of_office",
+  operationId: "createSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Create out of office entries",
+  description:
+    "Marks one host, a list of hosts or everyone matching some attributes as away, for part of a " +
+    "day or for whole dates. They aren't offered during it. Existing bookings stay as they are: " +
+    "list them with the entry's conflicts.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("create", "POST /v1/scheduling/out_of_office"),
+  request: {
+    body: { required: true, content: { "application/json": { schema: CreateOutOfOfficeRequest } } },
+  },
+  responses: {
+    201: jsonDoc("An entry per host.", OutOfOfficeList),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const listOutOfOfficeRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office",
+  operationId: "listSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "List out of office entries",
+  description: "The environment's entries, newest first.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { query: ListOutOfOfficeQuery },
+  responses: {
+    200: jsonDoc("A page of entries.", OutOfOfficeList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const getOutOfOfficeRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "getSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Retrieve an out of office entry",
+  description: "One entry.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: OutOfOfficeParams },
+  responses: { 200: jsonDoc("The entry.", OutOfOfficeObject), ...commonErrors, 404: notFound },
+});
+
+export const updateOutOfOfficeRoute = createRoute({
+  method: "patch",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "updateSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Update an out of office entry",
+  description: "Changes what's given. An entry stays with its host.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PATCH /v1/scheduling/out_of_office/{id}"),
+  request: {
+    params: OutOfOfficeParams,
+    body: { required: true, content: { "application/json": { schema: UpdateOutOfOfficeRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The entry.", OutOfOfficeObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const putOutOfOfficeRoute = createRoute({
+  method: "put",
+  path: "/scheduling/out_of_office/by_external_id/{external_id}",
+  operationId: "putSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Create or replace an entry by your own id",
+  description:
+    "For syncing from a system of record such as an HR tool: send what it says, as often as you " +
+    "like, and there's one entry for it. Give every field you want to keep.",
+  security: [{ bearerAuth: [] }],
+  middleware: writing("update", "PUT /v1/scheduling/out_of_office/by_external_id/{external_id}"),
+  request: {
+    params: ExternalOutOfOfficeParams,
+    body: { required: true, content: { "application/json": { schema: PutOutOfOfficeRequest } } },
+  },
+  responses: {
+    200: jsonDoc("The entry, replaced.", OutOfOfficeObject),
+    201: jsonDoc("The entry, new.", OutOfOfficeObject),
+    ...commonErrors,
+    ...bodyErrors,
+    404: notFound,
+    422: invalid,
+  },
+});
+
+export const deleteOutOfOfficeRoute = createRoute({
+  method: "delete",
+  path: "/scheduling/out_of_office/{id}",
+  operationId: "deleteSchedulingOutOfOffice",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "Delete an out of office entry",
+  description: "The host can be booked in that time again, and any calendar event for it goes.",
+  security: [{ bearerAuth: [] }],
+  middleware: acting("delete"),
+  request: { params: OutOfOfficeParams },
+  responses: { 200: jsonDoc("Deleted.", DeletedOutOfOffice), ...commonErrors, 404: notFound },
+});
+
+export const listOutOfOfficeConflictsRoute = createRoute({
+  method: "get",
+  path: "/scheduling/out_of_office/{id}/conflicts",
+  operationId: "listSchedulingOutOfOfficeConflicts",
+  tags: [TAG_OUT_OF_OFFICE],
+  summary: "List an entry's conflicts",
+  description:
+    "Live bookings of the host that fall in the entry, soonest first. Entries never change them.",
+  security: [{ bearerAuth: [] }],
+  middleware: read(),
+  request: { params: OutOfOfficeParams, query: ConflictsQuery },
+  responses: {
+    200: jsonDoc("The bookings.", OutOfOfficeConflictList),
+    ...commonErrors,
+    404: notFound,
+    422: invalid,
   },
 });
 
@@ -1548,6 +2116,247 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
       target: { type: "scheduling_host", id },
     });
     return c.json({ object: "scheduling.host" as const, id, deleted: true as const }, 200);
+  });
+
+  router.openapi(reassignBookingRoute, async (c) => {
+    const booking = await reassignBooking(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_booking.reassigned",
+      target: { type: "scheduling_booking", id: booking.id },
+    });
+    return c.json(booking, 200);
+  });
+
+  router.openapi(listReassignCandidatesRoute, async (c) => {
+    const query = c.req.valid("query");
+    const fromHost = query.from_host
+      ? (await resolveHost(db, c.var.auth, query.from_host)).id
+      : undefined;
+    const page = await listReassignCandidates(
+      c.var.auth,
+      c.req.valid("param").id,
+      { fromHost },
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(previewReassignmentRoute, async (c) =>
+    c.json(await previewReassignment(c.var.auth, c.req.valid("json"), deps), 200),
+  );
+
+  router.openapi(
+    createReassignmentRoute,
+    async (c) => {
+      const { reassignment, replayed } = await createReassignment(
+        c.var.auth,
+        c.req.valid("json"),
+        deps,
+        actorOf(c.var.auth),
+        { idempotencyKey: c.req.valid("header")["Idempotency-Key"] },
+      );
+      if (replayed) c.header("Idempotent-Replayed", "true");
+      else {
+        await recordApiAudit(c, {
+          action: "scheduling_reassignment.created",
+          target: { type: "scheduling_reassignment", id: reassignment.id },
+        });
+      }
+      return c.json(reassignment, 202);
+    },
+    (result) => {
+      idempotencyHook(result);
+    },
+  );
+
+  router.openapi(listReassignmentsRoute, async (c) => {
+    const page = await listReassignments(c.var.auth, c.req.valid("query"));
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getReassignmentRoute, async (c) =>
+    c.json(await getReassignment(c.var.auth, c.req.valid("param").id), 200),
+  );
+
+  router.openapi(listReassignmentItemsRoute, async (c) => {
+    const page = await listReassignmentItems(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(cancelReassignmentRoute, async (c) => {
+    const reassignment = await cancelReassignment(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_reassignment.cancelled",
+      target: { type: "scheduling_reassignment", id: reassignment.id },
+    });
+    return c.json(reassignment, 200);
+  });
+
+  router.openapi(undoReassignmentRoute, async (c) => {
+    const reassignment = await undoReassignment(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_reassignment.undone",
+      target: { type: "scheduling_reassignment", id: reassignment.id },
+    });
+    return c.json(reassignment, 202);
+  });
+
+  router.openapi(createHolidayCalendarRoute, async (c) => {
+    await requireMovingBookings(c, c.req.valid("json").existing_bookings);
+    const calendar = await createHolidayCalendar(c.var.auth, c.req.valid("json"), deps);
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.created",
+      target: { type: "scheduling_holiday_calendar", id: calendar.id },
+    });
+    return c.json(calendar, 201);
+  });
+
+  router.openapi(listHolidayCalendarsRoute, async (c) => {
+    const page = await listHolidayCalendars(c.var.auth);
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getHolidayCalendarRoute, async (c) =>
+    c.json(await getHolidayCalendar(c.var.auth, c.req.valid("param").id), 200),
+  );
+
+  router.openapi(listHolidaysRoute, async (c) =>
+    c.json(
+      {
+        object: "list" as const,
+        data: await listHolidays(c.var.auth, c.req.valid("param").id, deps),
+        has_more: false,
+      },
+      200,
+    ),
+  );
+
+  router.openapi(updateHolidayCalendarRoute, async (c) => {
+    const calendar = await updateHolidayCalendar(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.updated",
+      target: { type: "scheduling_holiday_calendar", id: calendar.id },
+    });
+    return c.json(calendar, 200);
+  });
+
+  router.openapi(deleteHolidayCalendarRoute, async (c) => {
+    const removed = await deleteHolidayCalendar(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_holiday_calendar.deleted",
+      target: { type: "scheduling_holiday_calendar", id: removed.id },
+    });
+    return c.json(removed, 200);
+  });
+
+  router.openapi(createOutOfOfficeRoute, async (c) => {
+    await requireMovingBookings(c, c.req.valid("json").existing_bookings);
+    const data = await createOutOfOffice(
+      c.var.auth,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+      "api",
+    );
+    for (const entry of data) {
+      await recordApiAudit(c, {
+        action: "scheduling_out_of_office.created",
+        target: { type: "scheduling_out_of_office", id: entry.id },
+      });
+    }
+    return c.json({ object: "list" as const, data, has_more: false }, 201);
+  });
+
+  router.openapi(listOutOfOfficeRoute, async (c) => {
+    const query = c.req.valid("query");
+    const host = query.host ? await resolveHost(db, c.var.auth, query.host) : null;
+    const page = await listOutOfOffice(
+      c.var.auth,
+      {
+        hostIds: host ? [host.id] : undefined,
+        fromMs: query.start_after ? instant(query.start_after, "start_after") : undefined,
+        toMs: query.start_before ? instant(query.start_before, "start_before") : undefined,
+        group: query.group,
+        limit: query.limit,
+        after: query.after,
+      },
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
+  });
+
+  router.openapi(getOutOfOfficeRoute, async (c) =>
+    c.json(await getOutOfOffice(c.var.auth, c.req.valid("param").id, deps), 200),
+  );
+
+  router.openapi(updateOutOfOfficeRoute, async (c) => {
+    const entry = await updateOutOfOffice(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: "scheduling_out_of_office.updated",
+      target: { type: "scheduling_out_of_office", id: entry.id },
+    });
+    return c.json(entry, 200);
+  });
+
+  router.openapi(putOutOfOfficeRoute, async (c) => {
+    const { entry, created } = await putOutOfOffice(
+      c.var.auth,
+      c.req.valid("param").external_id,
+      c.req.valid("json"),
+      deps,
+      actorOf(c.var.auth),
+    );
+    await recordApiAudit(c, {
+      action: created ? "scheduling_out_of_office.created" : "scheduling_out_of_office.updated",
+      target: { type: "scheduling_out_of_office", id: entry.id },
+    });
+    return created ? c.json(entry, 201) : c.json(entry, 200);
+  });
+
+  router.openapi(deleteOutOfOfficeRoute, async (c) => {
+    const { id } = await deleteOutOfOffice(c.var.auth, c.req.valid("param").id, deps);
+    await recordApiAudit(c, {
+      action: "scheduling_out_of_office.deleted",
+      target: { type: "scheduling_out_of_office", id },
+    });
+    return c.json({ object: "scheduling.out_of_office" as const, id, deleted: true as const }, 200);
+  });
+
+  router.openapi(listOutOfOfficeConflictsRoute, async (c) => {
+    const page = await listOutOfOfficeConflicts(
+      c.var.auth,
+      c.req.valid("param").id,
+      c.req.valid("query"),
+      deps,
+    );
+    return c.json({ object: "list" as const, data: page.data, has_more: page.hasMore }, 200);
   });
 
   router.openapi(createScheduleRoute, async (c) =>
@@ -2124,6 +2933,20 @@ export function createSchedulingRoutes(configured: SchedulingDeps | null): OpenA
     token: session.token,
     url: session.url,
     expires_at: session.expiresAt.toISOString(),
+  });
+
+  router.openapi(createManagerSessionRoute, async (c) => {
+    const body = c.req.valid("json");
+    const session = await createManagerSession(c.var.auth, {
+      plans: deps.plans,
+      hosts: body.hosts,
+      hostFilter: body.host_filter,
+      expiresIn: body.expires_in,
+      readOnly: body.read_only,
+      apiKeyId: c.var.auth.apiKeyId,
+      publicUrl: deps.publicUrl ?? null,
+    });
+    return c.json(sessionBody(session), 201);
   });
 
   router.openapi(createHostSessionRoute, async (c) => {

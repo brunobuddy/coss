@@ -4,20 +4,26 @@ import {
   approveBooking,
   type BookingActor,
   cancelBooking,
+  cancelReassignment,
   createBookerSession,
   createCalendarDelegation,
+  createDashboardSession,
   createEventType,
+  createHolidayCalendar,
   createHost,
   createHostSession,
   createManageSession,
   createSchedule,
   declineBooking,
   deleteCalendarDelegation,
+  deleteHolidayCalendar,
   deleteHost,
+  deleteOutOfOffice,
   getEventType,
   getHost,
   markNoShow,
   SchedulingError,
+  undoReassignment,
   updateCalendarDelegation,
   updateEventType,
   updateHost,
@@ -26,8 +32,11 @@ import {
 } from "@coss/scheduling";
 import { LOGO_MAX_BYTES } from "@coss/scheduling/branding";
 import {
+  CreateHolidayCalendarRequest,
   EVENT_TYPE_KINDS,
+  type ReassignmentObjectOutput,
   Reminders,
+  UndoReassignmentRequest,
   UpdateEventTypeRequest,
   UpdateHostLocationsRequest,
   UpdateHostRequest,
@@ -293,6 +302,110 @@ export async function createHostAction(
   });
 }
 
+export async function cancelReassignmentAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const row = await friendly(() =>
+      cancelReassignment(env, formString(formData, "reassignmentId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_reassignment.cancelled", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function undoReassignmentAction(
+  _prev: ActionResult<ReassignmentObjectOutput> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const parsed = UndoReassignmentRequest.safeParse({
+      notify: { attendees: formData.get("notifyAttendees") === "on" },
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const row = await friendly(() =>
+      undoReassignment(
+        env,
+        formString(formData, "reassignmentId"),
+        parsed.data,
+        configuredDeps(),
+        actorOf(context),
+      ),
+    );
+    await audit(context, "scheduling_reassignment.undone", {
+      type: "scheduling_reassignment",
+      id: row.id,
+    });
+    refresh();
+    return row;
+  });
+}
+
+export async function createHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "create");
+    const hosts = formData.getAll("hostId").map(String);
+    if (hosts.length === 0) throw new ActionError("Choose at least one host.");
+    const country = formString(formData, "country");
+    const icsUrl = formString(formData, "icsUrl");
+    const parsed = CreateHolidayCalendarRequest.safeParse({
+      name: formString(formData, "name"),
+      ...(icsUrl ? { ics_url: icsUrl } : { country }),
+      hosts,
+      delegates: formData.getAll("delegateId").map(String),
+      existing_bookings: formData.get("moveBookings") === "on" ? "reassign" : "leave",
+    });
+    if (!parsed.success) throw new ActionError("That doesn't look right. Please try again.");
+    const calendar = await friendly(() =>
+      // A feed's address can hold a token, so it's encrypted with what calendars' credentials are.
+      createHolidayCalendar(env, parsed.data, {
+        ...configuredDeps(),
+        calendars: schedulingCalendarDeps(),
+      }),
+    );
+    await audit(context, "scheduling_holiday_calendar.created", {
+      type: "scheduling_holiday_calendar",
+      id: calendar.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteHolidayCalendarAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const removed = await friendly(() =>
+      deleteHolidayCalendar(env, formString(formData, "calendarId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_holiday_calendar.deleted", {
+      type: "scheduling_holiday_calendar",
+      id: removed.id,
+    });
+    refresh();
+    return null;
+  });
+}
+
+export async function deleteOutOfOfficeAction(_prev: ActionResult | null, formData: FormData) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "delete");
+    const { id } = await friendly(() =>
+      deleteOutOfOffice(env, formString(formData, "entryId"), configuredDeps()),
+    );
+    await audit(context, "scheduling_out_of_office.deleted", {
+      type: "scheduling_out_of_office",
+      id,
+    });
+    refresh();
+    return null;
+  });
+}
+
 export async function setHostStatusAction(_prev: ActionResult | null, formData: FormData) {
   return runAction(async () => {
     const { context, env } = await contextFor(formData, "update");
@@ -455,6 +568,39 @@ export async function openBookingManagerAction(
       }),
     );
     return { url: session.url as string };
+  });
+}
+
+/**
+ * Who's away and moving bookings, across this environment. That means knowing who's free and what
+ * time a date means, which only runs in the API (`packages/scheduling/AGENTS.md`, "Slots"), so the
+ * dashboard opens the page that calls it. Worth a line in the audit log, since it reaches every host.
+ */
+export async function openTeamPageAction(
+  _prev: ActionResult<{ url: string }> | null,
+  formData: FormData,
+) {
+  return runAction(async () => {
+    const { context, env } = await contextFor(formData, "update");
+    const publicUrl = publicUrlOrThrow();
+    const session = await friendly(() =>
+      createDashboardSession(env, { createdByUserId: context.session.user.id, publicUrl }),
+    );
+    await audit(context, "scheduling_team_page.opened", {
+      type: "environment",
+      id: env.environmentId,
+    });
+    const focus = new URLSearchParams();
+    for (const [name, param] of [
+      ["tab", "tab"],
+      ["bookingId", "booking"],
+      ["outOfOfficeId", "out_of_office"],
+    ] as const) {
+      const value = formString(formData, name);
+      if (value) focus.set(param, value);
+    }
+    const [page, token] = (session.url as string).split("#");
+    return { url: `${page}${focus.size > 0 ? `?${focus}` : ""}#${token}` };
   });
 }
 
@@ -704,6 +850,8 @@ export async function saveSettingsAction(_prev: ActionResult | null, formData: F
           sms_from: smsFrom || null,
           calendar_failure_mode:
             formString(formData, "calendarFailureMode") === "last_known" ? "last_known" : "hide",
+          host_reassignment: formData.get("hostReassignment") === "on" ? "eligible" : "off",
+          name_host_in_attendee_emails: formData.get("nameHostInAttendeeEmails") === "on",
         },
         {
           screen: configuredDeps().screenSetup,

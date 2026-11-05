@@ -80,12 +80,19 @@ const secret = endpoint?.secret;
 | `scheduling.booking.external_conflict` | Something else landed on a booked time, or the host changed the event on their calendar |
 | `scheduling.booking.calendar_write_failed` | A booking couldn't be written to the host's calendar. It still stands |
 | `scheduling.booking.location_ready` | A booking's meeting link is ready |
+| `scheduling.booking.reassigned` | A booking went to [another host](/docs/scheduling/reassigning) (`data.previous_host_ids`) |
+| `scheduling.reassignment.completed` | [Many bookings](/docs/scheduling/reassigning#many-at-once) finished moving, or that was cancelled (`data.counts`) |
 | `scheduling.booking.started` | A confirmed booking's start time arrived. It doesn't mean anyone joined |
 | `scheduling.booking.ended` | A confirmed booking's end time arrived |
 | `scheduling.booking.reminder` | A [reminder](/docs/scheduling/reminders#webhooks-at-any-moment) you timed came due (`data.reminder`) |
 | `scheduling.calendar.connected` | A host [connected a calendar](/docs/scheduling/calendars) |
 | `scheduling.calendar.needs_reauth` | A host's calendar lost access: they aren't offered until it's back |
 | `scheduling.calendar.disconnected` | A host disconnected a calendar |
+| `scheduling.out_of_office.created` | A host was [marked as away](/docs/scheduling/out-of-office). Ids and times only: never why |
+| `scheduling.out_of_office.updated` | A host's time away changed |
+| `scheduling.out_of_office.deleted` | A host's time away was removed |
+| `scheduling.out_of_office.started` | A host's time away began |
+| `scheduling.out_of_office.ended` | A host's time away ended |
 | `risk.assessment.review` | A [risk assessment](/docs/risk) decided `review`        |
 | `risk.assessment.reviewed` | Feedback resolved a `review`                          |
 | `hook_endpoint.disabled` | coss.com disabled one of your [Hooks](/docs/hooks/delivery#failing-endpoints-are-disabled) applications' endpoints after its deliveries failed for 5 days |

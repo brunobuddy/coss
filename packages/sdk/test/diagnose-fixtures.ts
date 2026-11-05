@@ -349,6 +349,7 @@ export function schedulingEventType(
     limits: [],
     capacity: null,
     requires_approval: false,
+    reassignment_enabled: true,
     approval_ttl_minutes: 60,
     hold_ttl_seconds: 600,
     cancel_notice_minutes: 0,

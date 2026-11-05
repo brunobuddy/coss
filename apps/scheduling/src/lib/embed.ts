@@ -13,6 +13,7 @@ export type EmbedMessage =
   | { type: "cancelled"; booking_id: string }
   | { type: "availability_saved" }
   | { type: "calendar_connected" }
+  | { type: "reassignment_started"; reassignment_id: string }
   | { type: "error"; code: string; message: string }
   | { type: "resize"; height: number };
 

@@ -157,6 +157,9 @@ export const PRODUCTS: readonly Product[] = [
     pages: [
       { label: "Bookings", path: "/scheduling", exact: true },
       { label: "Hosts", path: "/scheduling/hosts" },
+      { label: "Out of office", path: "/scheduling/out-of-office" },
+      { label: "Holidays", path: "/scheduling/holidays" },
+      { label: "Reassignments", path: "/scheduling/reassignments" },
       { label: "Event types", path: "/scheduling/event-types" },
       { label: "Reminders", path: "/scheduling/reminders" },
       { label: "Calendar delegation", path: "/scheduling/calendar-delegation" },

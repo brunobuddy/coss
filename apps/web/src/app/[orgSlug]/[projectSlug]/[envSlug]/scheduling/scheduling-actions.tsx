@@ -36,8 +36,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@coss/ui/components/select";
+import { Switch } from "@coss/ui/components/switch";
 import { Textarea } from "@coss/ui/components/textarea";
-import { CalendarClockIcon, CalendarPlusIcon, MapPinIcon, UserRoundIcon } from "lucide-react";
+import {
+  CalendarClockIcon,
+  CalendarPlusIcon,
+  MapPinIcon,
+  PalmtreeIcon,
+  UserRoundIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { DialogIcon } from "@/components/dialog-icon";
@@ -48,17 +55,23 @@ import { useActionToast } from "@/lib/toast";
 import {
   approveBookingAction,
   cancelBookingAction,
+  cancelReassignmentAction,
   createEventTypeAction,
+  createHolidayCalendarAction,
   createHostAction,
   declineBookingAction,
+  deleteHolidayCalendarAction,
   deleteHostAction,
+  deleteOutOfOfficeAction,
   markNoShowAction,
   openBookerAction,
   openBookingManagerAction,
   openHostPortalAction,
+  openTeamPageAction,
   saveSettingsAction,
   setEventTypeStatusAction,
   setHostStatusAction,
+  undoReassignmentAction,
   updateHostAction,
   updateHostLocationsAction,
 } from "./actions";
@@ -255,6 +268,29 @@ export function NewBookingDialog(
         </form>
       </DialogPopup>
     </Dialog>
+  );
+}
+
+/** The team page, in a tab of its own, for marking time away and moving bookings. */
+export function OpenTeamPageButton(
+  props: EnvTarget & {
+    label: string;
+    tab?: "cover" | "away";
+    bookingId?: string;
+    outOfOfficeId?: string;
+    variant?: "default" | "outline" | "ghost";
+  },
+) {
+  const { label, variant = "outline", ...rest } = props;
+  const [state, formAction, pending] = useActionToast(openTeamPageAction, { errors: "toast" });
+  const openTab = useOpensHostedPage(state, pending);
+  return (
+    <form action={formAction} onSubmit={openTab}>
+      <Hidden {...rest} />
+      <Button disabled={pending} size="sm" type="submit" variant={variant}>
+        {label}
+      </Button>
+    </form>
   );
 }
 
@@ -533,6 +569,236 @@ export function DeleteHostButton(
             <AlertDialogClose render={<Button variant="ghost" />}>Keep</AlertDialogClose>
             <Button disabled={pending} type="submit" variant="destructive">
               Delete host
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+export function CancelReassignmentButton(props: EnvTarget & { reassignmentId: string }) {
+  const [, formAction, pending] = useActionToast(cancelReassignmentAction, {
+    success: "Reassignment cancelled",
+    errors: "toast",
+  });
+  return (
+    <form action={formAction}>
+      <Hidden {...props} />
+      <Button disabled={pending} size="sm" type="submit" variant="outline">
+        Cancel the rest
+      </Button>
+    </form>
+  );
+}
+
+export function UndoReassignmentDialog(
+  props: EnvTarget & { reassignmentId: string; moved: number; runsPath: string },
+) {
+  const { moved, runsPath, ...hidden } = props;
+  const router = useRouter();
+  const [state, formAction, pending] = useActionToast(undoReassignmentAction, {
+    success: "Giving bookings back",
+  });
+  useEffect(() => {
+    if (state?.ok) router.push(`${runsPath}/${state.data.id}`);
+  }, [state, router, runsPath]);
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="outline" />}>Undo</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...hidden} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Give back {moved} {moved === 1 ? "booking" : "bookings"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Each goes back to who had it, if they're still free. One that's moved on since stays
+              where it went. Each host hears once.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-3 px-6">
+            <Label className="font-normal">
+              <Checkbox defaultChecked name="notifyAttendees" />
+              Tell attendees
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep them</AlertDialogClose>
+            <Button disabled={pending} type="submit">
+              Give them back
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+export function NewHolidayCalendarDialog(
+  props: EnvTarget & {
+    hosts: readonly { id: string; name: string }[];
+    countries: readonly { value: string; label: string }[];
+    feedsAllowed: boolean;
+  },
+) {
+  const { hosts, countries, feedsAllowed, ...target } = props;
+  const [state, formAction, pending] = useActionToast(createHolidayCalendarAction, {
+    success: "Holiday calendar added",
+  });
+  const [open, setOpen] = useState(false);
+  const [useFeed, setUseFeed] = useState(false);
+  useEffect(() => {
+    if (state?.ok) setOpen(false);
+  }, [state]);
+  return (
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger render={<Button size="sm" />}>Add holidays</DialogTrigger>
+      <DialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...target} />
+          <DialogHeader>
+            <DialogIcon icon={PalmtreeIcon} />
+            <DialogTitle>Add a holiday calendar</DialogTitle>
+            <DialogDescription>
+              They won't be offered on those days, and it's kept up to date from now on.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogPanel className="flex flex-col gap-4">
+            <Field>
+              <FieldLabel>Name</FieldLabel>
+              <Input maxLength={200} name="name" required />
+            </Field>
+            {feedsAllowed ? (
+              <Label className="font-normal">
+                <Switch checked={useFeed} onCheckedChange={setUseFeed} />
+                Use my own feed
+              </Label>
+            ) : null}
+            {useFeed ? (
+              <Field>
+                <FieldLabel>Feed URL</FieldLabel>
+                <Input name="icsUrl" placeholder="https://example.com/holidays.ics" required />
+                <FieldDescription>
+                  Stored encrypted, and not shown again. Only whole-day events count.
+                </FieldDescription>
+              </Field>
+            ) : (
+              <Field>
+                <FieldLabel>Country</FieldLabel>
+                <Select items={[...countries]} name="country" required>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose one" />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    {countries.map((country) => (
+                      <SelectItem key={country.value} value={country.value}>
+                        {country.label}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </Select>
+              </Field>
+            )}
+            <Field>
+              <FieldLabel>Hosts</FieldLabel>
+              <div className="flex max-h-32 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="hostId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+              <FieldDescription>
+                To apply it to everyone with some attribute, use the API.
+              </FieldDescription>
+            </Field>
+            <Field>
+              <FieldLabel>Who covers</FieldLabel>
+              <div className="flex max-h-24 w-full flex-col gap-2 overflow-y-auto rounded-lg border p-3">
+                {hosts.map((host) => (
+                  <Label className="font-normal" key={host.id}>
+                    <Checkbox name="delegateId" value={host.id} />
+                    {host.name}
+                  </Label>
+                ))}
+              </div>
+            </Field>
+            <Label className="font-normal">
+              <Checkbox name="moveBookings" />
+              Move bookings already on those days to whoever's free
+            </Label>
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </DialogPanel>
+          <DialogFooter>
+            <DialogClose render={<Button variant="ghost" />}>Cancel</DialogClose>
+            <Button disabled={pending} type="submit">
+              Add
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
+export function DeleteHolidayCalendarButton(props: EnvTarget & { calendarId: string }) {
+  const [state, formAction, pending] = useActionToast(deleteHolidayCalendarAction, {
+    success: "Holiday calendar removed",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Remove</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this calendar?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Its hosts can be booked on its days again, shortly.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Remove
+            </Button>
+          </AlertDialogFooter>
+        </form>
+      </AlertDialogPopup>
+    </AlertDialog>
+  );
+}
+
+export function DeleteOutOfOfficeButton(props: EnvTarget & { entryId: string }) {
+  const [state, formAction, pending] = useActionToast(deleteOutOfOfficeAction, {
+    success: "Time off removed",
+  });
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Remove</AlertDialogTrigger>
+      <AlertDialogPopup>
+        <form action={formAction} className="contents">
+          <Hidden {...props} />
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this time off?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They can be booked during it again, and any event it put on their calendar goes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="px-6">
+            {state && !state.ok ? <FormError message={state.error} /> : null}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogClose render={<Button variant="ghost" />}>Keep it</AlertDialogClose>
+            <Button disabled={pending} type="submit" variant="destructive">
+              Remove
             </Button>
           </AlertDialogFooter>
         </form>
@@ -868,6 +1134,8 @@ export function SettingsForm(
       email_reply_to: string | null;
       sms_from: string | null;
       calendar_failure_mode: "hide" | "last_known";
+      host_reassignment: "off" | "eligible";
+      name_host_in_attendee_emails: boolean;
     };
   },
 ) {
@@ -931,6 +1199,20 @@ export function SettingsForm(
             </Label>
           </RadioGroup>
         </div>
+        <Label className="font-normal">
+          <Switch
+            defaultChecked={settings.host_reassignment === "eligible"}
+            name="hostReassignment"
+          />
+          Let hosts give their own bookings to someone free who takes that event type
+        </Label>
+        <Label className="font-normal">
+          <Switch
+            defaultChecked={settings.name_host_in_attendee_emails}
+            name="nameHostInAttendeeEmails"
+          />
+          Name the new host when telling an attendee their booking has one
+        </Label>
         {state && !state.ok ? <FormError message={state.error} /> : null}
         <div>
           <Button disabled={pending || !canEdit} type="submit">

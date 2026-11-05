@@ -230,19 +230,35 @@ import type {
   CreateCalendarDelegationRequest,
   CreateEventTypeRequest,
   CreateHoldRequest,
+  CreateHolidayCalendarRequest,
   CreateHostRequest,
+  CreateOutOfOfficeRequest,
+  CreateReassignmentRequest,
   CreateSeriesRequest,
   EraseAttendeeByEmailRequest,
   ErasedAttendee,
   ErasedAttendeeByEmail,
   EventTypeObject,
   ExplainSlotQuery,
+  HolidayCalendarObject,
   HostObject,
+  ListOutOfOfficeQuery,
+  OutOfOfficeConflict,
+  OutOfOfficeObject,
+  PreviewReassignmentRequest,
+  PutOutOfOfficeRequest,
+  ReassignBookingRequest,
+  ReassignCandidate,
+  ReassignmentItemObject,
+  ReassignmentObject,
+  ReassignmentPreview,
   RescheduleBookingRequest,
   ScheduleObject,
   SchedulingBookingWebhookEvent,
   SchedulingCalendarDelegationWebhookEvent,
   SchedulingCalendarWebhookEvent,
+  SchedulingOutOfOfficeWebhookEvent,
+  SchedulingReassignmentWebhookEvent,
   SeriesPreview,
   SeriesResult,
   SetSimulatedBusyRequest,
@@ -250,11 +266,14 @@ import type {
   SlotExplanation,
   SlotList,
   SlotsQuery,
+  UndoReassignmentRequest,
   UpdateBookingLocationRequest,
   UpdateCalendarDelegationRequest,
   UpdateCalendarRequest,
   UpdateEventTypeRequest,
+  UpdateHolidayCalendarRequest,
   UpdateHostRequest,
+  UpdateOutOfOfficeRequest,
   UpdateSettingsRequest,
   UpsertScheduleRequest,
   VerifyCalendarDelegationRequest,
@@ -319,7 +338,10 @@ import type {
   CreateSchedulingCalendarDelegationParams,
   CreateSchedulingEventTypeParams,
   CreateSchedulingHoldParams,
+  CreateSchedulingHolidayCalendarParams,
   CreateSchedulingHostParams,
+  CreateSchedulingOutOfOfficeParams,
+  CreateSchedulingReassignmentParams,
   CreateSchedulingSeriesParams,
   CreateSegmentParams,
   CreateSubaccountParams,
@@ -353,6 +375,7 @@ import type {
   ListReceivedEmailsParams,
   ListRiskAssessmentsParams,
   ListRiskListEntriesParams,
+  ListSchedulingOutOfOfficeParams,
   ListSchedulingSlotsParams,
   ListSubaccountsParams,
   ListSuppressionsParams,
@@ -365,7 +388,10 @@ import type {
   LogDrainLine,
   LogDrainSource,
   PollWebhookListenerParams,
+  PreviewSchedulingReassignmentParams,
   PublishEmailTemplateParams,
+  PutSchedulingOutOfOfficeParams,
+  ReassignSchedulingBookingParams,
   RecoverWebhookEndpointParams,
   RenderEmailTemplateParams,
   RescheduleEmailParams,
@@ -383,7 +409,14 @@ import type {
   SchedulingCalendarDelegation,
   SchedulingCancelledSeries,
   SchedulingEventType,
+  SchedulingHolidayCalendar,
   SchedulingHost,
+  SchedulingOutOfOffice,
+  SchedulingOutOfOfficeConflict,
+  SchedulingReassignCandidate,
+  SchedulingReassignment,
+  SchedulingReassignmentItem,
+  SchedulingReassignmentPreview,
   SchedulingSchedule,
   SchedulingSeries,
   SchedulingSeriesPreview,
@@ -502,6 +535,7 @@ import type {
   SubaccountStatsParams,
   TestBroadcastParams,
   TrackingOptions,
+  UndoSchedulingReassignmentParams,
   UpdateBroadcastParams,
   UpdateContactParams,
   UpdateContactPropertyParams,
@@ -518,7 +552,9 @@ import type {
   UpdateSchedulingCalendarDelegationParams,
   UpdateSchedulingCalendarParams,
   UpdateSchedulingEventTypeParams,
+  UpdateSchedulingHolidayCalendarParams,
   UpdateSchedulingHostParams,
+  UpdateSchedulingOutOfOfficeParams,
   UpdateSchedulingSettingsParams,
   UpdateSegmentParams,
   UpdateStorageSettingsParams,
@@ -780,7 +816,9 @@ export type Contract = [
       | z.output<typeof FormSubmissionWebhookEvent>
       | z.output<typeof SchedulingBookingWebhookEvent>
       | z.output<typeof SchedulingCalendarWebhookEvent>
-      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>,
+      | z.output<typeof SchedulingCalendarDelegationWebhookEvent>
+      | z.output<typeof SchedulingOutOfOfficeWebhookEvent>
+      | z.output<typeof SchedulingReassignmentWebhookEvent>,
       WebhookEvent
     >
   >,
@@ -1081,6 +1119,56 @@ export type SubaccountContract = [
   Assert<MutuallyAssignable<z.input<typeof CreateHostRequest>, CreateSchedulingHostParams>>,
   Assert<MutuallyAssignable<z.input<typeof UpdateHostRequest>, UpdateSchedulingHostParams>>,
   Assert<MutuallyAssignable<z.output<typeof HostObject>, SchedulingHost>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof CreateOutOfOfficeRequest>, CreateSchedulingOutOfOfficeParams>
+  >,
+  Assert<MutuallyAssignable<z.input<typeof PutOutOfOfficeRequest>, PutSchedulingOutOfOfficeParams>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof UpdateOutOfOfficeRequest>, UpdateSchedulingOutOfOfficeParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof OutOfOfficeObject>, SchedulingOutOfOffice>>,
+  Assert<
+    MutuallyAssignable<z.input<typeof ReassignBookingRequest>, ReassignSchedulingBookingParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof ReassignCandidate>, SchedulingReassignCandidate>>,
+  Assert<MutuallyAssignable<z.output<typeof OutOfOfficeConflict>, SchedulingOutOfOfficeConflict>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof PreviewReassignmentRequest>,
+      PreviewSchedulingReassignmentParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateReassignmentRequest>,
+      CreateSchedulingReassignmentParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<z.input<typeof UndoReassignmentRequest>, UndoSchedulingReassignmentParams>
+  >,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentObject>, SchedulingReassignment>>,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof CreateHolidayCalendarRequest>,
+      CreateSchedulingHolidayCalendarParams
+    >
+  >,
+  Assert<
+    MutuallyAssignable<
+      z.input<typeof UpdateHolidayCalendarRequest>,
+      UpdateSchedulingHolidayCalendarParams
+    >
+  >,
+  Assert<MutuallyAssignable<z.output<typeof HolidayCalendarObject>, SchedulingHolidayCalendar>>,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentItemObject>, SchedulingReassignmentItem>>,
+  Assert<MutuallyAssignable<z.output<typeof ReassignmentPreview>, SchedulingReassignmentPreview>>,
+  Assert<
+    MutuallyAssignable<
+      Omit<z.input<typeof ListOutOfOfficeQuery>, "limit">,
+      Omit<ListSchedulingOutOfOfficeParams, "limit">
+    >
+  >,
   Assert<MutuallyAssignable<z.input<typeof UpsertScheduleRequest>, UpsertSchedulingScheduleParams>>,
   Assert<MutuallyAssignable<z.output<typeof ScheduleObject>, SchedulingSchedule>>,
   Assert<

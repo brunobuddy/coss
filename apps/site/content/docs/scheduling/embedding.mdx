@@ -51,6 +51,20 @@ mountHostPortal({
 });
 ```
 
+A team lead gets a page of their own, for the hosts you name or everyone matching some attributes:
+
+```ts twoslash
+import { Coss } from "coss";
+const coss = new Coss();
+// ---cut---
+const { data: session } = await coss.scheduling.sessions.createForManager({
+  host_filter: { team: "cardiology" },
+});
+// Pass session?.url to the browser, or `mountTeamPortal` from `coss/scheduling`.
+```
+
+It shows who's away and bookings that need cover, and moves them, one at a time or [many at once](/docs/scheduling/reassigning#many-at-once). A filter's asked again on every request, so someone changing teams leaves the page's reach. It sees times, event types and hosts, never attendees' details. It only moves bookings between people it reaches, and a run from it says who each goes to, since "the fairest who's free" could be on another team. `read_only: true` makes it look but not touch.
+
 The page's origin must be in your settings' `allowed_origins`:
 
 ```ts twoslash

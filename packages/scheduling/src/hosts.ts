@@ -542,7 +542,7 @@ export async function deleteHost(
     if (await hasLiveBookings(tx, host)) {
       throw new SchedulingError(
         "host_has_live_bookings",
-        "This host has upcoming bookings or holds. Cancel them, or set the host's status to disabled.",
+        "This host has upcoming bookings or holds. Reassign them (POST /v1/scheduling/reassignments moves them all), cancel them, or set the host's status to disabled.",
       );
     }
     const [deleted] = await tx
