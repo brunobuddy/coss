@@ -9,6 +9,7 @@ import {
   TimePickerDialog,
   useNativeState,
 } from "@expo/ui/jetpack-compose";
+import { semantics } from "@expo/ui/jetpack-compose/modifiers";
 import { type ReactNode, useState } from "react";
 import { Text as RNText, ScrollView, StyleSheet, View } from "react-native";
 import { customFrom, ruleFrom, withAllDay, withEndDate, withStart } from "../editor/draft.ts";
@@ -22,6 +23,7 @@ import {
   FREQ_LABELS,
   FREQ_UNITS,
   WEEKDAY_LETTERS,
+  WEEKDAY_NAMES,
   withAddedAlert,
   withoutAlert,
   withReplacedAlert,
@@ -189,6 +191,7 @@ export function EventForm({
                 return (
                   <Host key={code} matchContents>
                     <TextButton
+                      modifiers={[semantics({ contentDescription: WEEKDAY_NAMES[i] })]}
                       onClick={() =>
                         setCustom({
                           byDay: on

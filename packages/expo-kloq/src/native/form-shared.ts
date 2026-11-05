@@ -29,6 +29,17 @@ export const FREQ_UNITS: Record<RRuleFreq, string> = {
 /** Sunday-first, like `WEEKDAY_CODES`. */
 export const WEEKDAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
+/** What a screen reader says for each letter, in the same order. */
+export const WEEKDAY_NAMES = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 /** kloq's reminder edits return `null` for a no-op (duplicate, full, unchanged); the forms keep the list then. */
 export function withAddedAlert(list: Reminder[]): Reminder[] {
   // the default first, then the next preset not already set

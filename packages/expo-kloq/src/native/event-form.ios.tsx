@@ -14,6 +14,7 @@ import {
 } from "@expo/ui/swift-ui";
 import {
   accessibilityIdentifier,
+  accessibilityLabel,
   buttonStyle,
   controlSize,
   datePickerStyle,
@@ -48,6 +49,7 @@ import {
   FREQ_LABELS,
   FREQ_UNITS,
   WEEKDAY_LETTERS,
+  WEEKDAY_NAMES,
   withAddedAlert,
   withoutAlert,
   withReplacedAlert,
@@ -255,7 +257,11 @@ function CustomRuleRows({
                   byDay: on ? [...custom.byDay, code] : custom.byDay.filter((d) => d !== code),
                 })
               }
-              modifiers={[toggleStyle("button"), controlSize("small")]}
+              modifiers={[
+                toggleStyle("button"),
+                controlSize("small"),
+                accessibilityLabel(WEEKDAY_NAMES[i]),
+              ]}
             />
           ))}
         </HStack>

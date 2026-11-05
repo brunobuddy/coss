@@ -91,7 +91,7 @@ appId: com.coss.kloq.example
 - runFlow: pause.yaml
 - tapOn: "Weekly"
 - runFlow: pause.yaml
-- tapOn: "W"
+- tapOn: "Wednesday"
 - runFlow: pause.yaml
 - tapOn: "Every week, Increment"
 - runFlow: pause.yaml

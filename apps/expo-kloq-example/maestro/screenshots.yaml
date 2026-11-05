@@ -51,7 +51,7 @@ appId: com.coss.kloq.example
 - takeScreenshot: 11-repeat-menu
 - tapOn: "Custom…"
 - tapOn: "Weekly"
-- tapOn: "W"
+- tapOn: "Wednesday"
 - waitForAnimationToEnd
 - takeScreenshot: 12-custom-recurrence
 - tapOn: "Cancel"
