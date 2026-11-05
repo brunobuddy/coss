@@ -714,11 +714,44 @@ describe("syncing", () => {
     await updateOutOfOffice(env, entry?.id as string, { delegates: [c.id] } as never, plain, {
       kind: "system",
     });
-    await db
-      .update(schema.schedulingHolidayCalendar)
-      .set({ settingsChangedAt: new Date("2020-01-01T00:00:00Z") })
-      .where(eq(schema.schedulingHolidayCalendar.id, created.id));
     await dueAgain(created.id);
+    await sync(env, transport);
+    expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([c.id]);
+  });
+
+  test("someone's change made after the settings changed stays too", async () => {
+    const env = await environment();
+    const [a, b, c, d] = [
+      await host(env, "A"),
+      await host(env, "B"),
+      await host(env, "C"),
+      await host(env, "D"),
+    ];
+    const created = await calendar(env, [a.id], { delegates: [b.id] });
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    await updateHolidayCalendar(env, created.id, { delegates: [c.id] } as never, plain);
+    const [entry] = await entriesOf(env, a.id);
+    await updateOutOfOffice(env, entry?.id as string, { delegates: [d.id] } as never, plain, {
+      kind: "system",
+    });
+    await sync(env, transport);
+    expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([d.id]);
+  });
+
+  test("an entry a sync wrote from old settings just after they changed still catches up", async () => {
+    const env = await environment();
+    const [a, b, c] = [await host(env, "A"), await host(env, "B"), await host(env, "C")];
+    const created = await calendar(env, [a.id], { delegates: [b.id] });
+    const { transport } = feed(ics(day("2031-01-05", "One")));
+    await sync(env, transport);
+    await updateHolidayCalendar(env, created.id, { delegates: [c.id] } as never, plain);
+    // What a sync already under way leaves behind: written later than the change, from before it.
+    const [entry] = await entriesOf(env, a.id);
+    await db
+      .update(schema.schedulingOutOfOffice)
+      .set({ updatedAt: new Date("2099-01-01T00:00:00Z") })
+      .where(eq(schema.schedulingOutOfOffice.id, entry?.id as string));
     await sync(env, transport);
     expect((await entriesOf(env, a.id))[0]?.delegates).toEqual([c.id]);
   });

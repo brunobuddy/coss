@@ -18,6 +18,7 @@ import { and, desc, eq, inArray, isNull, lte, or } from "drizzle-orm";
 import { getOrganizationApiVersion } from "./api-versions.ts";
 import { getEnvironmentById } from "./environments.ts";
 import { TenancyError } from "./errors.ts";
+import { isBanned } from "./organizations.ts";
 import type { EnvironmentMode } from "./types.ts";
 
 const {
@@ -712,11 +713,6 @@ export async function apiKeyHasPermissions(
   if (!row) return false;
   const owner = row.ownerUserId === null ? null : { role: row.ownerRole };
   return hasPermissions(effectiveKeyPermissions(row.access, row.permissions, owner), required);
-}
-
-/** Better Auth's admin ban: `banned`, until `banExpires` if set. */
-function isBanned(banned: boolean | null, banExpires: Date | null, now: Date): boolean {
-  return banned === true && (banExpires === null || banExpires.getTime() > now.getTime());
 }
 
 /**

@@ -320,6 +320,8 @@ export const schedulingOutOfOffice = pgTable(
     source: schedulingOutOfOfficeSource("source").notNull(),
     // A holiday calendar's: `<calendar>:<host>:<date>`. A deleted row keeps it, as a tombstone.
     sourceKey: text("source_key"),
+    // The calendar's `settings_revision` this was written from, or that someone edited it against.
+    sourceRevision: integer("source_revision"),
     externalId: text("external_id"),
     // One request across several hosts.
     groupId: text("group_id"),
@@ -1315,8 +1317,8 @@ export const schedulingHolidayCalendar = pgTable(
     existingBookings: schedulingOutOfOfficeExisting("existing_bookings").notNull().default("leave"),
     lastReadAt: instant("last_read_at"),
     lastError: text("last_error"),
-    // Not `updated_at`, which every sync moves: an entry newer than this is someone's own choice.
-    settingsChangedAt: instant("settings_changed_at").notNull().defaultNow(),
+    // Not `updated_at`, which every sync moves. Entries say which one they reflect (`source_revision`).
+    settingsRevision: integer("settings_revision").notNull().default(0),
     nextSyncAt: instant("next_sync_at").notNull().defaultNow(),
     leaseUntil: instant("lease_until"),
     deletedAt: instant("deleted_at"),

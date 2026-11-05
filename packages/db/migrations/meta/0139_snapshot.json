@@ -1,5 +1,5 @@
 {
-  "id": "66ae704d-4e3a-4281-8785-2d35f80bed43",
+  "id": "3f39bc05-a004-4202-b808-76f92b10d3e5",
   "prevId": "2ed64107-e951-4f97-a098-7dc59799ce96",
   "version": "7",
   "dialect": "postgresql",
@@ -23697,12 +23697,12 @@
           "primaryKey": false,
           "notNull": false
         },
-        "settings_changed_at": {
-          "name": "settings_changed_at",
-          "type": "timestamp with time zone",
+        "settings_revision": {
+          "name": "settings_revision",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true,
-          "default": "now()"
+          "default": 0
         },
         "next_sync_at": {
           "name": "next_sync_at",
@@ -24657,6 +24657,12 @@
         "source_key": {
           "name": "source_key",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_revision": {
+          "name": "source_revision",
+          "type": "integer",
           "primaryKey": false,
           "notNull": false
         },

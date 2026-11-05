@@ -86,9 +86,15 @@ const memberColumns = {
 };
 
 /** The user's membership in the organization with this slug, or `null` if they are not a member. */
+/** Better Auth's admin ban: `banned`, until `banExpires` if set. */
+export function isBanned(banned: boolean | null, banExpires: Date | null, now: Date): boolean {
+  return banned === true && (banExpires === null || banExpires.getTime() > now.getTime());
+}
+
 /**
  * Whether someone can still do this in an organization: for what a member started that outlives the
- * request, such as a team page open in another tab. Their role now, not when they started it.
+ * request, such as a team page open in another tab. Their role now, not when they started it, and a
+ * ban ends it as it ends their sessions.
  */
 export async function memberStillHolds(input: {
   organizationId: string;
@@ -96,15 +102,12 @@ export async function memberStillHolds(input: {
   permissions: OrgPermissions;
 }): Promise<boolean> {
   const [row] = await db
-    .select({ role: schema.member.role })
-    .from(schema.member)
-    .where(
-      and(
-        eq(schema.member.organizationId, input.organizationId),
-        eq(schema.member.userId, input.userId),
-      ),
-    );
-  return orgRoleCan(row?.role, input.permissions);
+    .select({ role: member.role, banned: user.banned, banExpires: user.banExpires })
+    .from(member)
+    .innerJoin(user, eq(user.id, member.userId))
+    .where(and(eq(member.organizationId, input.organizationId), eq(member.userId, input.userId)));
+  if (!row || isBanned(row.banned, row.banExpires, new Date())) return false;
+  return orgRoleCan(row.role, input.permissions);
 }
 
 export async function getMembership(input: {

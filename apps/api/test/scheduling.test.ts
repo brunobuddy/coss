@@ -1747,6 +1747,17 @@ describe("out of office", () => {
       expect((await hosts()).status).toBe(404);
       await setRole("admin");
       expect((await hosts()).status).toBe(200);
+      const ban = (until: Date | null) =>
+        pool.query('update "user" set banned = true, ban_expires = $1 where id = $2', [
+          until,
+          admin.id,
+        ]);
+      await ban(null);
+      expect((await hosts()).status).toBe(404);
+      await ban(new Date(Date.now() + 60_000));
+      expect((await hosts()).status).toBe(404);
+      await ban(new Date(Date.now() - 60_000));
+      expect((await hosts()).status).toBe(200);
       await pool.query("delete from member where user_id = $1 and organization_id = $2", ids);
       expect((await hosts()).status).toBe(404);
     });

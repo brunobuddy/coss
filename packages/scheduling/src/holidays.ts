@@ -10,7 +10,7 @@
  */
 import { db, type Executor, schema } from "@coss/db";
 import { decryptSecret, encryptSecret } from "@coss/webhooks";
-import { and, asc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNotNull, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import type { DavTransport } from "./calendar/caldav.ts";
 import { holidaysFromIcs, UnreadableCalendarData } from "./calendar/ical.ts";
 import { DAY_MS, localDateOf } from "./engine/time.ts";
@@ -219,7 +219,7 @@ export async function updateHolidayCalendar(
         : {}),
       // Who it covers may have changed, and that shouldn't wait for tomorrow.
       nextSyncAt: nowOf(deps),
-      settingsChangedAt: nowOf(deps),
+      settingsRevision: sql`${schedulingHolidayCalendar.settingsRevision} + 1`,
     })
     .where(
       and(
@@ -243,7 +243,7 @@ export async function deleteHolidayCalendar(
     .set({
       deletedAt: nowOf(deps),
       nextSyncAt: nowOf(deps),
-      settingsChangedAt: nowOf(deps),
+      settingsRevision: sql`${schedulingHolidayCalendar.settingsRevision} + 1`,
       encryptedIcsUrl: null,
     })
     .where(
@@ -492,7 +492,7 @@ async function reconcile(
       startDate: schedulingOutOfOffice.startDate,
       endAt: schedulingOutOfOffice.endAt,
       existingBookings: schedulingOutOfOffice.existingBookings,
-      updatedAt: schedulingOutOfOffice.updatedAt,
+      sourceRevision: schedulingOutOfOffice.sourceRevision,
     })
     .from(schedulingOutOfOffice)
     .where(
@@ -527,11 +527,12 @@ async function reconcile(
       );
     budget--;
   }
-  // The calendar's settings changed since this entry was: anything newer is someone's own choice.
+  // Written from other settings, even a moment ago by a sync that hadn't heard. An edit since the
+  // settings changed counts as made against them, so it's someone's own choice and stays.
   const stale = existing.filter(
     (entry) =>
       !entry.deletedAt &&
-      entry.updatedAt < row.settingsChangedAt &&
+      entry.sourceRevision !== row.settingsRevision &&
       wanted.has(entry.sourceKey as string) &&
       entry.endAt > now,
   );
@@ -552,6 +553,8 @@ async function reconcile(
       { delegates: want, existing_bookings: row.existingBookings },
       deps,
       { kind: "system" },
+      {},
+      { sourceRevision: row.settingsRevision },
     );
     budget--;
   }
@@ -571,7 +574,7 @@ async function reconcile(
       deps,
       { kind: "system" },
       "holiday",
-      { sourceKey: key },
+      { sourceKey: key, sourceRevision: row.settingsRevision },
     );
     budget--;
   }
@@ -598,7 +601,7 @@ async function syncOne(
   const stateOf = async (tx: Executor, lock: boolean) => {
     const query = tx
       .select({
-        settingsChangedAt: schedulingHolidayCalendar.settingsChangedAt,
+        settingsRevision: schedulingHolidayCalendar.settingsRevision,
         leaseUntil: schedulingHolidayCalendar.leaseUntil,
       })
       .from(schedulingHolidayCalendar)
@@ -607,7 +610,7 @@ async function syncOne(
     return {
       // Reading a feed can outlast the lease, and then someone newer has this.
       held: latest?.leaseUntil?.getTime() === row.leaseUntil?.getTime(),
-      unchanged: latest?.settingsChangedAt.getTime() === row.settingsChangedAt.getTime(),
+      unchanged: latest?.settingsRevision === row.settingsRevision,
     };
   };
   // A change made meanwhile asked to be looked at now, and that's not this sync's to put off.

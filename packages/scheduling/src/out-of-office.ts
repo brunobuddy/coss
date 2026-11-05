@@ -38,6 +38,7 @@ const {
   schedulingCalendarEvent,
   schedulingEventType,
   schedulingEventTypeHost,
+  schedulingHolidayCalendar,
   schedulingHost,
   schedulingNotification,
   schedulingOutOfOffice,
@@ -760,6 +761,7 @@ export async function createOutOfOffice(
     allowedDelegates?: readonly string[] | undefined;
     /** A holiday calendar's, which a deleted row keeps. */
     sourceKey?: string | undefined;
+    sourceRevision?: number | undefined;
   } = {},
 ): Promise<OutOfOfficeObjectOutput[]> {
   const hosts = await hostsOfRequest(env, params);
@@ -805,6 +807,7 @@ export async function createOutOfOffice(
             reassignStrategy,
             source,
             sourceKey: opts.sourceKey ?? null,
+            sourceRevision: opts.sourceRevision ?? null,
             externalId: params.external_id ?? null,
             groupId,
             actor,
@@ -988,6 +991,8 @@ export async function updateOutOfOffice(
      * in the way is reported, and moving it is its own step.
      */
     startsNoRun?: boolean | undefined;
+    /** A holiday calendar's sync: the settings this is from. Anyone else's edit goes by what's there. */
+    sourceRevision?: number | undefined;
   } = {},
 ): Promise<OutOfOfficeObjectOutput> {
   await checkReason(env, params.reason);
@@ -1016,6 +1021,24 @@ export async function updateOutOfOffice(
   return objectOf(db, row, deps);
 }
 
+/** Where a holiday calendar's settings stand, for an entry someone's just chosen to change. */
+async function calendarRevisionOf(
+  tx: Executor,
+  entry: Pick<OutOfOfficeRow, "organizationId" | "sourceKey">,
+): Promise<number | null> {
+  if (!entry.sourceKey) return null;
+  const [calendar] = await tx
+    .select({ revision: schedulingHolidayCalendar.settingsRevision })
+    .from(schedulingHolidayCalendar)
+    .where(
+      and(
+        eq(schedulingHolidayCalendar.id, entry.sourceKey.split(":")[0] as string),
+        eq(schedulingHolidayCalendar.organizationId, entry.organizationId),
+      ),
+    );
+  return calendar?.revision ?? null;
+}
+
 async function applyChange(
   tx: Transaction,
   env: SchedulingEnvironment,
@@ -1026,14 +1049,19 @@ async function applyChange(
   now: Date,
   strategy: ReassignmentStrategy | null | undefined,
   only: Only = {},
-  opts: { startsNoRun?: boolean | undefined } = {},
+  opts: { startsNoRun?: boolean | undefined; sourceRevision?: number | undefined } = {},
 ): Promise<OutOfOfficeRow> {
   const current = await entryRow(tx, env, id, only);
   const [host] = await hostsByIds(tx, env, [current.hostId]);
   if (!host) throw new SchedulingError("not_found", `No out of office entry "${id}".`);
+  const sourceRevision = opts.sourceRevision ?? (await calendarRevisionOf(tx, current));
   const [row] = await tx
     .update(schedulingOutOfOffice)
-    .set({ ...changesOf(current, host, params, keys, now, strategy), updatedAt: new Date() })
+    .set({
+      ...changesOf(current, host, params, keys, now, strategy),
+      ...(sourceRevision === null ? {} : { sourceRevision }),
+      updatedAt: new Date(),
+    })
     .where(
       and(
         eq(schedulingOutOfOffice.id, current.id),
