@@ -71,6 +71,43 @@ export function cossPolicies(
       ]
     : [];
 
+  // `/v1/domains` and the dashboard's domain pages run the same code (`SesIdentityProvider`), so
+  // both need the same permissions.
+  const manageDomains: PolicyDocument["Statement"] = [
+    {
+      Sid: "ManageCossTenants",
+      Effect: "Allow",
+      Action: ["ses:CreateTenant", "ses:GetTenant", "ses:TagResource"],
+      Resource: [tenants],
+    },
+    {
+      Sid: "AssociateTenantResources",
+      Effect: "Allow",
+      Action: ["ses:CreateTenantResourceAssociation", "ses:DeleteTenantResourceAssociation"],
+      Resource: [tenants, identities, ...configurationSets],
+    },
+    {
+      Sid: "InspectIdentities",
+      Effect: "Allow",
+      Action: ["ses:GetEmailIdentity", "ses:ListResourceTenants", "ses:ListTagsForResource"],
+      Resource: [identities],
+    },
+    {
+      Sid: "CreateTaggedIdentities",
+      Effect: "Allow",
+      Action: ["ses:CreateEmailIdentity", "ses:TagResource"],
+      Resource: [identities],
+      Condition: tagsNewResources,
+    },
+    {
+      Sid: "ChangeCossIdentities",
+      Effect: "Allow",
+      Action: ["ses:DeleteEmailIdentity", "ses:PutEmailIdentityMailFromAttributes"],
+      Resource: [identities],
+      Condition: managed,
+    },
+  ];
+
   return {
     api: {
       Version: "2012-10-17",
@@ -87,44 +124,14 @@ export function cossPolicies(
           Action: ["ses:SendEmail"],
           Resource: [...configurationSets, dedicatedSets],
         },
+        ...manageDomains,
         ...contentReads,
       ],
     },
     dashboard: {
       Version: "2012-10-17",
       Statement: [
-        {
-          Sid: "ManageCossTenants",
-          Effect: "Allow",
-          Action: ["ses:CreateTenant", "ses:GetTenant", "ses:TagResource"],
-          Resource: [tenants],
-        },
-        {
-          Sid: "AssociateTenantResources",
-          Effect: "Allow",
-          Action: ["ses:CreateTenantResourceAssociation", "ses:DeleteTenantResourceAssociation"],
-          Resource: [tenants, identities, ...configurationSets],
-        },
-        {
-          Sid: "InspectIdentities",
-          Effect: "Allow",
-          Action: ["ses:GetEmailIdentity", "ses:ListResourceTenants", "ses:ListTagsForResource"],
-          Resource: [identities],
-        },
-        {
-          Sid: "CreateTaggedIdentities",
-          Effect: "Allow",
-          Action: ["ses:CreateEmailIdentity", "ses:TagResource"],
-          Resource: [identities],
-          Condition: tagsNewResources,
-        },
-        {
-          Sid: "ChangeCossIdentities",
-          Effect: "Allow",
-          Action: ["ses:DeleteEmailIdentity", "ses:PutEmailIdentityMailFromAttributes"],
-          Resource: [identities],
-          Condition: managed,
-        },
+        ...manageDomains,
         ...contentReads,
         ...(bucket
           ? [
