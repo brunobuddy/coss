@@ -135,8 +135,8 @@ export const METERS = {
     dimensions: ["fee"],
     requires: "plan",
   },
-  // Sign: a signature request every signer signed, once its sealed document exists. Not priced yet:
-  // until a rate card prices it, invoices show the usage as an uncharged line.
+  // Sign: a signature request every signer signed, once its sealed document exists (live
+  // environments only).
   "sign.completed_requests": {
     product: "sign",
     label: "Signature requests",

@@ -112,7 +112,7 @@ const app = createApp({
         : null,
   },
   // Documents live in SIGN_DOCUMENTS_BUCKET; production without it has no Sign (never Postgres).
-  signService: signStore ? createSignService({ store: signStore }) : null,
+  signService: signStore ? createSignService({ store: signStore, billing: usage }) : null,
   billing: usage,
   links: { keys: linkKeys, baseUrl: trackingUrl },
   domainDeps: email.domainDeps,

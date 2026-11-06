@@ -3,6 +3,7 @@
  * with their signers and fields, in one transaction with the first events of their audit trail.
  * Reads return the latest shape (`SignRequestObject`).
  */
+import type { UsageGate } from "@coss/billing/gate";
 import { BUDGET_EXCEEDED_MESSAGES, budgetHoldFor, isOnBillingHold } from "@coss/billing/metering";
 import { db, type Executor, schema, type Transaction } from "@coss/db";
 import { ID_PREFIXES, isId, newId } from "@coss/db/id";
@@ -108,6 +109,10 @@ export type SignService = {
     input: Parameters<typeof uploadSignDocument>[1],
   ): Promise<SignDocumentObjectOutput>;
   deleteDocument(input: Parameters<typeof deleteSignDocument>[1]): Promise<void>;
+  /** `sendSignRequest`, under the plan's cap. */
+  send(input: Parameters<typeof sendSignRequest>[0]): Promise<SignRequestObjectOutput>;
+  /** `cancelSignRequest`, giving a sent request's reservation back. */
+  cancel(input: Parameters<typeof cancelSignRequest>[0]): Promise<SignRequestObjectOutput>;
   deleteRequest(input: Parameters<typeof deleteSignRequest>[1]): Promise<void>;
   createTemplate(
     input: Parameters<typeof createSignTemplate>[1],
@@ -119,6 +124,11 @@ export type SignService = {
 
 export type SignServiceOptions = {
   store: DocumentStore;
+  /**
+   * Capped plans' completed requests (`createUsageGate`): a live request reserves one when it is
+   * sent and gives it back if it is canceled. Without it, uncapped.
+   */
+  billing?: UsageGate | undefined;
   /** The clock, for tests. */
   now?: () => Date;
 };
@@ -371,6 +381,8 @@ async function transition(
     refused: (status: SignRequestStatus) => SignError;
     /** Throws when the locked row can't make this change after all. */
     check?: (row: { expiresAt: Date | null }) => void;
+    /** Runs in the change's transaction, after it (billing). */
+    after?: (tx: Transaction, before: SignRequestRow, sandbox: boolean) => Promise<void>;
   },
   now: Date,
 ): Promise<SignRequestObjectOutput> {
@@ -392,9 +404,12 @@ async function transition(
       { request: updated ?? row, sandbox },
       { type: change.event, actor: input.actor, occurredAt: now },
     );
+    await change.after?.(tx, row, sandbox);
   });
   return getSignRequest(input);
 }
+
+const SIGN_METER = "sign.completed_requests";
 
 /** A live request is usage once sealed, and its emails cost before that. */
 async function refuseWhileHeld(
@@ -415,6 +430,7 @@ async function refuseWhileHeld(
 export async function sendSignRequest(
   input: { organizationId: string; environmentId: string; requestId: string; actor: SignActor },
   now: Date = new Date(),
+  opts: { billing?: UsageGate | undefined } = {},
 ): Promise<SignRequestObjectOutput> {
   if (!(await environmentIsSandbox(input))) {
     const [found] = await db
@@ -446,6 +462,15 @@ export async function sendSignRequest(
           );
         }
       },
+      // A live request counts against a capped plan from when it is sent.
+      after: async (tx, _row, sandbox) => {
+        if (sandbox) return;
+        await opts.billing?.reserve(tx, {
+          organizationId: input.organizationId,
+          meter: SIGN_METER,
+          quantity: 1,
+        });
+      },
     },
     now,
   );
@@ -454,6 +479,7 @@ export async function sendSignRequest(
 export async function cancelSignRequest(
   input: { organizationId: string; environmentId: string; requestId: string; actor: SignActor },
   now: Date = new Date(),
+  opts: { billing?: UsageGate | undefined } = {},
 ): Promise<SignRequestObjectOutput> {
   return transition(
     input,
@@ -464,6 +490,17 @@ export async function cancelSignRequest(
       event: "canceled",
       refused: (status) =>
         new SignError("request_not_cancelable", `A ${status} request can't be canceled.`),
+      // A sent request will never complete now: its reservation goes back to the period it was
+      // sent in. Declined and expired ones keep theirs (their signers were asked).
+      after: async (tx, row, sandbox) => {
+        if (sandbox || row.status !== "sent") return;
+        await opts.billing?.release?.(tx, {
+          organizationId: input.organizationId,
+          meter: SIGN_METER,
+          quantity: 1,
+          reservedAt: row.sentAt ?? now,
+        });
+      },
     },
     now,
   );
@@ -613,6 +650,13 @@ export function createSignService(opts: SignServiceOptions): SignService {
             { organizationId: env.organizationId, projectId: env.projectId },
             tx,
           );
+          if (send) {
+            await opts.billing?.reserve(tx, {
+              organizationId: env.organizationId,
+              meter: SIGN_METER,
+              quantity: 1,
+            });
+          }
         }
         checkExpiry(params.expires_at, now);
         if (inline.length > 0) await tx.insert(signDocument).values(inline);
@@ -741,6 +785,8 @@ export function createSignService(opts: SignServiceOptions): SignService {
     replay,
     uploadDocument: (input) => uploadSignDocument(opts.store, input),
     deleteDocument: (input) => deleteSignDocument(opts.store, input),
+    send: (input) => sendSignRequest(input, clock(), { billing: opts.billing }),
+    cancel: (input) => cancelSignRequest(input, clock(), { billing: opts.billing }),
     deleteRequest: (input) => deleteSignRequest(opts.store, input),
     createTemplate: (input) => createSignTemplate(opts.store, input),
     updateTemplate: (input) => updateSignTemplate(opts.store, input),

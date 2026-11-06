@@ -122,7 +122,7 @@ describe("terms", () => {
       "sms.received_segments": 0,
       "sms.numbers": 0,
       "sms.registrations": 0,
-      "sign.completed_requests": 0,
+      "sign.completed_requests": 5,
       "risk.phone_checks": 100,
       "verify.verifications": 0,
       "verify.sms": 0,

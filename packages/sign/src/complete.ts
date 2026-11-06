@@ -35,6 +35,8 @@ type RequestRow = typeof signRequest.$inferSelect;
 export type SignCompletionDeps = {
   store: DocumentStore;
   sealer: Sealer;
+  /** Seals sandbox requests (`sealerFromEnv`'s self-signed test seal); default `sealer`. */
+  sandboxSealer?: Sealer;
   /** Without one, seals carry no trusted timestamp (PAdES B-B instead of B-T). */
   tsa?: TimestampAuthority | null;
   /** Fetches the seal's validation data (OCSP, CRLs); default the global `fetch`. */
@@ -200,7 +202,7 @@ async function seal(request: RequestRow, deps: SignCompletionDeps, now: Date): P
   const completed = await completedRequest(request, deps.store);
   const document = await buildCompletedPdf(completed);
   const bytes = await sealPdf(document, {
-    sealer: deps.sealer,
+    sealer: completed.sandbox ? (deps.sandboxSealer ?? deps.sealer) : deps.sealer,
     tsa: deps.tsa,
     name: "coss.com",
     reason: `Completed signature request ${request.id}: every signer signed.`,

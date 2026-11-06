@@ -2,8 +2,8 @@
  * The plans. A plan's monthly fee is credit spendable on any product's usage, so a month costs
  * the larger of the fee and the usage (plus add-ons). Free has no credit but includes 3,000
  * emails, 1,000 MB each of attachments and received data past each email's first MB, 1,000 form
- * submissions, 1,000 MB of their uploads and 50,000 Hooks messages a month and blocks usage beyond
- * its allowance. Every plan includes 100 phone checks, 3 inboxes, Hooks messages, Scheduling hosts
+ * submissions, 1,000 MB of their uploads, 50,000 Hooks messages and 5 completed signature requests
+ * a month and blocks usage beyond its allowance. Every plan includes 100 phone checks, 3 inboxes, Hooks messages, Scheduling hosts
  * and Risk assessments a month (past Free's, assessments go on in a reduced form instead of
  * stopping: `packages/risk/AGENTS.md`).
  */
@@ -84,6 +84,8 @@ export const PLANS = {
       "forms.submissions": 1_000,
       "forms.file_uploads": 1_000,
       "scheduling.bookings": 100,
+      // Counted when a live request is sent (Sign reserves one), so at most 5 can complete.
+      "sign.completed_requests": 5,
       "email.inboxes": INBOX_DAYS_INCLUDED,
       "risk.phone_checks": PHONE_CHECKS_INCLUDED,
       "hooks.messages": HOOKS_MESSAGES_INCLUDED.free,

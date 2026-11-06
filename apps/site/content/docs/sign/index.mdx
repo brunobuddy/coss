@@ -67,6 +67,15 @@ sealed, so any later change shows.
   </Card>
 </Cards>
 
+## Pricing
+
+Each completed request is <Rate meter="sign.completed_requests" />, charged once when its sealed
+document exists, however many signers and documents it has. Declined, canceled and expired requests
+are free, and so are sandbox environments. The Free plan includes
+<Included meter="sign.completed_requests" />: a live request counts when it's sent (a canceled one
+gives its place back), and past that sending fails with `402 usage_limit_exceeded` until the next
+month or an upgrade. See [Billing](/docs/billing).
+
 ## Tools
 
 - **CLI**: [`coss sign`](/docs/cli#sign) `upload`, `create`, `send`, `list`, `get`, `remind`, `cancel`, `download`,

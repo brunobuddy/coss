@@ -83,7 +83,8 @@ templates and the embedded builder. See "Not built yet" in the root `AGENTS.md` 
   `authMode: explicit`; the chain comes from `credentials/info` in `prepare()`, before the first
   seal, never at start; a signature that doesn't verify against the chain is refused and the
   credential re-read) and `LocalSealer` (a self-signed key per process). `sealerFromEnv`
-  (`./runtime`) reads `signSealEnvShape` (`./env`). **Long-term validation** (B-LT, `ltv.ts` +
+  (`./runtime`) reads `signSealEnvShape` (`./env`) and adds a `sandboxSealer` (a `LocalSealer`;
+  the same one with `local`) that `SignCompletionDeps` uses for sandbox requests. **Long-term validation** (B-LT, `ltv.ts` +
   `dss.ts`): after the CMS is written, every certificate in it and in its timestamp token gets an
   OCSP response (SHA-1 CertID; signed by the issuer or a delegated `id-kp-OCSPSigning` responder
   it issued — checked by `signedByResponder`, not pkijs's `verify`, which wants the signer
@@ -156,9 +157,14 @@ templates and the embedded builder. See "Not built yet" in the root `AGENTS.md` 
   racing the deletion loses its fenced update and deletes its own copy. Deleting a document
   (`deleteSignDocument`) records its key the same way (`store-cleanup.ts`).
 - **Billing**: meter `sign.completed_requests` (`@coss/billing/metering`), recorded once in the
-  sealing transaction (behind its compare-and-set), live environments only. It has no rate yet:
-  invoices show the usage as an uncharged line until a rate card prices it (pricing is a product
-  decision).
+  sealing transaction (behind its compare-and-set), live environments only: $0.50 each (from the
+  2026-11 card; a seal is one SSL.com eSigner signing, about $0.19–0.25 at our tier). Free includes
+  5 a month, enforced by `SignServiceOptions.billing` (`UsageGate`): a live request reserves one
+  when it is sent (`create` with `send`, `send`), in that transaction, and `cancel` of a sent one
+  releases it to the period it was sent in; declined and expired requests keep theirs. Sends go
+  through the service (`service.send`/`service.cancel`), never the bare `sendSignRequest`/
+  `cancelSignRequest`, which are uncapped. Sandbox requests are sealed by `sealerFromEnv`'s
+  `sandboxSealer` (a self-signed test seal per process), so they never spend the CA's signings.
 - **Retention**: `RETENTION_POLICY` `signature_requests` — kept until the customer deletes them;
   `signing_sessions` — signing and builder sessions `RETENTION_DAYS.signSessions` after expiry
   (`purgeExpiredSignSessions`, the worker's `retention` loop).
@@ -193,6 +199,8 @@ Sign is on in production since these steps (in this order):
    (`SIGN_CSC_CREDENTIAL_ID`); seal a test PDF with it before switching.
 4. **Switch on (done):** `SIGN_DOCUMENTS_BUCKET` (web, api, worker, sign), `terraform apply`,
    deploy. `SIGN_NOTIFICATIONS_FROM` is unset (`NOTIFICATIONS_FROM`'s address).
-5. **Before announcing:** legal reviewed `DEFAULT_SIGN_DISCLOSURE` and the certificate wording
-   (2026-11-06; change them only with another review); `sign.completed_requests` still needs a
-   price (a new rate card).
+5. **Before announcing (done):** legal reviewed `DEFAULT_SIGN_DISCLOSURE` and the certificate
+   wording (2026-11-06; change them only with another review), and `sign.completed_requests` is
+   priced (above). SSL.com's eSigner trial (unlimited signings) ends 30 days after the certificate
+   was issued (2026-12-06): an eSigner document signing tier must be bought before then, or live
+   seals fail (and retry with backoff).
