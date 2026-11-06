@@ -175,22 +175,24 @@ templates and the embedded builder. See "Not built yet" in the root `AGENTS.md` 
 
 ## Going live (production)
 
-Sign is off in production until all of this is done, in this order:
+Sign is on in production since these steps (in this order):
 
 1. **Domain (done):** `cosssign.com` (self-serve Cloudflare account) → the `sign` service (README,
    "Deploying to AWS"); `SIGN_PUBLIC_URL=https://cosssign.com` (web, api, worker).
 2. **Bucket (done):** `sign.tf` is applied: `coss-production-sign-documents-294417174674` and
-   both KMS keys (the seal's is `alias/coss-production-sign-seal`).
-3. **Seal:** a document-signing certificate from a CA on Adobe's trust list (AATL), either for
-   the KMS key (its CSR is signed by KMS: get the public key, sign the request's SHA-256 with
-   `kms sign --message-type DIGEST`; asked of Sectigo, since AATL CAs want key attestation KMS
-   can't give) → `SIGN_SEALER=kms`, `SIGN_SEAL_KMS_KEY_ID`, `SIGN_SEAL_CERTIFICATE_CHAIN`; or an
-   OV document signing certificate in SSL.com eSigner converted to eSealing ("Remove 2FA") →
-   `SIGN_SEALER=csc` with `SIGN_CSC_*` (worker; the password and any client secret through
-   `put-secret.sh`, then out of `unset_secrets`). `SIGN_TSA_URL` is set (DigiCert). Before
-   switching on, seal a test PDF with the same values (`bun run --cwd packages/sign seal:test
-   --out <file>`) and open it in Acrobat: signer trusted, timestamp trusted, "LTV enabled".
-4. **Switch on:** set `SIGN_DOCUMENTS_BUCKET` (web, api, worker, sign), optionally
-   `SIGN_NOTIFICATIONS_FROM` (default `NOTIFICATIONS_FROM`'s address), `terraform apply`, deploy.
-5. **Before announcing:** get legal review of `DEFAULT_SIGN_DISCLOSURE` and the certificate
-   wording, and price `sign.completed_requests` with a new rate card.
+   both KMS keys (the seal's is `alias/coss-production-sign-seal`, unused: AATL CAs want key
+   attestation KMS can't give).
+3. **Seal (done):** Cal.com, Inc.'s OV document signing certificate (SSL.com, order
+   `co-5b1lenc0l11`, valid until 2027-11-06) in eSigner, converted to eSealing ("Remove 2FA",
+   `authMode: implicit`) → `SIGN_SEALER=csc` with `SIGN_CSC_*` (worker; an OAuth application at
+   login.ssl.com, the account `pumfleet`; the client secret and password in the stage secret).
+   `SIGN_TSA_URL` is DigiCert's. A test PDF sealed with the same values (`bun run --cwd
+   packages/sign seal:test --out <file>`) validates (pyHanko: trusted to SSL.com's root, DigiCert
+   timestamp, OCSP in the DSS) and opens in Acrobat as trusted and "LTV enabled". **Renew the
+   certificate before it expires**: a new certificate is a new credential id
+   (`SIGN_CSC_CREDENTIAL_ID`); seal a test PDF with it before switching.
+4. **Switch on (done):** `SIGN_DOCUMENTS_BUCKET` (web, api, worker, sign), `terraform apply`,
+   deploy. `SIGN_NOTIFICATIONS_FROM` is unset (`NOTIFICATIONS_FROM`'s address).
+5. **Before announcing:** legal reviewed `DEFAULT_SIGN_DISCLOSURE` and the certificate wording
+   (2026-11-06; change them only with another review); `sign.completed_requests` still needs a
+   price (a new rate card).
