@@ -812,7 +812,7 @@ and SMTP credentials, dedicated IP pools for sub-accounts, tracking and receivin
 endpoint filters by sub-account, budgets per sub-account, a portal for end users, MCP support, rollups of
 sub-account reputation counts (each evaluation counts its window live), and sub-account tenant pause webhooks,
 Sign's archival timestamps in seals (PAdES B-LTA: renewing a document timestamp before its TSA certificate expires) and a standalone certificate download,
-a price for `sign.completed_requests`, and Sign in the iOS app and the admin console,
+Sign in the iOS app and the admin console,
 Forms in the iOS app, malware scanning of form uploads, conditional or multi-page forms, a drag-and-drop form builder,
 per-form webhook URLs (endpoints filter by event type), custom domains for hosted forms,
 sending from inboxes at coss.com's managed inbound domain in live environments (they only receive), inbox

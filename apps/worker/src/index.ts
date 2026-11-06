@@ -252,8 +252,8 @@ const secretsKeys = parseSecretsKeys(env.WEBHOOK_SECRETS_KEY);
 // The dashboard accepts local endpoints outside production; let them be reached there too.
 const send = createWebhookSender({ allowPrivateNetworks: process.env.NODE_ENV !== "production" });
 
-// Sign: completed requests are sealed here. Production has no document store (nor a certificate)
-// yet, so nothing waits there to be sealed.
+// Sign: completed requests are sealed here (live ones with the CA's certificate, sandbox ones with a
+// self-signed test seal).
 const signSeal = await sealerFromEnv(env);
 const signStore = signStoreFromEnv(env);
 const signCompletion = signSeal && signStore ? { store: signStore, ...signSeal } : null;

@@ -1,6 +1,5 @@
 import { authorizeLiveSender } from "@coss/email";
 import {
-  cancelSignRequest,
   createSignSession,
   getSignDocument,
   getSignRequest,
@@ -12,7 +11,6 @@ import {
   requestSignReminders,
   type SignActor,
   type SignService,
-  sendSignRequest,
   toSignSettingsObject,
   updateSignSettings,
 } from "@coss/sign";
@@ -633,7 +631,7 @@ export function createSignRoutes({
   router.openapi(sendSignRequestRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { organizationId, environmentId } = c.var.auth;
-    const request = await sendSignRequest({
+    const request = await available().send({
       organizationId,
       environmentId,
       requestId: id,
@@ -645,7 +643,7 @@ export function createSignRoutes({
   router.openapi(cancelSignRequestRoute, async (c) => {
     const { id } = c.req.valid("param");
     const { organizationId, environmentId } = c.var.auth;
-    const request = await cancelSignRequest({
+    const request = await available().cancel({
       organizationId,
       environmentId,
       requestId: id,

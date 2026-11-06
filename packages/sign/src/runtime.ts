@@ -26,11 +26,20 @@ type SignSealEnv = {
   SIGN_TSA_URL?: string;
 };
 
+/**
+ * What seals completed requests: live ones with `sealer`, sandbox ones with `sandboxSealer`, a
+ * self-signed test seal (no viewer trusts it), so tests never spend a CA's signings.
+ */
 export async function sealerFromEnv(
   env: SignSealEnv,
-): Promise<{ sealer: Sealer; tsa: TimestampAuthority | null } | null> {
+): Promise<{ sealer: Sealer; sandboxSealer: Sealer; tsa: TimestampAuthority | null } | null> {
   const tsa = env.SIGN_TSA_URL ? new HttpTsa(env.SIGN_TSA_URL) : null;
-  if (env.SIGN_SEALER === "local") return { sealer: await LocalSealer.create(), tsa };
+  if (env.SIGN_SEALER === "local") {
+    const sealer = await LocalSealer.create();
+    return { sealer, sandboxSealer: sealer, tsa };
+  }
+  if (!env.SIGN_SEALER) return null;
+  const sandboxSealer = await LocalSealer.create("coss.com Sign (sandbox test seal)");
   if (env.SIGN_SEALER === "kms") {
     if (!env.SIGN_SEAL_KMS_KEY_ID || !env.SIGN_SEAL_CERTIFICATE_CHAIN) {
       throw new Error(
@@ -42,6 +51,7 @@ export async function sealerFromEnv(
         keyId: env.SIGN_SEAL_KMS_KEY_ID,
         certificateChain: certificatesFromPem(env.SIGN_SEAL_CERTIFICATE_CHAIN),
       }),
+      sandboxSealer,
       tsa,
     };
   }
@@ -71,6 +81,7 @@ export async function sealerFromEnv(
         credentialId,
         totpSecret: env.SIGN_CSC_TOTP_SECRET,
       }),
+      sandboxSealer,
       tsa,
     };
   }

@@ -10,7 +10,10 @@ page, signers sign, and the request is sealed and completed. What's different:
   provider: read them in the dashboard's emails page instead.
 - **The signing page says it's a test** ("signing it has no legal effect"), and so does the
   certificate.
-- **Nothing is billed.**
+- **The seal is a test seal.** The completed PDF is sealed and verifies, but with a self-signed
+  certificate ("coss.com Sign (sandbox test seal)"), so PDF readers like Acrobat show the signature
+  as not trusted. Live requests are sealed with coss.com's trusted certificate.
+- **Nothing is billed**, and sandbox requests don't count against the Free plan's requests.
 - **`allowed_origins` can include `http://localhost`** for embedding while you develop.
 
 Test PDFs need nothing special; put anchors like `{{signature:signer_1}}` in them to place fields

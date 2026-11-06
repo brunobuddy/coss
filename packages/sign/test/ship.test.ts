@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { BillingError, createUsageGate } from "@coss/billing";
 import { db, schema } from "@coss/db";
 import { createTestTenant } from "@coss/tenancy/testing";
 import { and, eq } from "drizzle-orm";
@@ -17,12 +18,15 @@ import {
   openSigning,
   prepareDocument,
   purgeExpiredSignSessions,
+  readPdfSeal,
+  readSignedDocument,
   runDueSignCleanup,
   runDueSignCompletions,
   S3DocumentStore,
   type SignEnvironment,
   SignError,
   type SignS3Api,
+  sendSignRequest,
   signAsSigner,
 } from "../src/index.ts";
 import { signStoreFromEnv } from "../src/runtime.ts";
@@ -108,6 +112,98 @@ describe("billing", () => {
       .from(schema.billingUsage)
       .where(eq(schema.billingUsage.organizationId, sandbox.tenant.organization.id));
     expect(none).toHaveLength(0);
+  });
+});
+
+describe("Free's cap", () => {
+  const capped = createSignService({ store, billing: createUsageGate() });
+  const create = async (env: SignEnvironment, send = true) =>
+    (
+      await capped.create({
+        environment: env,
+        apiKeyId: null,
+        actor: { kind: "api_key" },
+        params: {
+          title: "NDA",
+          send,
+          documents: [{ filename: "nda.pdf", content: await buildTestPdfBase64() }],
+          signers: [
+            {
+              name: "Ada",
+              email: "ada@example.com",
+              fields: [{ type: "signature", anchor: "{{signature:signer_1}}" }],
+            },
+          ],
+        },
+      })
+    ).request;
+  const actor = { kind: "api_key" as const };
+
+  test("live requests count when sent, up to 5 a month; a canceled one gives its place back", async () => {
+    const { env } = await environment("live");
+    const sent = [];
+    for (let index = 0; index < 5; index++) sent.push(await create(env));
+    const refused = create(env);
+    await expect(refused).rejects.toBeInstanceOf(BillingError);
+    await expect(refused).rejects.toMatchObject({ code: "usage_limit_exceeded" });
+
+    // Drafts don't count until they are sent.
+    const draft = await create(env, false);
+    await expect(capped.send({ ...env, requestId: draft.id, actor })).rejects.toBeInstanceOf(
+      BillingError,
+    );
+    expect((await getSignRequest({ ...env, requestId: draft.id })).status).toBe("draft");
+
+    // Canceling a draft frees nothing; canceling a sent request does.
+    await capped.cancel({ ...env, requestId: draft.id, actor });
+    await expect(create(env)).rejects.toBeInstanceOf(BillingError);
+    await capped.cancel({ ...env, requestId: sent[0]?.id ?? "", actor });
+    // A retried cancel gives nothing more back.
+    await capped.cancel({ ...env, requestId: sent[0]?.id ?? "", actor });
+    await create(env);
+    await expect(create(env)).rejects.toBeInstanceOf(BillingError);
+  });
+
+  test("sandbox requests never count", async () => {
+    const { env } = await environment("sandbox");
+    for (let index = 0; index < 6; index++) await create(env);
+    const draft = await create(env, false);
+    await capped.send({ ...env, requestId: draft.id, actor });
+  });
+
+  test("without a gate, sending is uncapped", async () => {
+    const { env } = await environment("live");
+    const draft = await create(env, false);
+    expect((await sendSignRequest({ ...env, requestId: draft.id, actor })).status).toBe("sent");
+  });
+});
+
+describe("sandbox seals", () => {
+  test("are made with the sandbox sealer, live ones with the real one", async () => {
+    const live = await environment("live");
+    const sandbox = await environment("sandbox");
+    const liveRequest = await signed(live.env);
+    const sandboxRequest = await signed(sandbox.env);
+    const sealer = await LocalSealer.create("real seal");
+    const sandboxSealer = await LocalSealer.create("test seal");
+    await runDueSignCompletions(
+      {
+        limit: 5,
+        scope: { organizationIds: [live.tenant.organization.id, sandbox.tenant.organization.id] },
+      },
+      { store, sealer, sandboxSealer },
+    );
+    const certificateOf = async (env: SignEnvironment, requestId: string) => {
+      const { content } = await readSignedDocument({ ...env, requestId, store });
+      return Buffer.from(readPdfSeal(content).cms).toString("latin1");
+    };
+    const latin1 = (der: Uint8Array | undefined) => Buffer.from(der ?? []).toString("latin1");
+    expect(await certificateOf(live.env, liveRequest.id)).toContain(
+      latin1(sealer.certificateChain[0]),
+    );
+    const sandboxCms = await certificateOf(sandbox.env, sandboxRequest.id);
+    expect(sandboxCms).toContain(latin1(sandboxSealer.certificateChain[0]));
+    expect(sandboxCms).not.toContain(latin1(sealer.certificateChain[0]));
   });
 });
 

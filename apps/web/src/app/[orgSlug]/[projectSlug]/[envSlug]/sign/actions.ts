@@ -2,7 +2,6 @@
 
 import { authorizeLiveSender } from "@coss/email";
 import {
-  cancelSignRequest,
   createSignBuilderSession,
   deleteSignTemplate,
   requestSignReminders,
@@ -73,7 +72,7 @@ export async function cancelSignRequestAction(
     const environment = await environmentFromForm(context, formData);
     const requestId = formString(formData, "requestId");
     const request = await signed(() =>
-      cancelSignRequest({
+      signService().cancel({
         organizationId: context.organization.id,
         environmentId: environment.id,
         requestId,

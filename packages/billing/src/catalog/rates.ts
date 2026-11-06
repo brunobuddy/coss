@@ -150,6 +150,10 @@ const NOVEMBER_2026: RateCard = {
         ],
       },
     },
+    // Sign: $0.50 per completed request. Its seal is one signing on SSL.com eSigner ($0.25 each at
+    // 1,000 a month, $0.1875 on its annual tier, less by contract above that). First priced when
+    // Sign was switched on in production (2026-11-06); no organization had completed one there.
+    "sign.completed_requests": { default: flatRate(500_000_000n) },
     // $0.25 per 1,000 content checks. Jev costs about $0.042 per million input tokens, so at most
     // about $0.10 per 1,000 for the longest text classified (8,000 characters).
     "risk.content_checks": { default: flatRate(250_000n) },
