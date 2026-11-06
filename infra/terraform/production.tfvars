@@ -28,8 +28,8 @@ deploy_actor_ids = ["2538462", "8019099", "25907159", "55134778", "343308169", "
 # Optional secrets not stored in coss/production: take a name out once put-secret.sh has set it.
 unset_secrets = [
   "IPINFO_PRIVACY_TOKEN",
-  # Sign's CSC sealer (SSL.com eSigner): until its account exists.
-  "SIGN_CSC_CLIENT_SECRET", "SIGN_CSC_PASSWORD", "SIGN_CSC_TOTP_SECRET",
+  # Sign's CSC sealer: SSL.com's eSealing credential needs no one-time password.
+  "SIGN_CSC_TOTP_SECRET",
 ]
 initial_image_tag  = "2a8195a759b0f11d430f3e9cebfcf535a99dbca7"
 log_retention_days = 30
@@ -69,6 +69,7 @@ plain_env = {
     TURNSTILE_SITE_KEY           = "0x4AAAAAAFU8QY0DX4ZJGoSK"
     PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
     SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SIGN_DOCUMENTS_BUCKET        = "coss-production-sign-documents-294417174674"
     SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     # Forms (`/f/*` on its own domain, routed to the api) and its uploads bucket.
     FORMS_PUBLIC_URL             = "https://cossforms.com"
@@ -131,6 +132,7 @@ plain_env = {
   }
   sign = {
     DATABASE_POOL_MAX         = "5"
+    SIGN_DOCUMENTS_BUCKET     = "coss-production-sign-documents-294417174674"
     AWS_REGION                = "us-east-2"
     VALKEY_CLUSTER            = "true"
     RATE_LIMIT_KEY_PREFIX     = "coss"
@@ -146,6 +148,7 @@ plain_env = {
     TRACKING_PUBLIC_URL          = "https://track.cosslinks.com"
     PORTAL_PUBLIC_URL            = "https://portal.cosshooks.com"
     SIGN_PUBLIC_URL              = "https://cosssign.com"
+    SIGN_DOCUMENTS_BUCKET        = "coss-production-sign-documents-294417174674"
     SCHEDULING_PUBLIC_URL        = "https://cossbook.com"
     GOOGLE_CALENDAR_CLIENT_ID    = "776019028945-dnuug57hi1tsjfdbu93evm8ggp1ge00q.apps.googleusercontent.com"
     MICROSOFT_CALENDAR_CLIENT_ID = "e58a0c0d-e1bb-4aef-a861-43c755d96761"
@@ -232,9 +235,17 @@ plain_env = {
     # Account and reputation emails go out through coss.com itself, from its own organization.
     NOTIFICATIONS_ENVIRONMENT_ID = "env_01m4s0af5zent8fzxwmtkergw5"
     NOTIFICATIONS_FROM           = "coss.com <notifications@coss.com>"
-    # Sign's seal timestamps (PAdES B-T): DigiCert's public TSA, whose chain reaches an unrestricted
-    # AATL root. Unused until SIGN_SEALER is set.
-    SIGN_TSA_URL = "http://timestamp.digicert.com"
+    # Sign's seal: Cal.com, Inc.'s OV document signing certificate in SSL.com eSigner, converted to
+    # eSealing (the client secret and password are in the secret). Timestamps (PAdES B-T): DigiCert's
+    # public TSA, whose chain reaches an unrestricted AATL root.
+    SIGN_DOCUMENTS_BUCKET  = "coss-production-sign-documents-294417174674"
+    SIGN_SEALER            = "csc"
+    SIGN_CSC_URL           = "https://cs.ssl.com/csc/v1"
+    SIGN_CSC_TOKEN_URL     = "https://login.ssl.com/oauth2/token"
+    SIGN_CSC_CLIENT_ID     = "2SMQFRewdWcDsf1Nv2Fjh69pFNrwNtYJ7TxtR8AS6pQ"
+    SIGN_CSC_USERNAME      = "pumfleet"
+    SIGN_CSC_CREDENTIAL_ID = "ed56283f-eb6f-4f30-a958-f0e87783a900"
+    SIGN_TSA_URL           = "http://timestamp.digicert.com"
     # Push notifications to the iOS app: the "coss.com push" key (production, topic com.coss.ios).
     APNS_KEY_ID               = "WCQDCU4HUL"
     APNS_TEAM_ID              = "ADWKXDJV75"
