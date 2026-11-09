@@ -30,6 +30,16 @@ const FOREIGN_ERRORS = [
   "Error invoking postEvent",
 ];
 
+/**
+ * Browsers refusing to write to the clipboard (permissions, policies, a page without focus). Our
+ * copy buttons catch it, but libraries' (Fumadocs' code blocks) leave the rejection unhandled, and
+ * either way the text stays selectable: nothing to fix.
+ */
+const CLIPBOARD_REFUSALS = [
+  "Failed to execute 'writeText' on 'Clipboard'",
+  "Clipboard write was blocked",
+];
+
 function isConfig(value: unknown): value is SentryConfig {
   if (!value || typeof value !== "object") return false;
   const config = value as Record<string, unknown>;
@@ -85,7 +95,7 @@ export async function initBrowserMonitoring(
     // Only errors thrown by our own scripts: extensions and other injected code also run in the
     // page (`app:///…`, `chrome-extension://…` frames) and would otherwise be reported as ours.
     ...(origin ? { allowUrls: [`${origin}/`] } : {}),
-    ignoreErrors: FOREIGN_ERRORS,
+    ignoreErrors: [...FOREIGN_ERRORS, ...CLIPBOARD_REFUSALS],
   });
   return sdk;
 }
