@@ -66,7 +66,10 @@ describe("browser monitoring", () => {
     }
     expect(calls.inits[0]).toMatchObject({
       allowUrls: ["https://coss.com/"],
-      ignoreErrors: expect.arrayContaining(["Object Not Found Matching Id"]),
+      ignoreErrors: expect.arrayContaining([
+        "Object Not Found Matching Id",
+        "Failed to execute 'writeText' on 'Clipboard'",
+      ]),
     });
   });
 
