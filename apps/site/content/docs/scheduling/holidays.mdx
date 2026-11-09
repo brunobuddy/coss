@@ -38,7 +38,7 @@ await coss.scheduling.holidayCalendars.create({
 });
 ```
 
-`regions` matches how the calendar names them, which [its list of holidays](/docs/api-reference/scheduling-holiday-calendars)
+`regions` matches how the calendar names them, which [its list of holidays](/docs/api-reference/scheduling-holiday-calendars/list-scheduling-holidays)
 shows as `region`: `England` matches "England, Wales, Northern Ireland". An empty list keeps only nationwide holidays. A
 half-day holiday counts as the whole day.
 
@@ -65,7 +65,7 @@ drops out of the feed, or a host who leaves the calendar, loses its future entri
 ## What people booking see
 
 Nothing about why: entries say `public_holiday`, and a holiday's name only appears on the calendar's own
-[list of holidays](/docs/api-reference/scheduling-holiday-calendars). Names come from outside and aren't screened, so they
+[list of holidays](/docs/api-reference/scheduling-holiday-calendars/list-scheduling-holidays). Names come from outside and aren't screened, so they
 never go in an email.
 
 ## Which calendars there are
